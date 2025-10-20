@@ -35,7 +35,7 @@ export default function RoomsVillas() {
           </div>
           <div className="hidden md:flex items-center gap-3 text-[#202C3B]">
             <span className="font-quicksand font-semibold text-[20px] leading-[1.25]">Explore</span>
-            <img src="/figma/explore-icon.svg" alt="Explore icon" className="w-[50px] h-[30px]" />
+            <Image width={100} height={100} src="/figma/explore-icon.svg" alt="Explore icon" className="w-[50px] h-[30px]" />
           </div>
         </div>
 
