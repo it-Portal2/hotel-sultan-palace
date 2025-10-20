@@ -7,8 +7,8 @@ export default function Discover() {
       <div className="mx-auto flex max-w-screen-2xl flex-col lg:flex-row">
         <div className="group w-full lg:w-[47%] h-[400px] md:h-[590px] overflow-hidden">
           <Image
-            width={100}
-            height={100}
+            width={1000}
+            height={1000}
             src="/image1.png"
             alt="A few things to note at Sultan Palace"
             className="h-full w-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110"
