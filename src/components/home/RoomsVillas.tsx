@@ -5,19 +5,19 @@ import BookNowButton from "../ui/BookNowButton";
 const CARDS = [
   {
     title: "Garde suite",
-    price: "$545 / Night",
+    price: "$250 / Night ",
     meta: "2 Adults . 1 Child",
     img: "/figma/rooms-garden-suite.png",
   },
   {
     title: "Ocean suite",
-    price: "$545 / Night",
+    price: "$300 / Night",
     meta: "2 Adults . 1 Child",
     img: "/figma/rooms-ocean-suite.png",
   },
   {
     title: "Imperial suite",
-    price: "$545 / Night",
+    price: "$350 / Night",
     meta: "4 Adults . 1 Child",
     img: "/figma/rooms-imperial-suite.png",
   },
@@ -50,6 +50,8 @@ export default function RoomsVillas() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-black font-quicksand font-normal text-[20px] leading-[1.25]">{card.title}</h3>
                   <span className="text-[#202C3B] font-quicksand font-normal text-[20px] leading-[1.25]">{card.price}</span>
+                  <span className="text-[#202C3B] font-quicksand font-normal text-[20px] leading-[1.25]">•B&B</span>
+                 
                 </div>
                 <div className="mt-2">
                   <span className="text-[#4D4D4D] font-quicksand text-[18px] leading-[1.25]">{card.meta}</span>

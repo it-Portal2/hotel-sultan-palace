@@ -1,10 +1,41 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { useCart } from '@/context/CartContext';
+import { 
+  User, 
+  Calendar, 
+  Filter, 
+  Edit, 
+  Trash2, 
+  Tag, 
+  DoorOpen, 
+  Maximize2, 
+  Umbrella, 
+  TreePine, 
+  Waves, 
+  Snowflake, 
+  Bath, 
+  Wifi, 
+  CheckCircle,
+  Bed,
+  BedDouble,
+  Coffee,
+  Shield,
+  CreditCard
+} from 'lucide-react';
+
+interface BookingData {
+  checkIn: string;
+  checkOut: string;
+  guests: {
+    adults: number;
+    children: number;
+    rooms: number;
+  };
+}
 
 interface Room {
   id: string;
@@ -17,61 +48,76 @@ interface Room {
   size: string;
   view: string;
   beds: string;
+  image: string;
 }
 
 const rooms: Room[] = [
   {
     id: '1',
-    name: 'Garden View Suite',
+    name: 'Garden suite',
     type: 'Garden view',
-    price: 545,
+    price: 250,
     description: "This suite's standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Garden view',
-    beds: '1 Double bed, 1 Single bed'
+    beds: '1 Double bed, 1 Single bed',
+    image: '/rooms/garden-suite.png'
   },
   {
     id: '2',
     name: 'Ocean View Suite',
     type: 'Ocean View',
-    price: 545,
+    price: 300,
     description: "This suite's standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Ocean view',
-    beds: '1 Double bed, 1 Single bed'
+    beds: '1 Double bed, 1 Single bed',
+    image: '/rooms/garden-suite.png'
   },
   {
     id: '3',
-    name: 'Imperial Suite',
+    name: 'Imperial suite',
     type: 'Imperial suite',
-    price: 545,
+    price: 350,
     description: "This suite's standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Pool view',
-    beds: '1 single bed, 1 double bed'
+    beds: '2 Double bed, 1 Single bed',
+    image: '/rooms/garden-suite.png'
   }
 ];
 
 export default function RoomsPage() {
   const router = useRouter();
-  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
+  const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [cart, setCart] = useState<Room[]>([]);
 
-  // Redirect if there's no booking data or loading
-  React.useEffect(() => {
-    if (!bookingData) {
+  useEffect(() => {
+    const storedData = localStorage.getItem('bookingData');
+    if (storedData) {
+      setBookingData(JSON.parse(storedData));
+    } else {
       router.push('/');
     }
-  }, [bookingData, router]);
+  }, [router]);
 
-  if (!bookingData) {
-    return <div>Loading...</div>;
-  }
+  const addToCart = (room: Room) => {
+    setCart([...cart, room]);
+  };
+
+  const removeFromCart = (roomId: string) => {
+    setCart(cart.filter(room => room.id !== roomId));
+  };
+
+  const calculateTotal = () => {
+    return cart.reduce((total, room) => total + room.price, 0);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
@@ -82,151 +128,297 @@ export default function RoomsPage() {
     });
   };
 
+  if (!bookingData) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#FFFCF6]">
+      <style jsx global>{`
+        header {
+          background-color: rgba(0, 0, 0, 0.8) !important;
+          backdrop-filter: blur(8px);
+        }
+        header * {
+          color: white !important;
+        }
+      `}</style>
       <Header />
+      
+      {/* Booking Form Section */}
+      <div className="w-full px-4 py-6 mt-20">
+        <div className="max-w-3xl mt-15">
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+              
+              {/* Guest Input */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
+                  <User size={16} />
+                  <span>Guest</span>
+                </div>
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                  <span className="text-[#423B2D] text-xs font-semibold">
+                    {bookingData.guests.adults} guests, {bookingData.guests.rooms} room
+                  </span>
+                </div>
+              </div>
+              
+              {/* Check-in Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
+                  <Calendar size={14} />
+                  <span>Check-in</span>
+                </div>
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                  <span className="text-[#423B2D] text-xs font-semibold">
+                    {formatDate(bookingData.checkIn)}
+                  </span>
+                </div>
+              </div>
 
-      {/* Hero Section with Booking Summary */}
-      <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 h-96">
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
-          <div className="text-white">
-            <h1 className="text-4xl font-bold mb-4">Available Rooms</h1>
-            <p className="text-lg mb-6">
-              {formatDate(bookingData.checkIn)} - {formatDate(bookingData.checkOut)} • 
-              {bookingData.guests.adults} Adults, {bookingData.guests.children} Children
-            </p>
+              {/* Check-out Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
+                  <Calendar size={14} />
+                  <span>Check-Out</span>
+                </div>
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                  <span className="text-[#423B2D] text-xs font-semibold">
+                    {formatDate(bookingData.checkOut)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Filter Button */}
+              <div className="flex flex-col items-start gap-1">
+                <div className="text-[#3A3326] text-xs font-semibold mb-1">Filter by</div>
+                <button className="flex items-center justify-center gap-1 bg-[#FF6A00] text-white px-2 py-1 rounded-md w-12 h-8">
+                  <Filter size={14} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Rooms List */}
-          <div className="flex-1">
-            <div className="space-y-8">
-              {rooms.map((room) => (
-                <div key={room.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <div className="md:flex">
-                    <div className="md:w-1/3">
-                      <div className="w-full h-64 md:h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-500 text-sm">{room.name}</span>
+      <div className="w-full px-4 mb-16 lg:mb-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+            {/* Rooms List */}
+            <div className="flex-1 lg:max-w-3xl">
+              <div className="space-y-6 lg:space-y-8">
+                {rooms.map((room) => (
+                  <div key={room.id} className="bg-[rgba(152,152,152,0.07)] rounded-lg overflow-hidden">
+                    <div className="flex flex-col lg:flex-row">
+                      {/* Left Side - Image and Features */}
+                      <div className="w-full lg:w-80 flex-shrink-0">
+                        {/* Room Image */}
+                        <div className="w-full h-56 lg:h-64 relative mb-3">
+                          <img 
+                            src={room.image} 
+                            alt={room.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Bed info overlay */}
+                          <div className="absolute  backdrop-blur-sm px-2 py-3 rounded text-sm flex items-center gap-1">
+                            <BedDouble size={14} color="#1D2A3A" />
+                            <span className="font-semibold text-[#1D2A3A]">1 Double</span>
+                            <span className="text-[#1D2A3A]">•</span>
+                            <Bed size={14} color="#1D2A3A" />
+                            <span className="font-semibold text-[#1D2A3A]">1 Single</span>
+                          </div>
+                        </div>
+
+                      
+                        <div className="p-3 mt-4 bg-[#F8F5EF]">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <DoorOpen size={12} color="#3A3326" />
+                              <span>Private suite</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Maximize2 size={12} color="#3A3326" />
+                              <span>150 m²</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Umbrella size={12} color="#3A3326" />
+                              <span>Balcony</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <TreePine size={12} color="#3A3326" />
+                              <span>Garden view</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Waves size={12} color="#3A3326" />
+                              <span>Pool view</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Snowflake size={12} color="#3A3326" />
+                              <span>AC</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Bath size={10} color="#3A3326" />
+                              <span>Bathroom</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#3A3326]">
+                              <Wifi size={12} color="#3A3326" />
+                              <span>WiFi</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="md:w-2/3 p-6">
-                      <div className="flex justify-between items-start mb-4">
+
+                      {/* Right Side - Room Details */}
+                      <div className="w-full lg:w-90 p-8 flex flex-col gap-4">
+                        {/* Room Info */}
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-800 mb-2">{room.name}</h3>
-                          <p className="text-gray-600 mb-2">{room.beds}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-orange-500">${room.price} / Night</div>
-                          <p className="text-sm text-gray-500">including general taxes and fees</p>
-                        </div>
-                      </div>
-
-                      {/* Features */}
-                      <div className="grid grid-cols-3 gap-4 mb-4">
-                        {room.features.map((feature, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                            <div className="w-4 h-4 bg-gray-300 rounded"></div>
-                            {feature}
+                          <h3 className="text-xl font-semibold text-[#423B2D] mb-2">{room.type}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[#FF6A00] font-bold text-lg">${room.price} / Night</span>
+                            <span className="text-[#655D4E] text-xs">including general taxes and fees</span>
                           </div>
-                        ))}
-                      </div>
+                        </div>
 
-                      {/* Amenities */}
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        {room.amenities.map((amenity, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                            <div className="w-4 h-4 bg-gray-300 rounded"></div>
-                            {amenity}
+                        {/* Offer Banner */}
+                        <div className="bg-[rgba(21,166,2,0.16)] w-full h-6 flex items-center px-2 rounded">
+                          <div className="flex items-center gap-1 text-[#067832] text-xs font-semibold">
+                            <Tag size={12} />
+                            <span>Book now and unlock 15% total savings!</span>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                        {room.description}
-                      </p>
-
-                      {/* Booking Info */}
-                      <div className="bg-green-50 p-3 rounded-lg mb-4">
-                        <div className="flex items-center gap-2 text-green-800 text-sm">
-                          <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                          <span>Very good breakfast included</span>
                         </div>
-                        <div className="flex items-center gap-2 text-green-800 text-sm mt-1">
-                          <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                          <span>Free cancellation before 15 November 2025</span>
+
+                        {/* Description */}
+                        <p className="text-[#423B2D] text-sm leading-5 flex-grow">
+                          {room.description}
+                        </p>
+
+                        {/* Booking Info */}
+                        <div className="space-y-2 font-semibold">
+                          <div className="flex items-center gap-2 text-[#464035] text-sm">
+                            <Coffee size={14} color="#BE8C53" />
+                            <span>Very good breakfast included</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[#464035] text-sm">
+                            <Shield size={14} color="#BE8C53" />
+                            <span>Free cancellation before 15 November 2025</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[#464035] text-sm">
+                            <CreditCard size={14} color="#BE8C53" />
+                            <span>Pay nothing until 10 November 2025</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-green-800 text-sm mt-1">
-                          <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                          <span>Pay nothing until 10 November 2025</span>
-                        </div>
-                      </div>
 
-                      <button
-                        onClick={() => addRoom(room)}
-                        className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-                      >
-                        Book Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Cart Sidebar */}
-          <div className="w-96">
-            <div className="bg-white rounded-lg shadow-lg p-6 sticky top-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Your Cart ({cartRooms.length} Item{cartRooms.length !== 1 ? 's' : ''})
-              </h2>
-
-              {cartRooms.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No items in cart</p>
-              ) : (
-                <div className="space-y-4">
-                  {cartRooms.map((room) => (
-                    <div key={room.id} className="border-b pb-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-800">{room.name}</h3>
                         <button
-                          onClick={() => removeRoom(room.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
+                          onClick={() => addToCart(room)}
+                          className="bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm"
                         >
-                          Remove
+                          Book Now
                         </button>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-orange-500 font-bold">${room.price}.00</span>
-                        <span className="text-gray-500 text-sm">1 Night Stay</span>
-                      </div>
-                      <p className="text-gray-600 text-sm mt-2">
-                        {formatDate(bookingData.checkIn)} - {formatDate(bookingData.checkOut)}
-                      </p>
                     </div>
-                  ))}
-
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-lg font-semibold">Total</span>
-                      <span className="text-xl font-bold text-orange-500">${calculateTotal().toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">including general taxes and fees</p>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <button
-                    onClick={() => router.push('/add-ons')}
-                    className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors mt-4"
-                  >
-                    Go to Add-ons
-                  </button>
-                </div>
-              )}
+            {/* Cart Sidebar */}
+            <div className="w-[410px] flex-shrink-0">
+              <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky lg:top-8">
+                <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
+                  Your Cart (Item - {cart.length})
+                </h2>
+                
+                <hr className="border-[rgba(66,59,45,0.13)] mb-6" />
+                
+                {cart.length === 0 ? (
+                  <p className="text-gray-500 text-center py-6">No items in cart</p>
+                ) : (
+                  <div className="space-y-4">
+                    {cart.map((room) => (
+                      <div key={room.id} className="bg-[#F8F5EF] p-3 rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-lg font-semibold text-[#423B2D]">
+                            {room.name}
+                          </h3>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-[#1D2A3A]">
+                              ${room.price}.00
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-bold text-[#FF6A00]">
+                            1 Night Stay
+                          </span>
+                          <div className="text-sm font-semibold text-[#1D2A3A]">
+                            $0.00
+                          </div>
+                        </div>
+                        
+                        <div className="mb-2">
+                          <span className="text-sm text-[#655D4E]">
+                            Taxes and Fees
+                          </span>
+                        </div>
+                        
+                        <p className="text-xs text-[#423B2D] mb-3">
+                          This suite's standout feature is the pool with a view. Boasting a private entrance, this air...
+                        </p>
+                        
+                        <div className="mb-8">
+                          <span className="text-sm font-bold text-black">
+                            Thu, Nov 20, 2025 - Fri, Nov 21, 2025
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-5 flex-wrap">
+                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                            <Edit size={14} color="#FF6A00" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(room.id)}
+                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                          >
+                            <Trash2 size={14} color="#FF6A00" />
+                            <span>Remove</span>
+                          </button>
+                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                            <Tag size={14} color="#FF6A00" />
+                            <span>Offer</span>
+                          </button>
+                         
+                        </div>
+                        {/* dotted divider  */}
+                        <div className="border-t border-dashed border-[rgba(0,0,0,0.4)] mt-4 mb-3"></div>
+                        <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="text-base font-semibold text-black">
+                            Total
+                          </h4>
+                          <p className="text-xs text-[#655D4E]">
+                            including general taxes and fees
+                          </p>
+                        </div>
+                        <span className="text-base font-semibold text-[#1D2A3A]">
+                          ${calculateTotal()}.00
+                        </span>
+                      </div>
+                      </div>
+                    ))}
+                  
+                    
+                    <button
+                      onClick={() => router.push('/add-ons')}
+                      className="w-full bg-[#FF6A00] text-white py-2 px-4  font-semibold hover:bg-orange-600 transition-colors text-sm"
+                    >
+                      Go to Cart
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
