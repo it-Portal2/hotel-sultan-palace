@@ -1,19 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-
-interface BookingData {
-  checkIn: string;
-  checkOut: string;
-  guests: {
-    adults: number;
-    children: number;
-    rooms: number;
-  };
-}
+import { useCart } from '@/context/CartContext';
 
 interface Room {
   id: string;
@@ -69,31 +60,18 @@ const rooms: Room[] = [
 
 export default function RoomsPage() {
   const router = useRouter();
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [cart, setCart] = useState<Room[]>([]);
-  // const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
 
-  useEffect(() => {
-    const storedData = localStorage.getItem('bookingData');
-    if (storedData) {
-      setBookingData(JSON.parse(storedData));
-    } else {
+  // Redirect if there's no booking data or loading
+  React.useEffect(() => {
+    if (!bookingData) {
       router.push('/');
     }
-  }, [router]);
+  }, [bookingData, router]);
 
-  const addToCart = (room: Room) => {
-    setCart([...cart, room]);
-    // setSelectedRoom(room);
-  };
-
-  const removeFromCart = (roomId: string) => {
-    setCart(cart.filter(room => room.id !== roomId));
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((total, room) => total + room.price, 0);
-  };
+  if (!bookingData) {
+    return <div>Loading...</div>;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
@@ -104,14 +82,10 @@ export default function RoomsPage() {
     });
   };
 
-  if (!bookingData) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="min-h-screen bg-[#FFFCF6]">
       <Header />
-      
+
       {/* Hero Section with Booking Summary */}
       <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 h-96">
         <div className="absolute inset-0 bg-black/40"></div>
@@ -193,7 +167,7 @@ export default function RoomsPage() {
                       </div>
 
                       <button
-                        onClick={() => addToCart(room)}
+                        onClick={() => addRoom(room)}
                         className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
                       >
                         Book Now
@@ -208,18 +182,20 @@ export default function RoomsPage() {
           {/* Cart Sidebar */}
           <div className="w-96">
             <div className="bg-white rounded-lg shadow-lg p-6 sticky top-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Your Cart ({cart.length} Item{cart.length !== 1 ? 's' : ''})</h2>
-              
-              {cart.length === 0 ? (
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Your Cart ({cartRooms.length} Item{cartRooms.length !== 1 ? 's' : ''})
+              </h2>
+
+              {cartRooms.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No items in cart</p>
               ) : (
                 <div className="space-y-4">
-                  {cart.map((room) => (
+                  {cartRooms.map((room) => (
                     <div key={room.id} className="border-b pb-4">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-gray-800">{room.name}</h3>
                         <button
-                          onClick={() => removeFromCart(room.id)}
+                          onClick={() => removeRoom(room.id)}
                           className="text-red-500 hover:text-red-700 text-sm"
                         >
                           Remove
@@ -234,11 +210,11 @@ export default function RoomsPage() {
                       </p>
                     </div>
                   ))}
-                  
+
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-lg font-semibold">Total</span>
-                      <span className="text-xl font-bold text-orange-500">${calculateTotal()}.00</span>
+                      <span className="text-xl font-bold text-orange-500">${calculateTotal().toFixed(2)}</span>
                     </div>
                     <p className="text-xs text-gray-500">including general taxes and fees</p>
                   </div>
@@ -247,7 +223,7 @@ export default function RoomsPage() {
                     onClick={() => router.push('/add-ons')}
                     className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors mt-4"
                   >
-                    Go to Cart
+                    Go to Add-ons
                   </button>
                 </div>
               )}

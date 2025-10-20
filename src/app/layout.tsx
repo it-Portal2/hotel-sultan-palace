@@ -1,68 +1,69 @@
 // app/layout.tsx
 
 import type { Metadata } from "next";
-import { 
-  Inter, 
-  Open_Sans, 
-  Quicksand, 
-  Jomolhari, 
-  Kaisei_Decol, 
-  Oooh_Baby, 
-  Poppins, 
-  Shadows_Into_Light_Two 
+import {
+  Inter,
+  Open_Sans,
+  Quicksand,
+  Jomolhari,
+  Kaisei_Decol,
+  Oooh_Baby,
+  Poppins,
+  Shadows_Into_Light_Two,
 } from "next/font/google";
 import "./globals.css";
-import WhatsAppButton from '@/components/WhatsAppButton';
+import WhatsAppButton from "@/components/WhatsAppButton";
+import { CartProvider } from "@/context/CartContext";
 
-const inter = Inter({ 
-  subsets: ["latin"], 
-  variable: "--font-inter" 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
 });
 
-const openSans = Open_Sans({ 
-  subsets: ["latin"], 
-  weight: ["300", "400", "500", "600", "700", "800"], 
-  variable: "--font-open-sans" 
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-open-sans",
 });
 
-const quicksand = Quicksand({ 
-  subsets: ["latin"], 
-  weight: ["300", "400", "500", "600", "700"], 
-  variable: "--font-quicksand" 
+const quicksand = Quicksand({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-quicksand",
 });
 
-const jomolhari = Jomolhari({ 
-  subsets: ["latin"], 
-  weight: "400", 
-  variable: "--font-jomolhari" 
+const jomolhari = Jomolhari({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-jomolhari",
 });
 
-const kaisei = Kaisei_Decol({ 
-  subsets: ["latin"], 
-  weight: ["400", "500", "700"], 
-  variable: "--font-kaisei" 
+const kaisei = Kaisei_Decol({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-kaisei",
 });
 
-const ooohBaby = Oooh_Baby({ 
-  subsets: ["latin"], 
-  weight: "400", 
-  variable: "--font-oooh-baby" 
+const ooohBaby = Oooh_Baby({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-oooh-baby",
 });
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-poppins"
+  variable: "--font-poppins",
 });
 
-const script = Shadows_Into_Light_Two({ 
-  subsets: ["latin"], 
+const script = Shadows_Into_Light_Two({
+  subsets: ["latin"],
   weight: "400",
-  variable: "--font-script" 
+  variable: "--font-script",
 });
 
-export const metadata: Metadata = { 
-  title: "The Sultan Palace" 
+export const metadata: Metadata = {
+  title: "The Sultan Palace",
 };
 
 export default function RootLayout({
@@ -72,7 +73,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`
+      <body
+        className={`
         ${inter.variable} 
         ${openSans.variable} 
         ${quicksand.variable} 
@@ -81,9 +83,10 @@ export default function RootLayout({
         ${ooohBaby.variable} 
         ${poppins.variable}
         ${script.variable} 
-        antialiased`
-      }>
-        {children}
+        antialiased`}
+      >
+        <CartProvider> {children}</CartProvider>
+
         <WhatsAppButton />
       </body>
     </html>
