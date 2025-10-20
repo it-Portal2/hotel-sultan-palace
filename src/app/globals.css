@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+:root {
+  --color-page-bg: #fffcf6;
+  --color-text-primary: #202c3b;
+  --color-accent: #be8c53;
+  --color-accent-strong: #ff6a00;
+  --color-text-dark: #242424;
+}
+
+html, body, :root {
+  background: var(--color-page-bg);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+.container-xl {
+  max-width: 1512px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+.font-script {
+  font-family: 'Shadows Into Light Two', cursive;
+}
+
+.border-beige-200 {
+  border-color: #f5f5dc;
+}
