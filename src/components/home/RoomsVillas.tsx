@@ -50,11 +50,12 @@ export default function RoomsVillas() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-black font-quicksand font-normal text-[20px] leading-[1.25]">{card.title}</h3>
                   <span className="text-[#202C3B] font-quicksand font-normal text-[20px] leading-[1.25]">{card.price}</span>
-                  <span className="text-[#202C3B] font-quicksand font-normal text-[20px] leading-[1.25]">•B&B</span>
                  
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex items-center gap-15">
                   <span className="text-[#4D4D4D] font-quicksand text-[18px] leading-[1.25]">{card.meta}</span>
+                  <span className="text-[#202C3B] font-quicksand font-normal text-[20px] leading-[1.25]">•B&B</span>
+ 
                 </div>
                 <div className="mt-6">
                   <BookNowButton size="sm" className="px-12 py-3 rounded-[9px] text-[14px]" />

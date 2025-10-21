@@ -51,12 +51,8 @@ export default function BookNowButton({
             transition-all
             duration-400
             ease-in-out
-
-            // 1. STARTS HIDDEN at the bottom-left, outside the button
             -bottom-50
             -left-30
-
-            // 2. ON HOVER, it slides into view to cover the left side
             group-hover:bottom-[-3rem]
             group-hover:left-[-3rem]
           `}

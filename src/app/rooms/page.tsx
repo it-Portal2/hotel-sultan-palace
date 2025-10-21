@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { 
@@ -19,7 +20,6 @@ import {
   Snowflake, 
   Bath, 
   Wifi, 
-  CheckCircle,
   Bed,
   BedDouble,
   Coffee,
@@ -56,40 +56,40 @@ const rooms: Room[] = [
     id: '1',
     name: 'Garden suite',
     type: 'Garden view',
-    price: 250,
+    price: 545,
     description: "This suite's standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Garden view',
     beds: '1 Double bed, 1 Single bed',
-    image: '/rooms/garden-suite.png'
+    image: '/figma/rooms-garden-suite.png'
   },
   {
     id: '2',
     name: 'Ocean View Suite',
     type: 'Ocean View',
-    price: 300,
+    price: 545,
     description: "This suite's standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Ocean view',
     beds: '1 Double bed, 1 Single bed',
-    image: '/rooms/garden-suite.png'
+    image: '/figma/rooms-garden-suite.png'
   },
   {
     id: '3',
     name: 'Imperial suite',
     type: 'Imperial suite',
-    price: 350,
+    price: 545,
     description: "This suite's standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
     size: '150 m²',
     view: 'Pool view',
     beds: '2 Double bed, 1 Single bed',
-    image: '/rooms/garden-suite.png'
+    image: '/figma/rooms-garden-suite.png'
   }
 ];
 
@@ -109,6 +109,12 @@ export default function RoomsPage() {
 
   const addToCart = (room: Room) => {
     setCart([...cart, room]);
+    // Store room data in localStorage for add-ons page
+    localStorage.setItem('roomData', JSON.stringify({
+      name: room.name,
+      price: room.price,
+      description: room.description
+    }));
   };
 
   const removeFromCart = (roomId: string) => {
@@ -215,10 +221,12 @@ export default function RoomsPage() {
                       <div className="w-full lg:w-80 flex-shrink-0">
                         {/* Room Image */}
                         <div className="w-full h-56 lg:h-64 relative mb-3">
-                          <img 
+                          <Image 
                             src={room.image} 
                             alt={room.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 320px"
                           />
                           {/* Bed info overlay */}
                           <div className="absolute  backdrop-blur-sm px-2 py-3 rounded text-sm flex items-center gap-1">
@@ -323,7 +331,7 @@ export default function RoomsPage() {
             </div>
 
             {/* Cart Sidebar */}
-            <div className="w-[410px] flex-shrink-0">
+            <div className="w-[410px] flex-shrink-0 -mt-28">
               <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky lg:top-8">
                 <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
                   Your Cart (Item - {cart.length})
@@ -364,7 +372,7 @@ export default function RoomsPage() {
                         </div>
                         
                         <p className="text-xs text-[#423B2D] mb-3">
-                          This suite's standout feature is the pool with a view. Boasting a private entrance, this air...
+                          This suite&apos;s standout feature is the pool with a view. Boasting a private entrance, this air...
                         </p>
                         
                         <div className="mb-8">

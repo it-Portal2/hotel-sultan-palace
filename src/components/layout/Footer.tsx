@@ -1,7 +1,6 @@
 import React from 'react';
-// @ts-ignore
+import Image from 'next/image';
 import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
-// @ts-ignore
 import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 export default function Footer() {
   return (
@@ -17,7 +16,7 @@ export default function Footer() {
               <div className="space-y-6">
                 {/* Logo */}
                 <div className="text-white">
-                  <img src="/sultan-logo.png" alt="Sultan Palace" className="h-12 w-auto" />
+                  <Image src="/sultan-logo.png" alt="Sultan Palace" width={48} height={48} className="h-12 w-auto" />
                 </div>
                 
                 {/* Description */}

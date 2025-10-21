@@ -50,36 +50,35 @@ export default function Hero() {
 
   return (
     <>
-      {/* Section ko poori screen ki height di gayi hai (h-screen) */}
+     
       <section className="relative w-full h-screen overflow-hidden font-opensans">
         
-        {/* Video Background aur uske upar halki si dark layer */}
+      
         <div className="absolute inset-0 z-0">
           <video
             autoPlay
             loop
             muted
-            playsInline // iOS par autoplay ke liye zaroori
+            playsInline 
             className="w-full h-full object-cover"
           >
             <source src="/hero.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          {/* yah layer text ko video ke upar saaf dikhane mein madad karti hai */}
+         
           <div className="absolute inset-0 bg-black/40" /> 
         </div>
 
-        {/* Audio (dikhega nahi) */}
+       
         <audio autoPlay loop className="hidden">
           <source src="/gentle-ocean-waves-birdsong-and-gull-7109.mp3" type="audio/mpeg" />
         </audio>
 
-        {/* Main Content (Header aur Booking Form) */}
-        {/* yah container video ke upar (z-10) hai aur content ko neeche (justify-end) rakhta hai */}
+    
         <div className="relative z-10 h-full flex flex-col justify-end items-center pb-8 px-4">
           <div className="w-full max-w-4xl">
             
-            {/* Desktop ke liye Labels */}
+   
             <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-6 px-6 mb-2">
               <span className="text-white text-base font-bold">Check-in / Check-out</span>
               <span className="text-white text-base font-bold">Guest</span>
@@ -92,7 +91,7 @@ export default function Hero() {
                 {/* Date Input */}
                 <button
                   onClick={() => setIsCalendarOpen(true)}
-                  className="text-gray-700 text-lg p-3 md:p-4 text-center md:text-left border-b border-gray-200 md:border-b-0 md:border-r hover:bg-gray-50 transition-colors"
+                  className="text-gray-700 text-lg p-3 md:p-4 text-center md:text-left "
                 >
                   {checkInDate && checkOutDate 
                     ? `${formatDate(checkInDate)} - ${formatDate(checkOutDate)}`
