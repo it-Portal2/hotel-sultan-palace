@@ -192,7 +192,7 @@ export default function RoomsPage() {
                             sizes="(max-width: 768px) 100vw, 320px"
                           />
                           {/* Bed info overlay */}
-                          <div className="absolute  backdrop-blur-sm px-2 py-3 rounded text-sm flex items-center gap-1">
+                          <div className="absolute  px-2 mt-70 text-sm flex items-center gap-1">
                             <BedDouble size={14} color="#1D2A3A" />
                             <span className="font-semibold text-[#1D2A3A]">1 Double</span>
                             <span className="text-[#1D2A3A]">•</span>
@@ -202,7 +202,7 @@ export default function RoomsPage() {
                         </div>
 
                       
-                        <div className="p-3 mt-4 bg-[#F8F5EF]">
+                        <div className="p-3 mt-10 bg-[#F8F5EF]">
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex items-center gap-1 text-[#3A3326]">
                               <DoorOpen size={12} color="#3A3326" />

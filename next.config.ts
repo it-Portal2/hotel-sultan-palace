@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     // optimizePackageImports: ['lucide-react', 'react-icons'], // Disabled for stability
   },
   // Vercel deployment configuration
-  // output: 'export', // Commented out for dynamic routes support
+  // output: 'export', // Commented out for Vercel's default Next.js deployment
   trailingSlash: true,
   // Disable source maps in production for better performance
   productionBrowserSourceMaps: false,
