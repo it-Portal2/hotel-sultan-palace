@@ -62,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [addOns, setAddOns] = useState<CartAddOn[]>([]);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
 
-  // Load bookingData from localStorage once
+  // Load bookingData from localStorage once (for backward compatibility)
   useEffect(() => {
     const loadBookingData = () => {
       const storedData = localStorage.getItem('bookingData');
@@ -78,23 +78,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Load immediately
     loadBookingData();
-
-    // Also listen for storage changes (in case data is updated in another tab)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'bookingData' && e.newValue) {
-        try {
-          setBookingData(JSON.parse(e.newValue));
-        } catch (error) {
-          console.error('Error parsing bookingData from storage event:', error);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
   }, []);
 
   // Room handlers

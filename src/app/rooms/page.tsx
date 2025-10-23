@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
+import { getRooms, Room } from '@/lib/firestoreService';
 import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
@@ -38,76 +39,35 @@ interface BookingData {
   };
 }
 
-interface Room {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  description: string;
-  features: string[];
-  amenities: string[];
-  size: string;
-  view: string;
-  beds: string;
-  image: string;
-}
-
-const rooms: Room[] = [
-  {
-    id: '1',
-    name: 'Garden suite',
-    type: 'Garden view',
-    price: 250,
-    description: "This suite's standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Garden view',
-    beds: '1 Double bed, 1 Single bed',
-    image: '/figma/rooms-garden-suite.png'
-  },
-  {
-    id: '2',
-    name: 'Ocean View Suite',
-    type: 'Ocean View',
-    price: 300,
-    description: "This suite's standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Ocean view',
-    beds: '1 Double bed, 1 Single bed',
-    image: '/figma/rooms-garden-suite.png'
-  },
-  {
-    id: '3',
-    name: 'Imperial suite',
-    type: 'Imperial suite',
-    price: 350,
-    description: "This suite's standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Pool view',
-    beds: '2 Double bed, 1 Single bed',
-    image: '/figma/rooms-garden-suite.png'
-  }
-];
+// Room interface is now imported from firestoreService
 
 export default function RoomsPage() {
   const router = useRouter();
   const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!bookingData) {
-      const storedData = localStorage.getItem('bookingData');
-      if (storedData) {
-        // Data will be loaded by cart context
-      } else {
-        router.push('/');
-      }
+      router.push('/');
     }
   }, [bookingData, router]);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setLoading(true);
+        const roomsData = await getRooms();
+        setRooms(roomsData);
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
 
   const addToCart = (room: Room) => {
     addRoom(room);
@@ -128,6 +88,17 @@ export default function RoomsPage() {
 
   if (!bookingData) {
     return <div>Loading...</div>;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

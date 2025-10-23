@@ -1,12 +1,5 @@
-import { 
-  collection, 
-  // addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  query, 
-  where
-} from 'firebase/firestore';
+import { createBooking, getBooking, getAllBookings } from './firestoreService';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface Booking {
@@ -51,24 +44,13 @@ export interface Booking {
   updatedAt: Date;
 }
 
-export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   try {
-    // For demo purposes, simulate a booking creation
-    console.log('Creating booking:', bookingData);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Return a mock booking ID
-    return `booking_${Date.now()}`;
-    
-    // Uncomment below when Firebase is properly configured
-    // const docRef = await addDoc(collection(db, 'bookings'), {
-    //   ...bookingData,
-    //   createdAt: new Date(),
-    //   updatedAt: new Date()
-    // });
-    // return docRef.id;
+    const bookingId = await createBooking(bookingData);
+    if (!bookingId) {
+      throw new Error('Failed to create booking');
+    }
+    return bookingId;
   } catch (error) {
     console.error('Error creating booking:', error);
     throw error;
@@ -77,13 +59,7 @@ export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt
 
 export const getBookings = async (): Promise<Booking[]> => {
   try {
-    const querySnapshot = await getDocs(collection(db, 'bookings'));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate(),
-      updatedAt: doc.data().updatedAt?.toDate()
-    })) as Booking[];
+    return await getAllBookings();
   } catch (error) {
     console.error('Error getting bookings:', error);
     throw error;
@@ -92,21 +68,7 @@ export const getBookings = async (): Promise<Booking[]> => {
 
 export const getBookingById = async (id: string): Promise<Booking | null> => {
   try {
-    const querySnapshot = await getDocs(
-      query(collection(db, 'bookings'), where('__name__', '==', id))
-    );
-    
-    if (querySnapshot.empty) {
-      return null;
-    }
-    
-    const doc = querySnapshot.docs[0];
-    return {
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate(),
-      updatedAt: doc.data().updatedAt?.toDate()
-    } as Booking;
+    return await getBooking(id);
   } catch (error) {
     console.error('Error getting booking:', error);
     throw error;

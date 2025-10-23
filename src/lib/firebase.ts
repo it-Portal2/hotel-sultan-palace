@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
@@ -15,9 +15,21 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
+// Initialize Firebase services with error handling
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+// Suppress Firebase connection warnings in development
+if (process.env.NODE_ENV === 'development') {
+  // Disable Firebase connection warnings
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('@firebase/firestore')) {
+      return; // Suppress Firebase Firestore warnings
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+}
 
 export default app;

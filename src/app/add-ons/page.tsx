@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
+import { getAddOns, AddOn } from '@/lib/firestoreService';
 import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
@@ -28,101 +29,63 @@ interface BookingData {
   nights?: number;
 }
 
-interface AddOn {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  type: 'per_stay' | 'per_day' | 'per_guest';
-  quantity: number;
-  image: string;
-  features: string[];
-}
-
-const addOns: AddOn[] = [
-  {
-    id: '1',
-    name: 'Romantic Beach Dinner for Two',
-    price: 245,
-    description: 'Create magical memories with a private candlelit dinner by the ocean. Enjoy a cozy beachfront setting, personalized service, and a complimentary bottle of sparkling wine to toast the evening under the stars.',
-    type: 'per_stay',
-    quantity: 1,
-    image: '/figma/rooms-garden-suite.png',
-    features: ['Private dining', 'Ocean view', 'Wine included', 'Personalized service']
-  },
-  {
-    id: '2',
-    name: 'Daybed Classic Experience',
-    price: 120,
-    description: 'Reserve your exclusive beach daybed and indulge in personalized service throughout the day. Sip on fresh coconuts, enjoy a tropical fruit platter, and stay refreshed with cooling beverages. Relax with thoughtful amenities like sunscreen, soothing aloe vera, and after-sun care. A fully stocked minibar with wine, beer, and soft drinks completes your seaside retreat.',
-    type: 'per_day',
-    quantity: 1,
-    image: '/figma/rooms-ocean-suite.png',
-    features: ['Beach daybed', 'Minibar included', 'Personalized service', 'Tropical fruits']
-  },
-  {
-    id: '3',
-    name: 'Couples\' Massage Retreat',
-    price: 150,
-    description: 'Unwind together with our signature couples\' massage. Let expert therapists rejuvenate your body and mind in a serene setting inspired by the island\'s natural beauty — the perfect escape for two.',
-    type: 'per_guest',
-    quantity: 1,
-    image: '/figma/rooms-imperial-suite.png',
-    features: ['Couples massage', 'Expert therapists', 'Serene setting', 'Island inspired']
-  },
-  {
-    id: '4',
-    name: 'Private Airport Round-Trip Transfer',
-    price: 150,
-    description: 'Travel in comfort with a private airport transfer designed for convenience and exclusivity. Each car accommodates up to four passengers, ensuring a smooth and private journey to and from the resort.',
-    type: 'per_stay',
-    quantity: 1,
-    image: '/figma/rooms-garden-suite.png',
-    features: ['Private transfer', 'Up to 4 passengers', 'Round trip', 'Comfortable ride']
-  },
-  {
-    id: '5',
-    name: 'Mnemba Atoll Snorkeling Tour',
-    price: 70,
-    description: 'Embark on a breathtaking snorkeling adventure at Mnemba Atoll. Explore crystal-clear waters teeming with vibrant coral reefs and colorful marine life — a true underwater paradise.',
-    type: 'per_guest',
-    quantity: 1,
-    image: '/figma/rooms-ocean-suite.png',
-    features: ['Snorkeling tour', 'Coral reefs', 'Marine life', 'Crystal clear waters']
-  }
-];
+// AddOn interface is now imported from firestoreService
 
 export default function AddOnsPage() {
   const router = useRouter();
   const { bookingData, rooms, addOns: cartAddOns, addAddOn, removeAddOn, updateAddOnQuantity, calculateTotal } = useCart();
   const [roomData, setRoomData] = useState<{ name: string; price: number; description?: string } | null>(null);
   const [buttonStates, setButtonStates] = useState<{[key: string]: 'add' | 'cancel' | 'update' | 'success'}>({});
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect to home if no booking data
     if (!bookingData) {
-      const storedData = localStorage.getItem('bookingData');
-      if (storedData) {
-        // Data will be loaded by cart context
-      } else {
-        router.push('/');
-      }
+      router.push('/');
+      return;
     }
 
-    const storedRoomData = localStorage.getItem('roomData');
-    if (storedRoomData) {
-      setRoomData(JSON.parse(storedRoomData));
+    // Use selected room from cart instead of localStorage
+    if (rooms.length > 0) {
+      const selectedRoom = rooms[0];
+      setRoomData({
+        name: selectedRoom.name,
+        price: selectedRoom.price,
+        description: selectedRoom.description
+      });
     } else {
-      // Set default room data if not available
+      // Set default room data if no room selected
       setRoomData({
         name: 'Garde suite',
         price: 545,
         description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air...'
       });
     }
-  }, [bookingData, router]);
+  }, [bookingData, router, rooms]);
+
+  useEffect(() => {
+    const fetchAddOns = async () => {
+      try {
+        setLoading(true);
+        const addOnsData = await getAddOns();
+        setAddOns(addOnsData);
+      } catch (error) {
+        console.error('Error fetching add-ons:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAddOns();
+  }, []);
 
   const addToCart = (addOn: AddOn) => {
-    addAddOn(addOn);
+    addAddOn({ 
+      ...addOn, 
+      quantity: 1,
+      type: addOn.type === 'per_room' ? 'per_stay' : addOn.type
+    });
     setButtonStates(prev => ({ ...prev, [addOn.id]: 'success' }));
   };
 
@@ -164,7 +127,17 @@ export default function AddOnsPage() {
     return <div>Loading...</div>;
   }
 
- 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading add-ons...</p>
+        </div>
+      </div>
+    );
+  }
+
   console.log('Current button states:', buttonStates);
 
   return (
@@ -282,7 +255,7 @@ export default function AddOnsPage() {
                           <div className="flex flex-col gap-1 mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-[#FF6A00] font-bold text-xl">
-                                ${addOn.price} / {addOn.type === 'per_stay' ? 'Stay' : addOn.type === 'per_day' ? 'each stay' : addOn.type === 'per_guest' ? 'average per guest / stay' : 'Guest'}
+                                ${addOn.price} / {addOn.type === 'per_room' ? 'Stay' : addOn.type === 'per_day' ? 'each stay' : addOn.type === 'per_guest' ? 'average per guest / stay' : 'Guest'}
                             </span>
                             </div>
                             {addOn.type === 'per_day' && (
@@ -305,16 +278,16 @@ export default function AddOnsPage() {
                             </span>
                               <div className="flex items-center border border-[#110D0A] rounded w-[310px] h-[37px]">
                               <button
-                                onClick={() => updateQuantity(addOn.id, (addOn.quantity || 1) - 1)}
+                                onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) - 1)}
                                   className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
                               >
                                   <span className="text-lg">-</span>
                               </button>
                                 <span className="flex-1 text-center text-[#000000] font-semibold text-[15px]">
-                                {addOn.quantity || 1}
+                                {cartAddOns.find(item => item.id === addOn.id)?.quantity || 1}
                               </span>
                               <button
-                                onClick={() => updateQuantity(addOn.id, (addOn.quantity || 1) + 1)}
+                                onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) + 1)}
                                   className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
                               >
                                   <span className="text-lg">+</span>

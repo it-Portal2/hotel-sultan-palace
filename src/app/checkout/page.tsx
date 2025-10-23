@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
-import { createBooking } from "@/lib/bookingService";
+import { createBookingService } from "@/lib/bookingService";
 import { 
   PencilIcon,
   TrashIcon,
@@ -192,7 +192,7 @@ export default function CheckoutPage() {
         status: "confirmed" as const,
         bookingId: `#BKG${Date.now()}`,
       };
-      const bookingId = await createBooking(bookingDetails);
+      const bookingId = await createBookingService(bookingDetails);
       localStorage.setItem(
         "bookingDetails",
         JSON.stringify({ ...bookingDetails, id: bookingId })
