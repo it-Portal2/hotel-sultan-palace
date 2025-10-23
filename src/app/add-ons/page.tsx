@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useCart } from '@/context/CartContext';
+import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
   Calendar, 
-  Filter, 
   Edit, 
   Trash2, 
   Tag, 
@@ -93,21 +94,21 @@ const addOns: AddOn[] = [
 
 export default function AddOnsPage() {
   const router = useRouter();
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [cart, setCart] = useState<AddOn[]>([]);
+  const { bookingData, rooms, addOns: cartAddOns, addAddOn, removeAddOn, updateAddOnQuantity, calculateTotal } = useCart();
   const [roomData, setRoomData] = useState<{ name: string; price: number; description?: string } | null>(null);
   const [buttonStates, setButtonStates] = useState<{[key: string]: 'add' | 'cancel' | 'update' | 'success'}>({});
 
   useEffect(() => {
-    const storedData = localStorage.getItem('bookingData');
-    const storedRoomData = localStorage.getItem('roomData');
-    
-    if (storedData) {
-      setBookingData(JSON.parse(storedData));
-    } else {
-      router.push('/');
+    if (!bookingData) {
+      const storedData = localStorage.getItem('bookingData');
+      if (storedData) {
+        // Data will be loaded by cart context
+      } else {
+        router.push('/');
+      }
     }
 
+    const storedRoomData = localStorage.getItem('roomData');
     if (storedRoomData) {
       setRoomData(JSON.parse(storedRoomData));
     } else {
@@ -118,24 +119,10 @@ export default function AddOnsPage() {
         description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air...'
       });
     }
-  }, [router]);
+  }, [bookingData, router]);
 
   const addToCart = (addOn: AddOn) => {
-    const existingItem = cart.find(item => item.id === addOn.id);
-    
-    if (existingItem) {
-    
-      setCart(cart.map(item => 
-        item.id === addOn.id 
-          ? { ...item, quantity: (item.quantity || 1) + 1 }
-          : item
-      ));
-    } else {
-      // If item doesn't exist, add it with quantity 1
-      setCart([...cart, { ...addOn, quantity: 1 }]);
-    }
-    
-   
+    addAddOn(addOn);
     setButtonStates(prev => ({ ...prev, [addOn.id]: 'success' }));
   };
 
@@ -156,51 +143,12 @@ export default function AddOnsPage() {
   };
 
   const removeFromCart = (addOnId: string) => {
-    const existingItem = cart.find(item => item.id === addOnId);
-    
-    if (existingItem && existingItem.quantity > 1) {
-      // If quantity > 1, decrement quantity
-      setCart(cart.map(item => 
-        item.id === addOnId 
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      ));
-    } else {
-      // If quantity is 1 or doesn't exist, remove completely
-      setCart(cart.filter(item => item.id !== addOnId));
-    }
+    removeAddOn(addOnId);
   };
 
   const updateQuantity = (addOnId: string, quantity: number) => {
     const newQuantity = Math.max(1, quantity);
-    setCart(cart.map(item => 
-      item.id === addOnId ? { ...item, quantity: newQuantity } : item
-    ));
-    
-    // Update the addOns array as well for display
-    addOns.forEach(addOn => {
-      if (addOn.id === addOnId) {
-        addOn.quantity = newQuantity;
-      }
-    });
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => {
-      const basePrice = item.price;
-      let multiplier = 1;
-      
-      if (item.type === 'per_day' && bookingData) {
-        const checkIn = new Date(bookingData.checkIn);
-        const checkOut = new Date(bookingData.checkOut);
-        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-        multiplier = nights;
-      } else if (item.type === 'per_guest' && bookingData) {
-        multiplier = bookingData.guests.adults;
-      }
-      
-      return total + (basePrice * multiplier * item.quantity);
-    }, 0);
+    updateAddOnQuantity(addOnId, newQuantity);
   };
 
   const formatDate = (dateString: string) => {
@@ -246,9 +194,9 @@ export default function AddOnsPage() {
       </div>
       
       {/* Booking Form Section */}
-      <div className="w-full  px-4 py-6">
-        <div className="max-w-3xl  mt-15">
-          <div className="bg-white rounded-lg shadow-md">
+      <div className="w-full  px-4 py-6 -mt-18">
+        <div className="max-w-[730px] pr-10 mt-15">
+          <div className="bg-[#F8F5EF] rounded-lg shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
               
               {/* Guest Input */}
@@ -294,7 +242,7 @@ export default function AddOnsPage() {
               <div className="flex flex-col items-start gap-1">
                 <div className="text-[#3A3326] text-xs font-semibold mb-1">Filter by</div>
                 <button className="flex items-center justify-center gap-1 bg-[#FF6A00] text-white px-2 py-1 rounded-md w-12 h-8">
-                  <Filter size={14} />
+                  <BsFilterSquare size={14} />
                 </button>
               </div>
             </div>
@@ -411,11 +359,11 @@ export default function AddOnsPage() {
           </div>
 
           {/* Cart Sidebar */}
-            <div className="w-[534px] -mt-28 flex-shrink-0">
+            <div className="w-[520px] -mt-28 flex-shrink-0">
               <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-0 lg:sticky lg:top-8">
                 <div className="p-6">
                   <h2 className="text-xl font-bold text-[#3A3326] mb-4">
-                    Your Cart (Item - {cart.length + (roomData ? 1 : 0)})
+                    Your Cart (Item - {cartAddOns.length + (roomData ? 1 : 0)})
                   </h2>
                   
                   {/* Divider Line */}
@@ -447,7 +395,7 @@ export default function AddOnsPage() {
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-4">
                             <div className="bg-[#FF6A00] text-white px-3 py-1 rounded text-sm font-semibold">
-                              {bookingData?.nights || 1} Night Stay
+                              {bookingData ? `${bookingData.guests.rooms} Night Stay` : '1 Night Stay'}
                             </div>
                             <div className="text-[#655D4E] text-sm">Taxes and Fees</div>
                           </div>
@@ -484,7 +432,7 @@ export default function AddOnsPage() {
                     )}
 
                     {/* Add-on Items */}
-                    {cart.map((item, index) => (
+                    {cartAddOns.map((item, index) => (
                       <div key={`${item.id}-${index}`} className="mb-4">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
@@ -500,7 +448,7 @@ export default function AddOnsPage() {
                             <div className="text-[#655D4E] text-sm">Taxes and Fees</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-semibold text-[#FF6A00]">${(item.price * item.quantity).toFixed(2)}</div>
+                            <div className="text-lg font-semibold text-[#FF6A00]">${(item.price * (item.quantity || 1)).toFixed(2)}</div>
                           </div>
                         </div>
                         
@@ -543,7 +491,7 @@ export default function AddOnsPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold text-[#1D2A3A]">
-                            ${(roomData?.price || 0) + calculateTotal()}.00
+                            ${calculateTotal().toFixed(2)}
                           </div>
                         </div>
                       </div>

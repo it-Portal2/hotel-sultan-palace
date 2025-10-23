@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -10,6 +11,46 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+  },
+  // Fix for chunk loading issues and stability
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        util: false,
+        url: false,
+        assert: false,
+        http: false,
+        https: false,
+        os: false,
+        buffer: false,
+      };
+    }
+    
+    // Fix for Windows path issues
+    config.watchOptions = {
+      poll: 1000,
+      aggregateTimeout: 300,
+    };
+    
+    return config;
+  },
+  // Disable problematic experimental features
+  experimental: {
+    // optimizePackageImports: ['lucide-react', 'react-icons'], // Disabled for stability
+  },
+  // Add output configuration for better stability
+  output: 'standalone',
+  // Disable source maps in production for better performance
+  productionBrowserSourceMaps: false,
+  // Add compiler options
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 };
 

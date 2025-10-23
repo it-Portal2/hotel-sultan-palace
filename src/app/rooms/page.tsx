@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useCart } from '@/context/CartContext';
+import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
-  Calendar, 
-  Filter, 
+  Calendar,
   Edit, 
   Trash2, 
   Tag, 
@@ -56,7 +57,7 @@ const rooms: Room[] = [
     id: '1',
     name: 'Garden suite',
     type: 'Garden view',
-    price: 545,
+    price: 250,
     description: "This suite's standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
@@ -69,7 +70,7 @@ const rooms: Room[] = [
     id: '2',
     name: 'Ocean View Suite',
     type: 'Ocean View',
-    price: 545,
+    price: 300,
     description: "This suite's standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
@@ -82,7 +83,7 @@ const rooms: Room[] = [
     id: '3',
     name: 'Imperial suite',
     type: 'Imperial suite',
-    price: 545,
+    price: 350,
     description: "This suite's standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.",
     features: ['Private suite', '150 m²', 'Balcony'],
     amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
@@ -95,34 +96,25 @@ const rooms: Room[] = [
 
 export default function RoomsPage() {
   const router = useRouter();
-  const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [cart, setCart] = useState<Room[]>([]);
+  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
 
   useEffect(() => {
-    const storedData = localStorage.getItem('bookingData');
-    if (storedData) {
-      setBookingData(JSON.parse(storedData));
-    } else {
-      router.push('/');
+    if (!bookingData) {
+      const storedData = localStorage.getItem('bookingData');
+      if (storedData) {
+        // Data will be loaded by cart context
+      } else {
+        router.push('/');
+      }
     }
-  }, [router]);
+  }, [bookingData, router]);
 
   const addToCart = (room: Room) => {
-    setCart([...cart, room]);
-    // Store room data in localStorage for add-ons page
-    localStorage.setItem('roomData', JSON.stringify({
-      name: room.name,
-      price: room.price,
-      description: room.description
-    }));
+    addRoom(room);
   };
 
   const removeFromCart = (roomId: string) => {
-    setCart(cart.filter(room => room.id !== roomId));
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((total, room) => total + room.price, 0);
+    removeRoom(roomId);
   };
 
   const formatDate = (dateString: string) => {
@@ -152,9 +144,9 @@ export default function RoomsPage() {
       <Header />
       
       {/* Booking Form Section */}
-      <div className="w-full px-4 py-6 mt-20">
+      <div className="w-full  px-4 py-6 mt-20">
         <div className="max-w-3xl mt-15">
-          <div className="bg-white rounded-lg shadow-md">
+          <div className="bg-[#F8F5EF] rounded-lg shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
               
               {/* Guest Input */}
@@ -200,7 +192,7 @@ export default function RoomsPage() {
               <div className="flex flex-col items-start gap-1">
                 <div className="text-[#3A3326] text-xs font-semibold mb-1">Filter by</div>
                 <button className="flex items-center justify-center gap-1 bg-[#FF6A00] text-white px-2 py-1 rounded-md w-12 h-8">
-                  <Filter size={14} />
+                  <BsFilterSquare size={14} />
                 </button>
               </div>
             </div>
@@ -334,16 +326,16 @@ export default function RoomsPage() {
             <div className="w-[410px] flex-shrink-0 -mt-28">
               <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky lg:top-8">
                 <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
-                  Your Cart (Item - {cart.length})
+                  Your Cart (Item - {cartRooms.length})
                 </h2>
                 
                 <hr className="border-[rgba(66,59,45,0.13)] mb-6" />
                 
-                {cart.length === 0 ? (
+                {cartRooms.length === 0 ? (
                   <p className="text-gray-500 text-center py-6">No items in cart</p>
                 ) : (
                   <div className="space-y-4">
-                    {cart.map((room) => (
+                    {cartRooms.map((room) => (
                       <div key={room.id} className="bg-[#F8F5EF] p-3 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-lg font-semibold text-[#423B2D]">

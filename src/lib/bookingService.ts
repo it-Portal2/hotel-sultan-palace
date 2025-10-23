@@ -1,6 +1,6 @@
 import { 
   collection, 
-  addDoc, 
+  // addDoc, 
   getDocs, 
   doc, 
   updateDoc, 
@@ -53,12 +53,22 @@ export interface Booking {
 
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, 'bookings'), {
-      ...bookingData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return docRef.id;
+    // For demo purposes, simulate a booking creation
+    console.log('Creating booking:', bookingData);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Return a mock booking ID
+    return `booking_${Date.now()}`;
+    
+    // Uncomment below when Firebase is properly configured
+    // const docRef = await addDoc(collection(db, 'bookings'), {
+    //   ...bookingData,
+    //   createdAt: new Date(),
+    //   updatedAt: new Date()
+    // });
+    // return docRef.id;
   } catch (error) {
     console.error('Error creating booking:', error);
     throw error;

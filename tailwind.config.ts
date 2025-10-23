@@ -18,16 +18,11 @@ export default {
         },
       },
       fontFamily: {
-        quicksand: ["var(--font-quicksand)"],
-        kaisei: ["var(--font-kaisei)"],
-        script: ["var(--font-script)"],
-        jomolhari: ["var(--font-jomolhari)"],
-        inter: ["var(--font-inter)"],
-        
-        "open-sans": ["var(--font-open-sans)"],
-        
-        "ooh-baby": ["var(--font-ooh-baby)"],
-        poppins: ["var(--font-poppins)"],
+        quicksand: ["var(--font-quicksand)", "sans-serif"],
+        inter: ["var(--font-inter)", "sans-serif"],
+        "open-sans": ["var(--font-open-sans)", "sans-serif"],
+        poppins: ["var(--font-poppins)", "sans-serif"],
+        script: ["var(--font-script)", "cursive"],
       },
       container: {
         center: true,

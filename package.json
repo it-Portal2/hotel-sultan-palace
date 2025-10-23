@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "set NEXT_FORCE_WEBPACK=1&& next dev",
-    "build": "set NEXT_FORCE_WEBPACK=1&& next build",
+    "dev": "next dev --turbo",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "rmdir /s /q .next 2>nul || Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue",
+    "fresh": "npm run clean && npm run build && npm run dev"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
