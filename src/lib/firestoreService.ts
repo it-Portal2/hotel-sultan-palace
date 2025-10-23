@@ -119,6 +119,38 @@ export const getRooms = async (): Promise<Room[]> => {
         maxGuests: 2,
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        id: '2',
+        name: 'Ocean View Suite',
+        type: 'Ocean View',
+        price: 300,
+        description: 'Stunning ocean view suite with breathtaking sea views.',
+        features: ['Private suite', '150 m²', 'Balcony'],
+        amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+        size: '150 m²',
+        view: 'Ocean view',
+        beds: '1 Double bed, 1 Single bed',
+        image: '/figma/rooms-ocean-suite.png',
+        maxGuests: 3,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '3',
+        name: 'Imperial Suite',
+        type: 'Imperial',
+        price: 545,
+        description: 'Luxurious imperial suite with premium amenities.',
+        features: ['Private suite', '150 m²', 'Balcony'],
+        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+        size: '150 m²',
+        view: 'Garden view',
+        beds: '2 Double bed, 1 Single bed',
+        image: '/figma/rooms-imperial-suite.png',
+        maxGuests: 4,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ];
   }
@@ -159,6 +191,38 @@ export const getRooms = async (): Promise<Room[]> => {
           maxGuests: 2,
           createdAt: new Date(),
           updatedAt: new Date()
+        },
+        {
+          id: '2',
+          name: 'Ocean View Suite',
+          type: 'Ocean View',
+          price: 300,
+          description: 'Stunning ocean view suite with breathtaking sea views.',
+          features: ['Private suite', '150 m²', 'Balcony'],
+          amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+          size: '150 m²',
+          view: 'Ocean view',
+          beds: '1 Double bed, 1 Single bed',
+          image: '/figma/rooms-ocean-suite.png',
+          maxGuests: 3,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '3',
+          name: 'Imperial Suite',
+          type: 'Imperial',
+          price: 545,
+          description: 'Luxurious imperial suite with premium amenities.',
+          features: ['Private suite', '150 m²', 'Balcony'],
+          amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+          size: '150 m²',
+          view: 'Garden view',
+          beds: '2 Double bed, 1 Single bed',
+          image: '/figma/rooms-imperial-suite.png',
+          maxGuests: 4,
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       ];
     }
@@ -178,6 +242,38 @@ export const getRooms = async (): Promise<Room[]> => {
         beds: '1 Double bed, 1 Single bed',
         image: '/figma/rooms-garden-suite.png',
         maxGuests: 2,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '2',
+        name: 'Ocean View Suite',
+        type: 'Ocean View',
+        price: 300,
+        description: 'Stunning ocean view suite with breathtaking sea views.',
+        features: ['Private suite', '150 m²', 'Balcony'],
+        amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+        size: '150 m²',
+        view: 'Ocean view',
+        beds: '1 Double bed, 1 Single bed',
+        image: '/figma/rooms-ocean-suite.png',
+        maxGuests: 3,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '3',
+        name: 'Imperial Suite',
+        type: 'Imperial',
+        price: 545,
+        description: 'Luxurious imperial suite with premium amenities.',
+        features: ['Private suite', '150 m²', 'Balcony'],
+        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+        size: '150 m²',
+        view: 'Garden view',
+        beds: '2 Double bed, 1 Single bed',
+        image: '/figma/rooms-imperial-suite.png',
+        maxGuests: 4,
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -296,7 +392,47 @@ export const getAddOns = async (): Promise<AddOn[]> => {
         price: 245,
         type: 'per_room',
         description: 'Create magical memories with a private candlelit dinner by the ocean.',
-        image: '/figma/rooms-garden-suite.png',
+        image: '/figma/img1.png',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '2',
+        name: 'Daybed Classic Experience',
+        price: 120,
+        type: 'per_day',
+        description: 'Exclusive beach daybed experience with personalized service.',
+        image: '/figma/img2.png',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '3',
+        name: 'Couples\' Massage Retreat',
+        price: 150,
+        type: 'per_guest',
+        description: 'Signature couples\' massage by expert therapists in a serene setting.',
+        image: '/figma/img3.png',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '4',
+        name: 'Private Airport Round-Trip Transfer',
+        price: 150,
+        type: 'per_room',
+        description: 'Private airport transfer for up to four passengers.',
+        image: '/figma/img4.png',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: '5',
+        name: 'Mnemba Atoll Snorkeling Tour',
+        price: 70,
+        type: 'per_guest',
+        description: 'Snorkeling adventure at Mnemba Atoll to explore coral reefs.',
+        image: '/figma/curated-excursions-left.png',
         createdAt: new Date(),
         updatedAt: new Date()
       }

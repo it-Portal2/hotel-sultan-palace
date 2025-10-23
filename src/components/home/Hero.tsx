@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Calendar from '../calendar/Calendar';
+import { useCart } from '../../context/CartContext';
 
 export default function Hero() {
   const router = useRouter();
+  const { updateBookingData } = useCart();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -37,13 +39,13 @@ export default function Hero() {
 
   const handleCheckAvailability = () => {
     if (checkInDate && checkOutDate) {
-      // Store booking data in localStorage for the next pages
+      // Store booking data using CartContext
       const bookingData = {
         checkIn: checkInDate.toISOString(),
         checkOut: checkOutDate.toISOString(),
         guests
       };
-      localStorage.setItem('bookingData', JSON.stringify(bookingData));
+      updateBookingData(bookingData);
       router.push('/rooms');
     }
   };

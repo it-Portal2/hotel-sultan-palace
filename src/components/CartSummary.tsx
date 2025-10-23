@@ -53,7 +53,15 @@ export default function CartSummary({ className = "" }: CartSummaryProps) {
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-4">
                   <div className="bg-[#FF6A00] text-white px-3 py-1 rounded text-sm font-semibold">
-                    {bookingData ? `${bookingData.guests.rooms} Night Stay` : '1 Night Stay'}
+                    {bookingData ? 
+                      (() => {
+                        const checkIn = new Date(bookingData.checkIn);
+                        const checkOut = new Date(bookingData.checkOut);
+                        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+                        return `${nights} Night Stay`;
+                      })() 
+                      : '1 Night Stay'
+                    }
                   </div>
                   <div className="text-[#655D4E] text-sm">Taxes and Fees</div>
                 </div>

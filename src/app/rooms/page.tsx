@@ -321,7 +321,15 @@ export default function RoomsPage() {
                         
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-bold text-[#FF6A00]">
-                            1 Night Stay
+                            {bookingData ? 
+                              (() => {
+                                const checkIn = new Date(bookingData.checkIn);
+                                const checkOut = new Date(bookingData.checkOut);
+                                const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+                                return `${nights} Night Stay`;
+                              })() 
+                              : '1 Night Stay'
+                            }
                           </span>
                           <div className="text-sm font-semibold text-[#1D2A3A]">
                             $0.00
@@ -340,7 +348,10 @@ export default function RoomsPage() {
                         
                         <div className="mb-8">
                           <span className="text-sm font-bold text-black">
-                            Thu, Nov 20, 2025 - Fri, Nov 21, 2025
+                            {bookingData ? 
+                              `${new Date(bookingData.checkIn).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(bookingData.checkOut).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` 
+                              : 'Thu, Nov 20, 2025 - Fri, Nov 21, 2025'
+                            }
                           </span>
                         </div>
                         

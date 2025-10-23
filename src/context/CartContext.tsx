@@ -53,6 +53,7 @@ interface CartContextProps {
 
   bookingData: BookingData | null;
   setBookingData: React.Dispatch<React.SetStateAction<BookingData | null>>;
+  updateBookingData: (data: BookingData) => void;
 }
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
@@ -79,6 +80,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Load immediately
     loadBookingData();
   }, []);
+
+  // Function to update booking data (called from Hero form)
+  const updateBookingData = (newBookingData: BookingData) => {
+    setBookingData(newBookingData);
+    // Also save to localStorage for persistence
+    localStorage.setItem('bookingData', JSON.stringify(newBookingData));
+  };
 
   // Room handlers
   const addRoom = (room: CartRoom) => {
@@ -158,7 +166,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateAddOnQuantity,
         calculateTotal,
         bookingData,
-        setBookingData
+        setBookingData,
+        updateBookingData
       }}
     >
       {children}

@@ -40,6 +40,7 @@ interface Address {
   zipCode: string;
   address1: string;
   address2: string;
+  idDocument?: File;
 }
 
 interface PaymentData {
@@ -281,6 +282,10 @@ export default function CheckoutPage() {
                         : 'Thu, Oct 23, 2025 - Fri, Oct 24, 2025'
                       }
                     </p>
+                    <div className="flex gap-4 text-sm text-[#655D4E]">
+                      <span>Check-in: 3:00 PM</span>
+                      <span>Check-out: 12:00 PM</span>
+                    </div>
                   </div>
                   <button type="button" className="flex items-center gap-2 text-[15px] font-semibold text-[#FF6A00]">
                     <PencilIcon className="w-[19px] h-[19px]" />
@@ -591,6 +596,10 @@ export default function CheckoutPage() {
                             if (file) {
                               console.log('File selected:', file.name);
                               // Handle file upload logic here
+                              setAddress(prev => ({
+                                ...prev,
+                                idDocument: file
+                              }));
                             }
                           }}
                         />
@@ -600,6 +609,12 @@ export default function CheckoutPage() {
                         Please upload your ID in PDF format<br />
                         (max 2MB) for verification.
                       </p>
+                      
+                      {address.idDocument && (
+                        <div className="flex items-center gap-2 text-sm text-green-600">
+                          <span>✓ {address.idDocument.name}</span>
+                        </div>
+                      )}
                       
                       <div className="flex-1">
                         <input
