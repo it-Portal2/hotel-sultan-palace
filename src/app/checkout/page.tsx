@@ -177,19 +177,23 @@ export default function CheckoutPage() {
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
         guests: bookingData.guests,
-        guestDetails: guests,
-        reservationGuests,
+        guestDetails: {
+          firstName: guests[0].firstName,
+          lastName: guests[0].lastName,
+          email: guests[0].email,
+          phone: guests[0].mobile
+        },
         address,
-        room: rooms.length
-          ? {
+        rooms: rooms.length
+          ? [{
               id: rooms[0].id,
               name: rooms[0].name,
               price: rooms[0].price,
               type: rooms[0].type || "Standard Room",
-            }
-          : { id: "1", name: "Standard Room", price: 0, type: "Standard Room" },
+            }]
+          : [{ id: "1", name: "Standard Room", price: 0, type: "Standard Room" }],
         addOns,
-        total: calculateTotal(),
+        totalAmount: calculateTotal(),
         status: "confirmed" as const,
         bookingId: `#BKG${Date.now()}`,
       };

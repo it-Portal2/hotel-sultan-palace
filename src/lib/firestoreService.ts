@@ -75,6 +75,7 @@ export interface Booking {
   }>;
   totalAmount: number;
   bookingId: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -144,6 +145,12 @@ const addOnImages = {
 export const getRooms = async (): Promise<Room[]> => {
   console.log('Using sample rooms data');
   return sampleRooms;
+};
+
+export const getRoom = async (roomId: string): Promise<Room | null> => {
+  console.log('Getting room by ID:', roomId);
+  const room = sampleRooms.find(r => r.id === roomId);
+  return room || null;
 };
 
 export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {

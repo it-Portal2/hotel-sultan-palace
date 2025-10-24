@@ -1,48 +1,8 @@
-import { createBooking, getBooking, getAllBookings } from './firestoreService';
+import { createBooking, getBooking, getAllBookings, Booking } from './firestoreService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-export interface Booking {
-  id?: string;
-  checkIn: string;
-  checkOut: string;
-  guests: {
-    adults: number;
-    children: number;
-    rooms: number;
-  };
-  guestDetails: Array<{
-    prefix: string;
-    firstName: string;
-    lastName: string;
-    mobile: string;
-    email: string;
-  }>;
-  address: {
-    country: string;
-    city: string;
-    zipCode: string;
-    address1: string;
-    address2: string;
-  };
-  room: {
-    id: string;
-    name: string;
-    price: number;
-    type: string;
-  };
-  addOns: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }>;
-  total: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  bookingId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Using Booking interface from firestoreService
 
 export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   try {
