@@ -22,7 +22,6 @@ import {
   Snowflake, 
   Bath, 
   Wifi, 
-  Bed,
   BedDouble,
   Coffee,
   Shield,
@@ -185,7 +184,7 @@ export default function RoomsPage() {
                         {/* Room Image */}
                         <div className="w-full h-56 lg:h-64 relative mb-3">
                           <Image 
-                            src={room.image} 
+                            src={room.image || '/figma/rooms-garden-suite.png'} 
                             alt={room.name}
                             fill
                             className="object-cover"
@@ -194,10 +193,7 @@ export default function RoomsPage() {
                           {/* Bed info overlay */}
                           <div className="absolute  px-2 mt-70 text-sm flex items-center gap-1">
                             <BedDouble size={14} color="#1D2A3A" />
-                            <span className="font-semibold text-[#1D2A3A]">1 Double</span>
-                            <span className="text-[#1D2A3A]">•</span>
-                            <Bed size={14} color="#1D2A3A" />
-                            <span className="font-semibold text-[#1D2A3A]">1 Single</span>
+                            <span className="font-semibold text-[#1D2A3A]">{room.beds}</span>
                           </div>
                         </div>
 

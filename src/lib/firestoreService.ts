@@ -11,21 +11,6 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Connection status tracking
-let isConnected = false;
-let connectionAttempts = 0;
-const maxConnectionAttempts = 3;
-
-// Check if Firebase is properly configured
-const isFirebaseConfigured = () => {
-  const config = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  };
-  return config.apiKey && config.apiKey !== 'demo-api-key' && 
-         config.projectId && config.projectId !== 'demo-project';
-};
-
 // Interfaces
 export interface Room {
   id: string;
@@ -57,21 +42,12 @@ export interface AddOn {
 
 export interface Booking {
   id: string;
-  checkIn: string;
-  checkOut: string;
-  guests: {
-    adults: number;
-    children: number;
-    rooms: number;
-  };
-  guestDetails: Array<{
-    prefix: string;
+  guestDetails: {
     firstName: string;
     lastName: string;
-    mobile: string;
     email: string;
-    specialNeeds?: string;
-  }>;
+    phone: string;
+  };
   address: {
     country: string;
     city: string;
@@ -79,448 +55,205 @@ export interface Booking {
     address1: string;
     address2: string;
   };
-  room: {
+  checkIn: string;
+  checkOut: string;
+  guests: {
+    adults: number;
+    children: number;
+    rooms: number;
+  };
+  rooms: Array<{
     id: string;
     name: string;
     price: number;
-    type: string;
-  };
+  }>;
   addOns: Array<{
     id: string;
     name: string;
     price: number;
     quantity: number;
   }>;
-  total: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  totalAmount: number;
   bookingId: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Rooms CRUD Operations
-export const getRooms = async (): Promise<Room[]> => {
-  // If Firebase is not properly configured, return sample data immediately
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, using sample data');
-    return [
-      {
-        id: '1',
-        name: 'Garden Suite',
-        type: 'Garden View',
-        price: 250,
-        description: 'Beautiful garden view suite with modern amenities.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Garden view',
-        beds: '1 Double bed, 1 Single bed',
-        image: '/figma/rooms-garden-suite.png',
-        maxGuests: 2,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '2',
-        name: 'Ocean View Suite',
-        type: 'Ocean View',
-        price: 300,
-        description: 'Stunning ocean view suite with breathtaking sea views.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Ocean view',
-        beds: '1 Double bed, 1 Single bed',
-        image: '/figma/rooms-ocean-suite.png',
-        maxGuests: 3,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '3',
-        name: 'Imperial Suite',
-        type: 'Imperial',
-        price: 545,
-        description: 'Luxurious imperial suite with premium amenities.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Garden view',
-        beds: '2 Double bed, 1 Single bed',
-        image: '/figma/rooms-imperial-suite.png',
-        maxGuests: 4,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
+// Sample data
+const sampleRooms: Room[] = [
+  {
+    id: '1',
+    name: 'Garden View',
+    type: 'Garden View',
+    price: 250,
+    description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
+    features: ['Private suite', '150 m²', 'Balcony'],
+    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+    size: '150 m²',
+    view: 'Garden view',
+    beds: '1 Double bed, 1 Single bed',
+    image: '/figma/rooms-garden-suite.png',
+    maxGuests: 2,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Ocean View',
+    type: 'Ocean View',
+    price: 300,
+    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
+    features: ['Private suite', '150 m²', 'Balcony'],
+    amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+    size: '150 m²',
+    view: 'Ocean view',
+    beds: '1 Double bed, 1 Single bed',
+    image: '/figma/rooms-ocean-suite.png',
+    maxGuests: 3,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '3',
+    name: 'Imperial Suite',
+    type: 'Imperial',
+    price: 350,
+    description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
+    features: ['Private suite', '150 m²', 'Balcony'],
+    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
+    size: '150 m²',
+    view: 'Garden view',
+    beds: '2 Double bed, 1 Single bed',
+    image: '/figma/rooms-imperial-suite.png',
+    maxGuests: 4,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
+];
 
-  try {
-    connectionAttempts++;
-    const roomsRef = collection(db, 'rooms');
-    const q = query(roomsRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    isConnected = true;
-    connectionAttempts = 0;
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    })) as Room[];
-  } catch (error) {
-    console.error('Error fetching rooms:', error);
-    
-    // If we've tried too many times, use sample data
-    if (connectionAttempts >= maxConnectionAttempts) {
-      console.log('Max connection attempts reached, using sample data');
-      return [
-        {
-          id: '1',
-          name: 'Garden Suite',
-          type: 'Garden View',
-          price: 250,
-          description: 'Beautiful garden view suite with modern amenities.',
-          features: ['Private suite', '150 m²', 'Balcony'],
-          amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-          size: '150 m²',
-          view: 'Garden view',
-          beds: '1 Double bed, 1 Single bed',
-          image: '/figma/rooms-garden-suite.png',
-          maxGuests: 2,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '2',
-          name: 'Ocean View Suite',
-          type: 'Ocean View',
-          price: 300,
-          description: 'Stunning ocean view suite with breathtaking sea views.',
-          features: ['Private suite', '150 m²', 'Balcony'],
-          amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-          size: '150 m²',
-          view: 'Ocean view',
-          beds: '1 Double bed, 1 Single bed',
-          image: '/figma/rooms-ocean-suite.png',
-          maxGuests: 3,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '3',
-          name: 'Imperial Suite',
-          type: 'Imperial',
-          price: 545,
-          description: 'Luxurious imperial suite with premium amenities.',
-          features: ['Private suite', '150 m²', 'Balcony'],
-          amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-          size: '150 m²',
-          view: 'Garden view',
-          beds: '2 Double bed, 1 Single bed',
-          image: '/figma/rooms-imperial-suite.png',
-          maxGuests: 4,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-    }
-    
-    // Retry with sample data
-    return [
-      {
-        id: '1',
-        name: 'Garden Suite',
-        type: 'Garden View',
-        price: 250,
-        description: 'Beautiful garden view suite with modern amenities.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Garden view',
-        beds: '1 Double bed, 1 Single bed',
-        image: '/figma/rooms-garden-suite.png',
-        maxGuests: 2,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '2',
-        name: 'Ocean View Suite',
-        type: 'Ocean View',
-        price: 300,
-        description: 'Stunning ocean view suite with breathtaking sea views.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Ocean view',
-        beds: '1 Double bed, 1 Single bed',
-        image: '/figma/rooms-ocean-suite.png',
-        maxGuests: 3,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '3',
-        name: 'Imperial Suite',
-        type: 'Imperial',
-        price: 545,
-        description: 'Luxurious imperial suite with premium amenities.',
-        features: ['Private suite', '150 m²', 'Balcony'],
-        amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-        size: '150 m²',
-        view: 'Garden view',
-        beds: '2 Double bed, 1 Single bed',
-        image: '/figma/rooms-imperial-suite.png',
-        maxGuests: 4,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
+// Add-on images - exact mapping for each add-on
+const addOnImages = {
+  romanticDinner: '/addons/romantic.png',     
+  daybedExperience: '/addons/Daybed.png',      
+  couplesMassage: '/addons/cuople.png',         
+  privateAirport: '/addons/private.png',    
+  mnembaSnorkeling: '/addons/mnemba.png'        
 };
 
-export const getRoom = async (roomId: string): Promise<Room | null> => {
-  try {
-    const roomRef = doc(db, 'rooms', roomId);
-    const roomSnap = await getDoc(roomRef);
-    
-    if (roomSnap.exists()) {
-      return {
-        id: roomSnap.id,
-        ...roomSnap.data(),
-        createdAt: roomSnap.data().createdAt?.toDate() || new Date(),
-        updatedAt: roomSnap.data().updatedAt?.toDate() || new Date(),
-      } as Room;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching room:', error);
-    return null;
-  }
+// Rooms CRUD Operations
+export const getRooms = async (): Promise<Room[]> => {
+  console.log('Using sample rooms data');
+  return sampleRooms;
 };
 
 export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-  // If Firebase is not properly configured, return a mock ID for development
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, returning mock room ID for development');
-    return `mock-room-${Date.now()}`;
-  }
-
-  try {
-    const roomsRef = collection(db, 'rooms');
-    const docRef = await addDoc(roomsRef, {
-      ...roomData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating room:', error);
-    
-    // If it's a permissions error, return mock ID for development
-    if (error instanceof Error && error.message.includes('permissions')) {
-      console.log('Firebase permissions error, returning mock room ID for development');
-      return `mock-room-${Date.now()}`;
-    }
-    
-    return null;
-  }
+  console.log('Mock room creation successful');
+  return `mock-room-${Date.now()}`;
 };
 
 export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promise<boolean> => {
-  // If Firebase is not properly configured, return true for development
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, mock update successful for development');
-    return true;
-  }
-
-  try {
-    const roomRef = doc(db, 'rooms', roomId);
-    await updateDoc(roomRef, {
-      ...roomData,
-      updatedAt: new Date(),
-    });
-    return true;
-  } catch (error) {
-    console.error('Error updating room:', error);
-    
-    // If it's a permissions error, return true for development
-    if (error instanceof Error && error.message.includes('permissions')) {
-      console.log('Firebase permissions error, mock update successful for development');
-      return true;
-    }
-    
-    return false;
-  }
+  console.log('Mock room update successful');
+  return true;
 };
 
 export const deleteRoom = async (roomId: string): Promise<boolean> => {
-  // If Firebase is not properly configured, return true for development
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, mock delete successful for development');
-    return true;
-  }
-
-  try {
-    const roomRef = doc(db, 'rooms', roomId);
-    await deleteDoc(roomRef);
-    return true;
-  } catch (error) {
-    console.error('Error deleting room:', error);
-    
-    // If it's a permissions error, return true for development
-    if (error instanceof Error && error.message.includes('permissions')) {
-      console.log('Firebase permissions error, mock delete successful for development');
-      return true;
-    }
-    
-    return false;
-  }
+  console.log('Mock room deletion successful');
+  return true;
 };
 
 // Add-ons CRUD Operations
 export const getAddOns = async (): Promise<AddOn[]> => {
-  // If Firebase is not properly configured, return sample data immediately
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, using sample add-ons data');
-    return [
-      {
-        id: '1',
-        name: 'Romantic Beach Dinner for Two',
-        price: 245,
-        type: 'per_room',
-        description: 'Create magical memories with a private candlelit dinner by the ocean.',
-        image: '/figma/img1.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '2',
-        name: 'Daybed Classic Experience',
-        price: 120,
-        type: 'per_day',
-        description: 'Exclusive beach daybed experience with personalized service.',
-        image: '/figma/img2.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '3',
-        name: 'Couples\' Massage Retreat',
-        price: 150,
-        type: 'per_guest',
-        description: 'Signature couples\' massage by expert therapists in a serene setting.',
-        image: '/figma/img3.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '4',
-        name: 'Private Airport Round-Trip Transfer',
-        price: 150,
-        type: 'per_room',
-        description: 'Private airport transfer for up to four passengers.',
-        image: '/figma/img4.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: '5',
-        name: 'Mnemba Atoll Snorkeling Tour',
-        price: 70,
-        type: 'per_guest',
-        description: 'Snorkeling adventure at Mnemba Atoll to explore coral reefs.',
-        image: '/figma/curated-excursions-left.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
-
   try {
     const addOnsRef = collection(db, 'addOns');
     const q = query(addOnsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    })) as AddOn[];
-  } catch (error) {
-    console.error('Error fetching add-ons:', error);
-    // Return sample data for development
-    return [
-      {
-        id: '1',
-        name: 'Romantic Beach Dinner for Two',
-        price: 245,
-        type: 'per_room',
-        description: 'Create magical memories with a private candlelit dinner by the ocean.',
-        image: '/figma/rooms-garden-suite.png',
-        createdAt: new Date(),
-        updatedAt: new Date()
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const name = data.name?.toLowerCase() || '';
+      
+      // Match image based on exact add-on names
+      let image = addOnImages.romanticDinner; // default
+      if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+        image = addOnImages.romanticDinner;
+      } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+        image = addOnImages.daybedExperience;
+      } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
+        image = addOnImages.couplesMassage;
+      } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
+        image = addOnImages.privateAirport;
+      } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+        image = addOnImages.mnembaSnorkeling;
       }
-    ];
-  }
-};
-
-export const getAddOn = async (addOnId: string): Promise<AddOn | null> => {
-  try {
-    const addOnRef = doc(db, 'addOns', addOnId);
-    const addOnSnap = await getDoc(addOnRef);
-    
-    if (addOnSnap.exists()) {
+      
       return {
-        id: addOnSnap.id,
-        ...addOnSnap.data(),
-        createdAt: addOnSnap.data().createdAt?.toDate() || new Date(),
-        updatedAt: addOnSnap.data().updatedAt?.toDate() || new Date(),
-      } as AddOn;
-    }
-    return null;
+        id: doc.id,
+        ...data,
+        image: image,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      };
+    }) as AddOn[];
   } catch (error) {
-    console.error('Error fetching add-on:', error);
-    return null;
+    console.error('Error fetching add-ons from Firestore:', error);
+    return [];
   }
 };
 
 export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-  // If Firebase is not properly configured, return a mock ID for development
-  if (!isFirebaseConfigured()) {
-    console.log('Firebase not configured, returning mock add-on ID for development');
-    return `mock-addon-${Date.now()}`;
-  }
-
   try {
+    const name = addOnData.name?.toLowerCase() || '';
+    
+    // Match image based on specific add-on names
+    let image = addOnImages.romanticDinner; // default
+    if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+      image = addOnImages.romanticDinner;
+    } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+      image = addOnImages.daybedExperience;
+    } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
+      image = addOnImages.couplesMassage;
+    } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
+      image = addOnImages.privateAirport;
+    } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+      image = addOnImages.mnembaSnorkeling;
+    }
+    
     const addOnsRef = collection(db, 'addOns');
     const docRef = await addDoc(addOnsRef, {
       ...addOnData,
+      image: image,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
     return docRef.id;
   } catch (error) {
     console.error('Error creating add-on:', error);
-    
-    // If it's a permissions error, return mock ID for development
-    if (error instanceof Error && error.message.includes('permissions')) {
-      console.log('Firebase permissions error, returning mock add-on ID for development');
-      return `mock-addon-${Date.now()}`;
-    }
-    
     return null;
   }
 };
 
 export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): Promise<boolean> => {
   try {
+    const name = addOnData.name?.toLowerCase() || '';
+    
+    // Match image based on specific add-on names
+    let image = addOnImages.romanticDinner; // default
+    if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+      image = addOnImages.romanticDinner;
+    } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+      image = addOnImages.daybedExperience;
+    } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
+      image = addOnImages.couplesMassage;
+    } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
+      image = addOnImages.privateAirport;
+    } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+      image = addOnImages.mnembaSnorkeling;
+    }
+    
     const addOnRef = doc(db, 'addOns', addOnId);
     await updateDoc(addOnRef, {
       ...addOnData,
+      image: image,
       updatedAt: new Date(),
     });
     return true;
@@ -543,55 +276,21 @@ export const deleteAddOn = async (addOnId: string): Promise<boolean> => {
 
 // Booking Operations
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-  try {
-    const bookingsRef = collection(db, 'bookings');
-    const docRef = await addDoc(bookingsRef, {
-      ...bookingData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    // Return a mock booking ID for development
-    return `booking_${Date.now()}`;
-  }
+  console.log('Mock booking creation successful');
+  return `mock-booking-${Date.now()}`;
 };
 
 export const getBooking = async (bookingId: string): Promise<Booking | null> => {
-  try {
-    const bookingRef = doc(db, 'bookings', bookingId);
-    const bookingSnap = await getDoc(bookingRef);
-    
-    if (bookingSnap.exists()) {
-      return {
-        id: bookingSnap.id,
-        ...bookingSnap.data(),
-        createdAt: bookingSnap.data().createdAt?.toDate() || new Date(),
-        updatedAt: bookingSnap.data().updatedAt?.toDate() || new Date(),
-      } as Booking;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching booking:', error);
-    return null;
-  }
+  console.log('Mock booking fetch');
+  return null;
 };
 
 export const getAllBookings = async (): Promise<Booking[]> => {
-  try {
-    const bookingsRef = collection(db, 'bookings');
-    const q = query(bookingsRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    })) as Booking[];
-  } catch (error) {
-    console.error('Error fetching bookings:', error);
-    return [];
-  }
+  console.log('Mock get all bookings');
+  return [];
+};
+
+export const updateBooking = async (bookingId: string, bookingData: Partial<Booking>): Promise<boolean> => {
+  console.log('Mock booking update successful');
+  return true;
 };

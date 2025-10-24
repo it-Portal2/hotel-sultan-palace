@@ -235,8 +235,8 @@ export default function CheckoutPage() {
       `}</style>
       <Header />
 
-      {/* Navigation Section */}
-      <div className="w-full px-4 mt-40">
+       {/* Navigation Section */}
+       <div className="w-full px-4 mt-40">
         <div className="max-w-6xl mx-auto">
           <button 
             onClick={() => router.push('/add-ons')}
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
         {/* Left Column - Form */}
         <div className="flex-1 max-w-[900px] px-8">
           <div className="bg-[#F8F5EF] p-8 rounded-lg">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Reservation Overview */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Reservation Overview</h2>
@@ -282,10 +282,7 @@ export default function CheckoutPage() {
                         : 'Thu, Oct 23, 2025 - Fri, Oct 24, 2025'
                       }
                     </p>
-                    <div className="flex gap-4 text-sm text-[#655D4E]">
-                      <span>Check-in: 3:00 PM</span>
-                      <span>Check-out: 12:00 PM</span>
-                    </div>
+                   
                   </div>
                   <button type="button" className="flex items-center gap-2 text-[15px] font-semibold text-[#FF6A00]">
                     <PencilIcon className="w-[19px] h-[19px]" />
@@ -296,7 +293,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-7">
                   <div className="text-center">
                     <p className="text-[16px] font-semibold text-black">Check-in</p>
-                    <p className="text-[16px] font-semibold text-black">after 5:00 pm</p>
+                    <p className="text-[16px] font-semibold text-black">after 3:00 pm</p>
                   </div>
                   <div className="w-px h-10 bg-[rgba(0,0,0,0.29)]"></div>
                   <div className="text-center">
@@ -350,20 +347,20 @@ export default function CheckoutPage() {
                       placeholder=""
                       required
                     />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[14px] text-[#202C3B] mb-1">
-                      Last Name<span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={guests[0].lastName}
-                      onChange={(e) => updateGuest(guests[0].id, "lastName", e.target.value)}
+                </div>
+                
+                <div>
+                  <label className="block text-[14px] text-[#202C3B] mb-1">
+                    Last Name<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={guests[0].lastName}
+                    onChange={(e) => updateGuest(guests[0].id, "lastName", e.target.value)}
                       className="w-full px-3 py-2 border border-[rgba(0,0,0,0.25)] text-[14px] text-[#313131]"
-                      placeholder=""
-                      required
-                    />
+                    placeholder=""
+                    required
+                  />
                   </div>
                 </div>
                 
@@ -719,16 +716,16 @@ export default function CheckoutPage() {
                       <CreditCardIcon className="w-6 h-6 " />
                       <label className="text-[14px] text-[#202C3B]">
                         Card number<span className="text-red-500">*</span>
-                      </label>
+                    </label>
                     </div>
-                    <input
-                      type="text"
-                      value={payment.cardNumber}
-                      onChange={(e) => updatePayment("cardNumber", e.target.value)}
+                      <input
+                        type="text"
+                        value={payment.cardNumber}
+                        onChange={(e) => updatePayment("cardNumber", e.target.value)}
                       className="w-full px-3 py-2 border border-[rgba(0,0,0,0.25)] text-[14px] text-[#313131]"
-                      placeholder=""
-                      required
-                    />
+                        placeholder=""
+                        required
+                      />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-2">
@@ -813,7 +810,7 @@ export default function CheckoutPage() {
                 "Confirm Booking"
               )}
             </button>
-            </form>
+          </form>
           </div>
         </div>
         
