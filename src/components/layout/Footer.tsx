@@ -74,27 +74,36 @@ export default function Footer() {
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Contact Us</h3>
                 <div className="space-y-4">
                   {/* Email */}
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'#BE8C53'}}>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
                       <MdEmail className="text-white text-sm" />
                     </div>
-                    <span className="text-white text-sm">portalholdingsznz@gmail.com</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-white text-sm">portalholdingsznz@gmail.com</span>
+                      <span className="text-white text-sm">reservations@sultanpalacehotelznz.com</span>
+                    </div>
                   </div>
                   
                   {/* Phone */}
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'#BE8C53'}}>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
                       <MdPhone className="text-white text-sm" />
                     </div>
-                    <span className="text-white text-sm">+255 657 269 674</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-white text-sm">+255 684 888 111</span>
+                      <span className="text-white text-sm">+255 777 085 630</span>
+                      <span className="text-white text-sm">+255 657 269 674</span>
+                    </div>
                   </div>
                   
                   {/* Address */}
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'#BE8C53'}}>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
                       <MdLocationOn className="text-white text-sm" />
                     </div>
-                    <span className="text-white text-sm">Dongwe, East Coast, Zanzibar</span>
+                    <div className="flex flex-col">
+                      <span className="text-white text-sm">Dongwe, East Coast, Zanzibar</span>
+                    </div>
                   </div>
                 </div>
               </div>

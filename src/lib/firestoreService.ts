@@ -84,8 +84,8 @@ export interface Booking {
 const sampleRooms: Room[] = [
   {
     id: '1',
-    name: 'Garden View',
-    type: 'Garden View',
+    name: 'Garden suite',
+    type: 'Garden suite',
     price: 250,
     description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
     features: ['Private suite', '150 m²', 'Balcony'],
@@ -100,8 +100,8 @@ const sampleRooms: Room[] = [
   },
   {
     id: '2',
-    name: 'Ocean View',
-    type: 'Ocean View',
+    name: 'Ocean suite',
+    type: 'Ocean suite',
     price: 300,
     description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
     features: ['Private suite', '150 m²', 'Balcony'],
@@ -117,7 +117,7 @@ const sampleRooms: Room[] = [
   {
     id: '3',
     name: 'Imperial Suite',
-    type: 'Imperial',
+    type: 'Imperial suite',
     price: 350,
     description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
     features: ['Private suite', '150 m²', 'Balcony'],

@@ -4,7 +4,7 @@ import BookNowButton from "../ui/BookNowButton";
 
 const CARDS = [
   {
-    title: "Garde suite",
+    title: "Garden suite",
     price: "$250 / Night ",
     meta: "2 Adults . 1 Child",
     img: "/figma/rooms-garden-suite.png",
@@ -42,9 +42,9 @@ export default function RoomsVillas() {
         {/* Cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mt-20">
           {CARDS.map((card) => (
-            <div key={card.title} className="group rounded-lg bg-white shadow-[0px_4px_20.7px_rgba(0,0,0,0.08)] overflow-hidden">
-              <div className="relative w-full h-[230px] md:h-[330px] overflow-hidden">
-                <Image src={card.img} alt={card.title} fill className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-140" sizes="(max-width: 768px) 100vw, 33vw" />
+            <div key={card.title} className="rounded-lg bg-white shadow-[0px_4px_20.7px_rgba(0,0,0,0.08)] overflow-hidden">
+              <div className="relative w-full h-[230px] md:h-[330px] overflow-hidden group">
+                <Image src={card.img} alt={card.title} fill className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-130" sizes="(max-width: 768px) 100vw, 33vw" />
               </div>
               <div className="p-5">
                 <div className="flex items-center justify-between">

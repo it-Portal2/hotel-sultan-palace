@@ -50,6 +50,7 @@ interface CartContextProps {
   updateAddOnQuantity: (addOnId: string, quantity: number) => void;
 
   calculateTotal: () => number;
+  getNumberOfNights: () => number;
 
   bookingData: BookingData | null;
   setBookingData: React.Dispatch<React.SetStateAction<BookingData | null>>;
@@ -135,19 +136,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Helper function to get number of nights
+  const getNumberOfNights = () => {
+    if (!bookingData) return 1;
+    const checkIn = new Date(bookingData.checkIn);
+    const checkOut = new Date(bookingData.checkOut);
+    return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   // Calculate total price (rooms + addOns)
   const calculateTotal = () => {
-    const roomTotal = rooms.reduce((total, room) => total + room.price, 0);
+    const nights = getNumberOfNights();
+
+    // Room total = room price * number of nights
+    const roomTotal = rooms.reduce((total, room) => total + (room.price * nights), 0);
+    
+    // Add-ons total with proper multipliers
     const addOnTotal = addOns.reduce((total, item) => {
       let multiplier = 1;
       if (item.type === 'per_day' && bookingData) {
-        const checkIn = new Date(bookingData.checkIn);
-        const checkOut = new Date(bookingData.checkOut);
-        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
         multiplier = nights;
       } else if (item.type === 'per_guest' && bookingData) {
         multiplier = bookingData.guests.adults;
       }
+      // For 'per_stay' type, multiplier remains 1
       return total + item.price * multiplier * item.quantity;
     }, 0);
 
@@ -165,6 +177,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeAddOn,
         updateAddOnQuantity,
         calculateTotal,
+        getNumberOfNights,
         bookingData,
         setBookingData,
         updateBookingData

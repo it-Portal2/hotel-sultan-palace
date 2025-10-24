@@ -54,10 +54,20 @@ export default function BookingConfirmationPopup({
                 Booking ID: {bookingId}
               </p>
               <p className="text-[14px] text-[#484848] font-['Poppins'] leading-[1.5] tracking-[-0.03em]">
-                Check-in: {checkIn}
+                Check-in: {new Date(checkIn).toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}
               </p>
               <p className="text-[14px] text-[#484848] font-['Poppins'] leading-[1.5] tracking-[-0.03em]">
-                Check-out: {checkOut}
+                Check-out: {new Date(checkOut).toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}
               </p>
             </div>
           </div>
