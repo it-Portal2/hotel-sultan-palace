@@ -29,17 +29,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-interface BookingData {
-  checkIn: string;
-  checkOut: string;
-  guests: {
-    adults: number;
-    children: number;
-    rooms: number;
-  };
-}
 
-// Room interface is now imported from firestoreService
 
 export default function RoomsPage() {
   const router = useRouter();
@@ -47,7 +37,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Removed redirect logic to allow direct URL access
+
 
   useEffect(() => {
     const fetchRooms = async () => {

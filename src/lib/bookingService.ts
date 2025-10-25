@@ -36,6 +36,10 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
 };
 
 export const updateBooking = async (id: string, updates: Partial<Booking>): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not available');
+  }
+
   try {
     const bookingRef = doc(db, 'bookings', id);
     await updateDoc(bookingRef, {

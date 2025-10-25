@@ -324,7 +324,7 @@ export default function ContactUsPage() {
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
           <div className="text-center">
             <h3 className="text-white text-[24px] sm:text-[28px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.1] sm:leading-[1.15] md:leading-[1.17] lg:leading-[1.19] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol']">
-              Let's Begin Your Zanzibar Journey
+              Let&apos;s Begin Your Zanzibar Journey
             </h3>
             <button className="bg-[#F96406] text-white text-sm sm:text-base md:text-lg font-semibold px-4 py-2 sm:px-6 sm:py-2 md:px-6 md:py-2 rounded-[52px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol']">
               Connect Us

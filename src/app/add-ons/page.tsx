@@ -18,18 +18,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 
-interface BookingData {
-  checkIn: string;
-  checkOut: string;
-  guests: {
-    adults: number;
-    children: number;
-    rooms: number;
-  };
-  nights?: number;
-}
 
-// AddOn interface is now imported from firestoreService
 
 export default function AddOnsPage() {
   const router = useRouter();
@@ -39,10 +28,10 @@ export default function AddOnsPage() {
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Removed redirect logic to allow direct URL access
+
 
   useEffect(() => {
-    // Use selected room from cart instead of localStorage
+  
     if (rooms.length > 0) {
       const selectedRoom = rooms[0];
       setRoomData({
@@ -88,9 +77,9 @@ export default function AddOnsPage() {
     
     const addOn = addOns.find(item => item.id === addOnId);
     if (addOn) {
-      // Success message handled by button state
+      
       setTimeout(() => {
-        // Reset button state after 3 seconds
+     
       }, 3000);
     }
   };

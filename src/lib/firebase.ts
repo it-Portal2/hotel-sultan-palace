@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
@@ -13,10 +13,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only on client side to avoid build issues
-let app: any = null;
-let db: any = null;
-let auth: any = null;
-let storage: any = null;
+let app: ReturnType<typeof initializeApp> | null = null;
+let db: ReturnType<typeof getFirestore> | null = null;
+let auth: ReturnType<typeof getAuth> | null = null;
+let storage: ReturnType<typeof getStorage> | null = null;
 
 if (typeof window !== 'undefined') {
   try {

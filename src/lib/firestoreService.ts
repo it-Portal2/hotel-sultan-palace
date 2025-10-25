@@ -241,6 +241,11 @@ export const getRooms = async (): Promise<Room[]> => {
 };
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {
+  // During build time or if db is not available, return sample data
+  if (typeof window === 'undefined' || !db) {
+    return sampleRooms.find(room => room.id === roomId) || null;
+  }
+
   try {
     const roomRef = doc(db, 'rooms', roomId);
     const roomSnap = await getDoc(roomRef);
@@ -257,11 +262,18 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     return null;
   } catch (error) {
     console.error('Error fetching room from Firestore:', error);
-    return null;
+    // Fallback to sample data if Firestore fails
+    console.log('Falling back to sample room data');
+    return sampleRooms.find(room => room.id === roomId) || null;
   }
 };
 
 export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create room');
+    return null;
+  }
+
   try {
     const roomsRef = collection(db, 'rooms');
     const docRef = await addDoc(roomsRef, {
@@ -277,6 +289,11 @@ export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'upda
 };
 
 export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promise<boolean> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot update room');
+    return false;
+  }
+
   try {
     const roomRef = doc(db, 'rooms', roomId);
     await updateDoc(roomRef, {
@@ -291,6 +308,11 @@ export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promi
 };
 
 export const deleteRoom = async (roomId: string): Promise<boolean> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot delete room');
+    return false;
+  }
+
   try {
     const roomRef = doc(db, 'rooms', roomId);
     await deleteDoc(roomRef);
@@ -348,6 +370,11 @@ export const getAddOns = async (): Promise<AddOn[]> => {
 };
 
 export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create add-on');
+    return null;
+  }
+
   try {
     const name = addOnData.name?.toLowerCase() || '';
     
@@ -380,6 +407,11 @@ export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'u
 };
 
 export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): Promise<boolean> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot update add-on');
+    return false;
+  }
+
   try {
     const name = addOnData.name?.toLowerCase() || '';
     
@@ -411,6 +443,11 @@ export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): P
 };
 
 export const deleteAddOn = async (addOnId: string): Promise<boolean> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot delete add-on');
+    return false;
+  }
+
   try {
     const addOnRef = doc(db, 'addOns', addOnId);
     await deleteDoc(addOnRef);
@@ -447,6 +484,11 @@ export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt
 };
 
 export const getBooking = async (bookingId: string): Promise<Booking | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot get booking');
+    return null;
+  }
+
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingSnap = await getDoc(bookingRef);
@@ -468,6 +510,11 @@ export const getBooking = async (bookingId: string): Promise<Booking | null> => 
 };
 
 export const getAllBookings = async (): Promise<Booking[]> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot get bookings');
+    return [];
+  }
+
   try {
     const bookingsRef = collection(db, 'bookings');
     const q = query(bookingsRef, orderBy('createdAt', 'desc'));
@@ -489,6 +536,11 @@ export const getAllBookings = async (): Promise<Booking[]> => {
 };
 
 export const updateBooking = async (bookingId: string, bookingData: Partial<Booking>): Promise<boolean> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot update booking');
+    return false;
+  }
+
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
     await updateDoc(bookingRef, {
