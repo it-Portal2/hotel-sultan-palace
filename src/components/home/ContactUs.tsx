@@ -3,7 +3,7 @@ import { MdEmail, MdPhone, MdAccessTime, MdLocationOn, MdPerson, MdAlternateEmai
 
 const info = [
   { icon: MdEmail, text: "portaholdingsznz@gmail.com" },
-  { icon: MdPhone, text: "+91 89409+255 777 085 630 / +255 657 269 674" },
+  { icon: MdPhone, text: "+255 684 888 111 , +255 777 085 630 , +255 657 269 674" },
   { icon: MdAccessTime, text: "WORKING HOURS Monday - Saturday\n08:00a.m - 6:00p.m" },
   { icon: MdLocationOn, text: "Dongwe, East Coast, Zanzibar" },
 ];

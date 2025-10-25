@@ -39,13 +39,9 @@ export default function AddOnsPage() {
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Redirect to home if no booking data
-    if (!bookingData) {
-        router.push('/');
-      return;
-    }
+  // Removed redirect logic to allow direct URL access
 
+  useEffect(() => {
     // Use selected room from cart instead of localStorage
     if (rooms.length > 0) {
       const selectedRoom = rooms[0];
@@ -54,10 +50,8 @@ export default function AddOnsPage() {
         price: selectedRoom.price,
         description: selectedRoom.description
       });
-    } else {
-     
     }
-  }, [bookingData, router, rooms]);
+  }, [rooms]);
 
   useEffect(() => {
     const fetchAddOns = async () => {
@@ -120,7 +114,20 @@ export default function AddOnsPage() {
   };
 
   if (!bookingData) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Booking Data</h2>
+          <p className="text-gray-600 mb-6">Please start by selecting your dates and room first.</p>
+          <button 
+            onClick={() => router.push('/')}
+            className="bg-[#FF6A00] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Start Booking
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -384,19 +391,19 @@ export default function AddOnsPage() {
                         {/* Action Buttons */}
                         <div className="flex items-center gap-4">
                           <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5 flex items-center justify-center">
                               <Edit size={12} color="#FF6A00" />
                             </div>
                             Edit
                           </button>
                           <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5 flex items-center justify-center">
                               <Trash2 size={12} color="#FF6A00" />
                             </div>
                             Remove
                           </button>
                           <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5  flex items-center justify-center">
                               <Tag size={12} color="#FF6A00" />
                             </div>
                             Apply Offer
@@ -432,7 +439,7 @@ export default function AddOnsPage() {
                         {/* Action Buttons */}
                         <div className="flex items-center gap-4">
                           <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5 flex items-center justify-center">
                               <Edit size={12} color="#FF6A00" />
                             </div>
                             Edit
@@ -441,13 +448,13 @@ export default function AddOnsPage() {
                             onClick={() => removeFromCart(item.id)}
                             className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
                           >
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5 flex items-center justify-center">
                               <Trash2 size={12} color="#FF6A00" />
                             </div>
                             Remove
                           </button>
                           <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 bg-white rounded flex items-center justify-center">
+                            <div className="w-5 h-5  flex items-center justify-center">
                               <Tag size={12} color="#FF6A00" />
                             </div>
                             Apply Offer

@@ -73,6 +73,9 @@ function TimeAndTemperature() {
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOffersMenuOpen, setIsOffersMenuOpen] = useState(false);
+  const [isActivitiesMenuOpen, setIsActivitiesMenuOpen] = useState(false);
+  const [isWellnessMenuOpen, setIsWellnessMenuOpen] = useState(false);
 
   const socialLinks = [
     { name: "Whatsapp", icon: FaWhatsapp, href: "#" },
@@ -83,12 +86,29 @@ export default function Header() {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Activities", caret: true, href: "#" },
-    { label: "Wellness & Relaxation", caret: true, href: "#" },
+    { label: "Activities", caret: true, href: "#", hasSubmenu: true },
+    { label: "Wellness & Relaxation", caret: true, href: "#", hasSubmenu: true },
     { label: "Villas", href: "#" },
     { label: "Gallery", href: "#" },
-    { label: "Offers", href: "#" },
-    { label: "About Us", caret: true, href: "#" },
+    { label: "Offers",  caret: true,href: "#", hasSubmenu: true },
+    { label: "About Us", href: "#" },
+  ];
+
+  const activitiesSubmenu = [
+    { label: "Deep Blue Dive", href: "#" },
+    { label: "Aqua Adventure", href: "#" },
+    { label: "Spirit of Swahili", href: "#" },
+  ];
+
+  const wellnessSubmenu = [
+    { label: "Ocean Breeze Spa", href: "#" },
+    { label: "Fitness & Gym Studio", href: "#" },
+  ];
+
+  const offersSubmenu = [
+    { label: "How To Get To Zanzibar", href: "#" },
+    { label: "Our Stories", href: "#" },
+    { label: "About Us", href: "/about-us" },
   ];
 
   useEffect(() => {
@@ -101,6 +121,26 @@ export default function Header() {
       document.body.style.overflow = "auto";
     };
   }, [isMenuOpen]);
+
+  // Close submenu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.submenu-container')) {
+        setIsOffersMenuOpen(false);
+        setIsActivitiesMenuOpen(false);
+        setIsWellnessMenuOpen(false);
+      }
+    };
+
+    if (isOffersMenuOpen || isActivitiesMenuOpen || isWellnessMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOffersMenuOpen, isActivitiesMenuOpen, isWellnessMenuOpen]);
 
   return (
     <>
@@ -127,7 +167,7 @@ export default function Header() {
                 className="flex items-center gap-2 hover:text-orange-300 transition-colors"
               >
                 <Phone size={12} color="#79C9E9" />
-                <span className="text-[12px]">+255 657 269 674</span>
+                <span className="text-[12px]">+255 684 888 111, +25 657 269 674</span>
               </Link>
               <Link
                 href="mailto:email@gmail.com"
@@ -165,20 +205,119 @@ export default function Header() {
 
             <nav className="hidden lg:flex items-center justify-center gap-8 text-white text-[14px] font-semibold font-open-sans w-full">
               {navLinks.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
-                >
-                  {item.label}
-                  {item.caret && <ChevronDown size={14} />}
-                </Link>
+                <div key={item.label} className="relative">
+                  {item.hasSubmenu ? (
+                    <button
+                      onClick={() => {
+                        // Close other submenus and toggle current one
+                        if (item.label === "Activities") {
+                          setIsActivitiesMenuOpen(!isActivitiesMenuOpen);
+                          setIsOffersMenuOpen(false);
+                          setIsWellnessMenuOpen(false);
+                        } else if (item.label === "Wellness & Relaxation") {
+                          setIsWellnessMenuOpen(!isWellnessMenuOpen);
+                          setIsOffersMenuOpen(false);
+                          setIsActivitiesMenuOpen(false);
+                        } else if (item.label === "Offers") {
+                          setIsOffersMenuOpen(!isOffersMenuOpen);
+                          setIsActivitiesMenuOpen(false);
+                          setIsWellnessMenuOpen(false);
+                        }
+                      }}
+                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
+                    >
+                      {item.label}
+                      {item.caret && !(
+                        (item.label === "Activities" && isActivitiesMenuOpen) ||
+                        (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
+                        (item.label === "Offers" && isOffersMenuOpen)
+                      ) && <ChevronDown size={14} />}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
+                    >
+                      {item.label}
+                      {item.caret && <ChevronDown size={14} />}
+                    </Link>
+                  )}
+                  
+                  {/* Activities Submenu */}
+                  {item.hasSubmenu && item.label === "Activities" && isActivitiesMenuOpen && (
+                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
+                      <div className="py-4 px-4 space-y-5">
+                        {activitiesSubmenu.map((subItem, index) => (
+                          <div key={subItem.label}>
+                            <Link
+                              href={subItem.href}
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              onClick={() => setIsActivitiesMenuOpen(false)}
+                            >
+                              {subItem.label}
+                            </Link>
+                            {index < activitiesSubmenu.length - 1 && (
+                              <hr className="border-white/8 mt-5" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Wellness Submenu */}
+                  {item.hasSubmenu && item.label === "Wellness & Relaxation" && isWellnessMenuOpen && (
+                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
+                      <div className="py-4 px-4 space-y-5">
+                        {wellnessSubmenu.map((subItem, index) => (
+                          <div key={subItem.label}>
+                            <Link
+                              href={subItem.href}
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              onClick={() => setIsWellnessMenuOpen(false)}
+                            >
+                              {subItem.label}
+                            </Link>
+                            {index < wellnessSubmenu.length - 1 && (
+                              <hr className="border-white/8 mt-5" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Offers Submenu */}
+                  {item.hasSubmenu && item.label === "Offers" && isOffersMenuOpen && (
+                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
+                      <div className="py-4 px-4 space-y-5">
+                        {offersSubmenu.map((subItem, index) => (
+                          <div key={subItem.label}>
+                            <Link
+                              href={subItem.href}
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              onClick={() => setIsOffersMenuOpen(false)}
+                            >
+                              {subItem.label}
+                            </Link>
+                            {index < offersSubmenu.length - 1 && (
+                              <hr className="border-white/8 mt-5" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </nav>
 
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
-                <BookNowButton href="#" size="sm" className="text-[14px]" />
+                <BookNowButton scrollTo="booking-form" size="sm" className="text-[14px]" />
               </div>
               <div className="lg:hidden z-50">
                 <button

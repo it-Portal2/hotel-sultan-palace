@@ -105,24 +105,20 @@ export default function CheckoutPage() {
     email: ""
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!bookingData) {
-        const storedData = localStorage.getItem('bookingData');
-        if (!storedData) {
-          router.push("/");
-        }
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [bookingData, router]);
+  // Removed redirect logic to allow direct URL access
 
   if (!bookingData) {
     return (
       <div className="min-h-screen bg-[#F8F5EF] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading checkout...</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Booking Data</h2>
+          <p className="text-gray-600 mb-6">Please start by selecting your dates and room.</p>
+          <button 
+            onClick={() => router.push('/')}
+            className="bg-[#FF6A00] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Start Booking
+          </button>
         </div>
       </div>
     );
@@ -234,6 +230,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate required guest information
+    if (!guests[0].firstName || !guests[0].lastName || !guests[0].email) {
+      alert("Please fill in all required guest information");
+      return;
+    }
+
     // Validate card details
     if (!validateCardNumber(payment.cardNumber)) {
       alert("Please enter a valid 16-digit card number");
@@ -247,34 +249,77 @@ export default function CheckoutPage() {
       alert("Please enter a valid CVV (3-4 digits)");
       return;
     }
+    if (!payment.nameOnCard) {
+      alert("Please enter the name on card");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       const bookingDetails = {
+        // Essential booking dates and guest count
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
         guests: bookingData.guests,
+        
+        // User contact and personal details
         guestDetails: {
           firstName: guests[0].firstName,
           lastName: guests[0].lastName,
           email: guests[0].email,
-          phone: guests[0].mobile
+          phone: guests[0].mobile,
+          prefix: guests[0].prefix
         },
-        address,
+        
+        // User address details
+        address: {
+          country: address.country,
+          city: address.city,
+          zipCode: address.zipCode,
+          address1: address.address1,
+          address2: address.address2
+        },
+        
+        // Reservation guest details
+        reservationGuests: reservationGuests.map(guest => ({
+          firstName: guest.firstName,
+          lastName: guest.lastName,
+          specialNeeds: guest.specialNeeds
+        })),
+        
+        // Essential room information only
         rooms: rooms.length
           ? [{
-              id: rooms[0].id,
-              name: rooms[0].name,
-              price: rooms[0].price,
               type: rooms[0].type || "Standard Room",
+              price: rooms[0].price
             }]
-          : [{ id: "1", name: "Standard Room", price: 0, type: "Standard Room" }],
-        addOns,
+          : [{ type: "Standard Room", price: 0 }],
+        
+        // Essential add-ons information
+        addOns: addOns.map(addon => ({
+          name: addon.name,
+          price: addon.price,
+          quantity: addon.quantity
+        })),
+        
+        // Financial details
         totalAmount: calculateTotal(),
-        status: "confirmed" as const,
         bookingId: `#BKG${Date.now()}`,
+        status: "confirmed" as const,
+        
+        // Booking metadata
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
+      
+      console.log('Submitting booking details to Firestore:', bookingDetails);
       const bookingId = await createBookingService(bookingDetails);
+      
+      if (!bookingId) {
+        throw new Error('Failed to create booking - no booking ID returned');
+      }
+      
+      console.log('Booking created successfully with ID:', bookingId);
       
       // Transform data for confirmation page
       const confirmationData = {
@@ -308,7 +353,7 @@ export default function CheckoutPage() {
       setShowConfirmationPopup(true);
     } catch (err) {
       console.error("Error creating booking:", err);
-      alert("Booking processing error. Please try again.");
+      alert(`Booking processing error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }

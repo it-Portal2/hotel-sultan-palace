@@ -87,7 +87,7 @@ export default function Hero() {
             </div>
 
             {/* Booking Form */}
-            <div className="bg-white rounded-xl shadow-lg p-2 md:p-0">
+            <div id="booking-form" className="bg-white rounded-xl shadow-lg p-2 md:p-0">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-center gap-2 md:gap-0 font-opensans">
                 
                 {/* Date Input */}

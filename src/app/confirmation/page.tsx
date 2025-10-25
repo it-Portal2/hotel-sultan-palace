@@ -217,8 +217,8 @@ export default function ConfirmationPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Add-ons</h3>
                   <div className=" p-4">
                     <div className="space-y-3">
-                      {bookingDetails.addOns.map((addOn) => (
-                        <div key={addOn.id} className="flex justify-between items-center py-3 border-b border-gray-100">
+                      {bookingDetails.addOns.map((addOn, index) => (
+                        <div key={`${addOn.name}-${addOn.price}-${index}`} className="flex justify-between items-center py-3 border-b border-gray-100">
                           <div>
                             <p className="font-medium text-gray-900">{addOn.name || 'Add-on'}</p>
                             <p className="text-sm text-gray-600">Quantity: {addOn.quantity || 1}</p>

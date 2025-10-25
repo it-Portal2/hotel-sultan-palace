@@ -42,19 +42,7 @@ export interface AddOn {
 
 export interface Booking {
   id: string;
-  guestDetails: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-  address: {
-    country: string;
-    city: string;
-    zipCode: string;
-    address1: string;
-    address2: string;
-  };
+  // Essential booking dates and guest count
   checkIn: string;
   checkOut: string;
   guests: {
@@ -62,17 +50,46 @@ export interface Booking {
     children: number;
     rooms: number;
   };
+  
+  // User contact and personal details
+  guestDetails: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    prefix: string;
+  };
+  
+  // User address details
+  address: {
+    country: string;
+    city: string;
+    zipCode: string;
+    address1: string;
+    address2: string;
+  };
+  
+  // Reservation guest details
+  reservationGuests: Array<{
+    firstName: string;
+    lastName: string;
+    specialNeeds: string;
+  }>;
+  
+  // Essential room information only
   rooms: Array<{
-    id: string;
-    name: string;
+    type: string;
     price: number;
   }>;
+  
+  // Essential add-ons information
   addOns: Array<{
-    id: string;
     name: string;
     price: number;
     quantity: number;
   }>;
+  
+  // Financial details
   totalAmount: number;
   bookingId: string;
   status: 'pending' | 'confirmed' | 'cancelled';
@@ -80,53 +97,106 @@ export interface Booking {
   updatedAt: Date;
 }
 
-// Sample data
+// Sample data for fallback
 const sampleRooms: Room[] = [
   {
     id: '1',
-    name: 'Garden suite',
-    type: 'Garden suite',
-    price: 250,
-    description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Garden view',
-    beds: '1 Double bed, 1 Single bed',
-    image: '/figma/rooms-garden-suite.png',
+    name: 'Ocean Suite',
+    type: 'Suite',
+    price: 450,
+    description: 'Luxurious ocean-facing suite with panoramic views and premium amenities.',
+    features: ['Ocean View', 'Private Balcony', 'King Bed'],
+    amenities: ['WiFi', 'Air Conditioning', 'Mini Bar', 'Room Service'],
+    size: '65 sqm',
+    view: 'Ocean',
+    beds: '1 King Bed',
+    image: '/figma/rooms-ocean-suite.png',
     maxGuests: 2,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: '2',
-    name: 'Ocean suite',
-    type: 'Ocean suite',
-    price: 300,
-    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Ocean view',
-    beds: '1 Double bed, 1 Single bed',
-    image: '/figma/rooms-ocean-suite.png',
-    maxGuests: 3,
+    name: 'Garden Villa',
+    type: 'Villa',
+    price: 350,
+    description: 'Spacious villa surrounded by lush tropical gardens.',
+    features: ['Garden View', 'Private Pool', 'Two Bedrooms'],
+    amenities: ['WiFi', 'Air Conditioning', 'Kitchenette', 'Private Pool'],
+    size: '85 sqm',
+    view: 'Garden',
+    beds: '2 Queen Beds',
+    image: '/figma/rooms-garden-suite.png',
+    maxGuests: 4,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: '3',
     name: 'Imperial Suite',
-    type: 'Imperial suite',
-    price: 350,
-    description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi'],
-    size: '150 m²',
-    view: 'Garden view',
-    beds: '2 Double bed, 1 Single bed',
+    type: 'Suite',
+    price: 600,
+    description: 'The most luxurious suite with premium amenities and stunning views.',
+    features: ['Panoramic View', 'Private Terrace', 'Jacuzzi'],
+    amenities: ['WiFi', 'Air Conditioning', 'Butler Service', 'Jacuzzi'],
+    size: '120 sqm',
+    view: 'Ocean & Garden',
+    beds: '1 King Bed + Sofa Bed',
     image: '/figma/rooms-imperial-suite.png',
-    maxGuests: 4,
+    maxGuests: 3,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+const sampleAddOns: AddOn[] = [
+  {
+    id: '1',
+    name: 'Romantic Beach Dinner',
+    price: 150,
+    type: 'per_room',
+    description: 'Private beach dinner for two with candlelight and champagne.',
+    image: '/addons/romantic.png',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Daybed Classic Experience',
+    price: 80,
+    type: 'per_room',
+    description: 'Relax on a private daybed with premium service.',
+    image: '/addons/Daybed.png',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '3',
+    name: 'Couples Massage Retreat',
+    price: 200,
+    type: 'per_room',
+    description: 'Luxurious couples massage in a private spa setting.',
+    image: '/addons/cuople.png',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '4',
+    name: 'Private Airport Transfer',
+    price: 60,
+    type: 'per_room',
+    description: 'Private transfer to and from the airport.',
+    image: '/addons/private.png',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '5',
+    name: 'Mnemba Atoll Snorkeling',
+    price: 120,
+    type: 'per_guest',
+    description: 'Snorkeling adventure at the beautiful Mnemba Atoll.',
+    image: '/addons/mnemba.png',
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -143,33 +213,101 @@ const addOnImages = {
 
 // Rooms CRUD Operations
 export const getRooms = async (): Promise<Room[]> => {
-  console.log('Using sample rooms data');
-  return sampleRooms;
+  // During build time or if db is not available, return sample data
+  if (typeof window === 'undefined' || !db) {
+    return sampleRooms;
+  }
+
+  try {
+    const roomsRef = collection(db, 'rooms');
+    const q = query(roomsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Room;
+    });
+  } catch (error) {
+    console.error('Error fetching rooms from Firestore:', error);
+    // Fallback to sample data if Firestore fails
+    console.log('Falling back to sample rooms data');
+    return sampleRooms;
+  }
 };
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {
-  console.log('Getting room by ID:', roomId);
-  const room = sampleRooms.find(r => r.id === roomId);
-  return room || null;
+  try {
+    const roomRef = doc(db, 'rooms', roomId);
+    const roomSnap = await getDoc(roomRef);
+    
+    if (roomSnap.exists()) {
+      const data = roomSnap.data();
+      return {
+        id: roomSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Room;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching room from Firestore:', error);
+    return null;
+  }
 };
 
 export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-  console.log('Mock room creation successful');
-  return `mock-room-${Date.now()}`;
+  try {
+    const roomsRef = collection(db, 'rooms');
+    const docRef = await addDoc(roomsRef, {
+      ...roomData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating room:', error);
+    return null;
+  }
 };
 
 export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promise<boolean> => {
-  console.log('Mock room update successful');
+  try {
+    const roomRef = doc(db, 'rooms', roomId);
+    await updateDoc(roomRef, {
+      ...roomData,
+      updatedAt: new Date(),
+    });
   return true;
+  } catch (error) {
+    console.error('Error updating room:', error);
+    return false;
+  }
 };
 
 export const deleteRoom = async (roomId: string): Promise<boolean> => {
-  console.log('Mock room deletion successful');
+  try {
+    const roomRef = doc(db, 'rooms', roomId);
+    await deleteDoc(roomRef);
   return true;
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    return false;
+  }
 };
 
 // Add-ons CRUD Operations
 export const getAddOns = async (): Promise<AddOn[]> => {
+  // During build time or if db is not available, return sample data
+  if (typeof window === 'undefined' || !db) {
+    return sampleAddOns;
+  }
+
   try {
     const addOnsRef = collection(db, 'addOns');
     const q = query(addOnsRef, orderBy('createdAt', 'desc'));
@@ -203,7 +341,9 @@ export const getAddOns = async (): Promise<AddOn[]> => {
     }) as AddOn[];
   } catch (error) {
     console.error('Error fetching add-ons from Firestore:', error);
-    return [];
+    // Fallback to sample data if Firestore fails
+    console.log('Falling back to sample add-ons data');
+    return sampleAddOns;
   }
 };
 
@@ -283,21 +423,81 @@ export const deleteAddOn = async (addOnId: string): Promise<boolean> => {
 
 // Booking Operations
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-  console.log('Mock booking creation successful');
-  return `mock-booking-${Date.now()}`;
+  if (!db) {
+    console.warn('Firestore not available, cannot create booking');
+    return null;
+  }
+
+  try {
+    console.log('Creating booking in Firestore:', bookingData);
+    
+    const bookingsRef = collection(db, 'bookings');
+    const docRef = await addDoc(bookingsRef, {
+      ...bookingData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    console.log('Booking created successfully with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating booking in Firestore:', error);
+    return null;
+  }
 };
 
 export const getBooking = async (bookingId: string): Promise<Booking | null> => {
-  console.log('Mock booking fetch');
+  try {
+    const bookingRef = doc(db, 'bookings', bookingId);
+    const bookingSnap = await getDoc(bookingRef);
+    
+    if (bookingSnap.exists()) {
+      const data = bookingSnap.data();
+      return {
+        id: bookingSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Booking;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching booking:', error);
   return null;
+  }
 };
 
 export const getAllBookings = async (): Promise<Booking[]> => {
-  console.log('Mock get all bookings');
+  try {
+    const bookingsRef = collection(db, 'bookings');
+    const q = query(bookingsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Booking;
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
   return [];
+  }
 };
 
 export const updateBooking = async (bookingId: string, bookingData: Partial<Booking>): Promise<boolean> => {
-  console.log('Mock booking update successful');
+  try {
+    const bookingRef = doc(db, 'bookings', bookingId);
+    await updateDoc(bookingRef, {
+      ...bookingData,
+      updatedAt: new Date(),
+    });
   return true;
+  } catch (error) {
+    console.error('Error updating booking:', error);
+    return false;
+  }
 };

@@ -14,6 +14,7 @@ import {
   Edit, 
   Trash2, 
   Tag, 
+
   DoorOpen, 
   Maximize2, 
   Umbrella, 
@@ -46,11 +47,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!bookingData) {
-      router.push('/');
-    }
-  }, [bookingData, router]);
+  // Removed redirect logic to allow direct URL access
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -85,8 +82,45 @@ export default function RoomsPage() {
     });
   };
 
+  const getCancellationDate = () => {
+    if (!bookingData) return '';
+    const checkIn = new Date(bookingData.checkIn);
+    const cancellationDate = new Date(checkIn);
+    cancellationDate.setDate(checkIn.getDate() - 2);
+    return cancellationDate.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
+  const getPaymentDate = () => {
+    if (!bookingData) return '';
+    const checkIn = new Date(bookingData.checkIn);
+    const paymentDate = new Date(checkIn);
+    paymentDate.setDate(checkIn.getDate() - 2);
+    return paymentDate.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
   if (!bookingData) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Booking Data</h2>
+          <p className="text-gray-600 mb-6">Please start by selecting your dates first.</p>
+          <button 
+            onClick={() => router.push('/')}
+            className="bg-[#FF6A00] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Start Booking
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -268,11 +302,11 @@ export default function RoomsPage() {
                           </div>
                           <div className="flex items-center gap-2 text-[#464035] text-sm">
                             <Shield size={14} color="#BE8C53" />
-                            <span>Free cancellation before 15 November 2025</span>
+                            <span>Free cancellation before {getCancellationDate()}</span>
                           </div>
                           <div className="flex items-center gap-2 text-[#464035] text-sm">
                             <CreditCard size={14} color="#BE8C53" />
-                            <span>Pay nothing until 10 November 2025</span>
+                            <span>Pay nothing until {getPaymentDate()}</span>
                           </div>
                         </div>
 

@@ -8,6 +8,7 @@ interface BookNowButtonProps {
   href?: string;
   variant?: "primary" | "outline" | "dark";
   size?: "sm" | "md" | "lg";
+  scrollTo?: string; // ID of element to scroll to
 }
 
 export default function BookNowButton({
@@ -16,7 +17,8 @@ export default function BookNowButton({
   onClick,
   href,
   variant = "primary",
-  size = "md"
+  size = "md",
+  scrollTo
 }: BookNowButtonProps) {
   const baseClasses = "relative inline-flex items-center justify-center font-quicksand font-semibold text-white transition-all duration-300 ease-out overflow-hidden group";
 
@@ -35,6 +37,22 @@ export default function BookNowButton({
   const buttonClasses = `${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`;
 
   const circleColor = variant === 'primary' ? 'bg-[#1D2A3A]' : 'bg-[#FF6A00]';
+
+  const handleClick = () => {
+    if (scrollTo) {
+      const element = document.getElementById(scrollTo);
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    } else if (href) {
+      window.location.href = href;
+    } else if (onClick) {
+      onClick();
+    }
+  };
 
   const content = (
     <>
@@ -61,16 +79,8 @@ export default function BookNowButton({
     </>
   );
 
-  if (href) {
-    return (
-      <a href={href} className={buttonClasses}>
-        {content}
-      </a>
-    );
-  }
-
   return (
-    <button onClick={onClick} className={buttonClasses}>
+    <button onClick={handleClick} className={buttonClasses}>
       {content}
     </button>
   );

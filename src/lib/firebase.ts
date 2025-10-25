@@ -12,13 +12,24 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "demo-app-id"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only on client side to avoid build issues
+let app: any = null;
+let db: any = null;
+let auth: any = null;
+let storage: any = null;
 
-// Initialize Firebase services with error handling
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+if (typeof window !== 'undefined') {
+  try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error);
+  }
+}
+
+export { db, auth, storage };
 
 // Suppress Firebase connection warnings in development
 if (process.env.NODE_ENV === 'development') {
