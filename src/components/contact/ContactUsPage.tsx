@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MdEmail, MdPhone, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import { FaMapMarkerAlt } from 'react-icons/fa';
+import { createContactForm } from '@/lib/firestoreService';
 
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ export default function ContactUsPage() {
     email: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Animation states
   const [isVisible, setIsVisible] = useState(false);
@@ -60,10 +63,46 @@ export default function ContactUsPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      const result = await createContactForm({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        message: formData.message
+      });
+
+      if (result) {
+        setSubmitStatus('success');
+        // Reset form after successful submission
+        setFormData({
+          name: '',
+          phone: '',
+          email: '',
+          message: ''
+        });
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => setSubmitStatus('idle'), 5000);
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFindInMap = () => {
+    // Open Google Maps with the hotel location
+    const address = encodeURIComponent('Dongwe, East Coast, Zanzibar');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
   };
 
   return (
@@ -208,10 +247,23 @@ export default function ContactUsPage() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full h-[35px] sm:h-[39px] bg-[#F96406] text-white text-[12px] sm:text-[14px] font-medium rounded-[5px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol']"
+                    disabled={isSubmitting}
+                    className="w-full h-[35px] sm:h-[39px] bg-[#F96406] text-white text-[12px] sm:text-[14px] font-medium rounded-[5px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol'] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    SUBMIT
+                    {isSubmitting ? 'SUBMITTING...' : 'SUBMIT'}
                   </button>
+                  
+                  {/* Success/Error Messages */}
+                  {submitStatus === 'success' && (
+                    <div className="text-green-400 text-sm font-medium">
+                      ✓ Your message has been sent successfully!
+                    </div>
+                  )}
+                  {submitStatus === 'error' && (
+                    <div className="text-red-400 text-sm font-medium">
+                      ✗ Something went wrong. Please try again.
+                    </div>
+                  )}
                 </div>
               </div>
             </form>
@@ -233,7 +285,10 @@ export default function ContactUsPage() {
           >
             {/* Map Button Overlay */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <button className="bg-black text-white px-4 py-2 mt-80 rounded-full flex items-center gap-3 hover:bg-gray-800 transition-colors">
+              <button 
+                onClick={handleFindInMap}
+                className="bg-black text-white px-4 py-2 mt-80 rounded-full flex items-center gap-3 hover:bg-gray-800 transition-colors cursor-pointer"
+              >
                 <FaMapMarkerAlt className="text-white text-sm" />
                 <span className="text-[20px] font-regular font-['Quicksand']">Find in map</span>
               </button>
@@ -266,7 +321,8 @@ export default function ContactUsPage() {
               <div>
                 <p className="text-black text-[18px] lg:text-[20px] font-medium leading-[1.45] font-['Kaisei_Decol']">
                   Email-Us<br />
-                  portalholdingsznz@gmail.com
+                  <a href="mailto:portalholdingsznz@gmail.com" className="hover:underline transition-colors">portalholdingsznz@gmail.com</a><br />
+                  <a href="mailto:reservations@sultanpalacehotelznz.com" className="hover:underline transition-colors">reservations@sultanpalacehotelznz.com</a>
                 </p>
               </div>
             </div>
@@ -281,7 +337,9 @@ export default function ContactUsPage() {
               <div>
                 <p className="text-black text-[18px] lg:text-[20px] font-medium leading-[1.45] font-['Kaisei_Decol']">
                   Phone:<br />
-                  +255 777 085 630 / +255 657 269 674
+                  <a href="tel:+255684888111" className="hover:underline transition-colors">+255 684 888 111</a> / {' '}
+                  <a href="tel:+255777085630" className="hover:underline transition-colors">+255 777 085 630</a> / {' '}
+                  <a href="tel:+255657269674" className="hover:underline transition-colors">+255 657 269 674</a>
                 </p>
               </div>
             </div>

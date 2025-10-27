@@ -82,8 +82,8 @@ export default function Footer() {
                       <MdEmail className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
-                      <span className="text-white text-sm">portalholdingsznz@gmail.com</span>
-                      <span className="text-white text-sm">reservations@sultanpalacehotelznz.com</span>
+                      <a href="mailto:portalholdingsznz@gmail.com" className="text-white text-sm hover:underline transition-colors">portalholdingsznz@gmail.com</a>
+                      <a href="mailto:reservations@sultanpalacehotelznz.com" className="text-white text-sm hover:underline transition-colors">reservations@sultanpalacehotelznz.com</a>
                     </div>
                   </div>
                   
@@ -93,9 +93,9 @@ export default function Footer() {
                       <MdPhone className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
-                      <span className="text-white text-sm">+255 684 888 111</span>
-                      <span className="text-white text-sm">+255 777 085 630</span>
-                      <span className="text-white text-sm">+255 657 269 674</span>
+                      <a href="tel:+255684888111" className="text-white text-sm hover:underline transition-colors">+255 684 888 111</a>
+                      <a href="tel:+255777085630" className="text-white text-sm hover:underline transition-colors">+255 777 085 630</a>
+                      <a href="tel:+255657269674" className="text-white text-sm hover:underline transition-colors">+255 657 269 674</a>
                     </div>
                   </div>
                   

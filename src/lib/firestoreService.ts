@@ -97,52 +97,63 @@ export interface Booking {
   updatedAt: Date;
 }
 
+export interface ContactForm {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: 'new' | 'read' | 'replied';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Sample data for fallback
 const sampleRooms: Room[] = [
   {
     id: '1',
-    name: 'Ocean Suite',
-    type: 'Suite',
-    price: 450,
-    description: 'Luxurious ocean-facing suite with panoramic views and premium amenities.',
-    features: ['Ocean View', 'Private Balcony', 'King Bed'],
-    amenities: ['WiFi', 'Air Conditioning', 'Mini Bar', 'Room Service'],
-    size: '65 sqm',
-    view: 'Ocean',
-    beds: '1 King Bed',
-    image: '/figma/rooms-ocean-suite.png',
-    maxGuests: 2,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: '2',
-    name: 'Garden Villa',
-    type: 'Villa',
+    name: 'Imperial Suite',
+    type: 'Private Suite',
     price: 350,
-    description: 'Spacious villa surrounded by lush tropical gardens.',
-    features: ['Garden View', 'Private Pool', 'Two Bedrooms'],
-    amenities: ['WiFi', 'Air Conditioning', 'Kitchenette', 'Private Pool'],
-    size: '85 sqm',
-    view: 'Garden',
-    beds: '2 Queen Beds',
-    image: '/figma/rooms-garden-suite.png',
+    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
+    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
+    size: '150 m²',
+    view: 'Ocean',
+    beds: '2 Double bed, 1 Single bed',
+    image: '/figma/rooms-imperial-suite.png',
     maxGuests: 4,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
+    id: '2',
+    name: 'Ocean Suite',
+    type: 'Private Suite',
+    price: 300,
+    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
+    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
+    size: '150 m²',
+    view: 'Ocean',
+    beds: '1 Double bed, 1 Single bed',
+    image: '/figma/rooms-ocean-suite.png',
+    maxGuests: 3,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
     id: '3',
-    name: 'Imperial Suite',
-    type: 'Suite',
-    price: 600,
-    description: 'The most luxurious suite with premium amenities and stunning views.',
-    features: ['Panoramic View', 'Private Terrace', 'Jacuzzi'],
-    amenities: ['WiFi', 'Air Conditioning', 'Butler Service', 'Jacuzzi'],
-    size: '120 sqm',
-    view: 'Ocean & Garden',
-    beds: '1 King Bed + Sofa Bed',
-    image: '/figma/rooms-imperial-suite.png',
+    name: 'Garden Suite',
+    type: 'Private Suite',
+    price: 250,
+    description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
+    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
+    size: '150 m²',
+    view: 'Garden',
+    beds: '1 Double bed, 1 Single bed',
+    image: '/figma/rooms-garden-suite.png',
     maxGuests: 3,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -152,51 +163,51 @@ const sampleRooms: Room[] = [
 const sampleAddOns: AddOn[] = [
   {
     id: '1',
-    name: 'Romantic Beach Dinner',
-    price: 150,
-    type: 'per_room',
-    description: 'Private beach dinner for two with candlelight and champagne.',
-    image: '/addons/romantic.png',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: '2',
     name: 'Daybed Classic Experience',
-    price: 80,
-    type: 'per_room',
-    description: 'Relax on a private daybed with premium service.',
+    price: 120,
+    type: 'per_day',
+    description: 'Reserve your exclusive beach daybed and indulge in personalized service throughout the day. Sip on fresh coconuts, enjoy a tropical fruit platter, and stay refreshed with cooling beverages. Relax with thoughtful amenities like sunscreen, soothing aloe vera, and after-sun care. A fully stocked minibar with wine, beer, and soft drinks completes your seaside retreat.',
     image: '/addons/Daybed.png',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    id: '3',
-    name: 'Couples Massage Retreat',
-    price: 200,
+    id: '2',
+    name: 'Romantic Beach Dinner for Two',
+    price: 245,
     type: 'per_room',
-    description: 'Luxurious couples massage in a private spa setting.',
-    image: '/addons/cuople.png',
+    description: 'Create magical memories with a private candlelit dinner by the ocean. Enjoy a cozy beachfront setting, personalized service, and a complimentary bottle of sparkling wine to toast the evening under the stars.',
+    image: '/addons/romantic.png',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '3',
+    name: 'Mnemba Atoll Snorkeling Tour',
+    price: 70,
+    type: 'per_guest',
+    description: 'Embark on a breathtaking snorkeling adventure at Mnemba Atoll. Explore crystal-clear waters teeming with vibrant coral reefs and colorful marine life — a true underwater paradise.',
+    image: '/addons/mnemba.png',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: '4',
-    name: 'Private Airport Transfer',
-    price: 60,
-    type: 'per_room',
-    description: 'Private transfer to and from the airport.',
-    image: '/addons/private.png',
+    name: 'Couples\' Massage Retreat',
+    price: 150,
+    type: 'per_guest',
+    description: 'Unwind together with our signature couples\' massage. Let expert therapists rejuvenate your body and mind in a serene setting inspired by the island\'s natural beauty — the perfect escape for two.',
+    image: '/addons/cuople.png',
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: '5',
-    name: 'Mnemba Atoll Snorkeling',
-    price: 120,
-    type: 'per_guest',
-    description: 'Snorkeling adventure at the beautiful Mnemba Atoll.',
-    image: '/addons/mnemba.png',
+    name: 'Private Airport Round-Trip Transfer',
+    price: 150,
+    type: 'per_room',
+    description: 'Travel in comfort with a private airport transfer designed for convenience and exclusivity. Each car accommodates up to four passengers, ensuring a smooth and private journey to and from the resort.',
+    image: '/addons/private.png',
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -209,6 +220,13 @@ const addOnImages = {
   couplesMassage: '/addons/cuople.png',         
   privateAirport: '/addons/private.png',    
   mnembaSnorkeling: '/addons/mnemba.png'        
+};
+
+// Room images - exact mapping for each room
+const roomImages = {
+  imperialSuite: '/figma/rooms-imperial-suite.png',
+  oceanSuite: '/figma/rooms-ocean-suite.png',
+  gardenSuite: '/figma/rooms-garden-suite.png'
 };
 
 // Rooms CRUD Operations
@@ -225,9 +243,22 @@ export const getRooms = async (): Promise<Room[]> => {
     
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
+      const name = data.name?.toLowerCase() || '';
+      
+      // Match image based on room name
+      let image = roomImages.imperialSuite; // default
+      if (name.includes('imperial')) {
+        image = roomImages.imperialSuite;
+      } else if (name.includes('ocean')) {
+        image = roomImages.oceanSuite;
+      } else if (name.includes('garden')) {
+        image = roomImages.gardenSuite;
+      }
+      
       return {
         id: doc.id,
         ...data,
+        image: image,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Room;
@@ -252,9 +283,22 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     
     if (roomSnap.exists()) {
       const data = roomSnap.data();
+      const name = data.name?.toLowerCase() || '';
+      
+      // Match image based on room name
+      let image = roomImages.imperialSuite; // default
+      if (name.includes('imperial')) {
+        image = roomImages.imperialSuite;
+      } else if (name.includes('ocean')) {
+        image = roomImages.oceanSuite;
+      } else if (name.includes('garden')) {
+        image = roomImages.gardenSuite;
+      }
+      
       return {
         id: roomSnap.id,
         ...data,
+        image: image,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Room;
@@ -275,9 +319,22 @@ export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'upda
   }
 
   try {
+    const name = roomData.name?.toLowerCase() || '';
+    
+    // Match image based on room name
+    let image = roomImages.imperialSuite; // default
+    if (name.includes('imperial')) {
+      image = roomImages.imperialSuite;
+    } else if (name.includes('ocean')) {
+      image = roomImages.oceanSuite;
+    } else if (name.includes('garden')) {
+      image = roomImages.gardenSuite;
+    }
+    
     const roomsRef = collection(db, 'rooms');
     const docRef = await addDoc(roomsRef, {
       ...roomData,
+      image: image,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -295,9 +352,22 @@ export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promi
   }
 
   try {
+    const name = roomData.name?.toLowerCase() || '';
+    
+    // Match image based on room name
+    let image = roomImages.imperialSuite; // default
+    if (name.includes('imperial')) {
+      image = roomImages.imperialSuite;
+    } else if (name.includes('ocean')) {
+      image = roomImages.oceanSuite;
+    } else if (name.includes('garden')) {
+      image = roomImages.gardenSuite;
+    }
+    
     const roomRef = doc(db, 'rooms', roomId);
     await updateDoc(roomRef, {
       ...roomData,
+      image: image,
       updatedAt: new Date(),
     });
   return true;
@@ -341,16 +411,16 @@ export const getAddOns = async (): Promise<AddOn[]> => {
       
       // Match image based on exact add-on names
       let image = addOnImages.romanticDinner; // default
-      if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
-        image = addOnImages.romanticDinner;
-      } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+      if (name.includes('daybed') && name.includes('classic')) {
         image = addOnImages.daybedExperience;
-      } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
-        image = addOnImages.couplesMassage;
-      } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
-        image = addOnImages.privateAirport;
-      } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+      } else if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+        image = addOnImages.romanticDinner;
+      } else if (name.includes('mnemba') && name.includes('snorkeling')) {
         image = addOnImages.mnembaSnorkeling;
+      } else if (name.includes('couples') && name.includes('massage')) {
+        image = addOnImages.couplesMassage;
+      } else if (name.includes('private') && name.includes('airport')) {
+        image = addOnImages.privateAirport;
       }
       
       return {
@@ -380,16 +450,16 @@ export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'u
     
     // Match image based on specific add-on names
     let image = addOnImages.romanticDinner; // default
-    if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
-      image = addOnImages.romanticDinner;
-    } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+    if (name.includes('daybed') && name.includes('classic')) {
       image = addOnImages.daybedExperience;
-    } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
-      image = addOnImages.couplesMassage;
-    } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
-      image = addOnImages.privateAirport;
-    } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+    } else if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+      image = addOnImages.romanticDinner;
+    } else if (name.includes('mnemba') && name.includes('snorkeling')) {
       image = addOnImages.mnembaSnorkeling;
+    } else if (name.includes('couples') && name.includes('massage')) {
+      image = addOnImages.couplesMassage;
+    } else if (name.includes('private') && name.includes('airport')) {
+      image = addOnImages.privateAirport;
     }
     
     const addOnsRef = collection(db, 'addOns');
@@ -417,16 +487,16 @@ export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): P
     
     // Match image based on specific add-on names
     let image = addOnImages.romanticDinner; // default
-    if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
-      image = addOnImages.romanticDinner;
-    } else if (name.includes('daybed') && name.includes('classic') && name.includes('experience')) {
+    if (name.includes('daybed') && name.includes('classic')) {
       image = addOnImages.daybedExperience;
-    } else if (name.includes('couples') && name.includes('massage') && name.includes('retreat')) {
-      image = addOnImages.couplesMassage;
-    } else if (name.includes('private') && name.includes('airport') && name.includes('transfer')) {
-      image = addOnImages.privateAirport;
-    } else if (name.includes('mnemba') && name.includes('atoll') && name.includes('snorkeling')) {
+    } else if (name.includes('romantic') && name.includes('beach') && name.includes('dinner')) {
+      image = addOnImages.romanticDinner;
+    } else if (name.includes('mnemba') && name.includes('snorkeling')) {
       image = addOnImages.mnembaSnorkeling;
+    } else if (name.includes('couples') && name.includes('massage')) {
+      image = addOnImages.couplesMassage;
+    } else if (name.includes('private') && name.includes('airport')) {
+      image = addOnImages.privateAirport;
     }
     
     const addOnRef = doc(db, 'addOns', addOnId);
@@ -551,5 +621,57 @@ export const updateBooking = async (bookingId: string, bookingData: Partial<Book
   } catch (error) {
     console.error('Error updating booking:', error);
     return false;
+  }
+};
+
+// Contact Form Operations
+export const createContactForm = async (contactData: Omit<ContactForm, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<string | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create contact form');
+    return null;
+  }
+
+  try {
+    console.log('Creating contact form in Firestore:', contactData);
+    
+    const contactsRef = collection(db, 'contactForms');
+    const docRef = await addDoc(contactsRef, {
+      ...contactData,
+      status: 'new',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    
+    console.log('Contact form created successfully with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating contact form in Firestore:', error);
+    return null;
+  }
+};
+
+export const getAllContactForms = async (): Promise<ContactForm[]> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot get contact forms');
+    return [];
+  }
+
+  try {
+    const contactsRef = collection(db, 'contactForms');
+    const q = query(contactsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as ContactForm;
+    });
+  } catch (error) {
+    console.error('Error fetching contact forms:', error);
+    return [];
   }
 };

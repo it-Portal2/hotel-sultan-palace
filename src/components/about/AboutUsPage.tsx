@@ -1,6 +1,7 @@
 "use client";
 import { FaPlay, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function AboutUsPage() {
   const [currentImageSet, setCurrentImageSet] = useState(0);
@@ -286,9 +287,11 @@ export default function AboutUsPage() {
             <p className="text-[#0B0A07] text-[18px] font-medium leading-[1.833] tracking-[0.36px] mb-8">
               To begin your story, or perhaps, continue it — in a setting that inspires you to live more fully, love more deeply, and dream endlessly.
             </p>
-            <button className="bg-[#F96406] text-white text-lg text-semibold  px-6 py-2 rounded-full hover:bg-[#E55A05] transition-colors">
-              Connect Us
-            </button>
+            <Link href="/contact-us" className="inline-block">
+              <button className="bg-[#F96406] text-white text-lg text-semibold px-6 py-2 rounded-full hover:bg-[#E55A05] transition-colors">
+                Connect Us
+              </button>
+            </Link>
           </div>
         </div>
       </div>

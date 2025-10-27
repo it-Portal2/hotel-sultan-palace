@@ -92,6 +92,7 @@ export default function Header() {
     { label: "Gallery", href: "#" },
     { label: "Offers",  caret: true,href: "#", hasSubmenu: true },
     { label: "About Us", href: "#" },
+    { label: "Contact Us", href: "/contact-us" },
   ];
 
   const activitiesSubmenu = [
@@ -162,15 +163,16 @@ export default function Header() {
               <TimeAndTemperature />
             </div>
             <div className="hidden md:flex items-center gap-8 text-white text-[13px] font-semibold">
-              <Link
-                href="tel:+9118003092760"
-                className="flex items-center gap-2 hover:text-orange-300 transition-colors"
-              >
+              <div className="flex items-center gap-2">
                 <Phone size={12} color="#79C9E9" />
-                <span className="text-[12px]">+255 684 888 111, +25 657 269 674</span>
-              </Link>
+                <div className="flex gap-2 text-[12px]">
+                  <Link href="tel:+255684888111" className="hover:text-orange-300 transition-colors">+255 684 888 111</Link>
+                  <span>,</span>
+                  <Link href="tel:+255657269674" className="hover:text-orange-300 transition-colors">+255 657 269 674</Link>
+                </div>
+              </div>
               <Link
-                href="mailto:email@gmail.com"
+                href="mailto:portalholdingsznz@gmail.com"
                 className="flex items-center gap-2 hover:text-orange-300 transition-colors"
               >
                 <Mail size={12} color="#79C9E9" />
@@ -365,14 +367,14 @@ export default function Header() {
 
         <div className="md:hidden flex flex-col items-center gap-4 text-white text-lg font-semibold">
           <Link
-            href="tel:+9118003092760"
+            href="tel:+255657269674"
             className="flex items-center gap-3 hover:text-orange-300 transition-colors"
           >
             <Phone size={16} color="#79C9E9" />
             <span>+255 657 269 674</span>
           </Link>
           <Link
-            href="mailto:email@gmail.com"
+            href="mailto:portalholdingsznz@gmail.com"
             className="flex items-center gap-3 hover:text-orange-300 transition-colors"
           >
             <Mail size={16} color="#79C9E9" />
