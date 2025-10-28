@@ -67,7 +67,7 @@ export default function OceanBreezeSpaPage() {
             <div className="relative max-w-[500px] mx-auto text-center order-1 md:order-2 px-4">
               <h1 className="text-[#2A2824] text-2xl md:text-[36px] font-semibold leading-[27px] text-center">Your Island Escape Awaits</h1>
               <div className="space-y-5 text-[#423B2D] text-sm md:text-[16px] leading-[27px] items-center justify-center mt-[25px]">
-                <p className="text-center">exotic aromas, and luxurious treatments restore your body, calm your mind, and leave you feeling completely renewed in Zanzibar's serene beauty.</p>
+                <p className="text-center">exotic aromas, and luxurious treatments restore your body, calm your mind, and leave you feeling completely renewed in Zanzibar&apos;s serene beauty.</p>
               </div>
               <Link
                 href="#treatments"
