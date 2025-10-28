@@ -1,14 +1,10 @@
 # Hotel Management Booking System
 
-A modern, responsive hotel booking system built with Next.js, TypeScript, and Tailwind CSS. This project implements a complete booking flow with calendar functionality, room selection, add-ons, and checkout process.
+A modern, hotel booking system built with Next.js, TypeScript, and Tailwind CSS. This project implements a complete booking flow with  functionality, room selection, add-ons, and checkout process.
 
 ## Features
 
-### 🗓️ Calendar Component
-- Dual month view calendar matching the Figma design
-- Date range selection for check-in and check-out
-- Navigation arrows for month switching
-- Disabled past dates and proper date validation
+
 
 ### 🏨 Booking Flow
 1. **Hero Section**: Interactive booking form with calendar integration
@@ -23,11 +19,7 @@ A modern, responsive hotel booking system built with Next.js, TypeScript, and Ta
 - Booking status tracking
 - Secure data handling
 
-### 🎨 Design System
-- Matches Figma designs exactly
-- Responsive design for all screen sizes
-- Modern UI with smooth animations
-- Consistent color scheme and typography
+
 
 ## Tech Stack
 
@@ -183,7 +175,7 @@ interface Booking {
 ## Features in Detail
 
 ### Calendar Functionality
-- **Dual Month View**: Shows current and next month side by side
+-
 - **Date Selection**: Click to select check-in and check-out dates
 - **Navigation**: Arrow buttons to navigate between months
 - **Validation**: Prevents selection of past dates
@@ -209,36 +201,6 @@ interface Booking {
 - **Terms & Conditions**: Required agreement checkboxes
 - **Confirmation**: Success popup with booking details
 
-## Responsive Design
 
-The application is fully responsive and works on:
-- Desktop (1200px+)
-- Tablet (768px - 1199px)
-- Mobile (320px - 767px)
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support or questions, please contact the development team.
-
----
 
 Built with ❤️ using Next.js, TypeScript, and Tailwind CSS

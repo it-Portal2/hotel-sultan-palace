@@ -32,6 +32,10 @@ img, video, canvas {
   font-family: 'Poppins', 'Inter', sans-serif;
 }
 
+.font-moon-dance {
+  font-family: 'Moon Dance', cursive;
+}
+
 .border-beige-200 {
   border-color: #f5f5dc;
 }

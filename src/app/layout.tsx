@@ -44,6 +44,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" 
+          rel="stylesheet"
+        />
+      </head>
       <body
         className={`
         ${inter.variable} 

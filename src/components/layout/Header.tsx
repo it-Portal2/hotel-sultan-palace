@@ -73,7 +73,7 @@ function TimeAndTemperature() {
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isOffersMenuOpen, setIsOffersMenuOpen] = useState(false);
+  const [isAboutUsMenuOpen, setIsAboutUsMenuOpen] = useState(false);
   const [isActivitiesMenuOpen, setIsActivitiesMenuOpen] = useState(false);
   const [isWellnessMenuOpen, setIsWellnessMenuOpen] = useState(false);
 
@@ -90,8 +90,8 @@ export default function Header() {
     { label: "Wellness & Relaxation", caret: true, href: "#", hasSubmenu: true },
     { label: "Villas", href: "#" },
     { label: "Gallery", href: "#" },
-    { label: "Offers",  caret: true,href: "#", hasSubmenu: true },
-    { label: "About Us", href: "#" },
+    { label: "Offers",  href: "#" },
+    { label: "About Us", href: "#" ,caret: true, hasSubmenu: true},
     { label: "Contact Us", href: "/contact-us" },
   ];
 
@@ -102,13 +102,13 @@ export default function Header() {
   ];
 
   const wellnessSubmenu = [
-    { label: "Ocean Breeze Spa", href: "#" },
-    { label: "Fitness & Gym Studio", href: "#" },
+    { label: "Ocean Breeze Spa", href: "/wellness/ocean-breeze-spa" },
+    { label: "Fitness & Gym Studio", href: "/wellness/fitness-gym-studio" },
   ];
 
-  const offersSubmenu = [
-    { label: "How To Get To Zanzibar", href: "#" },
-    { label: "Our Stories", href: "#" },
+  const aboutUsSubmenu = [
+    { label: "How To Get To Zanzibar", href: "/how-to-get-to-zanzibar" },
+    { label: "Our Stories", href: "/our-stories" },
     { label: "About Us", href: "/about-us" },
   ];
 
@@ -123,32 +123,32 @@ export default function Header() {
     };
   }, [isMenuOpen]);
 
-  // Close submenu when clicking outside
+ 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.submenu-container')) {
-        setIsOffersMenuOpen(false);
+        setIsAboutUsMenuOpen(false);
         setIsActivitiesMenuOpen(false);
         setIsWellnessMenuOpen(false);
       }
     };
 
-    if (isOffersMenuOpen || isActivitiesMenuOpen || isWellnessMenuOpen) {
+    if (isAboutUsMenuOpen || isActivitiesMenuOpen || isWellnessMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOffersMenuOpen, isActivitiesMenuOpen, isWellnessMenuOpen]);
+  }, [isAboutUsMenuOpen, isActivitiesMenuOpen, isWellnessMenuOpen]);
 
   return (
     <>
       <header className="w-full absolute top-0 left-0 z-30 font-open-sans">
         <div className="w-full px-4 lg:px-12">
           <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-6 lg:gap-12">
+            <div className="flex items-center gap-6 lg:gap-8">
               <div className="flex items-center gap-4">
                 {socialLinks.map((link) => (
                   <Link
@@ -162,7 +162,7 @@ export default function Header() {
               </div>
               <TimeAndTemperature />
             </div>
-            <div className="hidden md:flex items-center gap-8 text-white text-[13px] font-semibold">
+            <div className="hidden md:flex items-center gap-5 text-white text-[13px] font-semibold">
               <div className="flex items-center gap-2">
                 <Phone size={12} color="#79C9E9" />
                 <div className="flex gap-2 text-[12px]">
@@ -205,7 +205,7 @@ export default function Header() {
               />
             </Link>
 
-            <nav className="hidden lg:flex items-center justify-center gap-8 text-white text-[14px] font-semibold font-open-sans w-full">
+            <nav className="hidden lg:flex items-center justify-center gap-6 text-white text-[12px] font-semibold font-open-sans w-full">
               {navLinks.map((item) => (
                 <div key={item.label} className="relative">
                   {item.hasSubmenu ? (
@@ -214,14 +214,14 @@ export default function Header() {
                         // Close other submenus and toggle current one
                         if (item.label === "Activities") {
                           setIsActivitiesMenuOpen(!isActivitiesMenuOpen);
-                          setIsOffersMenuOpen(false);
+                          setIsAboutUsMenuOpen(false);
                           setIsWellnessMenuOpen(false);
                         } else if (item.label === "Wellness & Relaxation") {
                           setIsWellnessMenuOpen(!isWellnessMenuOpen);
-                          setIsOffersMenuOpen(false);
+                          setIsAboutUsMenuOpen(false);
                           setIsActivitiesMenuOpen(false);
-                        } else if (item.label === "Offers") {
-                          setIsOffersMenuOpen(!isOffersMenuOpen);
+                        } else if (item.label === "About Us") {
+                          setIsAboutUsMenuOpen(!isAboutUsMenuOpen);
                           setIsActivitiesMenuOpen(false);
                           setIsWellnessMenuOpen(false);
                         }
@@ -232,7 +232,8 @@ export default function Header() {
                       {item.caret && !(
                         (item.label === "Activities" && isActivitiesMenuOpen) ||
                         (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
-                        (item.label === "Offers" && isOffersMenuOpen)
+                       
+                        (item.label === "About Us" && isAboutUsMenuOpen)
                       ) && <ChevronDown size={14} />}
                     </button>
                   ) : (
@@ -291,21 +292,21 @@ export default function Header() {
                     </div>
                   )}
                   
-                  {/* Offers Submenu */}
-                  {item.hasSubmenu && item.label === "Offers" && isOffersMenuOpen && (
+                  {/* about Submenu */}
+                  {item.hasSubmenu && item.label === "About Us" && isAboutUsMenuOpen && (
                     <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
                       <div className="py-4 px-4 space-y-5">
-                        {offersSubmenu.map((subItem, index) => (
+                        {aboutUsSubmenu.map((subItem, index) => (
                           <div key={subItem.label}>
                             <Link
                               href={subItem.href}
                               className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
-                              onClick={() => setIsOffersMenuOpen(false)}
+                              onClick={() => setIsAboutUsMenuOpen(false)}
                             >
                               {subItem.label}
                             </Link>
-                            {index < offersSubmenu.length - 1 && (
+                              {index < aboutUsSubmenu.length - 1 && (
                               <hr className="border-white/8 mt-5" />
                             )}
                           </div>
