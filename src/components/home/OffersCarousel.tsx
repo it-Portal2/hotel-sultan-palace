@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const initialOffers = [
@@ -13,7 +14,7 @@ const initialOffers = [
   },
   { 
     id: 3, 
-  imageUrl: "/offer-image.jpg"
+    imageUrl: "/offer-image.jpg"
   },
   {
     id: 4,
@@ -42,7 +43,6 @@ export default function OffersCarousel() {
     return <section className="w-full bg-[#FFFCF6] py-12 text-center">Loading Offers...</section>;
   }
 
-  
   const translateValue = `calc(10% - ${index * 80}%)`;
 
   return (
@@ -50,7 +50,7 @@ export default function OffersCarousel() {
       <div className="container mx-auto">
         
         <div className="text-center mb-8 px-4">
-          <h2 className="text-4xl md:text-5xl font-ooh-baby text-[#6B5B4B]">
+          <h2 className="text-4xl md:text-5xl font-normal text-[#6B5B4B] font-['Oooh_Baby']">
             Best Offers for you
           </h2>
           <div className="mt-6 flex justify-center">
@@ -60,6 +60,12 @@ export default function OffersCarousel() {
               width={500} 
               height={50} 
               className="object-contain"
+              onError={(e) => {
+                console.log('Image load error:', e);
+                // Fallback to CSS gradient if image fails
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<div class="w-[500px] h-[2px] bg-gradient-to-r from-transparent via-[#CBBB9D] to-transparent"></div>';
+              }}
             />
           </div>
         </div>
@@ -79,15 +85,19 @@ export default function OffersCarousel() {
                     className="object-cover" 
                     priority={i === 0}
                     sizes="80vw"
+                    onError={(e) => {
+                      console.log('Carousel image load error:', e);
+                      // Fallback to a placeholder or hide the image
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                   <div className="absolute left-[40%] md:left-[40%] bottom-2 md:bottom-4">
-                      <button
-                        type="button"
-                        className="bg-[#FF6A00] text-sm hover:bg-orange-600 text-white font-semibold rounded-lg px-4 py-2 shadow-lg transition-transform hover:scale-105"
-                        onClick={() => window.alert(`Viewing offer ${offer.id}`)}
+                      <Link
+                        href="/contact-us"
+                        className="bg-[#FF6A00] text-sm hover:bg-orange-600 text-white font-semibold rounded-lg px-4 py-2 shadow-lg transition-transform hover:scale-105 inline-block"
                       >
                         View More
-                      </button>
+                      </Link>
                   </div>
                 </div>
               </div>

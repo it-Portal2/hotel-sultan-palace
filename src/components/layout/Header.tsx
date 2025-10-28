@@ -90,7 +90,7 @@ export default function Header() {
     { label: "Wellness & Relaxation", caret: true, href: "#", hasSubmenu: true },
     { label: "Villas", href: "#" },
     { label: "Gallery", href: "#" },
-    { label: "Offers",  href: "#" },
+    { label: "Offers",  href: "/offers" },
     { label: "About Us", href: "#" ,caret: true, hasSubmenu: true},
     { label: "Contact Us", href: "/contact-us" },
   ];
