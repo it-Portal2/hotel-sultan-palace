@@ -200,8 +200,8 @@ export default function Header() {
                 width={200}
                 height={200}
                 priority
-                className="!h-16 !w-auto md:!h-20" // force larger logo
-                style={{ height: "80px", width: "auto" }} // ensures it scales visually
+                className="!h-16 !w-auto md:!h-20" 
+                style={{ height: "80px", width: "auto" }}
               />
             </Link>
 
