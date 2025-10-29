@@ -40,13 +40,26 @@ export default {
         'slide-in-left': 'slideInLeft 0.8s ease-out forwards',
         'slide-in-left-delay-200': 'slideInLeft 0.8s ease-out 0.2s forwards',
         'slide-in-left-delay-400': 'slideInLeft 0.8s ease-out 0.4s forwards',
+        'slide-in-left-delay-500': 'slideInLeft 1s ease-out 0.5s forwards',
         'slide-in-bottom': 'slideInBottom 0.8s ease-out forwards',
+        'slide-in-right': 'slideInRight 1s ease-out forwards',
+        'slide-in-right-delay-200': 'slideInRight 1s ease-out 0.2s forwards',
       },
       keyframes: {
         slideInLeft: {
           '0%': {
             opacity: '0',
             transform: 'translateX(-100px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateX(0)',
+          },
+        },
+        slideInRight: {
+          '0%': {
+            opacity: '0',
+            transform: 'translateX(100px)',
           },
           '100%': {
             opacity: '1',

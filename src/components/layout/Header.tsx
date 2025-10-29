@@ -96,9 +96,9 @@ export default function Header() {
   ];
 
   const activitiesSubmenu = [
-    { label: "Deep Blue Dive", href: "#" },
-    { label: "Aqua Adventure", href: "#" },
-    { label: "Spirit of Swahili", href: "#" },
+    { label: "Deep Blue Dive", href: "/activities/deep-blue-dive" },
+    { label: "Aqua Adventure", href: "/activities/aqua-adventure" },
+    { label: "Spirit of Swahili", href: "/activities/spirit-of-swahili" },
   ];
 
   const wellnessSubmenu = [
