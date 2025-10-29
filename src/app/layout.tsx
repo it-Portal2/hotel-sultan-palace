@@ -32,6 +32,8 @@ export default function RootLayout({
       <body
         className={"antialiased"}
       >
+        {/* Tailwind keep animation classes */}
+        <div className="hidden animate-slide-in-bottom animate-slide-in-left animate-slide-in-left-delay-200 animate-slide-in-left-delay-400" />
         <CartProvider> {children}</CartProvider>
 
         <WhatsAppButton />

@@ -245,8 +245,8 @@ export default function VillasPage() {
                      <h2 
                        ref={(el) => { headingRefs.current[3] = el; }}
                        className="text-[#FFFFFF] text-[40px] font-semibold leading-[0.625] mb-[25px] font-quicksand opacity-0 translate-y-10 will-change-transform"
-                     >
-                       Sultan's Villas
+                      >
+                       Sultan&apos;s Villas
                      </h2>
                     <p className="text-[#E0D2B5] text-[20px] font-semibold leading-[1.5] mb-[25px] font-quicksand">
                       Regal comfort and exquisite design for a majestic stay.

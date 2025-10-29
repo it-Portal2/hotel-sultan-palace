@@ -2,12 +2,7 @@ import { type Config } from "tailwindcss";
 
 
 export default {
-  safelist: [
-    'animate-slide-in-bottom',
-    'animate-slide-in-left',
-    'animate-slide-in-left-delay-200',
-    'animate-slide-in-left-delay-400',
-  ],
+  content: ["./src/**/*.{ts,tsx,js,jsx,html}"],
   theme: {
     extend: {
       colors: {
