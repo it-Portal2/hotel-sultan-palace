@@ -1,37 +1,9 @@
 // app/layout.tsx
 
 import type { Metadata } from "next";
-import { Inter, Open_Sans, Quicksand, Poppins } from "next/font/google";
 import "./globals.css";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { CartProvider } from "@/context/CartContext";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const openSans = Open_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-open-sans",
-  display: "swap",
-});
-
-const quicksand = Quicksand({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-quicksand",
-  display: "swap",
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-poppins",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -45,18 +17,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Google Fonts - via link to avoid next/font turbopack issue */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <link 
           href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" 
           rel="stylesheet"
         />
       </head>
       <body
-        className={`
-        ${inter.variable} 
-        ${openSans.variable} 
-        ${quicksand.variable} 
-        ${poppins.variable}
-        antialiased`}
+        className={"antialiased"}
       >
         <CartProvider> {children}</CartProvider>
 
