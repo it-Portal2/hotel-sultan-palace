@@ -89,7 +89,7 @@ export default function AboutZanzibar() {
   };
 
   return (
-    <section ref={sectionRef} className="w-full relative py-16 lg:py-24">
+    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-16 lg:py-24">
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0">
         <Image

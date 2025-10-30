@@ -45,16 +45,13 @@ export default function Footer() {
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Quick Links</h3>
                 <ul className="space-y-3">
-                  {['Home', 'Services', 'Villas', 'Gallery', 'Offers', 'About Us', 'Contact Us'].map((link) => (
-                    <li key={link}>
-                      <a 
-                        href={link === 'Contact Us' ? '/contact-us' : link === 'About Us' ? '/about-us' : '#'} 
-                        className="text-white hover:text-gray-300 transition-colors text-sm"
-                      >
-                        {link}
-                      </a>
-                    </li>
-                  ))}
+                  <li><a href="/" className="text-white hover:text-gray-300 transition-colors text-sm">Home</a></li>
+                  <li><a href="/villas" className="text-white hover:text-gray-300 transition-colors text-sm">Villas</a></li>
+                  <li><a href="/gallery" className="text-white hover:text-gray-300 transition-colors text-sm">Gallery</a></li>
+                  <li><a href="/offers" className="text-white hover:text-gray-300 transition-colors text-sm">Offers</a></li>
+                  <li><a href="/our-stories" className="text-white hover:text-gray-300 transition-colors text-sm">Our Stories</a></li>
+                  <li><a href="/about-us" className="text-white hover:text-gray-300 transition-colors text-sm">About Us</a></li>
+                  <li><a href="/contact-us" className="text-white hover:text-gray-300 transition-colors text-sm">Contact Us</a></li>
                 </ul>
               </div>
               
@@ -62,13 +59,10 @@ export default function Footer() {
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Legal</h3>
                 <ul className="space-y-3">
-                  {['Support', 'Faq\'s', 'Privacy Policy', 'Terms And Conditions'].map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-white hover:text-gray-300 transition-colors text-sm">
-                        {link}
-                      </a>
-                    </li>
-                  ))}
+                  <li><a href="/support" className="text-white hover:text-gray-300 transition-colors text-sm">Support</a></li>
+                  <li><a href="/#about-zanzibar" className="text-white hover:text-gray-300 transition-colors text-sm">Faq's</a></li>
+                  <li><a href="/privacy-policy" className="text-white hover:text-gray-300 transition-colors text-sm">Privacy Policy</a></li>
+                  <li><a href="/terms-and-conditions" className="text-white hover:text-gray-300 transition-colors text-sm">Terms And Conditions</a></li>
                 </ul>
               </div>
               
