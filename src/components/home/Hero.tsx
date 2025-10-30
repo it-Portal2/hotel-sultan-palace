@@ -53,7 +53,7 @@ export default function Hero() {
   return (
     <>
      
-      <section className="relative w-full h-screen overflow-hidden font-opensans">
+      <section className="relative w-full h-[700px] overflow-hidden font-opensans -mb-12">
         
       
         <div className="absolute inset-0 z-0">

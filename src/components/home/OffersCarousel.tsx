@@ -91,14 +91,7 @@ export default function OffersCarousel() {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-                  <div className="absolute left-[40%] md:left-[40%] bottom-2 md:bottom-4">
-                      <Link
-                        href="/contact-us"
-                        className="bg-[#FF6A00] text-sm hover:bg-orange-600 text-white font-semibold rounded-lg px-4 py-2 shadow-lg transition-transform hover:scale-105 inline-block"
-                      >
-                        View More
-                      </Link>
-                  </div>
+               
                 </div>
               </div>
             ))}
