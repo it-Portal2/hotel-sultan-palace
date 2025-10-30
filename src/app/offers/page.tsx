@@ -10,7 +10,7 @@ export default function OffersPage() {
     <>
       <Header />
       <main className="min-h-screen bg-[#FFFCF6] font-open-sans">
-        <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
+        <section className="relative w-full h-[520px] md:h-[800px] lg:h-[951px] overflow-hidden">
           <Image
             src="/offers/hero.png"
             alt="Offers Hero Background"
@@ -19,12 +19,12 @@ export default function OffersPage() {
             className="object-cover"
           />
         
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-90 px-4">
-            <div className="text-center max-w-[680px]">
-              <h1 className="text-[#FFFFFF] text-3xl md:text-4xl lg:text-[48px] font-semibold leading-[0.56] tracking-[0.05em] mb-10 drop-shadow-[0px_4px_26.4px_rgba(0,0,0,0.69)]">
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24 px-4">
+            <div className="text-center max-w-[680px] px-2">
+              <h1 className="text-[#FFFFFF] text-2xl md:text-4xl lg:text-[48px] font-semibold leading-[1.15] md:leading-[1.2] tracking-[0.02em] mb-3 md:mb-6 drop-shadow-[0px_4px_26.4px_rgba(0,0,0,0.69)]">
                 Exclusive Offers & Packages
               </h1>
-              <p className="text-[#FFFFFF] text-lg md:text-[22px]  font-semibold leading-[1.35] tracking-[0.05em]  drop-shadow-[0px_4px_4px_rgba(0,0,0,0.25)]">
+              <p className="text-[#FFFFFF] text-sm md:text-[22px] font-semibold leading-[1.4] tracking-[0.02em] drop-shadow-[0px_4px_4px_rgba(0,0,0,0.25)]">
                 Special deals available only when booking directly through our official website
               </p>
             </div>

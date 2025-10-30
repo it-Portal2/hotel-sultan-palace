@@ -6,13 +6,15 @@ export default function Footer() {
   return (
     <footer className="w-full">
       <div className="relative" style={{backgroundImage: 'url(/footer.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}>
+        {/* contrast overlay for readability */}
+        <div className="absolute inset-0 bg-black/60" />
       
         {/* Footer content */}
-        <div className="relative z-10 px-4 py-16 px-30">
+        <div className="relative z-10 px-4 py-16">
           <div className="container-xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              
-              {/* Column 1: Branding and Social Media */}
+            {/* Unified grid: mobile stacks, desktop shows original 4 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {/* Branding and Social Media */}
               <div className="space-y-6">
                 {/* Logo */}
                 <div className="text-white">
@@ -20,31 +22,31 @@ export default function Footer() {
                 </div>
                 
                 {/* Description */}
-                <p className="text-white text-sm leading-relaxed">
+                <p className="text-white/90 text-sm leading-relaxed max-w-md">
                   Corem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et
                 </p>
                 
                 {/* Social Media Icons */}
                 <div className="flex space-x-4">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer" style={{background:'#BE8C53'}}>
-                    <FaWhatsapp className="text-[#C0B194] text-sm" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer" style={{background:'#BE8C53'}}>
+                    <FaWhatsapp className="text-[#C0B194] text-base" />
                   </div>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer" style={{background:'#BE8C53'}}>
-                    <FaFacebookF className="text-[#C0B194] text-sm" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer" style={{background:'#BE8C53'}}>
+                    <FaFacebookF className="text-[#C0B194] text-base" />
                   </div>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer" style={{background:'#BE8C53'}}>
-                    <FaLinkedinIn className="text-[#C0B194] text-sm" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer" style={{background:'#BE8C53'}}>
+                    <FaLinkedinIn className="text-[#C0B194] text-base" />
                   </div>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer" style={{background:'#BE8C53'}}>
-                    <FaTwitter className="text-[#C0B194] text-sm" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer" style={{background:'#BE8C53'}}>
+                    <FaTwitter className="text-[#C0B194] text-base" />
                   </div>
                 </div>
               </div>
-              
-              {/* Column 2: Quick Links */}
+
+              {/* Quick Links */}
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Quick Links</h3>
-                <ul className="space-y-3">
+                <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
                   <li><a href="/" className="text-white hover:text-gray-300 transition-colors text-sm">Home</a></li>
                   <li><a href="/villas" className="text-white hover:text-gray-300 transition-colors text-sm">Villas</a></li>
                   <li><a href="/gallery" className="text-white hover:text-gray-300 transition-colors text-sm">Gallery</a></li>
@@ -54,19 +56,18 @@ export default function Footer() {
                   <li><a href="/contact-us" className="text-white hover:text-gray-300 transition-colors text-sm">Contact Us</a></li>
                 </ul>
               </div>
-              
-              {/* Column 3: Legal */}
+              {/* Legal */}
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Legal</h3>
-                <ul className="space-y-3">
+                <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
                   <li><a href="/support" className="text-white hover:text-gray-300 transition-colors text-sm">Support</a></li>
                   <li><a href="/#about-zanzibar" className="text-white hover:text-gray-300 transition-colors text-sm">Faq's</a></li>
                   <li><a href="/privacy-policy" className="text-white hover:text-gray-300 transition-colors text-sm">Privacy Policy</a></li>
                   <li><a href="/terms-and-conditions" className="text-white hover:text-gray-300 transition-colors text-sm">Terms And Conditions</a></li>
                 </ul>
               </div>
-              
-              {/* Column 4: Contact Us */}
+
+              {/* Contact Us */}
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Contact Us</h3>
                 <div className="space-y-4">
@@ -76,8 +77,8 @@ export default function Footer() {
                       <MdEmail className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
-                      <a href="mailto:portalholdingsznz@gmail.com" className="text-white text-sm hover:underline transition-colors">portalholdingsznz@gmail.com</a>
-                      <a href="mailto:reservations@sultanpalacehotelznz.com" className="text-white text-sm hover:underline transition-colors">reservations@sultanpalacehotelznz.com</a>
+                      <a href="mailto:portalholdingsznz@gmail.com" className="text-white/90 text-sm hover:text-white transition-colors">portalholdingsznz@gmail.com</a>
+                      <a href="mailto:reservations@sultanpalacehotelznz.com" className="text-white/90 text-sm hover:text-white transition-colors">reservations@sultanpalacehotelznz.com</a>
                     </div>
                   </div>
                   
@@ -87,9 +88,9 @@ export default function Footer() {
                       <MdPhone className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
-                      <a href="tel:+255684888111" className="text-white text-sm hover:underline transition-colors">+255 684 888 111</a>
-                      <a href="tel:+255777085630" className="text-white text-sm hover:underline transition-colors">+255 777 085 630</a>
-                      <a href="tel:+255657269674" className="text-white text-sm hover:underline transition-colors">+255 657 269 674</a>
+                      <a href="tel:+255684888111" className="text-white/90 text-sm hover:text-white transition-colors">+255 684 888 111</a>
+                      <a href="tel:+255777085630" className="text-white/90 text-sm hover:text-white transition-colors">+255 777 085 630</a>
+                      <a href="tel:+255657269674" className="text-white/90 text-sm hover:text-white transition-colors">+255 657 269 674</a>
                     </div>
                   </div>
                   
@@ -99,12 +100,11 @@ export default function Footer() {
                       <MdLocationOn className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-white text-sm">Dongwe, East Coast, Zanzibar</span>
+                      <span className="text-white/90 text-sm">Dongwe, East Coast, Zanzibar</span>
                     </div>
                   </div>
                 </div>
               </div>
-              
             </div>
           </div>
         </div>

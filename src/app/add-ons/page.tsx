@@ -162,7 +162,7 @@ export default function AddOnsPage() {
       <div className="w-full  px-4 py-6 -mt-18">
         <div className="max-w-[730px] pr-10 mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
               
               {/* Guest Input */}
               <div className="flex flex-col gap-1">
@@ -170,7 +170,7 @@ export default function AddOnsPage() {
                   <User size={16} />
                   <span>Guest</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {bookingData.guests.adults} guests, {bookingData.guests.rooms} room
                   </span>
@@ -183,7 +183,7 @@ export default function AddOnsPage() {
                   <Calendar size={14} />
                   <span>Check-in</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {formatDate(bookingData.checkIn)}
                   </span>
@@ -196,7 +196,7 @@ export default function AddOnsPage() {
                   <Calendar size={14} />
                   <span>Check-Out</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {formatDate(bookingData.checkOut)}
                   </span>
@@ -227,20 +227,20 @@ export default function AddOnsPage() {
                       {/* Left Side - Image and Features */}
                       <div className="w-full lg:w-[245.43px] flex-shrink-0">
                         {/* Add-on Image */}
-                        <div className="w-[245.43px] h-[228px] relative mb-3 overflow-hidden bg-gray-200">
+                        <div className="w-full h-56 md:h-64 lg:w-[245.43px] lg:h-[228px] relative mb-0 overflow-hidden bg-gray-200">
                           <Image 
                             src={addOn.image} 
                             alt={addOn.name}
                             fill
                             className="object-cover object-center"
-                            sizes="245px"
+                            sizes="(max-width: 1024px) 100vw, 245px"
                           />
                         </div>
 
                       </div>
 
                       {/* Right Side - Add-on Details */}
-                      <div className="w-full lg:w-[443px] p-8 flex flex-col gap-4">
+                      <div className="w-full lg:w-[443px] p-4 md:p-6 lg:p-8 flex flex-col gap-4">
                         {/* Add-on Info */}
                         <div>
                           <h3 className="text-2xl font-semibold text-[#423B2D] mb-2">{addOn.name}</h3>
@@ -257,7 +257,7 @@ export default function AddOnsPage() {
                       </div>
 
                       {/* Description */}
-                        <p className="text-[#423B2D] text-base leading-6 flex-grow">
+                        <p className="text-[#423B2D] text-sm md:text-base leading-6 flex-grow">
                         {addOn.description}
                       </p>
 
@@ -268,7 +268,7 @@ export default function AddOnsPage() {
                               <span className="text-sm font-medium text-[#423B2D]">
                               {addOn.type === 'per_day' ? 'Number of Days' : 'Number of guests'}
                             </span>
-                              <div className="flex items-center border border-[#110D0A] rounded w-[310px] h-[37px]">
+                              <div className="flex items-center border border-[#110D0A] rounded w-full max-w-[310px] h-[37px]">
                               <button
                                 onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) - 1)}
                                   className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
@@ -324,7 +324,7 @@ export default function AddOnsPage() {
           </div>
 
           {/* Cart Sidebar */}
-            <div className="w-[520px] -mt-28 flex-shrink-0">
+            <div className="w-full lg:w-[520px] mt-6 lg:-mt-28 flex-shrink-0">
               <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-0 lg:sticky lg:top-8">
                 <div className="p-6">
                   <h2 className="text-xl font-bold text-[#3A3326] mb-4">

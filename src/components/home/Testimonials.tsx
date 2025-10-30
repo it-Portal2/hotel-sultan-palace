@@ -84,14 +84,14 @@ export default function Testimonials() {
 
       {/* Ratings bar */}
       <div className="bg-[#242424] py-2 md:py-4">
-        <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-y-8">
+        <div className="mx-auto w-full max-w-screen-xl px-2 md:px-8 grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-y-6">
           {RATINGS.map((r) => {
             const percent = Math.max(0, Math.min(100, (r.score / 10) * 100));
             return (
               <div key={r.label} className="flex flex-col items-center text-white">
                
                   <div
-                    className="relative h-16 w-16 rounded-full"
+                    className="relative h-12 w-12 md:h-16 md:w-16 rounded-full"
                     style={{
                       background: `conic-gradient(#A79677 ${percent}%, rgba(230,230,230,1) ${percent}% 100%)`,
                     }}
@@ -101,12 +101,12 @@ export default function Testimonials() {
                  
                     <div className="absolute inset-0 grid place-items-center">
                       <div className="flex flex-col items-center">
-                        <FaStar className="text-[#A79677] text-base" />
-                        <span className="mt-1 text-sm font-semibold text-white">{r.score}</span>
+                        <FaStar className="text-[#A79677] text-[12px] md:text-base" />
+                        <span className="mt-1 text-xs md:text-sm font-semibold text-white">{r.score}</span>
                       </div>
                     </div>
                   </div>
-                <p className="mt-3 font-kaisei text-sm text-white/90 text-center">{r.label}</p>
+                <p className="mt-2 font-kaisei text-xs md:text-sm text-white/90 text-center">{r.label}</p>
               </div>
             );
           })}

@@ -36,7 +36,7 @@ export default function FeaturedCalm() {
               />
             </div>
 
-            <div className="group relative min-h-[350px] overflow-hidden lg:transform lg:translate-x-[50px]">
+            <div className="group relative min-h-[350px] overflow-hidden lg:transform lg:translate-x-[50px] order-4 lg:order-3">
               <Image 
                 src="/figma/featured-bottom.png" 
                 alt="Resort garden with ocean view" 
@@ -47,7 +47,7 @@ export default function FeaturedCalm() {
             </div>
 
             {/* Bottom Right Text - Added z-index to ensure it stays on top */}
-            <div className="relative flex min-h-[350px] items-center justify-center overflow-hidden p-8 md:p-12 lg:p-16 lg:z-10">
+            <div className="relative flex min-h-[350px] items-center justify-center overflow-hidden p-8 md:p-12 lg:p-16 lg:z-10 order-3 lg:order-4">
               <div className="pointer-events-none absolute bottom-[-20rem] left-[-15rem] h-[50rem] w-[50rem] rounded-full border border-white/60 " />
               <div className="relative z-10 max-w-lg text-center lg:text-center pl-10">
                 <p className="font-kaisei text-base leading-snug text-[#666666]">

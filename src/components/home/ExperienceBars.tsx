@@ -40,7 +40,7 @@ export default function ExperienceBars() {
               </button>
             </div>
             
-            <div className="relative w-[550px] mt-8 h-[400px] md:h-[500px]">
+            <div className="relative w-full md:w-[550px] mt-8 h-[360px] md:h-[500px]">
               <Image 
                 src="/figma/experience-right.png" 
                 alt="Indoor bar with bright lights" 
@@ -50,7 +50,7 @@ export default function ExperienceBars() {
               />
               
               
-              <div className="absolute h-[320px] w-[280px] bg-white p-8 max-w-xs shadow-lg -top-30 -right-10 lg:-right-20 transition-all duration-300 ease-in-out origin-top-left hover:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
+              <div className="absolute h-[300px] md:h-[320px] w-[90%] max-w-[320px] md:w-[280px] bg-white p-6 md:p-8 shadow-lg top-4 left-1/2 -translate-x-1/2 md:translate-x-0 md:top-[-120px] md:right-[-40px] md:left-auto lg:-right-20 transition-all duration-300 ease-in-out origin-top-left md:hover:scale-110 md:hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
                 <h3 className="pt-8 font-kaisei font-bold text-3xl text-black">
                   Refresh, Relax, Repeat
                 </h3>

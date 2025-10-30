@@ -92,7 +92,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
   return (
     <div className="w-full bg-white">
    
-      <div className="relative h-[670px] w-full">
+      <div className="relative h-[480px] sm:h-[560px] md:h-[670px] w-full">
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -106,7 +106,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
        
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
-          <h1 className="text-[#FFFFFF] mt-130 mr-90 text-[70px] font-['Kaisei HarunoUmi'] italic leading-[1.2] tracking-wide" style={{ fontFamily: 'var(--font-kaisei, serif)' }}>
+          <h1 className="text-[#FFFFFF] text-[28px] sm:text-[40px] md:text-[56px] lg:text-[70px] font-['Kaisei HarunoUmi'] italic leading-[1.2] tracking-wide text-center px-2">
             Voices from Our Guests
           </h1>
         </div>

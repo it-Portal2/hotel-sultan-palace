@@ -25,12 +25,12 @@ export default function ContactUs() {
   return (
     <section className="w-full">
       {/* Top Section: Contact Form */}
-      <div className="w-full bg-[#2C2B28] py-12 px-15">
+      <div className="w-full bg-[#2C2B28] py-12">
         <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
-          <p className="font-kaisei text-base ml-20 text-[#BE8C53]">Contact Us</p>
-          <h2 className="mt-2 font-kaisei font-bold ml-20 text-3xl md:text-4xl text-white">Find Out More</h2>
+          <p className="font-kaisei text-base text-[#BE8C53]">Contact Us</p>
+          <h2 className="mt-2 font-kaisei font-bold text-3xl md:text-4xl text-white">Find Out More</h2>
 
-          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 mr-10 ml-20 gap-y-10">
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-y-10 gap-x-12">
             {/* Left: contact details */}
             <div className="space-y-6">
               {info.map((item, idx) => (
@@ -60,7 +60,7 @@ export default function ContactUs() {
             </div>
 
             {/* Right: form */}
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-3 px-2 md:px-4 -mt-20 z-10 mx-15">
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-4 px-0 md:px-4 z-10">
               <div className="relative">
                 <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10" placeholder="Your name" />
                 <MdPerson className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 text-lg" />
@@ -74,7 +74,7 @@ export default function ContactUs() {
                 <MdPhone className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 text-lg" />
               </div>
               <div className="relative">
-                <input className="w-full bg-[#BE8C  53]/10 text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10" placeholder="Website" />
+                <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10" placeholder="Website" />
                 <MdLanguage className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 text-lg" />
               </div>
               <div className="relative md:col-span-2">
@@ -96,7 +96,7 @@ export default function ContactUs() {
           <div className="text-center">
             <h3 className="font-kaisei text-white text-xl md:text-2xl">Get Timely Updates</h3>
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
-              <input className="w-[320px] bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10" placeholder="Enter Your Email Address" />
+              <input className="w-full max-w-[420px] bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10" placeholder="Enter Your Email Address" />
               <button className="bg-[#BE8C53] text-white font-kaisei px-10 py-2 text-sm rounded-md">Subscribe</button>
             </div>
           </div>

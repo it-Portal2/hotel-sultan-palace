@@ -159,10 +159,10 @@ export default function ContactUsPage() {
       </div>
 
       {/* Main Content Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 h-[400px] sm:h-[500px] md:h-[600px] lg:h-[645px] w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 w-full">
         {/* Left Side - Contact Form Background */}
         <div 
-          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1"
+          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[645px]"
           style={{
             backgroundImage: 'url(/contact-form-bg.png)',
             backgroundSize: 'cover',
@@ -273,10 +273,10 @@ export default function ContactUsPage() {
 
       {/* Contact Information Section */}
       <div className="w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_4fr] h-[400px] sm:h-[450px] md:h-[500px] lg:h-[527px] w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_4fr] w-full">
           {/* Left Side Image */}
           <div 
-            className="bg-cover bg-center bg-no-repeat relative"
+            className="bg-cover bg-center bg-no-repeat relative min-h-[260px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[527px]"
             style={{
               backgroundImage: 'url(/contact-info-bg.png)',
               backgroundSize: 'cover',
@@ -284,20 +284,20 @@ export default function ContactUsPage() {
             }}
           >
             {/* Map Button Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-end justify-center pb-4 sm:pb-6 z-10">
               <button 
                 onClick={handleFindInMap}
-                className="bg-black text-white px-4 py-2 mt-80 rounded-full flex items-center gap-3 hover:bg-gray-800 transition-colors cursor-pointer"
+                className="bg-black/90 text-white px-4 py-2 rounded-full flex items-center gap-2 sm:gap-3 hover:bg-black transition-colors cursor-pointer shadow-md"
               >
                 <FaMapMarkerAlt className="text-white text-sm" />
-                <span className="text-[20px] font-regular font-['Quicksand']">Find in map</span>
+                <span className="text-sm sm:text-base md:text-[18px] font-regular font-['Quicksand']">Find in map</span>
               </button>
             </div>
           </div>
           
           {/* Right Side - Contact Info Background */}
           <div className="bg-[#E8E4D9] flex items-center w-full">
-            <div className="px-8 lg:px-16 py-16 w-full space-y-6">
+            <div className="px-8 lg:px-16 py-12 sm:py-16 w-full space-y-6">
             {/* Address */}
             <div className="flex items-start gap-4 lg:gap-[61px]">
               <div className="w-[34px] h-[36px] bg-black rounded-sm flex items-center justify-center flex-shrink-0">
@@ -364,7 +364,7 @@ export default function ContactUsPage() {
       </div>
 
       {/* Resort Aerial View Section with Call to Action */}
-      <div className="relative h-[400px] sm:h-[500px] md:h-[550px] lg:h-[590px] w-full">
+      <div className="relative h-[360px] sm:h-[480px] md:h-[540px] lg:h-[590px] w-full">
         {/* Background Image - Tropical Resort Aerial View */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -381,7 +381,7 @@ export default function ContactUsPage() {
     
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
           <div className="text-center">
-            <h3 className="text-white text-[24px] sm:text-[28px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.1] sm:leading-[1.15] md:leading-[1.17] lg:leading-[1.19] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol']">
+            <h3 className="text-white text-[22px] sm:text-[26px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.15] sm:leading-[1.18] md:leading-[1.2] lg:leading-[1.22] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol']">
               Let&apos;s Begin Your Zanzibar Journey
             </h3>
             <button className="bg-[#F96406] text-white text-sm sm:text-base md:text-lg font-semibold px-4 py-2 sm:px-6 sm:py-2 md:px-6 md:py-2 rounded-[52px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol']">

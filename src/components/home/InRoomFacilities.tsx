@@ -14,7 +14,7 @@ export default function InRoomFacilities() {
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mt-4">
           
           {/* Left Image */}
-          <div className="relative w-[750px] h-[450px] lg:h-[600px] z-0">
+          <div className="relative w-full h-[320px] md:h-[450px] lg:h-[600px] z-0">
             <Image 
               src="/figma/inroom.png" 
               alt="Luxurious hotel bathroom interior" 
@@ -24,7 +24,8 @@ export default function InRoomFacilities() {
             />
           </div>
 
-          <div className="absolute inset-0 z-10">
+          {/* Overlay: large screens only */}
+          <div className="absolute inset-0 z-10 hidden lg:block">
             <div className="relative h-full w-full">
                 
                 {/* Paragraph overlapping image */}
@@ -70,6 +71,37 @@ export default function InRoomFacilities() {
                     </div>
                 </div>
 
+            </div>
+          </div>
+
+          {/* Mobile stacked content */}
+          <div className="block lg:hidden w-full space-y-6 mt-6">
+            <p className="font-kaisei text-xl leading-relaxed text-[#242424]">
+              Experience Comfort and Elegance in Your Room
+            </p>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="w-full bg-white rounded-sm p-6 shadow-lg">
+                <h3 className="font-kaisei font-bold text-lg text-black mb-4">Refreshments & Snacks</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li className="font-kaisei text-sm text-black">Tea/Coffee Maker</li>
+                  <li className="font-kaisei text-sm text-black">Mini Bar</li>
+                </ul>
+              </div>
+              <div className="w-full bg-[#655D4E] rounded-sm p-6 shadow-lg">
+                <h3 className="font-kaisei font-bold text-lg text-white mb-4">Entertainment & Safety</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li className="font-kaisei text-sm text-white">LCD TV</li>
+                  <li className="font-kaisei text-sm text-white">Safety Locker</li>
+                </ul>
+              </div>
+              <div className="w-full bg-[#242424] rounded-sm p-6 shadow-lg">
+                <h3 className="font-kaisei font-bold text-lg text-white mb-4">Comfort & Relaxation</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li className="font-kaisei text-sm text-white">Bathrobes</li>
+                  <li className="font-kaisei text-sm text-white">Slippers</li>
+                  <li className="font-kaisei text-sm text-white">Separate Sea View Balcony with Swing and Cots (available in Ocean and Imperial Rooms)</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

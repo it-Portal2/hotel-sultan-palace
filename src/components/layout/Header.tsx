@@ -76,6 +76,8 @@ export default function Header() {
   const [isAboutUsMenuOpen, setIsAboutUsMenuOpen] = useState(false);
   const [isActivitiesMenuOpen, setIsActivitiesMenuOpen] = useState(false);
   const [isWellnessMenuOpen, setIsWellnessMenuOpen] = useState(false);
+  const [mobileOpenSection, setMobileOpenSection] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   const socialLinks = [
     { name: "Whatsapp", icon: FaWhatsapp, href: "#" },
@@ -143,9 +145,16 @@ export default function Header() {
     };
   }, [isAboutUsMenuOpen, isActivitiesMenuOpen, isWellnessMenuOpen]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
-      <header className="w-full absolute top-0 left-0 z-30 font-open-sans">
+      <header className={`w-full absolute top-0 left-0 z-30 font-open-sans ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`}>
         <div className="w-full px-4 lg:px-12">
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-6 lg:gap-8">
@@ -319,7 +328,7 @@ export default function Header() {
             </nav>
 
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 hidden md:block">
                 <BookNowButton scrollTo="booking-form" size="sm" className="text-[14px]" />
               </div>
               <div className="lg:hidden z-50">
@@ -340,7 +349,7 @@ export default function Header() {
         lg:hidden fixed top-0 left-0 w-full h-screen bg-[#0a1a2b] z-40
         transition-transform duration-300 ease-in-out
         ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}
-        flex flex-col items-center justify-center
+        flex flex-col
       `}
       >
         <button
@@ -350,23 +359,108 @@ export default function Header() {
           <X size={32} />
         </button>
 
-        <nav className="flex flex-col items-center gap-6 text-center">
-          {navLinks.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="text-white text-2xl font-semibold hover:text-orange-300 transition-colors flex items-center gap-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {item.label}
-              {item.caret && <ChevronDown size={20} />}
-            </Link>
-          ))}
+        <nav className="mt-24 px-6 overflow-y-auto">
+          <ul className="space-y-2">
+            {navLinks.map((item) => {
+              const isExpandable = !!item.hasSubmenu;
+              const isOpen = mobileOpenSection === item.label;
+              const toggle = () => setMobileOpenSection(isOpen ? null : item.label);
+              return (
+                <li key={item.label} className="border-b border-white/10 pb-2">
+                  {isExpandable ? (
+                    <button
+                      onClick={toggle}
+                      className="w-full flex items-center justify-between text-left text-white text-xl font-semibold py-3"
+                    >
+                      <span>{item.label}</span>
+                      <ChevronDown
+                        size={20}
+                        className={`transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className="block w-full text-white text-xl font-semibold py-3 hover:text-orange-300 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  )}
+
+                  {/* Submenus */}
+                  {isExpandable && item.label === "Activities" && (
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                      <div className="overflow-hidden">
+                        <ul className="pl-4 pr-2 py-1 space-y-2">
+                          {activitiesSubmenu.map((sub) => (
+                            <li key={sub.label}>
+                              <Link
+                                href={sub.href}
+                                className="block text-white/90 text-base py-2 hover:text-white"
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                {sub.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                  {isExpandable && item.label === "Wellness & Relaxation" && (
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                      <div className="overflow-hidden">
+                        <ul className="pl-4 pr-2 py-1 space-y-2">
+                          {wellnessSubmenu.map((sub) => (
+                            <li key={sub.label}>
+                              <Link
+                                href={sub.href}
+                                className="block text-white/90 text-base py-2 hover:text-white"
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                {sub.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                  {isExpandable && item.label === "About Us" && (
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                    >
+                      <div className="overflow-hidden">
+                        <ul className="pl-4 pr-2 py-1 space-y-2">
+                          {aboutUsSubmenu.map((sub) => (
+                            <li key={sub.label}>
+                              <Link
+                                href={sub.href}
+                                className="block text-white/90 text-base py-2 hover:text-white"
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                {sub.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </nav>
 
         <hr className="border-white/20 w-3/4 my-8" />
 
-        <div className="md:hidden flex flex-col items-center gap-4 text-white text-lg font-semibold">
+        <div className="md:hidden mt-auto mb-8 flex flex-col items-center gap-4 text-white text-lg font-semibold">
           <Link
             href="tel:+255657269674"
             className="flex items-center gap-3 hover:text-orange-300 transition-colors"

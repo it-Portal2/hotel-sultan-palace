@@ -391,10 +391,10 @@ export default function CheckoutPage() {
       </div>
       
       {/* Main Content - Two Column Layout */}
-      <div className="mt-5 flex pb-16 gap-6">
+      <div className="mt-5 flex flex-col lg:flex-row pb-16 gap-6">
         {/* Left Column - Form */}
-        <div className="flex-1 max-w-[900px] px-8">
-          <div className="bg-[#F8F5EF] p-8 rounded-lg">
+        <div className="flex-1 max-w-[900px] px-4 md:px-8">
+          <div className="bg-[#F8F5EF] p-4 md:p-8 rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Reservation Overview */}
             <div className="space-y-4">
@@ -448,7 +448,7 @@ export default function CheckoutPage() {
               <h2 className="text-[20px] font-normal text-black">Guest Details</h2>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[14px] text-[#202C3B] mb-1">
                       Prefix<span className="text-red-500">*</span>
@@ -497,7 +497,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[14px] text-[#202C3B] mb-1">Mobile Phone</label>
                     <input
@@ -536,7 +536,7 @@ export default function CheckoutPage() {
               <h2 className="text-[20px] font-normal text-black">Address</h2>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[14px] text-[#202C3B] mb-1">Country</label>
                     <div className="relative">
@@ -639,7 +639,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[14px] text-[#202C3B] mb-1">Address 1</label>
                     <input
@@ -810,7 +810,7 @@ export default function CheckoutPage() {
                 <div className="space-y-3">
                   <p className="text-[16px] font-semibold text-black">${calculateTotal().toFixed(2)} deposit due now.</p>
                   
-                  <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1">
                     <div className={`w-9 h-6 border rounded flex items-center justify-center transition-all duration-200 ${
                       getCardType(payment.cardNumber) === 'visa' 
                         ? 'border-blue-500 bg-blue-50' 
@@ -842,7 +842,7 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="max-w-[400px]">
+                  <div className="max-w-full md:max-w-[400px]">
                     <label className="block text-[14px] text-[#202C3B] mb-1">
                       Name of Card<span className="text-red-500">*</span>
                     </label>
@@ -856,7 +856,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                   
-                  <div className="max-w-[400px]">
+                  <div className="max-w-full md:max-w-[400px]">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <CreditCardIcon className="w-6 h-6 " />
@@ -902,7 +902,7 @@ export default function CheckoutPage() {
                       )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[14px] text-[#202C3B] mb-1">
                         Expiration Date (MM/YY)<span className="text-red-500">*</span>
@@ -1027,7 +1027,7 @@ export default function CheckoutPage() {
         </div>
         
         {/* Right Column - Cart Summary */}
-        <div className="w-[400px]">
+        <div className="w-full lg:w-[400px] px-4 lg:px-0">
           <CartSummary />
         </div>
       </div>

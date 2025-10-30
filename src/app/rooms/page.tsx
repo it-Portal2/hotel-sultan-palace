@@ -36,6 +36,8 @@ export default function RoomsPage() {
   const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addedRoomId, setAddedRoomId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState<string | null>(null);
 
 
 
@@ -57,6 +59,10 @@ export default function RoomsPage() {
 
   const addToCart = (room: Room) => {
     addRoom(room);
+    setAddedRoomId(room.id);
+    setShowToast(`${room.type} added to cart`);
+    setTimeout(() => setAddedRoomId(null), 1500);
+    setTimeout(() => setShowToast(null), 1800);
   };
 
   const removeFromCart = (roomId: string) => {
@@ -141,7 +147,7 @@ export default function RoomsPage() {
       <div className="w-full  px-4 py-6 mt-20">
         <div className="max-w-3xl mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
               
               {/* Guest Input */}
               <div className="flex flex-col gap-1">
@@ -149,7 +155,7 @@ export default function RoomsPage() {
                   <User size={16} />
                   <span>Guest</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {bookingData.guests.adults} guests, {bookingData.guests.rooms} room
                   </span>
@@ -162,7 +168,7 @@ export default function RoomsPage() {
                   <Calendar size={14} />
                   <span>Check-in</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {formatDate(bookingData.checkIn)}
                   </span>
@@ -175,7 +181,7 @@ export default function RoomsPage() {
                   <Calendar size={14} />
                   <span>Check-Out</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-8 flex items-center">
+                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
                   <span className="text-[#423B2D] text-xs font-semibold">
                     {formatDate(bookingData.checkOut)}
                   </span>
@@ -196,7 +202,7 @@ export default function RoomsPage() {
 
       <div className="w-full px-4 mb-16 lg:mb-20">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
             {/* Rooms List */}
             <div className="flex-1 lg:max-w-3xl">
               <div className="space-y-6 lg:space-y-8">
@@ -206,7 +212,7 @@ export default function RoomsPage() {
                       {/* Left Side - Image and Features */}
                       <div className="w-full lg:w-80 flex-shrink-0">
                         {/* Room Image */}
-                        <div className="w-full h-56 lg:h-64 relative mb-3">
+                        <div className="w-full h-56 lg:h-64 relative mb-0">
                           <Image 
                             src={room.image || '/figma/rooms-garden-suite.png'} 
                             alt={room.name}
@@ -215,14 +221,13 @@ export default function RoomsPage() {
                             sizes="(max-width: 768px) 100vw, 320px"
                           />
                           {/* Bed info overlay */}
-                          <div className="absolute  px-2 mt-70 text-sm flex items-center gap-1">
+                          <div className="absolute left-2 bottom-2 bg-white/90 rounded px-2 py-1 text-xs flex items-center gap-1">
                             <BedDouble size={14} color="#1D2A3A" />
                             <span className="font-semibold text-[#1D2A3A]">{room.beds}</span>
                           </div>
                         </div>
 
-                      
-                        <div className="p-3 mt-10 bg-[#F8F5EF]">
+                        <div className="p-3 bg-[#F8F5EF]">
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex items-center gap-1 text-[#3A3326]">
                               <DoorOpen size={12} color="#3A3326" />
@@ -261,7 +266,7 @@ export default function RoomsPage() {
                       </div>
 
                       {/* Right Side - Room Details */}
-                      <div className="w-full lg:w-90 p-8 flex flex-col gap-4">
+                      <div className="w-full lg:w-90 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
                         {/* Room Info */}
                         <div>
                           <h3 className="text-xl font-semibold text-[#423B2D] mb-2">{room.type}</h3>
@@ -302,9 +307,9 @@ export default function RoomsPage() {
 
                         <button
                           onClick={() => addToCart(room)}
-                          className="bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm"
+                          className={`bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm ${addedRoomId===room.id ? 'opacity-80' : ''}`}
                         >
-                          Book Now
+                          {addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now'}
                         </button>
                       </div>
                     </div>
@@ -314,7 +319,7 @@ export default function RoomsPage() {
             </div>
 
             {/* Cart Sidebar */}
-            <div className="w-[410px] flex-shrink-0 -mt-28">
+            <div className="w-full lg:w-[410px] flex-shrink-0 mt-6 lg:-mt-28">
               <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky lg:top-8">
                 <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
                   Your Cart (Item - {cartRooms.length})
@@ -425,6 +430,15 @@ export default function RoomsPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast */}
+      {showToast && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-6 z-50">
+          <div className="bg-[#1D2A3A] text-white text-sm px-4 py-2 rounded shadow-lg">
+            {showToast}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

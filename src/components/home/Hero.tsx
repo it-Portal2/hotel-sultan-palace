@@ -53,7 +53,7 @@ export default function Hero() {
   return (
     <>
      
-      <section className="relative w-full h-[700px] overflow-hidden font-opensans -mb-12">
+      <section className="relative w-full h-[520px] md:h-[700px] overflow-hidden font-opensans mb-6 md:-mb-12">
         
       
         <div className="absolute inset-0 z-0">
@@ -68,7 +68,7 @@ export default function Hero() {
             Your browser does not support the video tag.
           </video>
          
-          <div className="absolute inset-0 bg-black/40" /> 
+          {/* <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-black/20 to-white" />  */}
         </div>
 
        
@@ -77,7 +77,7 @@ export default function Hero() {
         </audio>
 
     
-        <div className="relative z-10 h-full flex flex-col justify-end items-center pb-8 px-4">
+        <div className="relative z-10 h-full flex flex-col justify-end items-center pb-3 md:pb-8 px-4">
           <div className="w-full max-w-4xl">
             
    
@@ -87,7 +87,7 @@ export default function Hero() {
             </div>
 
             {/* Booking Form */}
-            <div id="booking-form" className="bg-white rounded-xl shadow-lg p-2 md:p-0">
+            <div id="booking-form" className="bg-white rounded-xl shadow-lg p-2 md:p-0 -mt-20 sm:-mt-20 md:mt-0">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-center gap-2 md:gap-0 font-opensans">
                 
                 {/* Date Input */}
