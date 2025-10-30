@@ -1,19 +1,84 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 
-const faqItems = [
-  "Overview of Zanzibar",
-  "Convenience and Value for Money", 
-  "Peace of Mind and Stress-Free Experience",
-  "Wide Range of Facilities and Activities",
-  "Discovering Zanzibar's Beaches",
-  "Exploring Zanzibar's Islands",
-  "Exciting Activities and Experiences in Zanzibar"
+type FaqItem = {
+  question: string;
+  answer: string;
+};
+
+const faqItems: FaqItem[] = [
+  {
+    question: "Which airlines fly to Zanzibar?",
+    answer:
+      "Multiple international and regional airlines connect to Zanzibar (ZNZ). Check your preferred carrier or aggregator for current routes and schedules.",
+  },
+  {
+    question: "What is the nearest airport to the hotel?",
+    answer:
+      "Abeid Amani Karume International Airport, Zanzibar (IATA: ZNZ) is the closest airport to the resort areas on the East Coast.",
+  },
+  {
+    question: "How do I get from the airport to the hotel?",
+    answer:
+      "If you have booked via a travel agent, they can arrange ground services in Zanzibar. Otherwise, inform the hotel prior to arrival and they can organize transfers at an additional charge.",
+  },
+  {
+    question: "Is the hotel located directly on the beach?",
+    answer:
+      "Yes. The properties are set right on the powder-soft white sand beaches of Zanzibar’s East Coast.",
+  },
+  {
+    question: "Are the beaches tidal?",
+    answer:
+      "Like much of the Swahili Coast, the beaches are tidal and change seasonally. During low tide, you can enjoy a complimentary guided reef walk to discover marine life.",
+  },
+  {
+    question: "Are pool towels provided?",
+    answer:
+      "Yes, pool towels are available at the poolside at no extra charge.",
+  },
+  {
+    question: "What meal plan is offered?",
+    answer:
+      "Baraza typically offers an all-inclusive meal plan, meaning all meals and house alcoholic and non-alcoholic beverages are included during your stay.",
+  },
+  {
+    question: "Are drinks included?",
+    answer:
+      "Yes, house alcoholic and non-alcoholic beverages are included with the all-inclusive plan.",
+  },
+  {
+    question: "Can I book Zanzibar excursions directly at the hotel?",
+    answer:
+      "Yes. The Guest Relations team can help you arrange a variety of local excursions and activities.",
+  },
+  {
+    question: "What are some popular Zanzibar excursions?",
+    answer:
+      "Popular options include Stone Town tours, Spice Farm visits, Snorkeling at Mnemba, Jozani Forest (red colobus monkeys), and sunset dhow cruises.",
+  },
+  {
+    question: "Does the hotel offer diving and is there a dive school?",
+    answer:
+      "Diving can be arranged through trusted local operators, and many resorts partner with nearby dive centers for courses and guided dives.",
+  },
+  {
+    question: "Is complimentary Wi‑Fi available in my room/villa?",
+    answer:
+      "Yes, complimentary Wi‑Fi is available throughout the property, including rooms and villas.",
+  },
+  {
+    question: "Are children allowed at the hotel?",
+    answer:
+      "Yes, families with children of all ages are welcome. Some facilities and activities may have age guidelines for safety.",
+  },
 ];
 
 export default function AboutZanzibar() {
   const [openItems, setOpenItems] = useState<number[]>([]);
+  const [showAll, setShowAll] = useState<boolean>(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   const toggleItem = (index: number) => {
     setOpenItems(prev => 
@@ -24,7 +89,7 @@ export default function AboutZanzibar() {
   };
 
   return (
-    <section className="w-full relative py-16 lg:py-24">
+    <section ref={sectionRef} className="w-full relative py-16 lg:py-24">
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -38,22 +103,20 @@ export default function AboutZanzibar() {
       
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-4xl px-4 md:px-8">
-        
-        
         <h2 className="text-center font-kaisei text-3xl md:text-4xl text-[#655D4E] mb-12">
-          About Zanzibar as a Destination
+          Frequently Asked Questions
         </h2>
         
       
-        <div className="w-[700px] mx-auto">
-          {faqItems.map((item, index) => (
+        <div className="w-[700px] mx-auto max-w-full">
+          {(showAll ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
             <div key={index} className="border-b border-[#CBBB9D]">
               <button
                 onClick={() => toggleItem(index)}
                 className="w-full py-4 flex items-center justify-between text-left"
               >
-                <span className="font-kaisei text-[#655D4E] text-lg">
-                  {item}
+                <span className="font-kaisei text-[#655D4E] text-lg pr-6">
+                  {item.question}
                 </span>
              
                 <div className="text-[#BE8C53] text-3xl font-light transition-transform duration-300 ease-in-out"
@@ -65,16 +128,37 @@ export default function AboutZanzibar() {
               
              
               <div
-                className={`overflow-hidden transition-all duration-500 ease-in-out ${openItems.includes(index) ? 'max-h-40' : 'max-h-0'}`}
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${openItems.includes(index) ? 'max-h-[500px]' : 'max-h-0'}`}
               >
                 <div className="pt-2 pb-6 pr-8">
                   <p className="font-kaisei text-[#3D3D3D] leading-relaxed">
-                    Discover more about {item.toLowerCase()} and how it enhances your stay at The Sultan Palace.
+                    {item.answer}
                   </p>
                 </div>
               </div>
             </div>
           ))}
+          {faqItems.length > 5 && (
+            <div className="text-center mt-6">
+              <button
+                onClick={() =>
+                  setShowAll(prev => {
+                    const next = !prev;
+                    if (prev) {
+                      // Collapsing to fewer items; ensure we stay at this section
+                      requestAnimationFrame(() => {
+                        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      });
+                    }
+                    return next;
+                  })
+                }
+                className="px-6 py-2 border border-[#BE8C53] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-colors rounded"
+              >
+                {showAll ? 'View less' : 'View more'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>
