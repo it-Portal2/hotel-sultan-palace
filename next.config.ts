@@ -19,8 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Ensure public folder is included in build
-  publicRuntimeConfig: {},
   // Fix for chunk loading issues and stability
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {
