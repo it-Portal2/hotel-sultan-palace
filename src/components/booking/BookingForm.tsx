@@ -181,17 +181,17 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
                     </div>
                     <div className="flex items-center gap-3">
                       <button 
-                        onClick={() => handleGuestChange(k, (guests as any)[k]-1)} 
-                        disabled={(guests as any)[k] <= (k==='children'?0:1)} 
+                        onClick={() => handleGuestChange(k, (guests as Record<string, number>)[k]-1)} 
+                        disabled={(guests as Record<string, number>)[k] <= (k==='children'?0:1)} 
                         className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
                         </svg>
                       </button>
-                      <span className="w-8 text-center font-semibold text-base text-gray-800">{(guests as any)[k]}</span>
+                      <span className="w-8 text-center font-semibold text-base text-gray-800">{(guests as Record<string, number>)[k]}</span>
                       <button 
-                        onClick={() => handleGuestChange(k, (guests as any)[k]+1)} 
+                        onClick={() => handleGuestChange(k, (guests as Record<string, number>)[k]+1)} 
                         className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white transition-all duration-200 active:scale-95"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

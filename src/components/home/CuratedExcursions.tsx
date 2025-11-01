@@ -40,7 +40,7 @@ export default function CuratedExcursions() {
           </div>
           <div className="flex items-start">
             <p className={`text-[#5E5E5E] font-quicksand font-medium text-[16px] md:text-[18px] leading-[1.25] max-w-full lg:max-w-[631px] curated-text ${isVisible ? 'curated-text-visible' : ''}`}>
-              Let us take you beyond the hotel. From Stone Town's historic alleys to spice farm adventures and sunset dhow cruises, our curated excursions reveal Zanzibar's soul. Every journey is arranged with care—just for you.
+              Let us take you beyond the hotel. From Stone Town&apos;s historic alleys to spice farm adventures and sunset dhow cruises, our curated excursions reveal Zanzibar&apos;s soul. Every journey is arranged with care—just for you.
             </p>
           </div>
         </div>

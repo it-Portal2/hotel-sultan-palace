@@ -39,7 +39,7 @@ export default function NewGalleryImagePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const id = await createGalleryImage({ imageUrl, type } as any);
+      const id = await createGalleryImage({ imageUrl, type });
       if (id) router.push('/admin/gallery');
       else alert('Failed to create');
     } finally { setSaving(false); }

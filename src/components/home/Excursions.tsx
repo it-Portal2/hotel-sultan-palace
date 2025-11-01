@@ -56,7 +56,7 @@ export default function Excursions() {
               Zanzibar Excursions
             </h2>
             <p className={`text-[16px] md:text-[18px] font-normal leading-[1.25] text-[#808080] font-quicksand excursions-subtitle ${isVisible ? 'excursions-subtitle-visible' : ''}`}>
-              Discover the Island's Most Memorable Adventures
+              Discover the Island&apos;s Most Memorable Adventures
             </p>
           </div>
           <button

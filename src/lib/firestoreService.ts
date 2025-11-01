@@ -266,7 +266,7 @@ const roomImages = {
 };
 
 // Helper to resolve room image: prefer static mapping by name, then Firestore field, then default
-const resolveRoomImage = (data: any): string => {
+const resolveRoomImage = (data: { name?: string; image?: string }): string => {
   // Prefer uploaded/explicit image first
   if (data?.image) return data.image;
   // Fallback to static mapping by name

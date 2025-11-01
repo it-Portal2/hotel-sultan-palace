@@ -29,7 +29,7 @@ export default function NewStoryPicturePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const id = await createStoryImage({ imageUrl, alt, createdAt: new Date(), updatedAt: new Date() } as any);
+      const id = await createStoryImage({ imageUrl, alt, createdAt: new Date(), updatedAt: new Date() } as { imageUrl: string; alt: string; createdAt: Date; updatedAt: Date });
       if (id) router.push('/admin/story-pictures');
       else alert('Failed to create');
     } finally { setSaving(false); }

@@ -216,7 +216,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     </p>
                     
                     <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] leading-[1.35] font-moon-dance tracking-[0.05em] whitespace-pre-line transition-all duration-300 group-hover:translate-x-1">
-                      Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn't just a hotel; it was where I found my calm again — a place I'll always carry in my heart.
+                      Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn&apos;t just a hotel; it was where I found my calm again — a place I&apos;ll always carry in my heart.
                     </p>
                   </div>
                 </div>

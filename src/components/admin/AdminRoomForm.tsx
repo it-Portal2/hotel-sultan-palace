@@ -51,7 +51,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
               beds: room.beds,
               image: room.image,
               maxGuests: room.maxGuests,
-              cancellationFreeDays: (room as any).cancellationFreeDays ?? 2
+              cancellationFreeDays: (room as { cancellationFreeDays?: number }).cancellationFreeDays ?? 2
             });
           }
         } catch (error) {
@@ -105,7 +105,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         amenities: formData.amenities.filter(a => a.trim() !== ''),
         price: Number(formData.price),
         maxGuests: Number(formData.maxGuests),
-        cancellationFreeDays: Number((formData as any).cancellationFreeDays ?? 0)
+        cancellationFreeDays: Number((formData as { cancellationFreeDays?: number }).cancellationFreeDays ?? 0)
       };
 
       if (isEdit && roomId) {
@@ -231,7 +231,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     type="number"
                     name="cancellationFreeDays"
                     id="cancellationFreeDays"
-                    value={(formData as any).cancellationFreeDays}
+                    value={(formData as { cancellationFreeDays?: number }).cancellationFreeDays || ''}
                     onChange={handleInputChange}
                     min={0}
                     className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"

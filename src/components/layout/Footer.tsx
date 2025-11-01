@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
 import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 export default function Footer() {
@@ -47,7 +48,7 @@ export default function Footer() {
               <div className="space-y-6">
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Quick Links</h3>
                 <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
-                  <li><a href="/" className="text-white hover:text-gray-300 transition-colors text-sm">Home</a></li>
+                  <li><Link href="/" className="text-white hover:text-gray-300 transition-colors text-sm">Home</Link></li>
                   <li><a href="/villas" className="text-white hover:text-gray-300 transition-colors text-sm">Villas</a></li>
                   <li><a href="/gallery" className="text-white hover:text-gray-300 transition-colors text-sm">Gallery</a></li>
                   <li><a href="/offers" className="text-white hover:text-gray-300 transition-colors text-sm">Offers</a></li>
@@ -61,7 +62,7 @@ export default function Footer() {
                 <h3 className="text-white text-lg font-semibold uppercase tracking-wide">Legal</h3>
                 <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
                   <li><a href="/support" className="text-white hover:text-gray-300 transition-colors text-sm">Support</a></li>
-                  <li><a href="/#about-zanzibar" className="text-white hover:text-gray-300 transition-colors text-sm">Faq's</a></li>
+                  <li><Link href="/#about-zanzibar" className="text-white hover:text-gray-300 transition-colors text-sm">Faq&apos;s</Link></li>
                   <li><a href="/privacy-policy" className="text-white hover:text-gray-300 transition-colors text-sm">Privacy Policy</a></li>
                   <li><a href="/terms-and-conditions" className="text-white hover:text-gray-300 transition-colors text-sm">Terms And Conditions</a></li>
                 </ul>

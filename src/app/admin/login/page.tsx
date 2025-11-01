@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       if (!auth) throw new Error('Auth unavailable');
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/admin');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Login failed. Please check your credentials.');
       setShake(true);
       setTimeout(() => setShake(false), 500);

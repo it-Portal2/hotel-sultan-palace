@@ -36,7 +36,7 @@ export default function AdminStoryPicturesPage() {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-3xl font-bold text-gray-900">Story in Pictures</h1>
-          <p className="mt-2 text-gray-600">Add images for the home 'Story in Pictures' gallery</p>
+          <p className="mt-2 text-gray-600">Add images for the home &apos;Story in Pictures&apos; gallery</p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
           <Link href="/admin/story-pictures/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Image</Link>

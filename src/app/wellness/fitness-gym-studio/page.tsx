@@ -131,7 +131,7 @@ export default function FitnessGymStudioPage() {
                     </h2>
                     <div className="space-y-4 text-[#000000] text-[16px] md:text-[17px] font-normal leading-[2.277] font-open-sans">
                       <p>
-                        Combine your fitness routine with refreshing views, natural light, and motivational music. Whether you're maintaining your workout schedule or exploring new fitness practices, the gym supports your health journey in style.
+                        Combine your fitness routine with refreshing views, natural light, and motivational music. Whether you&apos;re maintaining your workout schedule or exploring new fitness practices, the gym supports your health journey in style.
                       </p>
                       <p>Stay active, stay inspired, and embrace wellness on every level.</p>
                     </div>
@@ -168,7 +168,7 @@ export default function FitnessGymStudioPage() {
                       </h2>
                       <div className="space-y-4 text-[#000000] text-[18px] font-normal leading-[2.277] font-open-sans">
                         <p>
-                          Combine your fitness routine with refreshing views, natural light, and motivational music. Whether you're maintaining your workout schedule or exploring new fitness practices, the gym supports your health journey in style.
+                          Combine your fitness routine with refreshing views, natural light, and motivational music. Whether you&apos;re maintaining your workout schedule or exploring new fitness practices, the gym supports your health journey in style.
                         </p>
                         <p>Stay active, stay inspired, and embrace wellness on every level.</p>
                       </div>

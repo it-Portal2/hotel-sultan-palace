@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -29,9 +29,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-
-
-export default function RoomsPage() {
+function RoomsContent() {
   const router = useRouter();
   const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal, bookingSetThisSession } = useCart();
   const search = useSearchParams();
@@ -446,5 +444,20 @@ export default function RoomsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function RoomsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading rooms...</p>
+        </div>
+      </div>
+    }>
+      <RoomsContent />
+    </Suspense>
   );
 }
