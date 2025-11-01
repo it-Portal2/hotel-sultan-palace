@@ -1,5 +1,7 @@
-public/**/*.png filter=lfs diff=lfs merge=lfs -text
-public/**/*.jpg filter=lfs diff=lfs merge=lfs -text
-public/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
-public/**/*.webp filter=lfs diff=lfs merge=lfs -text
-public/**/*.gif filter=lfs diff=lfs merge=lfs -text
+# Git LFS removed for public images - images now tracked normally in Git
+# public/**/*.png filter=lfs diff=lfs merge=lfs -text
+# public/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+# public/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+# public/**/*.webp filter=lfs diff=lfs merge=lfs -text
+# public/**/*.gif filter=lfs diff=lfs merge=lfs -text
+
