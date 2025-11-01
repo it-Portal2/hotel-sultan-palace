@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react/no-unescaped-entities */
 import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
@@ -10,189 +9,362 @@ export default function AquaAdventurePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans">
-        {/* Hero Section */}
-        <section className="relative w-full h-[560px] md:h-[700px] lg:h-[977px] overflow-hidden">
-          <div className="absolute inset-0 z-0">
+      {/* Hero Section - Full Width - Forced */}
+      <section 
+        className="h-[560px] md:h-[700px] lg:h-[951px] overflow-hidden"
+        style={{
+          position: 'relative',
+          width: '100vw',
+          maxWidth: 'none',
+          marginLeft: 'calc(50% - 50vw)',
+          marginRight: 'calc(50% - 50vw)',
+          paddingLeft: 0,
+          paddingRight: 0
+        }}
+      >
+        <div 
+          className="absolute inset-0"
+          style={{
+            width: '100vw',
+            minWidth: '100vw',
+            left: '50%',
+            right: '50%',
+            marginLeft: '-50vw',
+            marginRight: '-50vw'
+          }}
+        >
             <Image
-              src="/aqua-adventure/hero-bg.png"
-              alt="Aqua Adventure Hero"
+            src="/aqua-adventure/hero.png"
+            alt="Aqua Adventure Hero Background"
               fill
               priority
               className="object-cover"
+            sizes="100vw"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center'
+            }}
             />
           </div>
-        
+        {/* Gradient Overlays */}
           <div 
             className="absolute inset-0 pointer-events-none z-10"
             style={{
               background: "linear-gradient(0deg, rgba(0, 0, 0, 0) 46%, rgba(0, 0, 0, 0.23) 80%, rgba(0, 0, 0, 1) 98%)"
             }}
           />
-          {/* Hero text overlay */}
-          <div className="absolute inset-0 z-20 flex items-end justify-center pb-50 md:pb-60 lg:pb-70">
-            <div className="w-full max-w-[800px] px-4 text-center space-y-3 md:space-y-4">
-              <h1 className="text-white text-[20px] md:text-[30px] lg:text-[40px] font-bold leading-[1.25] font-quicksand" style={{ textShadow: '0px 4px 19.4px rgba(0, 0, 0, 0.25)' }}>
+        <div 
+          className="absolute inset-0 pointer-events-none z-20"
+          style={{
+            background: "linear-gradient(180deg, rgba(255, 252, 246, 0) 78%, rgba(255, 252, 246, 1) 100%)"
+          }}
+        />
+        
+        {/* Hero Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-[25] pointer-events-none">
+          <div className="text-center max-w-[680px]">
+            <h1 
+              className="text-[#FFFFFF] text-3xl md:text-4xl lg:text-[48px] font-semibold leading-[1.56] tracking-[0.05em] drop-shadow-[0px_4px_26.4px_rgba(0,0,0,0.69)] font-quicksand"
+              style={{
+                animation: 'fadeInUp 1s ease-out forwards, textGlow 3s ease-in-out infinite 1s',
+              }}
+            >
                 <span 
                   className="inline-block"
                   style={{
-                    animation: 'slideInRight 1s ease-out 0.2s forwards',
-                    opacity: 0,
-                    transform: 'translateX(100px)'
-                  }}
-                >
-                  Discover the Magic Beneath Zanzibar's{' '}
+                  background: 'linear-gradient(90deg, #FFFFFF 0%, #E0F2FE 50%, #FFFFFF 100%)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  animation: 'shimmer 3s ease-in-out infinite',
+                  display: 'inline-block',
+                }}
+              >
+                Discover the Magic Beneath
                 </span>
+              <br />
                 <span 
                   className="inline-block"
                   style={{
-                    animation: 'slideInLeft 1s ease-out 0.5s forwards',
-                    opacity: 0,
-                    transform: 'translateX(-100px)'
-                  }}
-                >
-                  Blue Horizon
+                  background: 'linear-gradient(90deg, #FFFFFF 0%, #E0F2FE 50%, #FFFFFF 100%)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  animation: 'shimmer 3s ease-in-out infinite 0.5s',
+                  display: 'inline-block',
+                }}
+              >
+                Zanzibar&apos;s Blue Horizon
                 </span>
               </h1>
-             
             </div>
           </div>
       
-        </section>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes shimmer {
+            0%, 100% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+          }
+          
+          @keyframes textGlow {
+            0%, 100% {
+              text-shadow: 0px 4px 26.4px rgba(0,0,0,0.69), 0 0 20px rgba(255,255,255,0.1);
+            }
+            50% {
+              text-shadow: 0px 4px 26.4px rgba(0,0,0,0.69), 0 0 30px rgba(255,255,255,0.3);
+            }
+          }
+        `}} />
+      </section>
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans overflow-x-hidden">
 
-       
-       
-
-      
-        
-         <div className="relative mb-2 min-h-[1100px] ">
-            
-         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Main Content Section with Background */}
+        <div className="relative w-full bg-[#FFFCF6]">
+          {/* Background Image - Positioned as per Figma */}
+          <div className="absolute left-0 right-0 top-0 w-full" style={{ height: '1622px' }}>
                 <Image
                   src="/aqua-adventure/beach-bg.png"
-                  alt="Cards Background"
+              alt="Beach Background"
                  fill
                  priority
-                 quality={100}
+              className="object-cover object-left"
                  sizes="100vw"
-                 className="object-cover object-center"
                 />
               </div>
             
-           
-              
-             <div className="relative z-10  py-8 md:py-12 ">
-                {/* Main Heading */}
-                <h2 className="text-[#242424] text-[32px] md:text-[36px] lg:text-[40px] font-semibold leading-[1.25] font-quicksand ml-10 text-left">
-                  Where the Sultan's Spirit Meets the Sea
+          {/* Content Container - Reduced padding for edge-to-edge */}
+          <div className="relative z-10 w-full overflow-x-hidden">
+            {/* Title: Where the Sultan's Spirit Meets the Sea */}
+            <div className="px-4 md:px-6 lg:px-6 pt-16 md:pt-20 lg:pt-24 pb-12 md:pb-16">
+              <h2 className="text-[#242424] text-[28px] md:text-[36px] lg:text-[40px] font-semibold leading-[1.25] font-quicksand" style={{ width: '750px', maxWidth: '100%' }}>
+                Where the Sultan&apos;s Spirit Meets the Sea
                 </h2>
-                
-                {/* Card 1 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-15 mb-8 lg:mb-12 relative">
-                  <div className="relative rounded-r-[14px] overflow-hidden lg:mt-[92px]">
-                      <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
+            </div>
+
+            {/* Activities Section - Mobile: Stack, Desktop: Absolute Positioned */}
+            <div className="relative px-0 min-h-[1067px] lg:min-h-[1485px] py-8 md:py-12 lg:py-16">
+              {/* Mobile Layout */}
+              <div className="block lg:hidden space-y-12 md:space-y-16">
+                {/* Coral Reef Exploration - Mobile */}
+                <div className="pt-4 pb-4">
+                  <div className="relative w-full h-[300px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
                         <Image
                           src="/aqua-adventure/kite-surfing.png"
+                      alt="Coral Reef Exploration"
+                      fill
+                      className="object-cover rounded-r-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Coral Reef Exploration
+                      </h3>
+                      <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ letterSpacing: '0.01em' }}>
+                        Join our guided reef walks and witness the colorful life thriving beneath the surface. Led by marine experts, this gentle ocean safari reveals intricate coral formations, rare shells, and dazzling tropical fish — a serene and educational encounter with Zanzibar&apos;s marine treasure
+                      </p>
+                    </div>
+                    <Link 
+                      href="#"
+                      className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                      <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]">
+                        Begin Adventure
+                      </span>
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Kite Surfing - Mobile */}
+                <div className="pt-4 pb-4">
+                  <div className="relative w-full h-[300px] md:h-[400px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                    <Image
+                      src="/aqua-adventure/sailing-1.png"
                           alt="Kite Surfing"
                           fill
-                          className="object-cover rounded-r-[14px]"
+                      className="object-cover rounded-l-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                         />
                       </div>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Kite Surfing
+                      </h3>
+                      <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ letterSpacing: '0.01em' }}>
+                        Harness the ocean breeze and ride the sparkling waves across Zanzibar&apos;s turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
+                      </p>
                     </div>
-                    <div className="relative lg:mt-[92px]">
-                      <div className="p-6 md:p-8">
-                        <div className="flex flex-col gap-6 md:gap-8">
-                          <div className="flex flex-col gap-7 md:gap-8">
-                            <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
-                              Coral Reef Exploration
+                    <Link 
+                      href="#"
+                      className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                      <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]">
+                        Begin Adventure
+                      </span>
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Sailing - Mobile */}
+                <div className="pt-4 pb-4">
+                  <div className="relative w-full h-[300px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                    <Image
+                      src="/aqua-adventure/sailing-2.png"
+                      alt="Sailing"
+                      fill
+                      className="object-cover rounded-l-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
+                    />
+                    </div>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Sailing
                             </h3>
-                            <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                              Join our guided reef walks and witness the colorful life thriving beneath the surface. Led by marine experts, this gentle ocean safari reveals intricate coral formations, rare shells, and dazzling tropical fish — a serene and educational encounter with Zanzibar's marine treasure
+                      <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ letterSpacing: '0.01em' }}>
+                        Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                             </p>
                           </div>
                           <Link 
                             href="#"
-                            className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                           >
-                            <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]">
                               Begin Adventure
                             </span>
-                            <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                           </Link>
                         </div>
                       </div>
                     </div>
                    
+              {/* Desktop Layout - Absolute Positioned - Edge to Edge */}
+              <div className="hidden lg:block relative w-full" style={{ height: '1485px', overflow: 'visible' }}>
+                {/* Row 1: Coral Reef Exploration - Image Left, Text Right */}
+                {/* First Image - Left edge aligned */}
+                <div className="absolute left-0 top-[92px] group/image" style={{ width: '785px', height: '524px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
+                    <Image
+                      src="/aqua-adventure/kite-surfing.png"
+                      alt="Coral Reef Exploration"
+                      fill
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
+                      priority
+                    />
+                  </div>
+                </div>
+
+                {/* Coral Reef Text - To the right of first image */}
+                <div className="absolute left-[820px] top-[92px]" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Coral Reef Exploration
+                      </h3>
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Join our guided reef walks and witness the colorful life thriving beneath the surface. Led by marine experts, this gentle ocean safari reveals intricate coral formations, rare shells, and dazzling tropical fish — a serene and educational encounter with Zanzibar&apos;s marine treasure
+                      </p>
+                    </div>
+                    <Link 
+                      href="#"
+                      className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
+                        Begin Adventure
+                      </span>
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
+                    </Link>
+                  </div>
                   </div>
 
-                  {/* Card 2*/}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
-                    <div className="relative lg:mt-[92px] order-2 lg:order-1">
-                      <div className="p-6 md:p-8 mt-[-92px]">
-                        <div className="flex flex-col gap-6 md:gap-8">
-                          <div className="flex flex-col gap-7 md:gap-8">
-                            <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
+                {/* Row 2: Kite Surfing - Text Left, Image Right */}
+                {/* Kite Surfing Text - Left side */}
+                <div className="absolute left-[40px] top-[674px]" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                               Kite Surfing
                             </h3>
-                            <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                              Harness the ocean breeze and ride the sparkling waves across Zanzibar's turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Harness the ocean breeze and ride the sparkling waves across Zanzibar&apos;s turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
                             </p>
                           </div>
                           <Link 
                             href="#"
-                            className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                           >
-                            <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
                               Begin Adventure
                             </span>
-                            <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                           </Link>
                         </div>
                       </div>
-                    </div>
-                    <div className="relative rounded-l-[14px] overflow-hidden lg:-mt-[120px] order-1 lg:order-2 z-10">
-                      <div className="relative w-full h-[420px] md:h-[540px] lg:h-[600px]">
+
+                {/* Second Image - Right edge aligned */}
+                <div className="absolute right-0 top-[487px] group/image" style={{ width: '785px', height: '580px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
                         <Image
                           src="/aqua-adventure/sailing-1.png"
-                          alt="Sailing"
+                      alt="Kite Surfing"
                           fill
-                          className="object-cover rounded-l-[14px]"
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                         />
-                      </div>
                     </div>
                   </div>
 
-                  {/* Card 3 */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12 relative">
-                    <div className="relative rounded-r-[14px] overflow-hidden lg:-mt-[100px] order-1 z-10">
-                      <div className="relative w-full h-[420px] md:h-[540px] lg:h-[600px]">
+                {/* Row 3: Sailing - Image Left, Text Right */}
+                {/* Third Image - Left edge aligned */}
+                <div className="absolute left-0 top-[1010px] group/image" style={{ width: '785px', height: '475px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
                         <Image
                           src="/aqua-adventure/sailing-2.png"
                           alt="Sailing"
                           fill
-                          className="object-cover rounded-r-[14px]"
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                         />
                       </div>
                     </div>
-                    <div className="relative rounded-l-[14px] lg:mt-[92px] order-2">
-                      <div className="p-6 md:p-8 rounded-l-[14px]">
-                        <div className="flex flex-col gap-6 md:gap-8">
-                          <div className="flex flex-col gap-7 md:gap-8">
-                            <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
+
+                {/* Sailing Text - Right side */}
+                <div className="absolute left-[820px] top-[1167px]" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                               Sailing
                             </h3>
-                            <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                              Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar's endless blue horizon.
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                             </p>
                           </div>
                           <Link 
                             href="#"
-                            className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                           >
-                            <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
                               Begin Adventure
                             </span>
-                            <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                           </Link>
                         </div>
                       </div>
@@ -201,181 +373,250 @@ export default function AquaAdventurePage() {
               </div>
             </div>
           
-
-        <section className="relative w-full h-[600px] md:h-[750px] lg:h-[830px] mt-[-32px] overflow-hidden">
-              <div className="absolute inset-0 z-0">
+        {/* Dhow Excursions Full Width Section */}
+        <section className="relative w-full h-[500px] md:h-[650px] lg:h-[830px] overflow-hidden my-16 md:my-20 lg:my-24">
+          <div className="absolute inset-0 w-full h-full">
+            <div 
+              className="absolute inset-0 pointer-events-none z-10"
+              style={{
+                background: "linear-gradient(181deg, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, 1) 82%)"
+              }}
+            />
                 <Image
                   src="/aqua-adventure/dhow-excursions.png"
                   alt="Dhow Excursions"
                   fill
                   className="object-cover"
+              sizes="100vw"
                 />
               </div>
-              <div 
-                className="absolute inset-0 z-10 pointer-events-none"
-                style={{
-                  background: "linear-gradient(181deg, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, 1) 82%)"
-                }}
-              />
-              <div className="absolute inset-0 z-20 flex flex-col justify-end items-center pb-12 md:pb-16 px-4">
-                <div className="flex flex-col gap-2 md:gap-7 max-w-[946px] text-center">
-                  <div className="flex flex-col gap-7 md:gap-8">
-                    <h3 className="text-white text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">
+          <div className="absolute inset-0 z-20 flex flex-col justify-end items-center pb-8 md:pb-12 lg:pb-16 px-4">
+            <div className="flex flex-col gap-[7px] max-w-[946px] text-center">
+              <div className="flex flex-col gap-[31px]">
+                <h3 className="text-white text-[22px] md:text-[24px] lg:text-[26px] font-semibold leading-[1.25] font-quicksand">
                       Dhow Excursions
                     </h3>
                     <p className="text-white text-[14px] md:text-[16px] font-normal leading-[1.8125] font-quicksand">
                       Set sail aboard a handcrafted Swahili dhow for a magical coastal journey. Drift through mangrove lagoons, try traditional hand-line fishing, and witness a golden sunset painting the sea — a moment of pure island serenity and tradition combined.
                     </p>
                   </div>
-                  <div className="flex items-center justify-center gap-4 mt-8">
+              <div className="flex items-center justify-center gap-[15px] mt-6 md:mt-8">
                     <Link 
                       href="#"
-                      className="flex items-center gap-4 w-fit group"
+                  className="flex items-center gap-[15px] w-fit group"
                     >
-                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                  <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">
                         Begin Adventure
                       </span>
-                      <FiArrowRight size={22} className="text-[#FF6A00]" />
+                  <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                     </Link>
                   </div>
                 </div>
               </div>
             </section>
 
-    
-           
-
-        <div className="relative mb-2">
-            <div className="relative max-w-[1400px] ">
-              <div className="absolute inset-0 z-0 rounded-r-[14px] overflow-hidden">
+        {/* Second Section: Kayaking & Snorkelling - Exact Figma Structure */}
+        <div className="relative w-full -mt-12 md:-mt-20 lg:-mt-25 bg-[#FFFCF6]">
+          {/* Background Image */}
+          <div className="absolute left-0 right-0 top-0 w-full" style={{ height: '1393px' }}>
                 <Image
                   src="/aqua-adventure/dock-bg.png"
-                  alt="Cards Background"
+              alt="Dock Background"
                   fill
                   priority
-                  quality={100}
+              className="object-cover object-left"
                   sizes="100vw"
-                  className="object-cover"
                 />
               </div>
               
-              <div className="relative z-10  py-8 md:py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12 relative">
-                  <div className="relative rounded-r-[14px] overflow-hidden lg:mt-[92px]">
-                    <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
+          {/* Content Container - Reduced padding for edge-to-edge */}
+          <div className="relative z-10 w-full overflow-x-hidden">
+            {/* Activities Section - Mobile: Stack, Desktop: Absolute Positioned */}
+            <div className="relative px-0 min-h-[975px] lg:min-h-[1393px] py-16 md:py-20 lg:py-24">
+              {/* Mobile Layout */}
+              <div className="block lg:hidden space-y-12 md:space-y-16">
+                {/* Kayaking - Mobile */}
+                <div className="pt-4 pb-4">
+                  <div className="relative w-full h-[300px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
                       <Image
                         src="/aqua-adventure/kayaking.png"
-                        alt="Beach Walking"
+                      alt="Kayaking"
                         fill
-                        className="object-cover rounded-r-[14px]"
+                      className="object-cover rounded-r-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                       />
                     </div>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Kayaking
+                      </h3>
+                      <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ letterSpacing: '0.01em' }}>
+                        Glide across calm waters in our sleek sea kayaks and uncover hidden corners of the coastline. Paddle past swaying palms, listen to the rhythm of the waves, and enjoy a tranquil yet invigorating way to explore the island&apos;s coastal charm.
+                      </p>
+                    </div>
+                    <Link 
+                      href="#"
+                      className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                      <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]">
+                        Begin Adventure
+                      </span>
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
+                    </Link>
                   </div>
-                  <div className="relative lg:mt-[92px]">
-                    <div className="p-6 md:p-8">
-                      <div className="flex flex-col gap-6 md:gap-8">
-                        <div className="flex flex-col gap-7 md:gap-8">
-                          <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
-                            Beach Walking
+                </div>
+
+                {/* Snorkelling - Mobile */}
+                <div className="pt-4 pb-4">
+                  <div className="relative w-full h-[300px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                    <Image
+                      src="/aqua-adventure/snorkelling-2.png"
+                      alt="Snorkelling"
+                      fill
+                      className="object-cover rounded-l-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Snorkelling
                           </h3>
-                          <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                            Discover the beauty of Bwejuu Beach on foot. Stroll along powder-soft sands, watch seabirds dance over gentle tides, or join a friendly game by the shore. A simple walk here becomes an unforgettable communion with Zanzibar's peaceful nature.
+                      <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ letterSpacing: '0.01em' }}>
+                        Dive into crystal-clear waters and discover a vibrant underwater world. Explore colorful coral reefs, swim alongside tropical fish, and witness the breathtaking marine life that thrives beneath Zanzibar&apos;s turquoise surface — an unforgettable aquatic adventure awaits.
                           </p>
                         </div>
                         <Link 
                           href="#"
-                          className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                         >
-                          <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]">
                             Begin Adventure
                           </span>
-                          <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                         </Link>
                       </div>
                     </div>
+              </div>
+
+              {/* Desktop Layout - Absolute Positioned - Container: 1596 x 1393 */}
+              <div className="hidden lg:block relative w-full" style={{ height: '1393px', overflow: 'visible' }}>
+                {/* Row 1: Kayaking - Image Left, Text Right Same Level */}
+                {/* Kayaking Image - Position (0, 0) - Exact Figma: 785 x 524 */}
+                <div className="absolute left-0 top-0 group/image" style={{ width: '785px', height: '524px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
+                    <Image
+                      src="/aqua-adventure/kayaking.png"
+                      alt="Kayaking"
+                      fill
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
+                      priority
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
-                  <div className="relative lg:mt-[92px] order-2 lg:order-1">
-                    <div className="p-6 md:p-8 mt-[-70px]">
-                      <div className="flex flex-col gap-6 md:gap-8">
-                        <div className="flex flex-col gap-7 md:gap-8">
-                          <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
+                {/* Row 1: Beach Walking Text - Right side, same level as 1st image */}
+                <div className="absolute left-[820px] top-0" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
+                        Beach Walking
+                      </h3>
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Discover the beauty of Bwejuu Beach on foot. Stroll along powder-soft sands, watch seabirds dance over gentle tides, or join a friendly game by the shore. A simple walk here becomes an unforgettable communion with Zanzibar&apos;s peaceful nature.
+                      </p>
+                    </div>
+                    <Link 
+                      href="#"
+                      className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
+                        Begin Adventure
+                      </span>
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Row 2: Kayaking Text - Left side, below image */}
+                <div className="absolute left-[40px] top-[582px]" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                             Kayaking
                           </h3>
-                          <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                            Glide across calm waters in our sleek sea kayaks and uncover hidden corners of the coastline. Paddle past swaying palms, listen to the rhythm of the waves, and enjoy a tranquil yet invigorating way to explore the island's coastal charm.
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Glide across calm waters in our sleek sea kayaks and uncover hidden corners of the coastline. Paddle past swaying palms, listen to the rhythm of the waves, and enjoy a tranquil yet invigorating way to explore the island&apos;s coastal charm.
                           </p>
                         </div>
                         <Link 
                           href="#"
-                          className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                         >
-                          <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
                             Begin Adventure
                           </span>
-                          <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                         </Link>
                       </div>
                     </div>
-                  </div>
-                  <div className="relative rounded-l-[14px] overflow-hidden lg:-mt-[120px] order-1 lg:order-2 z-10">
-                    <div className="relative w-full h-[420px] md:h-[540px] lg:h-[600px]">
+
+                {/* Snorkelling Image - Right edge aligned */}
+                <div className="absolute right-0 top-[395px] group/image" style={{ width: '785px', height: '580px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
                       <Image
                         src="/aqua-adventure/snorkelling-1.png"
-                        alt="Kayaking"
+                      alt="Snorkelling"
                         fill
-                        className="object-cover rounded-l-[14px]"
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                       />
-                    </div>
                   </div>
                 </div>
 
-                {/* Card 3 - Snorkelling: Image first, then Text */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12 relative">
-                  <div className="relative rounded-r-[14px] overflow-hidden lg:-mt-[100px] order-1 z-10">
-                    <div className="relative w-full h-[420px] md:h-[540px] lg:h-[600px]">
+                {/* Row 3: Snorkelling Image Left, Text Right */}
+                {/* Third Image - Position (0, 918) - Exact Figma: 785 x 475 */}
+                <div className="absolute left-0 top-[918px] group/image" style={{ width: '785px', height: '475px' }}>
+                  <div className="relative w-full h-full rounded-[14px] overflow-hidden">
                       <Image
                         src="/aqua-adventure/snorkelling-2.png"
                         alt="Snorkelling"
                         fill
-                        className="object-cover rounded-r-[14px]"
+                      className="object-cover rounded-[14px] transition-transform duration-500 ease-out group-hover/image:scale-110"
                       />
                     </div>
                   </div>
-                  <div className="relative rounded-l-[14px] lg:mt-[92px] order-2">
-                    <div className="p-6 md:p-8 rounded-l-[14px]">
-                      <div className="flex flex-col gap-6 md:gap-8">
-                        <div className="flex flex-col gap-7 md:gap-8">
-                          <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand">
+
+                {/* Snorkelling Text - Right side, below image */}
+                <div className="absolute left-[820px] top-[1075px]" style={{ width: '571px' }}>
+                  <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[31px]">
+                      <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                             Snorkelling
                           </h3>
-                          <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand max-w-[546px]" style={{ letterSpacing: '0.01em' }}>
-                            Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar's endless blue horizon.
+                      <p className="text-[#1A1711] text-[20px] font-medium leading-[1.85] font-quicksand transition-opacity duration-300 hover:opacity-90" style={{ width: '546px', letterSpacing: '0.01em' }}>
+                        Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                           </p>
                         </div>
                         <Link 
                           href="#"
-                          className="flex items-center gap-4 w-fit group"
+                      className="flex items-center gap-[15px] w-fit group/link"
                         >
-                          <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
                             Begin Adventure
                           </span>
-                          <FiArrowRight size={22} className="text-[#FF6A00]" />
+                      <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                         </Link>
                       </div>
                     </div>
-                  </div>
+
                 </div>
               </div>
             </div>
           </div>
 
-        
+        {/* Spacer before footer */}
+        <div className="h-16 md:h-20 lg:h-24"></div>
       </main>
       <Footer />
     </>
   );
 }
-

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createRoom, updateRoom, getRoom, Room } from '@/lib/firestoreService';
+import { storage } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface AdminRoomFormProps {
   roomId?: string;
@@ -13,18 +15,21 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    name: 'Ocean View Suite',
-    type: 'Ocean View',
-    price: 300,
-    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
-    features: ['Private suite', '150 m²', 'Balcony'],
-    amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi', 'Tea and coffee maker', 'Seating area', 'Wardrobe', 'Very good breakfast included'],
-    size: '150 m²',
-    view: 'Ocean view',
-    beds: '1 Double bed, 1 Single bed',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-    maxGuests: 3
+    name: '',
+    type: '',
+    price: 0,
+    description: '',
+    features: [''],
+    amenities: [''],
+    size: '',
+    view: '',
+    beds: '',
+    image: '',
+    maxGuests: 1,
+    cancellationFreeDays: 2
   });
 
   useEffect(() => {
@@ -45,7 +50,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
               view: room.view,
               beds: room.beds,
               image: room.image,
-              maxGuests: room.maxGuests
+              maxGuests: room.maxGuests,
+              cancellationFreeDays: (room as any).cancellationFreeDays ?? 2
             });
           }
         } catch (error) {
@@ -98,7 +104,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         features: formData.features.filter(f => f.trim() !== ''),
         amenities: formData.amenities.filter(a => a.trim() !== ''),
         price: Number(formData.price),
-        maxGuests: Number(formData.maxGuests)
+        maxGuests: Number(formData.maxGuests),
+        cancellationFreeDays: Number((formData as any).cancellationFreeDays ?? 0)
       };
 
       if (isEdit && roomId) {
@@ -124,6 +131,29 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !storage) return;
+    setUploading(true);
+    try {
+      const key = roomId || `${formData.name || 'room'}-${Date.now()}`;
+      const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, '-');
+      const objRef = storageRef(storage, `rooms/${safeKey}/${selectedFile.name}`);
+      await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
+      const url = await getDownloadURL(objRef);
+      setFormData(prev => ({ ...prev, image: url }));
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      alert('Image upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (fetching) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -134,13 +164,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Pre-filled with Ocean View Suite information - you can modify as needed */}
-      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
-          <strong>Note:</strong> Form is pre-filled with Ocean View Suite information. 
-          Use the quick templates below to switch between Ocean View ($300) and Garden Suite ($250), or modify any fields as needed.
-        </p>
-      </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
           <div className="md:grid md:grid-cols-3 md:gap-6">
@@ -163,7 +186,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    minLength={2}
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -178,7 +202,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.type}
                     onChange={handleInputChange}
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    minLength={2}
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -193,8 +218,23 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.price}
                     onChange={handleInputChange}
                     required
-                    min="0"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    min={0}
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                  />
+                </div>
+
+                <div className="col-span-6 sm:col-span-3">
+                  <label htmlFor="cancellationFreeDays" className="block text-sm font-medium text-gray-700">
+                    Free Cancellation (days before check-in)
+                  </label>
+                  <input
+                    type="number"
+                    name="cancellationFreeDays"
+                    id="cancellationFreeDays"
+                    value={(formData as any).cancellationFreeDays}
+                    onChange={handleInputChange}
+                    min={0}
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -209,8 +249,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.maxGuests}
                     onChange={handleInputChange}
                     required
-                    min="1"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    min={1}
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -225,7 +265,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.description}
                     onChange={handleInputChange}
                     required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    minLength={10}
+                    className="mt-2 block w-full min-h-[140px] rounded-xl border border-gray-300 bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -239,7 +280,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="size"
                     value={formData.size}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -253,7 +294,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="view"
                     value={formData.view}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -267,7 +308,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="beds"
                     value={formData.beds}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -283,8 +324,31 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     placeholder="https://example.com/room-image.jpg"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
+
+                  {/* Local file upload */}
+                  <div className="mt-3 flex flex-col gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="block w-full text-sm text-gray-700"
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleUpload}
+                        disabled={!selectedFile || uploading}
+                        className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {uploading ? 'Uploading...' : 'Upload & Use'}
+                      </button>
+                      {selectedFile && (
+                        <span className="text-xs text-gray-600 truncate">{selectedFile.name}</span>
+                      )}
+                    </div>
+                  </div>
                   
                   {/* Image Preview */}
                   {formData.image && (
@@ -300,55 +364,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                       />
                     </div>
                   )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    💡 <strong>Tip:</strong> Use Unsplash, Pexels, or upload to your server. 
-                    Current: Working Unsplash image for Garden Suite.
-                  </p>
-                  
-                  {/* Quick Room Templates */}
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Quick Room Templates:</p>
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({
-                          name: 'Ocean View Suite',
-                          type: 'Ocean View',
-                          price: 300,
-                          description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
-                          features: ['Private suite', '150 m²', 'Balcony'],
-                          amenities: ['Ocean view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi', 'Tea and coffee maker', 'Seating area', 'Wardrobe', 'Very good breakfast included'],
-                          size: '150 m²',
-                          view: 'Ocean view',
-                          beds: '1 Double bed, 1 Single bed',
-                          image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                          maxGuests: 3
-                        })}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline block"
-                      >
-                        🌊 Ocean View Suite ($300) - Current
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({
-                          name: 'Garden Suite',
-                          type: 'Garden View',
-                          price: 250,
-                          description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
-                          features: ['Private suite', '150 m²', 'Balcony'],
-                          amenities: ['Garden view', 'Pool with a view', 'Air conditioning', 'Ensuite bathroom', 'Free WiFi', 'Tea and coffee maker', 'Seating area', 'Wardrobe', 'Very good breakfast included'],
-                          size: '150 m²',
-                          view: 'Garden view',
-                          beds: '1 Double bed, 1 Single bed',
-                          image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                          maxGuests: 3
-                        })}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline block"
-                      >
-                        🌿 Garden Suite ($250)
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -372,7 +387,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                       type="text"
                       value={feature}
                       onChange={(e) => handleArrayChange('features', index, e.target.value)}
-                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                      className="flex-1 h-11 rounded-xl border border-gray-300 bg-gray-50/60 px-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                     />
                     <button
                       type="button"
@@ -412,7 +427,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                       type="text"
                       value={amenity}
                       onChange={(e) => handleArrayChange('amenities', index, e.target.value)}
-                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                      className="flex-1 h-11 rounded-xl border border-gray-300 bg-gray-50/60 px-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                     />
                     <button
                       type="button"

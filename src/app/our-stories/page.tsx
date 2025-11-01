@@ -4,7 +4,7 @@ import OurStoriesPage from "@/components/stories/OurStoriesPage";
 
 export default function OurStories() {
   return (
-    <main>
+    <main className="w-full overflow-x-hidden">
       <Header />
       <OurStoriesPage />
       <Footer />

@@ -56,7 +56,7 @@ function TimeAndTemperature() {
   const tempF = tempC !== null ? Math.round((tempC * 9) / 5 + 32) : null;
 
   return (
-    <div className="hidden md:flex items-center gap-6 text-white text-[13px] font-semibold">
+    <div className="hidden md:flex items-center gap-6 text-white text-[16px] font-semibold">
       <div className="flex items-center gap-2">
         <Clock size={16} />
         <span>Local time: {now || "--:--"}</span>
@@ -155,26 +155,26 @@ export default function Header() {
   return (
     <>
       <header className={`w-full absolute top-0 left-0 z-30 font-open-sans ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`}>
-        <div className="w-full px-4 lg:px-12">
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-6 lg:gap-8">
-              <div className="flex items-center gap-4">
-                {socialLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="text-white hover:text-orange-300 transition-colors"
-                  >
-                    <link.icon size={14} />
-                  </Link>
-                ))}
+        <div className="w-full px-10 lg:px-20">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-6 lg:gap-[54px]">
+                <div className="flex items-center gap-4">
+                  {socialLinks.map((link) => (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      className="text-white hover:text-orange-300 transition-colors"
+                    >
+                      <link.icon size={16} />
+                    </Link>
+                  ))}
+                </div>
+                <TimeAndTemperature />
               </div>
-              <TimeAndTemperature />
-            </div>
-            <div className="hidden md:flex items-center gap-5 text-white text-[13px] font-semibold">
+            <div className="hidden md:flex items-center gap-5 text-white text-[16px] font-semibold">
               <div className="flex items-center gap-2">
                 <Phone size={12} color="#79C9E9" />
-                <div className="flex gap-2 text-[12px]">
+                <div className="flex gap-2 text-[16px]">
                   <Link href="tel:+255684888111" className="hover:text-orange-300 transition-colors">+255 684 888 111</Link>
                   <span>,</span>
                   <Link href="tel:+255657269674" className="hover:text-orange-300 transition-colors">+255 657 269 674</Link>
@@ -184,15 +184,15 @@ export default function Header() {
                 href="mailto:portalholdingsznz@gmail.com"
                 className="flex items-center gap-2 hover:text-orange-300 transition-colors"
               >
-                <Mail size={12} color="#79C9E9" />
-                <span className="text-[12px]">portalholdingsznz@gmail.com</span>
+                <Mail size={16} color="#79C9E9" />
+                <span className="text-[16px]">portalholdingsznz@gmail.com</span>
               </Link>
               <button className="flex items-center gap-2 border border-white rounded-full px-2 py-1 hover:opacity-80 transition-opacity">
-                <Globe size={12} className="text-white" />
-                <span className="text-white font-medium text-[13px]">
+                <Globe size={16} className="text-white" />
+                <span className="text-white font-medium text-[16px]">
                   English
                 </span>
-                <ChevronDown size={12} className="text-white" />
+                <ChevronDown size={16} className="text-white" />
               </button>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function Header() {
 
         <hr className="border-white/20" />
 
-        <div className="w-full px-4 lg:px-20">
+        <div className="w-full px-4 md:px-10 lg:px-[82px]">
           <div className="flex items-center justify-between py-1">
             <Link href="/" className="flex-shrink-0 z-50">
               <Image
@@ -209,12 +209,12 @@ export default function Header() {
                 width={200}
                 height={200}
                 priority
-                className="!h-16 !w-auto md:!h-20" 
-                style={{ height: "80px", width: "auto" }}
+                className="!h-[84px] !w-auto" 
+                style={{ height: "84px", width: "auto" }}
               />
             </Link>
 
-            <nav className="hidden lg:flex items-center justify-center gap-6 text-white text-[12px] font-semibold font-open-sans w-full">
+            <nav className="hidden lg:flex items-center justify-center gap-[54px] text-white text-[16px] font-semibold font-open-sans w-full">
               {navLinks.map((item) => (
                 <div key={item.label} className="relative">
                   {item.hasSubmenu ? (

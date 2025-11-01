@@ -26,7 +26,7 @@ export default function ContactUs() {
     <section className="w-full">
       {/* Top Section: Contact Form */}
       <div className="w-full bg-[#2C2B28] py-12">
-        <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
+        <div className="mx-auto w-full max-w-screen-3xl px-4 md:px-8">
           <p className="font-kaisei text-base text-[#BE8C53]">Contact Us</p>
           <h2 className="mt-2 font-kaisei font-bold text-3xl md:text-4xl text-white">Find Out More</h2>
 

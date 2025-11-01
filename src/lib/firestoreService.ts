@@ -7,7 +7,8 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
-  orderBy 
+  orderBy,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -25,6 +26,8 @@ export interface Room {
   beds: string;
   image: string;
   maxGuests: number;
+  // Number of days before check-in when cancellation is free
+  cancellationFreeDays?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -104,6 +107,39 @@ export interface ContactForm {
   email: string;
   message: string;
   status: 'new' | 'read' | 'replied';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Excursion {
+  id: string;
+  title: string;
+  image: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OfferBanner {
+  id: string;
+  imageUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StoryImage {
+  id: string;
+  imageUrl: string;
+  alt?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type GalleryType = 'villas' | 'pool' | 'spa' | 'beach' | 'water_sports' | 'restaurant_bars' | 'facilities';
+
+export interface GalleryImage {
+  id: string;
+  imageUrl: string;
+  type: GalleryType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -229,6 +265,19 @@ const roomImages = {
   gardenSuite: '/figma/rooms-garden-suite.png'
 };
 
+// Helper to resolve room image: prefer static mapping by name, then Firestore field, then default
+const resolveRoomImage = (data: any): string => {
+  // Prefer uploaded/explicit image first
+  if (data?.image) return data.image;
+  // Fallback to static mapping by name
+  const name = (data?.name || '').toString().toLowerCase();
+  if (name.includes('imperial')) return roomImages.imperialSuite;
+  if (name.includes('ocean')) return roomImages.oceanSuite;
+  if (name.includes('garden')) return roomImages.gardenSuite;
+  // Final fallback
+  return roomImages.imperialSuite;
+};
+
 // Rooms CRUD Operations
 export const getRooms = async (): Promise<Room[]> => {
   // During build time or if db is not available, return sample data
@@ -243,22 +292,11 @@ export const getRooms = async (): Promise<Room[]> => {
     
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      const name = data.name?.toLowerCase() || '';
-      
-      // Match image based on room name
-      let image = roomImages.imperialSuite; // default
-      if (name.includes('imperial')) {
-        image = roomImages.imperialSuite;
-      } else if (name.includes('ocean')) {
-        image = roomImages.oceanSuite;
-      } else if (name.includes('garden')) {
-        image = roomImages.gardenSuite;
-      }
-      
+      const resolvedImage = resolveRoomImage(data);
       return {
         id: doc.id,
         ...data,
-        image: image,
+        image: resolvedImage,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Room;
@@ -283,22 +321,11 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     
     if (roomSnap.exists()) {
       const data = roomSnap.data();
-      const name = data.name?.toLowerCase() || '';
-      
-      // Match image based on room name
-      let image = roomImages.imperialSuite; // default
-      if (name.includes('imperial')) {
-        image = roomImages.imperialSuite;
-      } else if (name.includes('ocean')) {
-        image = roomImages.oceanSuite;
-      } else if (name.includes('garden')) {
-        image = roomImages.gardenSuite;
-      }
-      
+      const resolvedImage = resolveRoomImage(data);
       return {
         id: roomSnap.id,
         ...data,
-        image: image,
+        image: resolvedImage,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Room;
@@ -319,24 +346,11 @@ export const createRoom = async (roomData: Omit<Room, 'id' | 'createdAt' | 'upda
   }
 
   try {
-    const name = roomData.name?.toLowerCase() || '';
-    
-    // Match image based on room name
-    let image = roomImages.imperialSuite; // default
-    if (name.includes('imperial')) {
-      image = roomImages.imperialSuite;
-    } else if (name.includes('ocean')) {
-      image = roomImages.oceanSuite;
-    } else if (name.includes('garden')) {
-      image = roomImages.gardenSuite;
-    }
-    
     const roomsRef = collection(db, 'rooms');
     const docRef = await addDoc(roomsRef, {
       ...roomData,
-      image: image,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
@@ -352,23 +366,10 @@ export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promi
   }
 
   try {
-    const name = roomData.name?.toLowerCase() || '';
-    
-    // Match image based on room name
-    let image = roomImages.imperialSuite; // default
-    if (name.includes('imperial')) {
-      image = roomImages.imperialSuite;
-    } else if (name.includes('ocean')) {
-      image = roomImages.oceanSuite;
-    } else if (name.includes('garden')) {
-      image = roomImages.gardenSuite;
-    }
-    
     const roomRef = doc(db, 'rooms', roomId);
     await updateDoc(roomRef, {
       ...roomData,
-      image: image,
-      updatedAt: new Date(),
+      updatedAt: serverTimestamp(),
     });
   return true;
   } catch (error) {
@@ -673,5 +674,205 @@ export const getAllContactForms = async (): Promise<ContactForm[]> => {
   } catch (error) {
     console.error('Error fetching contact forms:', error);
     return [];
+  }
+};
+
+// Excursions CRUD Operations
+export const getExcursions = async (): Promise<Excursion[]> => {
+  if (!db) return [];
+  try {
+    const refCol = collection(db, 'excursions');
+    const q = query(refCol, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Excursion;
+    });
+  } catch (e) {
+    console.error('Error fetching excursions:', e);
+    return [];
+  }
+};
+
+export const createExcursion = async (data: Omit<Excursion, 'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    const refCol = collection(db, 'excursions');
+    const docRef = await addDoc(refCol, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return docRef.id;
+  } catch (e) {
+    console.error('Error creating excursion:', e);
+    return null;
+  }
+};
+
+export const updateExcursion = async (id: string, data: Partial<Excursion>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const d = doc(db, 'excursions', id);
+    await updateDoc(d, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating excursion:', e);
+    return false;
+  }
+};
+
+export const deleteExcursion = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const d = doc(db, 'excursions', id);
+    await deleteDoc(d);
+    return true;
+  } catch (e) {
+    console.error('Error deleting excursion:', e);
+    return false;
+  }
+};
+
+// Offers CRUD
+export const getOffers = async (): Promise<OfferBanner[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'offers');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        imageUrl: data.imageUrl,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as OfferBanner;
+    });
+  } catch (e) {
+    console.error('Error fetching offers:', e);
+    return [];
+  }
+};
+
+export const createOffer = async (data: Omit<OfferBanner,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'offers');
+    const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return d.id;
+  } catch (e) {
+    console.error('Error creating offer:', e);
+    return null;
+  }
+};
+
+export const deleteOffer = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const dref = doc(db, 'offers', id);
+    await deleteDoc(dref);
+    return true;
+  } catch (e) {
+    console.error('Error deleting offer:', e);
+    return false;
+  }
+};
+
+// Story in Pictures CRUD
+export const getStoryImages = async (): Promise<StoryImage[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'storyImages');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        imageUrl: data.imageUrl,
+        alt: data.alt || '',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as StoryImage;
+    });
+  } catch (e) {
+    console.error('Error fetching story images:', e);
+    return [];
+  }
+};
+
+export const createStoryImage = async (data: Omit<StoryImage,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'storyImages');
+    const dr = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating story image:', e);
+    return null;
+  }
+};
+
+export const deleteStoryImage = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'storyImages', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting story image:', e);
+    return false;
+  }
+};
+
+// Gallery CRUD
+export const getGalleryImages = async (type?: GalleryType): Promise<GalleryImage[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'gallery');
+    const qy = type ? query(c, orderBy('createdAt','desc')) : query(c, orderBy('createdAt','desc'));
+    const snap = await getDocs(qy);
+    let items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        imageUrl: data.imageUrl,
+        type: data.type as GalleryType,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as GalleryImage;
+    });
+    if (type) items = items.filter(i => i.type === type);
+    return items;
+  } catch (e) {
+    console.error('Error fetching gallery images:', e);
+    return [];
+  }
+};
+
+export const createGalleryImage = async (data: Omit<GalleryImage,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'gallery');
+    const dr = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating gallery image:', e);
+    return null;
+  }
+};
+
+export const deleteGalleryImage = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'gallery', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting gallery image:', e);
+    return false;
   }
 };

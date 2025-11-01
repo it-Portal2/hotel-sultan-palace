@@ -24,6 +24,9 @@ export default {
         "open-sans": ["Open Sans", "sans-serif"],
         poppins: ["Poppins", "sans-serif"],
         script: ["Poppins", "cursive"],
+        "moon-dance": ["Moon Dance", "cursive"],
+        "kaisei-decol": ["Kaisei Decol", "serif"],
+        "playpen-sans": ["Playpen Sans", "cursive"],
       },
       container: {
         center: true,

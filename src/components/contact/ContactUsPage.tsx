@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { MdEmail, MdPhone, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { createContactForm } from '@/lib/firestoreService';
+import ContactUsButton from "@/components/ui/ContactUsButton";
 
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -384,9 +385,9 @@ export default function ContactUsPage() {
             <h3 className="text-white text-[22px] sm:text-[26px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.15] sm:leading-[1.18] md:leading-[1.2] lg:leading-[1.22] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol']">
               Let&apos;s Begin Your Zanzibar Journey
             </h3>
-            <button className="bg-[#F96406] text-white text-sm sm:text-base md:text-lg font-semibold px-4 py-2 sm:px-6 sm:py-2 md:px-6 md:py-2 rounded-[52px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol']">
-              Connect Us
-            </button>
+            <div className="flex justify-center">
+              <ContactUsButton />
+            </div>
           </div>
         </div>
       </div>

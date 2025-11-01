@@ -55,6 +55,7 @@ interface CartContextProps {
   bookingData: BookingData | null;
   setBookingData: React.Dispatch<React.SetStateAction<BookingData | null>>;
   updateBookingData: (data: BookingData) => void;
+  bookingSetThisSession: boolean;
 }
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
@@ -63,30 +64,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [rooms, setRooms] = useState<CartRoom[]>([]);
   const [addOns, setAddOns] = useState<CartAddOn[]>([]);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  const [bookingSetThisSession, setBookingSetThisSession] = useState(false);
 
-  // Load bookingData from localStorage once (for backward compatibility)
+  // Always clear any legacy localStorage booking data to avoid stale UI
   useEffect(() => {
-    const loadBookingData = () => {
-      const storedData = localStorage.getItem('bookingData');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-          setBookingData(parsedData);
-        } catch (error) {
-          console.error('Error parsing bookingData from localStorage:', error);
-        }
-      }
-    };
-
-    // Load immediately
-    loadBookingData();
+    try { localStorage.removeItem('bookingData'); } catch {}
   }, []);
 
   // Function to update booking data (called from Hero form)
   const updateBookingData = (newBookingData: BookingData) => {
     setBookingData(newBookingData);
-    // Also save to localStorage for persistence
-    localStorage.setItem('bookingData', JSON.stringify(newBookingData));
+    setBookingSetThisSession(true);
+    // When user selects new dates, start a fresh cart to avoid stale selections
+    setRooms([]);
+    setAddOns([]);
   };
 
   // Room handlers
@@ -180,7 +171,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         getNumberOfNights,
         bookingData,
         setBookingData,
-        updateBookingData
+        updateBookingData,
+        bookingSetThisSession
       }}
     >
       {children}

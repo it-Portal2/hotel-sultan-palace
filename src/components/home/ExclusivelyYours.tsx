@@ -27,7 +27,7 @@ const features = [
 export default function ExclusivelyYours() {
   return (
     <section className="w-full" style={{ background: "linear-gradient(2deg, #EFDEC7 11%, #FFFFFF 100%)" }}>
-      <div className="mx-auto w-full max-w-7xl px-4 md:px-8 py-14 lg:py-20">
+      <div className="mx-auto w-full max-w-8xl px-4 md:px-8 py-14 lg:py-20">
         
         <h2 className="font-kaisei font-medium text-3xl md:text-4xl text-[#1D2A3A] text-center">
           EXCLUSIVELY YOURS TO EXPLORE
@@ -38,7 +38,7 @@ export default function ExclusivelyYours() {
             <div key={index} className="group flex flex-col items-center text-center sm:items-start sm:text-left">
               
               {/* Image Container with hover effect */}
-              <div className="relative h-75 w-full rounded-3xl shadow-lg overflow-hidden transition-transform duration-300 ease-in-out group-hover:-translate-y-4">
+              <div className="relative h-[400px] md:h-[420px] w-[350px] md:w-[380px] rounded-3xl shadow-lg overflow-hidden transition-transform duration-300 ease-in-out group-hover:-translate-y-4">
                 <Image
                   src={feature.imgSrc}
                   alt={feature.title}

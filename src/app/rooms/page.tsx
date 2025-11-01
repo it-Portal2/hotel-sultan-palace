@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -33,7 +33,8 @@ import {
 
 export default function RoomsPage() {
   const router = useRouter();
-  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal } = useCart();
+  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal, bookingSetThisSession } = useCart();
+  const search = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [addedRoomId, setAddedRoomId] = useState<string | null>(null);
@@ -57,7 +58,15 @@ export default function RoomsPage() {
     fetchRooms();
   }, []);
 
+  const ignoreBooking = search?.get('view') === 'explore';
+  const hasBooking = Boolean(bookingData) && bookingSetThisSession && !ignoreBooking;
+
   const addToCart = (room: Room) => {
+    if (!hasBooking) {
+      setShowToast('Select dates first to book');
+      setTimeout(() => setShowToast(null), 1800);
+      return;
+    }
     addRoom(room);
     setAddedRoomId(room.id);
     setShowToast(`${room.type} added to cart`);
@@ -102,22 +111,7 @@ export default function RoomsPage() {
     });
   };
 
-  if (!bookingData) {
-    return (
-      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Booking Data</h2>
-          <p className="text-gray-600 mb-6">Please start by selecting your dates first.</p>
-          <button 
-            onClick={() => router.push('/')}
-            className="bg-[#FF6A00] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            Start Booking
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Always show rooms. If no bookingData, we will hide date context and use neutral labels.
 
   if (loading) {
     return (
@@ -130,8 +124,11 @@ export default function RoomsPage() {
     );
   }
 
+  const containerPad = hasBooking ? 'pt-20 md:pt-28' : 'pt-32 md:pt-40';
+  const cartStickyTop = hasBooking ? 'lg:top-28' : 'lg:top-40';
+
   return (
-    <div className="min-h-screen bg-[#FFFCF6]">
+    <div className={`min-h-screen bg-[#FFFCF6] ${containerPad}`}>
       <style jsx global>{`
         header {
           background-color: rgba(0, 0, 0, 0.8) !important;
@@ -143,7 +140,8 @@ export default function RoomsPage() {
       `}</style>
       <Header />
       
-      {/* Booking Form Section */}
+      {/* Booking Context Bar - only if user selected data */}
+      {bookingData && (
       <div className="w-full  px-4 py-6 mt-20">
         <div className="max-w-3xl mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
@@ -199,6 +197,7 @@ export default function RoomsPage() {
           </div>
         </div>
       </div>
+      )}
 
       <div className="w-full px-4 mb-16 lg:mb-20">
         <div className="max-w-7xl mx-auto">
@@ -295,21 +294,26 @@ export default function RoomsPage() {
                             <Coffee size={14} color="#BE8C53" />
                             <span>Very good breakfast included</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[#464035] text-sm">
-                            <Shield size={14} color="#BE8C53" />
-                            <span>Free cancellation before {getCancellationDate()}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-[#464035] text-sm">
-                            <CreditCard size={14} color="#BE8C53" />
-                            <span>Pay nothing until {getPaymentDate()}</span>
-                          </div>
+                          {bookingData && (
+                            <>
+                              <div className="flex items-center gap-2 text-[#464035] text-sm">
+                                <Shield size={14} color="#BE8C53" />
+                                <span>Free cancellation before {getCancellationDate()}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[#464035] text-sm">
+                                <CreditCard size={14} color="#BE8C53" />
+                                <span>Pay nothing until {getPaymentDate()}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         <button
                           onClick={() => addToCart(room)}
-                          className={`bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm ${addedRoomId===room.id ? 'opacity-80' : ''}`}
+                          disabled={!hasBooking}
+                          className={`$${''} ${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-orange-600 text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm ${addedRoomId===room.id ? 'opacity-80' : ''}`}
                         >
-                          {addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now'}
+                          {hasBooking ? (addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now') : 'Select dates to book'}
                         </button>
                       </div>
                     </div>
@@ -319,8 +323,8 @@ export default function RoomsPage() {
             </div>
 
             {/* Cart Sidebar */}
-            <div className="w-full lg:w-[410px] flex-shrink-0 mt-6 lg:-mt-28">
-              <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky lg:top-8">
+            <div className="w-full lg:w-[410px] flex-shrink-0 mt-6 lg:mt-0">
+              <div className={`bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky ${cartStickyTop}`}>
                 <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
                   Your Cart (Item - {cartRooms.length})
                 </h2>

@@ -3,61 +3,104 @@ import Image from "next/image";
 
 export default function FeaturedCalm() {
   return (
-    <section className="w-full ">
-    
-      <div className="mx-auto max-w-screen-2xl">
-        
-        <div className="relative">
-
+    <section className="w-full relative overflow-hidden px-0 mx-0">
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        <div className="relative flex flex-col">
+          <div className="relative flex min-h-[400px] items-center overflow-hidden bg-[#C29A66] p-8 md:p-12">
+            <h2 className="relative z-10 max-w-md font-[Kaisei_Decol] text-[40px] font-bold leading-[1.448] text-white">
+              Where every moment finds its calm
+            </h2>
+          </div>
           
-          <div className="pointer-events-none absolute top-0 bottom-0 left-0 hidden w-1/2 bg-[#C29A66] lg:block" />
+          <div className="group relative h-[500px] overflow-hidden">
+            <Image 
+              src="/figma/featured-top.png" 
+              alt="Beachfront resort balcony" 
+              fill 
+              sizes="100vw" 
+              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+            />
+          </div>
 
-          <div className="relative grid grid-cols-1 lg:grid-cols-2">
-            
-            <div className="relative flex min-h-[350px] items-center overflow-hidden bg-[#C29A66] p-8 md:p-12 lg:bg-transparent lg:p-16">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="h-[350px] w-[350px] rounded-full border border-white/15" />
-              </div>
-              <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="h-[550px] w-[550px] rounded-full border border-white/15" />
-              </div>
-              <h2 className="relative z-10 max-w-md font-kaisei text-[40px] font-medium leading-tight text-white sm:text-5xl md:text-[56px] lg:ml-auto lg:mr-0">
-                Where every moment finds its calm
-              </h2>
-            </div>
+          <div className="group relative h-[500px] overflow-hidden">
+            <Image 
+              src="/figma/featured-bottom.png" 
+              alt="Resort garden with ocean view" 
+              fill 
+              sizes="100vw" 
+              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+            />
+          </div>
 
-            <div className="group relative min-h-[350px] overflow-hidden">
-              <Image 
-                src="/figma/featured-top.png" 
-                alt="Beachfront resort balcony" 
-                fill 
-                sizes="(max-width: 1023px) 100vw, 50vw" 
-                className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
-              />
+          <div className="relative flex min-h-[385px] items-center justify-center bg-[#E8E4D9] p-8 md:p-12">
+            <div className="relative z-10 max-w-[423px] text-center">
+              <p className="font-[Kaisei_Decol] text-[16px] font-medium leading-[1.448] text-[#666666] mb-[49px]">
+                No two travelers are alike — and neither are their stories.
+              </p>
+              <p className="font-[Kaisei_Decol] text-[32px] font-medium leading-[1.448] text-[#4C3916]">
+                Every stay reflects you — personalized, heartfelt, and intuitively crafted for perfection.
+              </p>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="group relative min-h-[350px] overflow-hidden lg:transform lg:translate-x-[50px] order-4 lg:order-3">
-              <Image 
-                src="/figma/featured-bottom.png" 
-                alt="Resort garden with ocean view" 
-                fill 
-                sizes="(max-width: 1023px) 100vw, 50vw" 
-                className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
-              />
-            </div>
+      {/* Desktop Layout */}
+      <div className="hidden lg:block w-full relative overflow-hidden" style={{ height: '1079px' }}>
+        {/* Left side - Brown background */}
+        <div className="absolute left-0 top-0 w-[762px] h-[1243px] bg-[#C29A66]" />
+        
+        {/* Decorative Circles */}
+        <div className="pointer-events-none absolute left-[436px] top-[-360px]">
+          <div className="h-[760px] w-[760px] rounded-full border-[20px] border-[rgba(190,140,83,0.46)] bg-transparent" />
+        </div>
+        <div className="pointer-events-none absolute left-[-345px] top-[306px]">
+          <div className="h-[970px] w-[970px] rounded-full border-[6px] border-[rgba(255,255,255,0.1)] bg-transparent" />
+        </div>
+        <div className="pointer-events-none absolute left-[756px] top-[791px]">
+          <div className="h-[915px] w-[915px] rounded-full border-[6px] border-[rgba(255,255,255,0.38)] bg-transparent" />
+        </div>
+        
+        {/* Main heading */}
+        <h2 className="absolute z-10 max-w-[618px] font-[Kaisei_Decol] text-[64px] font-bold leading-[1.448] text-white left-[155px] top-[140px]">
+          Where every moment finds its calm
+        </h2>
 
-            {/* Bottom Right Text - Added z-index to ensure it stays on top */}
-            <div className="relative flex min-h-[350px] items-center justify-center overflow-hidden p-8 md:p-12 lg:p-16 lg:z-10 order-3 lg:order-4">
-              <div className="pointer-events-none absolute bottom-[-20rem] left-[-15rem] h-[50rem] w-[50rem] rounded-full border border-white/60 " />
-              <div className="relative z-10 max-w-lg text-center lg:text-center pl-10">
-                <p className="font-kaisei text-base leading-snug text-[#666666]">
-                  No two travelers are alike — and neither are their stories.
-                </p>
-                <p className="mt-6 font-kaisei text-3xl leading-snug text-[#4C3916] md:text-4xl">
-                  Every stay reflects you — personalized, heartfelt, and intuitively crafted for perfection.
-                </p>
-              </div>
-            </div>
+        {/* Top right image - extends to bottom image start (524px), right side extends to edge */}
+        <div className="absolute left-[762px] top-0 right-0 h-[524px] overflow-hidden">
+          <Image 
+            src="/figma/featured-top.png" 
+            alt="Beachfront resort balcony" 
+            width={750}
+            height={524}
+            className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+          />
+        </div>
+
+        {/* Bottom right beige section - starts right after top image, right side extends to edge */}
+        <div className="absolute left-[762px] top-[524px] right-0 h-[555px] bg-[#E8E4D9]" />
+
+        {/* Bottom left image */}
+        <div className="absolute left-[57px] top-[524px] w-[813px] h-[555px] overflow-hidden">
+          <Image 
+            src="/figma/featured-bottom.png" 
+            alt="Resort garden with ocean view" 
+            fill 
+            sizes="813px" 
+            className="object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+          />
+        </div>
+
+        {/* Bottom Right Text */}
+        <div className="absolute left-[975px] top-[609px] w-[423px] h-[385px] flex items-center justify-center z-10">
+          <div className="w-full text-center">
+            <p className="font-[Kaisei_Decol] text-[16px] font-medium leading-[1.448] text-[#666666] mb-[95px] ml-[55px]">
+              No two travelers are alike — and neither are their stories.
+            </p>
+            <p className="font-[Kaisei_Decol] text-[40px] font-medium leading-[1.448] text-[#4C3916]">
+              Every stay reflects you — personalized, heartfelt, and intuitively crafted for perfection.
+            </p>
           </div>
         </div>
       </div>

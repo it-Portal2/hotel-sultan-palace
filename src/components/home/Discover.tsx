@@ -1,45 +1,128 @@
+"use client";
 import Image from "next/image";
 import BookNowButton from "../ui/BookNowButton";
+import { useEffect, useRef, useState } from "react";
 
 export default function Discover() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('discover-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
-    <section className="w-full bg-[#F5D9A5] font-inter mt-12 md:mt-20">
-      <div className="mx-auto flex max-w-screen-2xl flex-col lg:flex-row">
-        <div className="group w-full lg:w-[47%] h-[400px] md:h-[590px] overflow-hidden">
+    <section ref={sectionRef} className="w-full bg-[#F5D9A5] font-inter discover-section">
+      <div className="flex flex-col lg:grid lg:grid-cols-12">
+        
+      
+        <div className={`group w-full relative overflow-hidden flex-shrink-0 h-[400px] md:h-[709px] lg:col-span-5 discover-image ${isVisible ? 'discover-image-visible' : ''}`}>
           <Image
-            width={1000}
-            height={1000}
+            layout="fill"
             src="/image1.png"
             alt="A few things to note at Sultan Palace"
-            className="h-full w-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110"
+            className="w-full h-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110"
           />
         </div>
 
-        <div className="w-full lg:w-1/2 flex items-center p-6 md:p-8 lg:p-12">
-          <div className="flex flex-col">
-            <p className="font-script text-2xl md:text-[30px] text-[#783A0C]">
+       
+        <div className="w-full lg:col-span-7 flex items-center px-4 md:px-8 lg:px-[82px] py-8 md:py-12 lg:py-[148px]">
+          <div className="flex flex-col gap-4 md:gap-[20px] max-w-full lg:max-w-[682px]">
+            <p className={`font-[Shadows_Into_Light_Two] text-[28px] md:text-[34px] leading-[1.451] text-[#783A0C] discover-label ${isVisible ? 'discover-label-visible' : ''}`}>
               Discover Our Paradise
             </p>
 
-            <h2 className="mt-3 text-3xl md:text-[35px] font-medium font-quicksand text-[#242F3C]">
+            <h2 className={`text-[28px] md:text-[36px] lg:text-[40px] font-medium font-quicksand leading-[1.25] text-[#242F3C] max-w-full lg:max-w-[661px] discover-title ${isVisible ? 'discover-title-visible' : ''}`}>
               Endless Discoveries, Unforgettable Memories
             </h2>
 
-            <p className="mt-6 text-base font-medium font-quicksand leading-relaxed text-[#5E5E5E]">
+            <p className={`text-[16px] md:text-[18px] font-medium font-quicksand leading-[1.556] text-[#5E5E5E] max-w-full lg:max-w-[663px] discover-text ${isVisible ? 'discover-text-visible' : ''}`}>
               Wake up to ocean whispers, walk barefoot on white sands, and let
               the rhythm of Zanzibar slow your world down. Sultan Palace Hotel
               isn&apos;t just a destination — it&apos;s a feeling.
             </p>
 
-            <div className="mt-8">
+            <div className={`mt-6 md:mt-[40px] discover-button ${isVisible ? 'discover-button-visible' : ''}`}>
               <BookNowButton
                 size="sm"
-                className="px-12 py-3 rounded-[9px] text-[14px]"
+                className="px-6 md:px-[53px] py-3 md:py-[14px] rounded-[9px] text-[14px] md:text-[16px] h-auto md:h-[49px] w-fit"
               />
             </div>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .discover-section {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1.2s ease-out;
+        }
+        .discover-section.discover-visible,
+        .discover-visible .discover-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .discover-image {
+          opacity: 0;
+          transform: translateX(-100px) scale(0.9);
+          transition: all 1s ease-out 0.3s;
+        }
+        .discover-image-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .discover-label {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.5s;
+        }
+        .discover-label-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .discover-title {
+          opacity: 0;
+          transform: translateX(50px);
+          transition: all 1s ease-out 0.7s;
+        }
+        .discover-title-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .discover-text {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.8s ease-out 0.9s;
+        }
+        .discover-text-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .discover-button {
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
+          transition: all 0.8s ease-out 1.1s;
+        }
+        .discover-button-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      `}</style>
     </section>
   );
 }

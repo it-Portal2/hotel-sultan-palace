@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   HomeIcon, 
   BuildingOfficeIcon, 
   PlusIcon, 
-  Cog6ToothIcon,
+  CalendarDaysIcon,
+  SparklesIcon,
+  PhotoIcon,
   Bars3Icon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -18,13 +22,80 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Rooms Management', href: '/admin/rooms', icon: BuildingOfficeIcon },
     { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon },
+    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon },
+    { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon },
+    { name: 'Offers', href: '/admin/offers', icon: PhotoIcon },
+    { name: 'Story in Pictures', href: '/admin/story-pictures', icon: PhotoIcon },
+    { name: 'Gallery', href: '/admin/gallery', icon: PhotoIcon },
   ];
+
+  useEffect(() => {
+    if (!auth) {
+      setAuthChecked(true);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUserEmail(user?.email ?? null);
+      setAuthChecked(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isAuthorized = useMemo(() => {
+    // Allowlist admin emails via env: comma-separated
+    const allowList = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (allowList.length === 0) {
+      // If no allowlist configured, require any signed-in user
+      return Boolean(userEmail);
+    }
+    return userEmail ? allowList.includes(userEmail.toLowerCase()) : false;
+  }, [userEmail]);
+
+  const isPublicAdminAuthRoute = useMemo(() => {
+    if (!pathname) return false;
+    return pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup');
+  }, [pathname]);
+
+  // For auth routes, render children without admin chrome (no sidebar/topbar)
+  if (isPublicAdminAuthRoute) {
+    return (
+      <div className="min-h-screen">
+        {children}
+      </div>
+    );
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized && !isPublicAdminAuthRoute) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg p-6 text-center shadow">
+          <h1 className="text-2xl font-semibold text-gray-900">Restricted Area</h1>
+          <p className="mt-2 text-gray-600">You are not authorized to access the admin panel.</p>
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <Link href="/admin/login" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">Go to Login</Link>
+            <Link href="/" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">Return to site</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,6 +182,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 Back to Site
               </Link>
+              {!userEmail ? (
+                <Link
+                  href="/admin/login"
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  Login
+                </Link>
+              ) : (
+                <>
+                  <span className="hidden sm:inline text-sm text-gray-600">{userEmail}</span>
+                  <button
+                    onClick={async () => { if (auth) { await signOut(auth); router.push('/admin/login'); } }}
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

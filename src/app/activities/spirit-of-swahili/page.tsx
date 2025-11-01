@@ -49,22 +49,22 @@ export default function SpiritOfSwahiliPage() {
           <div className="max-w-[1512px] mx-auto px-4 md:px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div className="relative  overflow-hidden">
-                <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px]">
+                <div className="relative w-full h-[250px] md:h-[300px] lg:h-[400px]">
                   <Image src="/spirit/spirit-strip-1.png" alt="Spirit Image 1" fill className="object-cover   " />
                 </div>
               </div>
               <div className="relative  overflow-hidden">
-                <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px]">
+                <div className="relative w-full h-[250px] md:h-[300px] lg:h-[400px]">
                   <Image src="/spirit/spirit-strip-2.png" alt="Spirit Image 2" fill className="object-cover " />
                 </div>
               </div>
               <div className="relative  overflow-hidden">
-                <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px]">
+                <div className="relative w-full h-[250px] md:h-[300px] lg:h-[400px]">
                   <Image src="/spirit/spirit-strip-3.png" alt="Spirit Image 3" fill className="object-cover " />
                 </div>
               </div>
               <div className="relative  overflow-hidden">
-                <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px]">
+                <div className="relative w-full h-[250px] md:h-[300px] lg:h-[400px]">
                   <Image src="/spirit/spirit-strip-4.png" alt="Spirit Image 4" fill className="object-cover " />
                 </div>
               </div>

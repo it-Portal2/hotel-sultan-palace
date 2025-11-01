@@ -102,7 +102,7 @@ export default function AboutZanzibar() {
       </div>
       
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-4xl px-4 md:px-8">
+      <div className="relative z-10 mx-auto max-w-8xl px-4 md:px-8">
         <h2 className="text-center font-kaisei text-3xl md:text-4xl text-[#655D4E] mb-12">
           Frequently Asked Questions
         </h2>
@@ -119,7 +119,7 @@ export default function AboutZanzibar() {
                   {item.question}
                 </span>
              
-                <div className="text-[#BE8C53] text-3xl font-light transition-transform duration-300 ease-in-out"
+                <div className="text-[#BE8C53] text-5xl font-light transition-transform duration-300 ease-in-out"
                   style={{ transform: openItems.includes(index) ? 'rotate(45deg)' : 'rotate(0deg)' }}
                 >
                   +

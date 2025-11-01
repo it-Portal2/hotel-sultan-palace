@@ -84,7 +84,7 @@ export default function Testimonials() {
 
       {/* Ratings bar */}
       <div className="bg-[#242424] py-2 md:py-4">
-        <div className="mx-auto w-full max-w-screen-xl px-2 md:px-8 grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-y-6">
+        <div className="mx-auto w-full max-w-screen-xl  grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-y-6">
           {RATINGS.map((r) => {
             const percent = Math.max(0, Math.min(100, (r.score / 10) * 100));
             return (

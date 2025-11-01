@@ -2,6 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { getOffers } from "@/lib/firestoreService";
+import BookingModal from "@/components/booking/BookingModal";
 
 const initialOffers = [
   { 
@@ -23,9 +25,19 @@ const initialOffers = [
 ];
 
 export default function OffersCarousel() {
-  const [offers] = useState(initialOffers);
+  const [offers, setOffers] = useState<{id:number|string,imageUrl:string}[]>(initialOffers);
   const [index, setIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const data = await getOffers();
+      if (data.length > 0) {
+        setOffers(data.map((o)=>({ id: o.id, imageUrl: o.imageUrl })));
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (offers.length === 0) return;
@@ -47,26 +59,14 @@ export default function OffersCarousel() {
 
   return (
     <section className="w-full bg-[#FFFCF6] overflow-hidden py-12">
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4 md:px-10">
         
-        <div className="text-center mb-8 px-4">
-          <h2 className="text-4xl md:text-5xl font-normal text-[#6B5B4B] font-['Oooh_Baby']">
+        <div className="text-center mb-[100px] px-4">
+          <h2 className="text-[40px] font-normal text-[#323232] font-['Oooh_Baby'] leading-[1.225] tracking-[8%] mb-[30px]">
             Best Offers for you
           </h2>
-          <div className="mt-6 flex justify-center">
-            <Image 
-              src="/offer2.png"
-              alt="decorative line" 
-              width={500} 
-              height={50} 
-              className="object-contain"
-              onError={(e) => {
-                console.log('Image load error:', e);
-                // Fallback to CSS gradient if image fails
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<div class="w-[500px] h-[2px] bg-gradient-to-r from-transparent via-[#CBBB9D] to-transparent"></div>';
-              }}
-            />
+          <div className="flex justify-center">
+            <div className="w-[678px] h-[2px] bg-gradient-to-r from-transparent via-[#CBBB9D] to-transparent" />
           </div>
         </div>
 
@@ -91,7 +91,15 @@ export default function OffersCarousel() {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-               
+                  {/* Book Now overlay */}
+                  <div className="absolute inset-0 flex items-end justify-center p-4">
+                    <span
+                      onClick={() => setBookingOpen(true)}
+                      className="cursor-pointer text-[#FF6A00] font-semibold underline decoration-[#FF6A00]/70 underline-offset-4 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] hover:opacity-90"
+                    >
+                      Book now
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -111,6 +119,7 @@ export default function OffersCarousel() {
           ))}
         </div>
       </div>
+      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 }

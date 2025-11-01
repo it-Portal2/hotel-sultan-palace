@@ -1,75 +1,203 @@
 "use client";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 export default function ExperienceBars() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('experience-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
-    <section className="w-full bg-[#242424] py-5 lg:py-8 overflow-hidden">
-      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-x-16 gap-y-20 items-start">
+    <section ref={sectionRef} className="w-full bg-[#242424] relative overflow-hidden experience-section" style={{ minHeight: '1018px' }}>
+      {/* Mobile Layout */}
+      <div className="lg:hidden p-4 md:p-8">
+        <div className="flex flex-col gap-8">
+          <h2 className="font-[Kaisei_Decol] font-bold text-[40px] md:text-[50px] leading-[1.448] text-white">
+            Savor Every Moment, Feel Alive
+          </h2>
           
-          {/* Left Column (takes 2 of 5 columns) */}
-          <div className=" pt-10 flex flex-col gap-10 lg:col-span-2">
-            <h2 className="pt-10 font-ooh-baby font-bold text-5xl md:text-6xl lg:text-7xl leading-tight text-white">
-              Savor Every Moment, Feel Alive
-            </h2>
-            <div className="relative w-full h-[320px]">
-              <Image 
-                src="/figma/experience-left.png" 
-                alt="Beach bar with stools" 
-                fill 
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 40vw" 
-              />
-            </div>
+          <div className="relative w-full h-[358px]">
+            <Image 
+              src="/figma/experience-left.png" 
+              alt="Beach bar with stools" 
+              fill 
+              className="object-cover"
+              sizes="100vw"
+            />
           </div>
 
-         
-          <div className="flex flex-col gap-8 h-full lg:col-span-3">
-            
-            <div className="max-w-md">
-              <h4 className=" pt-10 font-kaisei font-medium text-3xl text-[#BE8C53]">
+          <div className="flex flex-col gap-8">
+            <div>
+              <h4 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-[#BE8C53] mb-[32px]">
                 Oceanfront Bars & Bliss
               </h4>
-              <p className="mt-4 font-kaisei text-base leading-relaxed text-white">
+              <p className="font-[Kaisei_Decol] font-medium text-[16px] leading-[1.448] text-white mb-6">
                 Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
               </p>
               
-              <button className="group mt-6 flex items-center gap-2 border border-white text-white px-6 py-2 font-kaisei font-bold text-sm tracking-wider transition-all duration-300 ease-in-out">
+              <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black w-fit">
                 <span>Book Now</span>
                 <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
               </button>
             </div>
-            
-            <div className="relative w-full md:w-[550px] mt-8 h-[360px] md:h-[500px]">
+
+            <div className="relative w-full h-[400px] md:h-[595px]">
               <Image 
                 src="/figma/experience-right.png" 
                 alt="Indoor bar with bright lights" 
                 fill 
                 className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 60vw"
+                sizes="100vw"
               />
               
-              
-              <div className="absolute h-[300px] md:h-[320px] w-[90%] max-w-[320px] md:w-[280px] bg-white p-6 md:p-8 shadow-lg top-4 left-1/2 -translate-x-1/2 md:translate-x-0 md:top-[-120px] md:right-[-40px] md:left-auto lg:-right-20 transition-all duration-300 ease-in-out origin-top-left md:hover:scale-110 md:hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
-                <h3 className="pt-8 font-kaisei font-bold text-3xl text-black">
+              <div className="absolute top-4 right-4 bg-white p-6 md:p-8 w-[280px] md:w-[340px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
+                <h3 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-black mb-8">
                   Refresh, Relax, Repeat
                 </h3>
-                <p className="mt-8 font-kaisei font-medium text-base text-[#3D3D3D]">
+                <p className="font-[Kaisei_Decol] font-bold text-[16px] leading-[1.448] text-[#3D3D3D]">
                   Unwind in style with our curated drinks and vibrant atmosphere, perfect for both sunset relaxation and lively evenings.
                 </p>
               </div>
 
               <div className="absolute bottom-0 left-0">
-                <button className="w-auto border border-white flex items-center justify-between gap-6 px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00]  transition-colors duration-300">
-                  <span className="font-kaisei font-bold text-lg uppercase">Start your journey</span>
-                  <span className="text-2xl">→</span> 
+                <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] transition-colors duration-300">
+                  <span className="font-[Kaisei_Decol] font-bold text-lg uppercase">Start your journey</span>
+                  <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2">→</span>
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:block w-full relative" style={{ height: '1018px' }}>
+        {/* Main heading */}
+        <h2 className={`absolute left-[118px] top-[167px] w-[502px] font-[Kaisei_Decol] font-bold text-[70px] leading-[1.448] text-white experience-heading ${isVisible ? 'experience-heading-visible' : ''}`} style={{ WebkitTextStroke: '1px white' }}>
+          Savor Every Moment, Feel Alive
+        </h2>
+
+        {/* Left image */}
+        <div className="absolute left-[100px] top-[566px] w-[482px] h-[358px]">
+          <Image 
+            src="/figma/experience-left.png" 
+            alt="Beach bar with stools" 
+            fill 
+            className="object-cover"
+            sizes="482px"
+          />
+        </div>
+
+        {/* Right image */}
+        <div className="absolute left-[682px] top-[386px] w-[622px] h-[595px]">
+          <Image 
+            src="/figma/experience-right.png" 
+            alt="Indoor bar with bright lights" 
+            fill 
+            className="object-cover"
+            sizes="622px"
+          />
+        </div>
+
+        {/* Oceanfront Bars & Bliss section */}
+        <div className={`absolute left-[682px] top-[104px] w-[368px] flex flex-col gap-[32px] experience-text-block ${isVisible ? 'experience-text-block-visible' : ''}`}>
+          <h4 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-[#BE8C53]">
+            Oceanfront Bars & Bliss
+          </h4>
+          <p className="font-[Kaisei_Decol] font-medium text-[16px] leading-[1.448] text-white">
+            Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
+          </p>
+          
+          <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black w-[175px]">
+            <span>Book Now</span>
+            <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
+          </button>
+        </div>
+
+        {/* Refresh, Relax, Repeat white card */}
+        <div className={`absolute left-[1097px] top-[216px] w-[340px] h-[365px] bg-white p-[31px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] experience-card ${isVisible ? 'experience-card-visible' : ''}`}>
+          <h3 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-black mb-[28px]">
+            Refresh, Relax, Repeat
+          </h3>
+          <p className="font-[Kaisei_Decol] font-bold text-[16px] leading-[1.448] text-[#3D3D3D]">
+            Unwind in style with our curated drinks and vibrant atmosphere, perfect for both sunset relaxation and lively evenings.
+          </p>
+        </div>
+
+        {/* Start your journey button */}
+        <div className={`absolute left-[682px] top-[924px] experience-button ${isVisible ? 'experience-button-visible' : ''}`}>
+          <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] transition-colors duration-300">
+            <span className="font-[Kaisei_Decol] font-bold text-lg uppercase">Start your journey</span>
+            <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2">→</span>
+          </button>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .experience-section {
+          opacity: 0;
+          transform: translateY(60px);
+          transition: all 1.2s ease-out;
+        }
+        .experience-section.experience-visible,
+        .experience-visible .experience-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .experience-heading {
+          opacity: 0;
+          transform: translateY(50px) scale(0.95);
+          transition: all 1s ease-out 0.3s;
+        }
+        .experience-heading-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        .experience-text-block {
+          opacity: 0;
+          transform: translateX(50px);
+          transition: all 1s ease-out 0.5s;
+        }
+        .experience-text-block-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .experience-card {
+          opacity: 0;
+          transform: translateX(100px) scale(0.9) rotateY(15deg);
+          transition: all 1s ease-out 0.7s;
+        }
+        .experience-card-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1) rotateY(0deg);
+        }
+        .experience-button {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 0.8s ease-out 0.9s;
+        }
+        .experience-button-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
     </section>
   );
 }
