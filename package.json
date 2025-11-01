@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "clean": "rmdir /s /q .next 2>nul || Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue",
-    "fresh": "npm run clean && npm run build && npm run dev",
+    "fresh": "npm run clean && npm run build && npm run dev"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
