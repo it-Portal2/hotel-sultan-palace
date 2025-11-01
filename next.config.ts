@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
+    domains: [],
     remotePatterns: [
       {
         protocol: "https",
@@ -18,6 +19,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Ensure public folder is included in build
+  publicRuntimeConfig: {},
   // Fix for chunk loading issues and stability
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {

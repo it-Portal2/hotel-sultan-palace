@@ -19,8 +19,18 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef123456789
 ```
 
-## Step 3: Redeploy
-After adding environment variables, redeploy your project.
+## Step 3: Git LFS Configuration for Images
+This project uses Git LFS for images. To ensure images load in deployment:
+
+1. **Vercel automatically supports Git LFS** - No additional setup needed
+2. **Verify Build Logs**: Check Vercel build logs to ensure `git lfs pull` runs successfully
+3. **If images still don't load**:
+   - Go to Vercel Dashboard → Settings → Git
+   - Ensure the repository connection includes LFS files
+   - Try redeploying after clearing build cache
+
+## Step 4: Redeploy
+After adding environment variables and verifying LFS, redeploy your project.
 
 ## Note:
 Replace the example values above with your actual Firebase configuration values.
