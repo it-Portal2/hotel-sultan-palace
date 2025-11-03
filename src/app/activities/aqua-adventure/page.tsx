@@ -161,12 +161,12 @@ export default function AquaAdventurePage() {
             </div>
 
             {/* Activities Section - Mobile: Stack, Desktop: Absolute Positioned */}
-            <div className="relative px-0 min-h-[1067px] lg:min-h-[1485px] py-8 md:py-12 lg:py-16">
+            <div className="relative px-4 md:px-6 min-h-[1067px] lg:min-h-[1485px] py-8 md:py-12 lg:py-16">
               {/* Mobile Layout */}
               <div className="block lg:hidden space-y-12 md:space-y-16">
                 {/* Coral Reef Exploration - Mobile */}
                 <div className="pt-4 pb-4">
-                  <div className="relative w-full h-[300px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
+                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
                         <Image
                           src="/aqua-adventure/kite-surfing.png"
                       alt="Coral Reef Exploration"
@@ -197,7 +197,7 @@ export default function AquaAdventurePage() {
 
                 {/* Kite Surfing - Mobile */}
                 <div className="pt-4 pb-4">
-                  <div className="relative w-full h-[300px] md:h-[400px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] rounded-l-[14px] overflow-hidden mb-6 group/image">
                     <Image
                       src="/aqua-adventure/sailing-1.png"
                           alt="Kite Surfing"
@@ -228,7 +228,7 @@ export default function AquaAdventurePage() {
 
                 {/* Sailing - Mobile */}
                 <div className="pt-4 pb-4">
-                  <div className="relative w-full h-[300px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
                     <Image
                       src="/aqua-adventure/sailing-2.png"
                       alt="Sailing"
@@ -432,12 +432,12 @@ export default function AquaAdventurePage() {
           {/* Content Container - Reduced padding for edge-to-edge */}
           <div className="relative z-10 w-full overflow-x-hidden">
             {/* Activities Section - Mobile: Stack, Desktop: Absolute Positioned */}
-            <div className="relative px-0 min-h-[975px] lg:min-h-[1393px] py-16 md:py-20 lg:py-24">
+            <div className="relative px-4 md:px-6 min-h-[975px] lg:min-h-[1393px] py-16 md:py-20 lg:py-24">
               {/* Mobile Layout */}
               <div className="block lg:hidden space-y-12 md:space-y-16">
                 {/* Kayaking - Mobile */}
                 <div className="pt-4 pb-4">
-                  <div className="relative w-full h-[300px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
+                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] rounded-r-[14px] overflow-hidden mb-6 group/image">
                       <Image
                         src="/aqua-adventure/kayaking.png"
                       alt="Kayaking"
@@ -468,7 +468,7 @@ export default function AquaAdventurePage() {
 
                 {/* Snorkelling - Mobile */}
                 <div className="pt-4 pb-4">
-                  <div className="relative w-full h-[300px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
+                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] rounded-l-[14px] overflow-hidden mb-6 group/image">
                     <Image
                       src="/aqua-adventure/snorkelling-2.png"
                       alt="Snorkelling"
