@@ -120,7 +120,7 @@ export default function ConfirmationPage() {
       
       {/* Main Content */}
       <div className="pt-50 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Success Header */}
           <div className="text-center mb-12">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">

@@ -379,7 +379,7 @@ export default function CheckoutPage() {
 
        {/* Navigation Section */}
        <div className="w-full px-4 mt-40">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl ">
           <button 
             onClick={() => router.push('/add-ons')}
             className="flex items-center gap-5 text-black"
@@ -391,9 +391,10 @@ export default function CheckoutPage() {
       </div>
       
       {/* Main Content - Two Column Layout */}
-      <div className="mt-5 flex flex-col lg:flex-row pb-16 gap-6">
+      <div className="mt-5 pb-16">
+        <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] px-4 md:px-6 flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Left Column - Form */}
-        <div className="flex-1 max-w-[900px] px-4 md:px-8">
+        <div className="w-full lg:basis-[62%] px-0 md:px-2">
           <div className="bg-[#F8F5EF] p-4 md:p-8 rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Reservation Overview */}
@@ -1027,8 +1028,11 @@ export default function CheckoutPage() {
         </div>
         
         {/* Right Column - Cart Summary */}
-        <div className="w-full lg:w-[400px] px-4 lg:px-0">
-          <CartSummary />
+        <div className="w-full lg:basis-[38%] px-0">
+          <div className="rounded-2xl shadow-xl  p-4">
+            <CartSummary />
+          </div>
+        </div>
         </div>
       </div>
       

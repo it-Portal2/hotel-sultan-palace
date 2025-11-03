@@ -126,7 +126,7 @@ function RoomsContent() {
   const cartStickyTop = hasBooking ? 'lg:top-28' : 'lg:top-40';
 
   return (
-    <div className={`min-h-screen bg-[#FFFCF6] ${containerPad}`}>
+    <div className={`min-h-screen bg-[#FFFCF6] overflow-x-hidden ${containerPad}`}>
       <style jsx global>{`
         header {
           background-color: rgba(0, 0, 0, 0.8) !important;
@@ -137,11 +137,12 @@ function RoomsContent() {
         }
       `}</style>
       <Header />
+
       
       {/* Booking Context Bar - only if user selected data */}
       {bookingData && (
-      <div className="w-full  px-4 py-6 mt-20">
-        <div className="max-w-3xl mt-15">
+      <div className="w-full px-4 py-6 mt-20">
+        <div className="max-w-5xl  mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
               
@@ -197,24 +198,24 @@ function RoomsContent() {
       </div>
       )}
 
-      <div className="w-full px-4 mb-16 lg:mb-20">
-        <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] mb-16 lg:mb-20">
+        <div className="w-full px-4 md:px-6">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Rooms List */}
-            <div className="flex-1 lg:max-w-3xl">
+            <div className="w-full lg:basis-[62%]">
               <div className="space-y-6 lg:space-y-8">
                 {rooms.map((room) => (
-                  <div key={room.id} className="bg-[rgba(152,152,152,0.07)] rounded-lg overflow-hidden">
+                  <div key={room.id} className="bg-[#F8F5EF] rounded-[14px] overflow-hidden border border-[rgba(101,93,78,0.12)]">
                     <div className="flex flex-col lg:flex-row">
                       {/* Left Side - Image and Features */}
-                      <div className="w-full lg:w-80 flex-shrink-0">
+                      <div className="w-full lg:w-[520px] flex-shrink-0">
                         {/* Room Image */}
-                        <div className="w-full h-56 lg:h-64 relative mb-0">
+                        <div className="w-full h-64 lg:h-[380px] relative mb-0 rounded-b-none overflow-hidden">
                           <Image 
                             src={room.image || '/figma/rooms-garden-suite.png'} 
                             alt={room.name}
                             fill
-                            className="object-cover"
+                            className="object-cover transition-transform duration-700 ease-out hover:scale-105"
                             sizes="(max-width: 768px) 100vw, 320px"
                           />
                           {/* Bed info overlay */}
@@ -224,7 +225,7 @@ function RoomsContent() {
                           </div>
                         </div>
 
-                        <div className="p-3 bg-[#F8F5EF]">
+                        <div className="p-3 bg-[#FFFDF8]">
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex items-center gap-1 text-[#3A3326]">
                               <DoorOpen size={12} color="#3A3326" />
@@ -263,12 +264,12 @@ function RoomsContent() {
                       </div>
 
                       {/* Right Side - Room Details */}
-                      <div className="w-full lg:w-90 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
+                      <div className="w-full flex-1 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
                         {/* Room Info */}
                         <div>
-                          <h3 className="text-xl font-semibold text-[#423B2D] mb-2">{room.type}</h3>
+                          <h3 className="text-[20px] md:text-[22px] font-semibold text-[#2D2922] mb-2 font-quicksand">{room.type}</h3>
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[#FF6A00] font-bold text-lg">${room.price} / Night</span>
+                            <span className="text-[#FF6A00] font-bold text-[18px]">${room.price} / Night</span>
                             <span className="text-[#655D4E] text-xs">including general taxes and fees</span>
                           </div>
                         </div>
@@ -282,7 +283,7 @@ function RoomsContent() {
                         </div>
 
                         {/* Description */}
-                        <p className="text-[#423B2D] text-sm leading-5 flex-grow">
+                        <p className="text-[#423B2D] text-sm leading-6 flex-grow">
                           {room.description}
                         </p>
 
@@ -309,7 +310,7 @@ function RoomsContent() {
                         <button
                           onClick={() => addToCart(room)}
                           disabled={!hasBooking}
-                          className={`$${''} ${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-orange-600 text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm ${addedRoomId===room.id ? 'opacity-80' : ''}`}
+                          className={`${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-[#E55A00] text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
                         >
                           {hasBooking ? (addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now') : 'Select dates to book'}
                         </button>
@@ -321,16 +322,15 @@ function RoomsContent() {
             </div>
 
             {/* Cart Sidebar */}
-            <div className="w-full lg:w-[410px] flex-shrink-0 mt-6 lg:mt-0">
-              <div className={`bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-4 lg:sticky ${cartStickyTop}`}>
-                <h2 className="text-lg font-semibold text-[#4C3916] mb-4">
+            <div className="w-full lg:basis-[38%] flex-shrink-0 mt-6 lg:mt-0">
+              <div className={`rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-5 lg:sticky ${cartStickyTop}`}>
+                <h2 className="text-xl md:text-2xl font-bold text-[#4C3916] mb-2">
                   Your Cart (Item - {cartRooms.length})
                 </h2>
-                
-                <hr className="border-[rgba(66,59,45,0.13)] mb-6" />
+                <div className="h-1 w-full rounded bg-gradient-to-r from-[#FFEDD5] via-[#FFE8CC] to-[#FFF5EA] mb-5" />
                 
                 {cartRooms.length === 0 ? (
-                  <p className="text-gray-500 text-center py-6">No items in cart</p>
+                  <p className="text-gray-600 text-center py-8">No items in cart</p>
                 ) : (
                   <div className="space-y-4">
                     {cartRooms.map((room) => (

@@ -147,7 +147,7 @@ export default function AddOnsPage() {
       
       {/* Navigation Section */}
       <div className="w-full px-4 mt-40">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[1400px] ">
           <button 
             onClick={() => router.push('/rooms')}
             className="flex items-center gap-5 text-black"
@@ -159,8 +159,8 @@ export default function AddOnsPage() {
       </div>
       
       {/* Booking Form Section */}
-      <div className="w-full  px-4 py-6 -mt-18">
-        <div className="max-w-[730px] pr-10 mt-15">
+      <div className="w-full px-4 py-6 -mt-18">
+        <div className="max-w-5xl  mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
               
@@ -215,24 +215,24 @@ export default function AddOnsPage() {
         </div>
       </div>
 
-      <div className="w-full px-4 mb-16 lg:mb-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] mb-16 lg:mb-20">
+        <div className="w-full px-4 md:px-6">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Add-ons List */}
-            <div className="flex-1 lg:max-w-3xl">
+            <div className="w-full lg:basis-[62%]">
               <div className="space-y-6 lg:space-y-8">
               {addOns.map((addOn) => (
-                  <div key={addOn.id} className="bg-[rgba(152,152,152,0.07)] rounded-lg overflow-hidden">
+                  <div key={addOn.id} className="bg-[#F8F5EF] rounded-[14px] overflow-hidden border border-[rgba(101,93,78,0.12)]">
                     <div className="flex flex-col lg:flex-row">
                       {/* Left Side - Image and Features */}
-                      <div className="w-full lg:w-[245.43px] flex-shrink-0">
+                      <div className="w-full lg:w-[340px] flex-shrink-0">
                         {/* Add-on Image */}
-                        <div className="w-full h-56 md:h-64 lg:w-[245.43px] lg:h-[228px] relative mb-0 overflow-hidden bg-gray-200">
+                        <div className="w-full h-56 md:h-64 lg:w-[340px] lg:h-[260px] relative mb-0 overflow-hidden bg-gray-200">
                           <Image 
                             src={addOn.image} 
                             alt={addOn.name}
                             fill
-                            className="object-cover object-center"
+                            className="object-cover object-center transition-transform duration-700 ease-out hover:scale-105"
                             sizes="(max-width: 1024px) 100vw, 245px"
                           />
                         </div>
@@ -240,7 +240,7 @@ export default function AddOnsPage() {
                       </div>
 
                       {/* Right Side - Add-on Details */}
-                      <div className="w-full lg:w-[443px] p-4 md:p-6 lg:p-8 flex flex-col gap-4">
+                      <div className="w-full flex-1 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
                         {/* Add-on Info */}
                         <div>
                           <h3 className="text-2xl font-semibold text-[#423B2D] mb-2">{addOn.name}</h3>
@@ -324,15 +324,15 @@ export default function AddOnsPage() {
           </div>
 
           {/* Cart Sidebar */}
-            <div className="w-full lg:w-[520px] mt-6 lg:-mt-28 flex-shrink-0">
-              <div className="bg-[#FFFCF6] rounded-lg shadow-lg border border-[rgba(101,93,78,0.15)] p-0 lg:sticky lg:top-8">
+            <div className="w-full lg:basis-[38%] mt-6 lg:-mt-28 flex-shrink-0">
+              <div className="rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-0 lg:sticky lg:top-8">
                 <div className="p-6">
-                  <h2 className="text-xl font-bold text-[#3A3326] mb-4">
+                  <h2 className="text-2xl font-bold text-[#3A3326] mb-2">
                     Your Cart (Item - {cartAddOns.length + (roomData ? 1 : 0)})
                   </h2>
                   
                   {/* Divider Line */}
-                  <div className="w-full h-px bg-[rgba(66,59,45,0.13)] mb-6"></div>
+                  <div className="h-1 w-full rounded bg-gradient-to-r from-[#FFEDD5] via-[#FFE8CC] to-[#FFF5EA] mb-5"></div>
                 
                   {/* Cart Content */}
                   <div className="bg-[#F8F5EF] p-6 rounded-lg">
