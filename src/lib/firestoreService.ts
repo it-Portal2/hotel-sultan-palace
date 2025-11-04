@@ -134,6 +134,16 @@ export interface StoryImage {
   updatedAt: Date;
 }
 
+export interface Testimonial {
+  id: string;
+  name: string;
+  country: string;
+  countryCode: string;
+  text: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type GalleryType = 'villas' | 'pool' | 'spa' | 'beach' | 'water_sports' | 'restaurant_bars' | 'facilities';
 
 export interface GalleryImage {
@@ -873,6 +883,67 @@ export const deleteGalleryImage = async (id: string): Promise<boolean> => {
     return true;
   } catch (e) {
     console.error('Error deleting gallery image:', e);
+    return false;
+  }
+};
+
+// Testimonials CRUD
+export const getTestimonials = async (): Promise<Testimonial[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'testimonials');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        name: data.name,
+        country: data.country,
+        countryCode: data.countryCode,
+        text: data.text,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as Testimonial;
+    });
+  } catch (e) {
+    console.error('Error fetching testimonials:', e);
+    return [];
+  }
+};
+
+export const createTestimonial = async (data: Omit<Testimonial, 'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    const refCol = collection(db, 'testimonials');
+    const docRef = await addDoc(refCol, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return docRef.id;
+  } catch (e) {
+    console.error('Error creating testimonial:', e);
+    return null;
+  }
+};
+
+export const updateTestimonial = async (id: string, data: Partial<Testimonial>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const d = doc(db, 'testimonials', id);
+    await updateDoc(d, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating testimonial:', e);
+    return false;
+  }
+};
+
+export const deleteTestimonial = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const d = doc(db, 'testimonials', id);
+    await deleteDoc(d);
+    return true;
+  } catch (e) {
+    console.error('Error deleting testimonial:', e);
     return false;
   }
 };

@@ -80,13 +80,13 @@ export default function InRoomFacilities() {
       {/* Desktop Layout */}
       <div className="hidden lg:block w-full relative" style={{ height: '880px' }}>
         {/* Left Image */}
-        <div className="absolute left-0 top-[187px] w-[914px] h-[691px]">
+        <div className="absolute left-0 top-[187px] w-[1000px] h-[691px]">
           <Image 
             src="/figma/inroom.png" 
             alt="Luxury hotel room" 
             fill 
             className="object-cover"
-            sizes="914px"
+            sizes="1000px"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function InRoomFacilities() {
         </div>
 
         {/* Comfort & Relaxation Card */}
-        <div className={`absolute left-[860px] top-[599px] w-[553px] h-[199px] bg-[#242424] rounded-[1px] p-[21px] shadow-lg group cursor-pointer transition-transform duration-300 ease-in-out hover:translate-y-6 inroom-card ${isVisible ? 'inroom-card-visible' : ''}`} style={{ transitionDelay: '0.6s' }}>
+        <div className={`absolute left-[860px] top-[599px] w-[640px] h-[199px] bg-[#242424] rounded-[1px] p-[21px] shadow-lg group cursor-pointer transition-transform duration-300 ease-in-out hover:translate-y-6 inroom-card ${isVisible ? 'inroom-card-visible' : ''}`} style={{ transitionDelay: '0.6s' }}>
           <h3 className="font-[Kaisei_Decol] font-bold text-[20px] leading-[1.448] text-white mb-[19px]">
             Comfort & Relaxation
           </h3>

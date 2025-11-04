@@ -1,9 +1,31 @@
 "use client";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 export default function FeaturedCalm() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('featured-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
-    <section className="w-full relative overflow-hidden px-0 mx-0">
+    <section ref={sectionRef} className="w-full relative overflow-hidden px-0 mx-0 featured-section">
       {/* Mobile Layout */}
       <div className="lg:hidden">
         <div className="relative flex flex-col">
@@ -13,23 +35,23 @@ export default function FeaturedCalm() {
             </h2>
           </div>
           
-          <div className="group relative h-[500px] overflow-hidden">
+          <div className={`group relative h-[500px] overflow-hidden featured-image-1 ${isVisible ? 'featured-image-1-visible' : ''}`}>
             <Image 
               src="/figma/featured-top.png" 
               alt="Beachfront resort balcony" 
               fill 
               sizes="100vw" 
-              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
             />
           </div>
 
-          <div className="group relative h-[500px] overflow-hidden">
+          <div className={`group relative h-[500px] overflow-hidden featured-image-2 ${isVisible ? 'featured-image-2-visible' : ''}`}>
             <Image 
               src="/figma/featured-bottom.png" 
               alt="Resort garden with ocean view" 
               fill 
               sizes="100vw" 
-              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
             />
           </div>
 
@@ -68,13 +90,13 @@ export default function FeaturedCalm() {
         </h2>
 
         {/* Top right image - extends to bottom image start (524px), right side extends to edge */}
-        <div className="absolute left-[762px] top-0 right-0 h-[524px] overflow-hidden">
+        <div className={`absolute left-[762px] top-0 right-0 h-[524px] overflow-hidden featured-image-1 ${isVisible ? 'featured-image-1-visible' : ''}`}>
           <Image 
             src="/figma/featured-top.png" 
             alt="Beachfront resort balcony" 
             width={750}
             height={524}
-            className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-110 active:scale-110"
           />
         </div>
 
@@ -82,13 +104,13 @@ export default function FeaturedCalm() {
         <div className="absolute left-[762px] top-[524px] right-0 h-[555px] bg-[#E8E4D9]" />
 
         {/* Bottom left image */}
-        <div className="absolute left-[57px] top-[524px] w-[813px] h-[555px] overflow-hidden">
+        <div className={`absolute left-[57px] top-[524px] w-[813px] h-[555px] overflow-hidden featured-image-2 ${isVisible ? 'featured-image-2-visible' : ''}`}>
           <Image 
             src="/figma/featured-bottom.png" 
             alt="Resort garden with ocean view" 
             fill 
             sizes="813px" 
-            className="object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+            className="object-cover transition-transform duration-300 ease-in-out hover:scale-110 active:scale-110"
           />
         </div>
 
@@ -104,6 +126,37 @@ export default function FeaturedCalm() {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .featured-section {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1s ease-out;
+        }
+        .featured-section.featured-visible,
+        .featured-visible .featured-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .featured-image-1 {
+          opacity: 0;
+          transform: translateX(100px) scale(0.9);
+          transition: all 1s ease-out 0.3s;
+        }
+        .featured-image-1-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .featured-image-2 {
+          opacity: 0;
+          transform: translateX(-100px) scale(0.9);
+          transition: all 1s ease-out 0.5s;
+        }
+        .featured-image-2-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+      `}</style>
     </section>
   );
 }

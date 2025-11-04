@@ -60,7 +60,7 @@ export default function RoomsVillas() {
           {rooms.map((room, index) => (
             <div key={room.id} className={`rounded-[8px] bg-white shadow-[0px_4px_20.7px_rgba(0,0,0,0.08)] overflow-hidden rooms-card ${isVisible ? 'rooms-card-visible' : ''}`} style={{ transitionDelay: `${index * 0.2}s` }}>
               <div className="relative w-full h-[280px] md:h-[375px] overflow-hidden group">
-                <Image src={room.image || '/figma/rooms-garden-suite.png'} alt={room.name} fill className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-130" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src={room.image || '/figma/rooms-garden-suite.png'} alt={room.name} fill className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-130 active:scale-130" sizes="(max-width: 768px) 100vw, 33vw" />
               </div>
               <div className="p-4 md:p-[22px]">
                 <div className="flex items-start justify-between mb-4 md:mb-[18px]">

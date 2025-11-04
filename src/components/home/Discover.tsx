@@ -35,7 +35,7 @@ export default function Discover() {
             layout="fill"
             src="/image1.png"
             alt="A few things to note at Sultan Palace"
-            className="w-full h-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110"
+            className="w-full h-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
           />
         </div>
 

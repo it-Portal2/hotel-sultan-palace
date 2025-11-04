@@ -52,9 +52,9 @@ export default function ExperienceBars() {
                 Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
               </p>
               
-              <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black w-fit">
+              <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-fit">
                 <span>Book Now</span>
-                <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
+                <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-active:w-5 group-active:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
               </button>
             </div>
 
@@ -67,7 +67,7 @@ export default function ExperienceBars() {
                 sizes="100vw"
               />
               
-              <div className="absolute top-4 right-4 bg-white p-6 md:p-8 w-[280px] md:w-[340px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
+              <div className="absolute top-4 right-4 bg-white p-6 md:p-8 w-[280px] md:w-[340px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 active:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] active:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
                 <h3 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-black mb-8">
                   Refresh, Relax, Repeat
                 </h3>
@@ -77,7 +77,7 @@ export default function ExperienceBars() {
               </div>
 
               <div className="absolute bottom-0 left-0">
-                <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] transition-colors duration-300">
+                <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] active:bg-[#ff6a00] transition-colors duration-300">
                   <span className="font-[Kaisei_Decol] font-bold text-lg uppercase">Start your journey</span>
                   <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2">→</span>
                 </button>
@@ -125,14 +125,14 @@ export default function ExperienceBars() {
             Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
           </p>
           
-          <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black w-[175px]">
+          <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-[175px]">
             <span>Book Now</span>
-            <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
+            <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-active:w-5 group-active:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
           </button>
         </div>
 
         {/* Refresh, Relax, Repeat white card */}
-        <div className={`absolute left-[1097px] top-[216px] w-[340px] h-[365px] bg-white p-[31px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] experience-card ${isVisible ? 'experience-card-visible' : ''}`}>
+        <div className={`absolute left-[1097px] top-[216px] w-[340px] h-[365px] bg-white p-[31px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 active:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] active:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] experience-card ${isVisible ? 'experience-card-visible' : ''}`}>
           <h3 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-black mb-[28px]">
             Refresh, Relax, Repeat
           </h3>
@@ -143,9 +143,9 @@ export default function ExperienceBars() {
 
         {/* Start your journey button */}
         <div className={`absolute left-[682px] top-[924px] experience-button ${isVisible ? 'experience-button-visible' : ''}`}>
-          <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] transition-colors duration-300">
+          <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] active:bg-[#ff6a00] transition-colors duration-300">
             <span className="font-[Kaisei_Decol] font-bold text-lg uppercase">Start your journey</span>
-            <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2">→</span>
+            <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2 group-active:translate-x-2">→</span>
           </button>
         </div>
       </div>

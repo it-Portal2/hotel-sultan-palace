@@ -79,7 +79,7 @@ export default function Excursions() {
                 height={280}
                 src={card.img}
                 alt={card.title}
-                className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150"
+                className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150 active:scale-150"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
@@ -92,7 +92,7 @@ export default function Excursions() {
           ))}
           {showAll && extra.map((item) => (
             <div key={item.id} className="group relative h-[200px] md:h-[280px] w-full md:w-[300px] overflow-hidden rounded-[7px] shadow-lg">
-              <Image width={300} height={280} src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150" />
+              <Image width={300} height={280} src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150 active:scale-150" />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 pb-4 md:pb-[19px] text-center">
                 <h3 className="text-[18px] md:text-[22px] font-normal font-jomolhari leading-[1.602] text-white drop-shadow-md">{item.title}</h3>

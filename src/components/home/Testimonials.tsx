@@ -2,6 +2,8 @@
 import Image from "next/image";
 import { FaQuoteLeft, FaStar } from "react-icons/fa";
 import { HiOutlineArrowLeft, HiOutlineArrowRight } from "react-icons/hi";
+import { useEffect, useState } from "react";
+import { getTestimonials, Testimonial } from "@/lib/firestoreService";
 
 const RATINGS = [
   { label: "Staff", score: 9.3 },
@@ -14,15 +16,36 @@ const RATINGS = [
 ];
 
 export default function Testimonials() {
-  const testimonial = {
-    name: "Kamini pal",
-    country: "india",
-    text:
-      "The location is on the East coast and and such is affected by tides but even in the low tide one can walk not too far and snorkel and swim. The property offers a kayak with which you can kayak in…",
-    countryCode: "in",
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getTestimonials();
+        setTestimonials(data);
+        if (data.length > 0) setCurrentIndex(0);
+      } catch (e) {
+        console.error('Error loading testimonials:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handlePrevious = () => {
+    if (testimonials.length === 0) return;
+    setCurrentIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
   };
 
-  const initial = testimonial.name[0];
+  const handleNext = () => {
+    if (testimonials.length === 0) return;
+    setCurrentIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
+  };
+
+  const testimonial = testimonials.length > 0 ? testimonials[currentIndex] : null;
+  const canNavigate = testimonials.length > 1;
 
   return (
     <section className="w-full">
@@ -47,38 +70,68 @@ export default function Testimonials() {
             TESTIMONIALS
           </h2>
 
-          <p className="mt-10 text-lg max-w-3xl text-[#202C3B]/90 font-kaisei leading-8">
-            {testimonial.text}
-          </p>
-
-          <div className="mt-8 flex items-center gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC] text-[#BE8C53] font-kaisei text-lg">
-              {initial}
+          {loading ? (
+            <div className="mt-10 flex justify-center">
+              <div className="h-8 w-8 border-b-2 border-[#BE8C53] rounded-full animate-spin" />
             </div>
-            <div className="text-left">
-              <p className="font-kaisei font-bold text-[#202C3B] ">{testimonial.name}</p>
-              <div className="mt-1 flex items-center gap-2">
-                {/* load flag from flagcdn to avoid bundling local flags */}
-                <p className="font-kaisei text-[#655D4E] text-sm">{testimonial.country}</p>
-                <Image
-                  src={`https://flagcdn.com/w20/${testimonial.countryCode}.png`}
-                  width={20}
-                  height={14}
-                  alt={testimonial.country}
-                  style={{ display: "block" }}
-                />
+          ) : testimonial ? (
+            <>
+              <p className="mt-10 text-lg max-w-3xl text-[#202C3B]/90 font-kaisei leading-8">
+                {testimonial.text}
+              </p>
+
+              <div className="mt-8 flex items-center gap-4">
+                <div className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC] text-[#BE8C53] font-kaisei text-lg">
+                  {testimonial.name[0].toUpperCase()}
+                </div>
+                <div className="text-left">
+                  <p className="font-kaisei font-bold text-[#202C3B]">
+                    {testimonial.name}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="font-kaisei text-[#655D4E] text-sm capitalize">
+                      {testimonial.country}
+                    </p>
+                    <Image
+                      src={`https://flagcdn.com/w20/${testimonial.countryCode}.png`}
+                      width={20}
+                      height={14}
+                      alt={testimonial.country}
+                      style={{ display: "block" }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {canNavigate && (
+                  <div className="ml-8 flex items-center gap-10">
+                    <button
+                      onClick={handlePrevious}
+                      className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-colors duration-200"
+                      aria-label="Previous testimonial"
+                    >
+                      <HiOutlineArrowLeft className="text-2xl" />
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-colors duration-200"
+                      aria-label="Next testimonial"
+                    >
+                      <HiOutlineArrowRight className="text-2xl" />
+                    </button>
+                  </div>
+                )}
               </div>
+            </>
+          ) : (
+            <div className="mt-10 text-center">
+              <p className="text-lg text-[#202C3B]/60 font-kaisei">
+                No testimonials available yet.
+              </p>
             </div>
-
-            <div className="ml-8 flex items-center gap-10">
-              <button className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC]  text-[#BE8C53]">
-                <HiOutlineArrowLeft className="text-2xl" />
-              </button>
-              <button className="grid h-12 w-12 place-items-center rounded-full bg-[#EBDDCC]  text-[#BE8C53]">
-                <HiOutlineArrowRight className="text-2xl" />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

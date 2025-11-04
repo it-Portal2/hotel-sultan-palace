@@ -56,15 +56,15 @@ function TimeAndTemperature() {
   const tempF = tempC !== null ? Math.round((tempC * 9) / 5 + 32) : null;
 
   return (
-    <div className="hidden md:flex items-center gap-6 text-white text-[16px] font-semibold">
-      <div className="flex items-center gap-2">
-        <Clock size={16} />
-        <span>Local time: {now || "--:--"}</span>
+    <div className="hidden md:flex items-center gap-4 lg:gap-6 text-white text-[12px] md:text-[14px] lg:text-[16px] font-semibold">
+      <div className="flex items-center gap-1 md:gap-2">
+        <Clock size={12} className="md:w-4 md:h-4" />
+        <span className="whitespace-nowrap">Local time: {now || "--:--"}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <Thermometer size={16} />
-        <span>
-          Temperature: {tempC !== null ? `${tempC}°C / ${tempF}°F` : "--"}
+      <div className="flex items-center gap-1 md:gap-2">
+        <Thermometer size={12} className="md:w-4 md:h-4" />
+        <span className="whitespace-nowrap">
+          Temp: {tempC !== null ? `${tempC}°C / ${tempF}°F` : "--"}
         </span>
       </div>
     </div>
@@ -155,23 +155,11 @@ export default function Header() {
   return (
     <>
       <header className={`w-full absolute top-0 left-0 z-30 font-open-sans ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`}>
-        <div className="w-full px-10 lg:px-20">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-6 lg:gap-[54px]">
-                <div className="flex items-center gap-4">
-                  {socialLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className="text-white hover:text-orange-300 transition-colors"
-                    >
-                      <link.icon size={16} />
-                    </Link>
-                  ))}
-                </div>
-                <TimeAndTemperature />
-              </div>
-            <div className="hidden md:flex items-center gap-5 text-white text-[16px] font-semibold">
+        {/* Top Section - Desktop Only */}
+        <div className="hidden md:block w-full px-10 lg:px-20">
+          <div className="flex items-center justify-between py-1 md:py-4">
+            <TimeAndTemperature />
+            <div className="flex items-center gap-5 text-white text-[16px] font-semibold">
               <div className="flex items-center gap-2">
                 <Phone size={12} color="#79C9E9" />
                 <div className="flex gap-2 text-[16px]">
@@ -196,23 +184,37 @@ export default function Header() {
               </button>
             </div>
           </div>
+          <hr className="border-white/20" />
         </div>
 
-        <hr className="border-white/20" />
-
+        {/* Menu Bar Section - Logo, Social Icons, Navigation */}
         <div className="w-full px-4 md:px-10 lg:px-[82px]">
           <div className="flex items-center justify-between py-1">
-            <Link href="/" className="flex-shrink-0 z-50">
-              <Image
-                src="/sultan-logo.png"
-                alt="Sultan Palace"
-                width={200}
-                height={200}
-                priority
-                className="!h-[84px] !w-auto" 
-                style={{ height: "84px", width: "auto" }}
-              />
-            </Link>
+            <div className="flex items-center gap-3 md:gap-4">
+              <Link href="/" className="flex-shrink-0 z-50">
+                <Image
+                  src="/sultan-logo.png"
+                  alt="Sultan Palace"
+                  width={200}
+                  height={200}
+                  priority
+                  className="!h-[50px] md:!h-[84px] !w-auto" 
+                  style={{ height: "50px", width: "auto" }}
+                />
+              </Link>
+              {/* Social Icons - Now in Menu Bar */}
+              <div className="flex items-center gap-2 md:gap-3">
+                {socialLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-white hover:text-orange-300 transition-colors"
+                  >
+                    <link.icon size={14} className="md:w-4 md:h-4" />
+                  </Link>
+                ))}
+              </div>
+            </div>
 
             <nav className="hidden lg:flex items-center justify-center gap-[54px] text-white text-[16px] font-semibold font-open-sans w-full">
               {navLinks.map((item) => (
@@ -238,12 +240,17 @@ export default function Header() {
                       className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
                     >
                       {item.label}
-                      {item.caret && !(
-                        (item.label === "Activities" && isActivitiesMenuOpen) ||
-                        (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
-                       
-                        (item.label === "About Us" && isAboutUsMenuOpen)
-                      ) && <ChevronDown size={14} />}
+                      {item.caret && (
+                        <ChevronDown 
+                          size={14} 
+                          className={`transition-transform duration-300 ${
+                            (item.label === "Activities" && isActivitiesMenuOpen) ||
+                            (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
+                            (item.label === "About Us" && isAboutUsMenuOpen)
+                              ? 'rotate-180' : 'rotate-0'
+                          }`}
+                        />
+                      )}
                     </button>
                   ) : (
                     <Link
@@ -256,8 +263,8 @@ export default function Header() {
                   )}
                   
                   {/* Activities Submenu */}
-                  {item.hasSubmenu && item.label === "Activities" && isActivitiesMenuOpen && (
-                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                  {item.hasSubmenu && item.label === "Activities" && (
+                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isActivitiesMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
                       <div className="py-4 px-4 space-y-5">
                         {activitiesSubmenu.map((subItem, index) => (
@@ -279,8 +286,8 @@ export default function Header() {
                   )}
 
                   {/* Wellness Submenu */}
-                  {item.hasSubmenu && item.label === "Wellness & Relaxation" && isWellnessMenuOpen && (
-                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                  {item.hasSubmenu && item.label === "Wellness & Relaxation" && (
+                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isWellnessMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
                       <div className="py-4 px-4 space-y-5">
                         {wellnessSubmenu.map((subItem, index) => (
@@ -302,8 +309,8 @@ export default function Header() {
                   )}
                   
                   {/* about Submenu */}
-                  {item.hasSubmenu && item.label === "About Us" && isAboutUsMenuOpen && (
-                    <div className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50">
+                  {item.hasSubmenu && item.label === "About Us" && (
+                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isAboutUsMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
                       <div className="py-4 px-4 space-y-5">
                         {aboutUsSubmenu.map((subItem, index) => (

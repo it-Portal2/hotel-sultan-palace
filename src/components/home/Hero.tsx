@@ -32,45 +32,43 @@ export default function Hero() {
   return (
     <>
      
-      <section ref={heroRef} className="relative w-full h-[600px] md:h-[928px] overflow-hidden font-opensans mb-6 md:-mb-12 hero-section">
-        
-      
-        <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline 
-            className="w-full h-full object-cover"
-          >
-            <source src="/hero.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-         
-          {/* <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-black/20 to-white" />  */}
-        </div>
-
-       
-        <audio autoPlay loop className="hidden">
-          <source src="/gentle-ocean-waves-birdsong-and-gull-7109.mp3" type="audio/mpeg" />
-        </audio>
-
-    
-        <div className="relative z-10 h-full flex flex-col justify-end items-center pb-3 md:pb-8 px-4">
-          <div className="w-full max-w-4xl">
-            
-   
-            <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-6 px-6 mb-2">
-              <span className="text-white text-base font-bold">Check-in / Check-out</span>
-              <span className="text-white text-base font-bold">Guest</span>
-            </div>
-
-            {/* Booking Form */}
-            <div id="booking-form" className="-mt-20 sm:-mt-20 md:mt-0">
-              <BookingForm />
+      <section ref={heroRef} className="relative w-full font-opensans hero-section mb-0">
+        {/* Video Container with Form */}
+        <div className="relative w-full h-[600px] md:h-[928px] overflow-visible">
+          <div className="absolute inset-0 z-0">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline 
+              className="w-full h-full object-cover"
+            >
+              <source src="/hero.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          
+          {/* Booking Form - Mobile: Overlapping video, Desktop: At bottom with padding */}
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-4 transform -translate-y-[50%] md:absolute md:bottom-8 md:left-0 md:right-0 md:z-10 md:translate-y-0 md:transform-none">
+            <div className="w-full max-w-4xl mx-auto">
+              <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-6 px-6 mb-2">
+                <span className="text-white text-base font-bold">Check-in / Check-out</span>
+                <span className="text-white text-base font-bold">Guest</span>
+              </div>
+              <div id="booking-form" className="w-full">
+                <BookingForm />
+              </div>
             </div>
           </div>
         </div>
+        
+        {/* Spacer for form visibility on mobile, padding for desktop */}
+        <div className="h-12 md:h-16 lg:h-20"></div>
+
+        {/* Audio */}
+        <audio autoPlay loop className="hidden">
+          <source src="/gentle-ocean-waves-birdsong-and-gull-7109.mp3" type="audio/mpeg" />
+        </audio>
       </section>
 
       <style jsx global>{`

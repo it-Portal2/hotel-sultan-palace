@@ -11,7 +11,8 @@ import {
   SparklesIcon,
   PhotoIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -33,6 +34,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon },
     { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon },
+    { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
     { name: 'Offers', href: '/admin/offers', icon: PhotoIcon },
     { name: 'Story in Pictures', href: '/admin/story-pictures', icon: PhotoIcon },
     { name: 'Gallery', href: '/admin/gallery', icon: PhotoIcon },

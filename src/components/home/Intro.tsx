@@ -24,9 +24,9 @@ export default function Intro() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="w-full bg-[#FFFCF6] intro-section">
+    <section ref={sectionRef} className="w-full bg-[#FFFCF6] intro-section -mt-12 md:mt-0">
       <div className="container-xl py-4">
-        <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-[82px] pt-6 md:pt-8 lg:pt-[73px] pb-8 md:pb-12 lg:pb-[126px]">
+        <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-[82px] pt-4 md:pt-8 lg:pt-[73px] pb-8 md:pb-12 lg:pb-[126px]">
           <div className="flex flex-col gap-4 md:gap-[18px] mb-6 md:mb-[53px]">
             <div className={`inline-flex h-[32px] md:h-[36px] items-center rounded-[49px] bg-[rgba(255,106,0,0.19)] px-2 md:px-[10px] py-2 md:py-[10px] self-start intro-badge ${isVisible ? 'intro-badge-visible' : ''}`}>
               <span className="whitespace-nowrap font-quicksand text-[16px] md:text-[18px] font-semibold leading-[1.25] text-[#ED6200]">

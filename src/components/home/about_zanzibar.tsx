@@ -89,7 +89,7 @@ export default function AboutZanzibar() {
   };
 
   return (
-    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-16 lg:py-24">
+    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-12 md:py-16 lg:py-24">
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -102,24 +102,24 @@ export default function AboutZanzibar() {
       </div>
       
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-8xl px-4 md:px-8">
-        <h2 className="text-center font-kaisei text-3xl md:text-4xl text-[#655D4E] mb-12">
-          Frequently Asked Questions
+      <div className="relative z-10 mx-auto max-w-8xl px-4 sm:px-6 md:px-8 lg:px-10">
+        <h2 className="text-center font-kaisei text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#655D4E] mb-8 md:mb-12 px-2">
+        About Zanzibar as a Destination
         </h2>
         
       
-        <div className="w-[700px] mx-auto max-w-full">
+        <div className="w-full max-w-[900px] mx-auto">
           {(showAll ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
             <div key={index} className="border-b border-[#CBBB9D]">
               <button
                 onClick={() => toggleItem(index)}
-                className="w-full py-4 flex items-center justify-between text-left"
+                className="w-full py-3 md:py-4 flex items-center justify-between text-left gap-3"
               >
-                <span className="font-kaisei text-[#655D4E] text-lg pr-6">
+                <span className="font-kaisei text-[#655D4E] text-base sm:text-lg pr-2 md:pr-6 flex-1 text-left">
                   {item.question}
                 </span>
              
-                <div className="text-[#BE8C53] text-5xl font-light transition-transform duration-300 ease-in-out"
+                <div className="text-[#BE8C53] text-3xl md:text-4xl lg:text-5xl font-light transition-transform duration-300 ease-in-out flex-shrink-0"
                   style={{ transform: openItems.includes(index) ? 'rotate(45deg)' : 'rotate(0deg)' }}
                 >
                   +
@@ -130,8 +130,8 @@ export default function AboutZanzibar() {
               <div
                 className={`overflow-hidden transition-all duration-500 ease-in-out ${openItems.includes(index) ? 'max-h-[500px]' : 'max-h-0'}`}
               >
-                <div className="pt-2 pb-6 pr-8">
-                  <p className="font-kaisei text-[#3D3D3D] leading-relaxed">
+                <div className="pt-2 pb-4 md:pb-6 pr-2 md:pr-8">
+                  <p className="font-kaisei text-sm sm:text-base text-[#3D3D3D] leading-relaxed">
                     {item.answer}
                   </p>
                 </div>
@@ -153,7 +153,7 @@ export default function AboutZanzibar() {
                     return next;
                   })
                 }
-                className="px-6 py-2 border border-[#BE8C53] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-colors rounded"
+                className="px-5 md:px-6 py-2 border border-[#BE8C53] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-colors rounded text-sm md:text-base"
               >
                 {showAll ? 'View less' : 'View more'}
               </button>

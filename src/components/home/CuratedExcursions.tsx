@@ -54,7 +54,7 @@ export default function CuratedExcursions() {
                 alt="Beautiful villa in Zanzibar"
                 fill
                 sizes="(max-width: 1024px) 100vw, 650px"
-                className="object-cover transition-transform duration-500 ease-in-out hover:scale-140"
+                className="object-cover transition-transform duration-500 ease-in-out hover:scale-140 active:scale-140"
                 priority
               />
             </div>
