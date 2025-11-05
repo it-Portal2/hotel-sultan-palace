@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 export default function ExperienceBars() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -52,10 +53,10 @@ export default function ExperienceBars() {
                 Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
               </p>
               
-              <button className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-fit">
+              <Link href="/rooms" className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-fit">
                 <span>Book Now</span>
                 <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-active:w-5 group-active:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
-              </button>
+              </Link>
             </div>
 
             <div className="relative w-full h-[400px] md:h-[595px]">
@@ -128,10 +129,10 @@ export default function ExperienceBars() {
             width: 'clamp(140px, 10.6%, 160px)',
             zIndex: 10
           }}>
-            <button className="group flex items-center justify-center gap-[10px] border border-white text-white px-[10px] py-[10px] font-[Kaisei_Decol] font-bold text-[16px] leading-[1.448] tracking-wider transition-all duration-150 ease-out hover:bg-white hover:text-[#242424] active:bg-white active:text-[#242424] whitespace-nowrap w-full">
+            <Link href="/rooms" className="group flex items-center justify-center gap-[10px] border border-white text-white px-[10px] py-[10px] font-[Kaisei_Decol] font-bold text-[16px] leading-[1.448] tracking-wider transition-all duration-150 ease-out hover:bg-white hover:text-[#242424] active:bg-white active:text-[#242424] whitespace-nowrap w-full">
               <span className="whitespace-nowrap">Book Now</span>
               <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-active:w-5 group-active:opacity-100 transition-all duration-150 ease-out text-lg">→</span>
-            </button>
+            </Link>
           </div>
 
           {/* White Card - Anchor to right edge on all sizes without cutoff */}
@@ -202,10 +203,10 @@ export default function ExperienceBars() {
             width: 'clamp(280px, 20%, 320px)',
             zIndex: 15
           }}>
-            <button className="group flex items-center justify-between gap-3 px-4 py-4 text-white bg-[#242424] hover:!bg-[#ff6a00] active:!bg-[#ff6a00] transition-all duration-150 ease-out w-full border-0 overflow-hidden">
+            <Link href="/rooms" className="group flex items-center justify-between gap-3 px-4 py-4 text-white bg-[#242424] hover:!bg-[#ff6a00] active:!bg-[#ff6a00] transition-all duration-150 ease-out w-full border-0 overflow-hidden">
               <span className="font-[Kaisei_Decol] font-bold text-[18px] lg:text-[20px] leading-[1.448] uppercase whitespace-nowrap">Start your journey</span>
-              <span className="w-0 opacity-0 group-hover:!w-6 group-hover:!opacity-100 group-active:!w-6 group-active:!opacity-100 transition-all duration-150 ease-out group-hover:!translate-x-2 group-active:!translate-x-2 flex-shrink-0 inline-block text-[36px]" style={{ lineHeight: 0, stroke: '#FFFFFF', strokeWidth: '2px' }}>→</span>
-            </button>
+              <span className="w-0 opacity-0 group-hover:!w-6 group-hover:!opacity-100 group-active:!w-6 group-active:opacity-100 transition-all duration-150 ease-out group-hover:!translate-x-2 group-active:!translate-x-2 flex-shrink-0 inline-block text-[36px]" style={{ lineHeight: 0, stroke: '#FFFFFF', strokeWidth: '2px' }}>→</span>
+            </Link>
           </div>
         </div>
       </div>

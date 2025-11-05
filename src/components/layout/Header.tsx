@@ -336,7 +336,7 @@ export default function Header() {
 
             <div className="flex items-center gap-2 xl:gap-4 flex-shrink-0">
               <div className="hidden md:block">
-                <BookNowButton scrollTo="booking-form" size="sm" className="px-4 md:px-6 lg:px-8 xl:px-[40px] 2xl:px-[53px] py-2 md:py-2.5 lg:py-3 xl:py-[14px] rounded-[9px] text-[12px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-auto md:h-[45px] lg:h-[49px] w-fit whitespace-nowrap" />
+                <BookNowButton size="sm" className="px-4 md:px-6 lg:px-8 xl:px-[40px] 2xl:px-[53px] py-2 md:py-2.5 lg:py-3 xl:py-[14px] rounded-[9px] text-[12px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-auto md:h-[45px] lg:h-[49px] w-fit whitespace-nowrap" />
               </div>
               <div className="lg:hidden z-50">
                 <button

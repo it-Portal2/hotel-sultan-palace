@@ -71,13 +71,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try { localStorage.removeItem('bookingData'); } catch {}
   }, []);
 
-  // Function to update booking data (called from Hero form)
+  // Function to update booking data from any form (Hero or Rooms).
+  // Do not clear existing cart items; totals will recompute based on new dates.
   const updateBookingData = (newBookingData: BookingData) => {
     setBookingData(newBookingData);
     setBookingSetThisSession(true);
-    // When user selects new dates, start a fresh cart to avoid stale selections
-    setRooms([]);
-    setAddOns([]);
   };
 
   // Room handlers

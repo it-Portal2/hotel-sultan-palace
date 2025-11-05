@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -28,15 +28,29 @@ import {
   Shield,
   CreditCard
 } from 'lucide-react';
+import CalendarWidget from '@/components/calendar/Calendar';
+import { createPortal } from 'react-dom';
 
 function RoomsContent() {
   const router = useRouter();
-  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal, bookingSetThisSession } = useCart();
+  const { bookingData, rooms: cartRooms, addRoom, removeRoom, calculateTotal, bookingSetThisSession, updateBookingData } = useCart();
   const search = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [addedRoomId, setAddedRoomId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState<string | null>(null);
+
+  // Local UI state for inline date/guest editors
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isGuestOpen, setIsGuestOpen] = useState(false);
+  const [tempCheckIn, setTempCheckIn] = useState<Date | null>(bookingData ? new Date(bookingData.checkIn) : null);
+  const [tempCheckOut, setTempCheckOut] = useState<Date | null>(bookingData ? new Date(bookingData.checkOut) : null);
+  const [tempGuests, setTempGuests] = useState(bookingData ? bookingData.guests : { adults: 2, children: 0, rooms: 1 });
+  const dateButtonRef = useRef<HTMLDivElement>(null);
+  const guestButtonRef = useRef<HTMLDivElement>(null);
+  const [datePopupPosition, setDatePopupPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [guestPopupPosition, setGuestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [isMounted, setIsMounted] = useState(false);
 
 
 
@@ -55,6 +69,19 @@ function RoomsContent() {
 
     fetchRooms();
   }, []);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Keep temp state in sync when bookingData changes elsewhere
+  useEffect(() => {
+    if (bookingData) {
+      setTempCheckIn(new Date(bookingData.checkIn));
+      setTempCheckOut(new Date(bookingData.checkOut));
+      setTempGuests(bookingData.guests);
+    }
+  }, [bookingData]);
 
   const ignoreBooking = search?.get('view') === 'explore';
   const hasBooking = Boolean(bookingData) && bookingSetThisSession && !ignoreBooking;
@@ -82,6 +109,53 @@ function RoomsContent() {
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 
+    });
+  };
+
+  const formatDateObj = (d: Date | null) => {
+    if (!d) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const openCalendar = () => {
+    if (dateButtonRef.current) {
+      const rect = dateButtonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      let top = rect.bottom + 8;
+      if (spaceBelow < 400 && spaceAbove > spaceBelow) top = rect.top - 400;
+      setDatePopupPosition({ top, left: rect.left, width: rect.width });
+    }
+    setIsCalendarOpen(true);
+  };
+
+  const openGuests = () => {
+    if (guestButtonRef.current) {
+      const rect = guestButtonRef.current.getBoundingClientRect();
+      setGuestPopupPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+    }
+    setIsGuestOpen(true);
+  };
+
+  const handleDateSelect = (checkIn: Date | null, checkOut: Date | null) => {
+    setTempCheckIn(checkIn);
+    setTempCheckOut(checkOut);
+    setIsCalendarOpen(false);
+    if (checkIn && checkOut) {
+      const guests = bookingData ? bookingData.guests : tempGuests;
+      updateBookingData({ checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString(), guests });
+    }
+  };
+
+  const changeGuest = (key: 'adults' | 'children' | 'rooms', delta: number) => {
+    setTempGuests((prev) => {
+      const next = { ...prev, [key]: Math.max( key === 'children' ? 0 : 1, prev[key] + delta) };
+      // Persist immediately if we already have dates
+      if (tempCheckIn && tempCheckOut) {
+        updateBookingData({ checkIn: tempCheckIn.toISOString(), checkOut: tempCheckOut.toISOString(), guests: next });
+      }
+      return next;
     });
   };
 
@@ -138,38 +212,36 @@ function RoomsContent() {
       `}</style>
       <Header />
 
-      
-      {/* Booking Context Bar - only if user selected data */}
-      {bookingData && (
+      {/* Booking Context Bar - always visible with placeholders when not selected */}
       <div className="w-full px-4 py-6 mt-20">
         <div className="max-w-5xl  mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
               
               {/* Guest Input */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" ref={guestButtonRef}>
                 <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
                   <User size={16} />
                   <span>Guest</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {bookingData.guests.adults} guests, {bookingData.guests.rooms} room
+                <button onClick={openGuests} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                  <span className="text-[#423B2D] text-xs font-semibold w-full">
+                    {(bookingData ? `${bookingData.guests.adults} guests, ${bookingData.guests.rooms} room` : `${tempGuests.adults} guests, ${tempGuests.rooms} room`)}
                   </span>
-                </div>
+                </button>
               </div>
               
               {/* Check-in Date */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" ref={dateButtonRef}>
                 <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
                   <Calendar size={14} />
                   <span>Check-in</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {formatDate(bookingData.checkIn)}
+                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                  <span className="text-[#423B2D] text-xs font-semibold w-full">
+                    {bookingData ? formatDate(bookingData.checkIn) : (tempCheckIn ? formatDateObj(tempCheckIn) : 'Add Date')}
                   </span>
-                </div>
+                </button>
               </div>
 
               {/* Check-out Date */}
@@ -178,11 +250,11 @@ function RoomsContent() {
                   <Calendar size={14} />
                   <span>Check-Out</span>
                 </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {formatDate(bookingData.checkOut)}
+                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                  <span className="text-[#423B2D] text-xs font-semibold w-full">
+                    {bookingData ? formatDate(bookingData.checkOut) : (tempCheckOut ? formatDateObj(tempCheckOut) : 'Add Date')}
                   </span>
-                </div>
+                </button>
               </div>
 
               {/* Filter Button */}
@@ -196,6 +268,59 @@ function RoomsContent() {
           </div>
         </div>
       </div>
+
+      {/* Portals for inline editors */}
+      {isMounted && isCalendarOpen && datePopupPosition.top > 0 && createPortal(
+        <div>
+          <div className="fixed inset-0 bg-transparent" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
+          <div 
+            className="fixed transition-all duration-200 ease-out opacity-100"
+            onClick={(e) => e.stopPropagation()}
+            style={{ zIndex: 99999, top: `${datePopupPosition.top}px`, left: `${datePopupPosition.left}px`, minWidth: '350px', maxWidth: datePopupPosition.width > 0 ? `${datePopupPosition.width}px` : 'auto', position: 'fixed' }}
+          >
+            <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-visible">
+              <CalendarWidget isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onDateSelect={handleDateSelect} selectedCheckIn={tempCheckIn} selectedCheckOut={tempCheckOut} />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {isMounted && isGuestOpen && guestPopupPosition.top > 0 && createPortal(
+        <div>
+          <div className="fixed inset-0 bg-transparent" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
+          <div
+            className="fixed transition-all duration-200 ease-out opacity-100"
+            onClick={(e) => e.stopPropagation()}
+            style={{ zIndex: 99999, top: `${guestPopupPosition.top}px`, left: `${guestPopupPosition.left}px`, width: guestPopupPosition.width > 0 ? `${guestPopupPosition.width}px` : 'auto', minWidth: '280px', position: 'fixed' }}
+          >
+            <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 p-6">
+              <div className="space-y-5">
+                {(['adults','children','rooms'] as const).map((k) => (
+                  <div key={k} className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-semibold text-gray-800 text-base">{k.charAt(0).toUpperCase()+k.slice(1)}</h4>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => changeGuest(k, -1)} disabled={(tempGuests as any)[k] <= (k==='children'?0:1)} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                        </svg>
+                      </button>
+                      <span className="w-8 text-center font-semibold text-base text-gray-800">{(tempGuests as any)[k]}</span>
+                      <button onClick={() => changeGuest(k, 1)} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white transition-all duration-200 active:scale-95">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="w-full max-w-full mb-16 lg:mb-20">

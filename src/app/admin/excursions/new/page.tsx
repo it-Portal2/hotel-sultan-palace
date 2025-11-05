@@ -1,27 +1,67 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { createExcursion } from '@/lib/firestoreService';
-import { storage } from '@/lib/firebase';
+import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 export default function NewExcursionPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [form, setForm] = useState({ title: '', image: '' });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleUpload = async (file: File) => {
-    if (!storage) return;
+    if (!storage) {
+      showToast('Storage service is not available. Please refresh the page.', 'error');
+      return;
+    }
+    if (!isAuthenticated) {
+      showToast('Please login first to upload images.', 'warning');
+      setTimeout(() => router.push('/admin/login'), 1500);
+      return;
+    }
     setUploading(true);
     try {
       const key = `${form.title || 'excursion'}-${Date.now()}`.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const obj = storageRef(storage, `excursions/${key}/${file.name}`);
+      const fileExt = file.name.split('.').pop();
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-');
+      const fileName = `${key}.${fileExt || 'png'}`;
+      const obj = storageRef(storage, `excursions/${key}/${fileName}`);
       await uploadBytes(obj, file, { contentType: file.type });
       const url = await getDownloadURL(obj);
       setForm(prev => ({ ...prev, image: url }));
-    } finally { setUploading(false); }
+      showToast('Image uploaded successfully!', 'success');
+    } catch (err: any) {
+      console.error('Image upload failed:', err);
+      let errorMsg = 'Unable to upload image. ';
+      if (err?.code === 'storage/unauthorized') {
+        errorMsg = 'Please make sure you are logged in and try again.';
+      } else if (err?.code === 'storage/quota-exceeded') {
+        errorMsg = 'Storage limit reached. Please contact administrator.';
+      } else if (err?.code === 'storage/canceled') {
+        errorMsg = 'Upload was cancelled.';
+      } else {
+        errorMsg = 'Please check your connection and try again.';
+      }
+      showToast(errorMsg, 'error');
+    } finally { 
+      setUploading(false); 
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,8 +69,12 @@ export default function NewExcursionPage() {
     setSaving(true);
     try {
       const id = await createExcursion({ title: form.title, image: form.image });
-      if (id) router.push('/admin/excursions');
-      else alert('Failed to create');
+      if (id) {
+        showToast('Excursion created successfully!', 'success');
+        router.push('/admin/excursions');
+      } else {
+        showToast('Failed to create excursion. Please try again.', 'error');
+      }
     } finally { setSaving(false); }
   };
 
@@ -46,13 +90,43 @@ export default function NewExcursionPage() {
           <input value={form.title} onChange={(e)=>setForm({...form, title: e.target.value})} required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Image URL</label>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)</label>
           <input value={form.image} onChange={(e)=>setForm({...form, image: e.target.value})} type="url" required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
           <div className="mt-3 flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
+              <PhotoIcon className="h-4 w-4" /> Upload from device
+            </div>
             <input type="file" accept="image/*" onChange={(e)=>{const f=e.target.files?.[0]; if(f) handleUpload(f);}} className="text-sm" />
-            <button type="button" disabled={uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50">{uploading?'Uploading...':'Upload & Use'}</button>
+            <button type="button" disabled={uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"><CloudArrowUpIcon className="h-4 w-4" /> {uploading?'Uploading...':'Upload & Use'}</button>
           </div>
-          {form.image && <img src={form.image} alt="preview" className="mt-2 w-40 h-24 object-cover rounded border" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display='none'}} />}
+          {form.image && (
+            <div className="mt-3 relative inline-block">
+              <img 
+                src={form.image} 
+                alt="preview" 
+                className="w-64 h-40 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'w-64 h-40 rounded-lg border-2 border-red-300 bg-red-50 flex items-center justify-center';
+                    errorDiv.innerHTML = '<p class="text-xs text-red-600">Failed to load image</p>';
+                    parent.appendChild(errorDiv);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setForm({...form, image: ''})}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                title="Remove image"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex justify-end gap-3">
           <button type="button" onClick={()=>router.push('/admin/excursions')} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>

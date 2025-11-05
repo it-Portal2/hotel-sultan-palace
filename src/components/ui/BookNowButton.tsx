@@ -15,7 +15,7 @@ export default function BookNowButton({
   children = "Book Now",
   className = "",
   onClick,
-  href,
+  href = "/rooms",
   variant = "primary",
   size = "md",
   scrollTo
@@ -39,17 +39,21 @@ export default function BookNowButton({
   const circleColor = variant === 'primary' ? 'bg-[#1D2A3A]' : 'bg-[#FF6A00]';
 
   const handleClick = () => {
+    if (href) {
+      window.location.href = href;
+      return;
+    }
     if (scrollTo) {
       const element = document.getElementById(scrollTo);
       if (element) {
-        element.scrollIntoView({ 
+        element.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         });
+        return;
       }
-    } else if (href) {
-      window.location.href = href;
-    } else if (onClick) {
+    }
+    if (onClick) {
       onClick();
     }
   };

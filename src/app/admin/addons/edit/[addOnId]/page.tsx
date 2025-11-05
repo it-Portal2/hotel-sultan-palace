@@ -1,18 +1,23 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { getAddOns, updateAddOn } from '@/lib/firestoreService';
-import { storage } from '@/lib/firebase';
+import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: string }> }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [id, setId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [form, setForm] = useState({
     name: '',
     price: 0,
@@ -39,20 +44,56 @@ export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: s
     })();
   }, [params]);
 
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: name === 'price' ? Number(value) : value }));
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !storage) return;
+    if (!selectedFile || !storage) {
+      showToast('Please select a file first.', 'warning');
+      return;
+    }
+    if (!isAuthenticated) {
+      showToast('Please login first to upload images.', 'warning');
+      setTimeout(() => router.push('/admin/login'), 1500);
+      return;
+    }
     setUploading(true);
     try {
       const key = `${form.name || 'addon'}-${Date.now()}`.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const objRef = storageRef(storage, `addons/${key}/${selectedFile.name}`);
+      const fileExt = selectedFile.name.split('.').pop();
+      const safeFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '-');
+      const fileName = `${key}.${fileExt || 'png'}`;
+      const objRef = storageRef(storage, `addons/${key}/${fileName}`);
       await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
       const url = await getDownloadURL(objRef);
       setForm(prev => ({ ...prev, image: url }));
+      setSelectedFile(null);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      showToast('Image uploaded successfully!', 'success');
+    } catch (err: any) {
+      console.error('Image upload failed:', err);
+      let errorMsg = 'Unable to upload image. ';
+      if (err?.code === 'storage/unauthorized') {
+        errorMsg = 'Please make sure you are logged in and try again.';
+      } else if (err?.code === 'storage/quota-exceeded') {
+        errorMsg = 'Storage limit reached. Please contact administrator.';
+      } else if (err?.code === 'storage/canceled') {
+        errorMsg = 'Upload was cancelled.';
+      } else {
+        errorMsg = 'Please check your connection and try again.';
+      }
+      showToast(errorMsg, 'error');
     } finally {
       setUploading(false);
     }
@@ -69,11 +110,15 @@ export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: s
         description: form.description,
         image: form.image,
       });
-      if (ok) router.push('/admin/addons');
-      else alert('Failed to update add-on');
+      if (ok) {
+        showToast('Add-on updated successfully!', 'success');
+        router.push('/admin/addons');
+      } else {
+        showToast('Failed to update add-on. Please try again.', 'error');
+      }
     } catch (e) {
       console.error(e);
-      alert('Failed to update add-on');
+      showToast('Failed to update add-on. Please try again.', 'error');
     } finally {
       setSaving(false);
     }
@@ -120,16 +165,47 @@ export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: s
           </div>
 
           <div className="col-span-6">
-            <label className="block text-sm font-medium text-gray-700">Image URL</label>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)</label>
             <input name="image" value={form.image} onChange={handleChange} type="url" required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="https://..." />
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
+                <PhotoIcon className="h-4 w-4" /> Upload from device
+              </div>
               <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="text-sm" />
-              <button type="button" onClick={handleUpload} disabled={!selectedFile || uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50">{uploading ? 'Uploading...' : 'Upload & Use'}</button>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={handleUpload} disabled={!selectedFile || uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"><CloudArrowUpIcon className="h-4 w-4" /> {uploading ? 'Uploading...' : 'Upload & Use'}</button>
+                {selectedFile && (
+                  <span className="text-xs text-gray-600 truncate">{selectedFile.name}</span>
+                )}
+              </div>
             </div>
             {form.image && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-600 mb-1">Preview:</p>
-                <img src={form.image} alt="Add-on preview" className="w-32 h-20 object-cover rounded border" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <div className="mt-3 relative inline-block">
+                <p className="text-xs font-semibold text-gray-600 mb-2">Preview:</p>
+                <img 
+                  src={form.image} 
+                  alt="Add-on preview" 
+                  className="w-64 h-40 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = 'w-64 h-40 rounded-lg border-2 border-red-300 bg-red-50 flex items-center justify-center';
+                      errorDiv.innerHTML = '<p class="text-xs text-red-600">Failed to load image</p>';
+                      parent.appendChild(errorDiv);
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, image: '' }))}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  title="Remove image"
+                >
+                  ×
+                </button>
               </div>
             )}
           </div>

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { CartProvider } from "@/context/CartContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -34,7 +35,11 @@ export default function RootLayout({
       >
         {/* Tailwind keep animation classes */}
         <div className="hidden animate-slide-in-bottom animate-slide-in-left animate-slide-in-left-delay-200 animate-slide-in-left-delay-400" />
-        <CartProvider> {children}</CartProvider>
+        <CartProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </CartProvider>
 
         <WhatsAppButton />
       </body>

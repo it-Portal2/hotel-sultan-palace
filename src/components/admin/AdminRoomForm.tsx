@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { createRoom, updateRoom, getRoom, Room } from '@/lib/firestoreService';
-import { storage } from '@/lib/firebase';
+import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 interface AdminRoomFormProps {
   roomId?: string;
@@ -13,10 +16,12 @@ interface AdminRoomFormProps {
 
 export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -65,6 +70,14 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     }
   }, [isEdit, roomId]);
 
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -111,21 +124,23 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
       if (isEdit && roomId) {
         const success = await updateRoom(roomId, roomData);
         if (success) {
+          showToast('Room updated successfully!', 'success');
           router.push('/admin/rooms');
         } else {
-          alert('Failed to update room');
+          showToast('Failed to update room. Please try again.', 'error');
         }
       } else {
         const newRoomId = await createRoom(roomData);
         if (newRoomId) {
+          showToast('Room created successfully!', 'success');
           router.push('/admin/rooms');
         } else {
-          alert('Failed to create room');
+          showToast('Failed to create room. Please try again.', 'error');
         }
       }
     } catch (error) {
       console.error('Error saving room:', error);
-      alert('Failed to save room');
+      showToast('Failed to save room. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -137,18 +152,43 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !storage) return;
+    if (!selectedFile || !storage) {
+      showToast('Please select a file first.', 'warning');
+      return;
+    }
+    if (!isAuthenticated) {
+      showToast('Please login first to upload images.', 'warning');
+      setTimeout(() => router.push('/admin/login'), 1500);
+      return;
+    }
     setUploading(true);
     try {
       const key = roomId || `${formData.name || 'room'}-${Date.now()}`;
       const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const objRef = storageRef(storage, `rooms/${safeKey}/${selectedFile.name}`);
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${safeKey}.${fileExt}`;
+      const objRef = storageRef(storage, `rooms/${safeKey}/${fileName}`);
       await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
       const url = await getDownloadURL(objRef);
       setFormData(prev => ({ ...prev, image: url }));
-    } catch (err) {
+      setSelectedFile(null);
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      showToast('Image uploaded successfully!', 'success');
+    } catch (err: any) {
       console.error('Image upload failed:', err);
-      alert('Image upload failed. Please try again.');
+      let errorMsg = 'Unable to upload image. ';
+      if (err?.code === 'storage/unauthorized') {
+        errorMsg = 'Please make sure you are logged in and try again.';
+      } else if (err?.code === 'storage/quota-exceeded') {
+        errorMsg = 'Storage limit reached. Please contact administrator.';
+      } else if (err?.code === 'storage/canceled') {
+        errorMsg = 'Upload was cancelled.';
+      } else {
+        errorMsg = 'Please check your connection and try again.';
+      }
+      showToast(errorMsg, 'error');
     } finally {
       setUploading(false);
     }
@@ -313,8 +353,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                 </div>
 
                 <div className="col-span-6">
-                  <label htmlFor="image" className="block text-sm font-medium text-gray-700">
-                    Image URL
+                  <label htmlFor="image" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)
                   </label>
                   <input
                     type="url"
@@ -329,6 +369,9 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
 
                   {/* Local file upload */}
                   <div className="mt-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
+                      <PhotoIcon className="h-4 w-4" /> Upload from device
+                    </div>
                     <input
                       type="file"
                       accept="image/*"
@@ -340,9 +383,9 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                         type="button"
                         onClick={handleUpload}
                         disabled={!selectedFile || uploading}
-                        className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50"
+                        className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"
                       >
-                        {uploading ? 'Uploading...' : 'Upload & Use'}
+                        <CloudArrowUpIcon className="h-4 w-4" /> {uploading ? 'Uploading...' : 'Upload & Use'}
                       </button>
                       {selectedFile && (
                         <span className="text-xs text-gray-600 truncate">{selectedFile.name}</span>
@@ -352,16 +395,34 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                   
                   {/* Image Preview */}
                   {formData.image && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
-                      <img 
-                        src={formData.image} 
-                        alt="Room preview" 
-                        className="w-32 h-20 object-cover rounded border"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">Preview:</p>
+                      <div className="relative inline-block">
+                        <img 
+                          src={formData.image} 
+                          alt="Room preview" 
+                          className="w-64 h-40 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const errorDiv = document.createElement('div');
+                              errorDiv.className = 'w-64 h-40 rounded-lg border-2 border-red-300 bg-red-50 flex items-center justify-center';
+                              errorDiv.innerHTML = '<p class="text-xs text-red-600">Failed to load image</p>';
+                              parent.appendChild(errorDiv);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

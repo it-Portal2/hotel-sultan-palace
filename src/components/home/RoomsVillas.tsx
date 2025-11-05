@@ -3,12 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import BookNowButton from "../ui/BookNowButton";
-import BookingModal from "@/components/booking/BookingModal";
 import { getRooms, Room } from "@/lib/firestoreService";
 
 export default function RoomsVillas() {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [open, setOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -73,13 +71,12 @@ export default function RoomsVillas() {
                   </div>
                 </div>
                 <div className="mt-4 md:mt-6 lg:mt-8 xl:mt-[48px]">
-                  <BookNowButton size="sm" className="w-full sm:w-[175px] px-4 md:px-6 lg:px-8 xl:px-[34px] py-2.5 md:py-3 lg:py-[14px] rounded-[9px] text-[13px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-[42px] md:h-[45px] lg:h-[49px]" onClick={() => setOpen(true)} />
+                  <BookNowButton size="sm" className="w-full sm:w-[175px] px-4 md:px-6 lg:px-8 xl:px-[34px] py-2.5 md:py-3 lg:py-[14px] rounded-[9px] text-[13px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-[42px] md:h-[45px] lg:h-[49px]" />
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <BookingModal open={open} onClose={() => setOpen(false)} />
       </div>
 
       <style jsx global>{`

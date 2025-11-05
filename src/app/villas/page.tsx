@@ -109,7 +109,7 @@ export default function VillasPage() {
                       <p className="text-[#655D4E] text-[16px] md:text-[18px] font-medium leading-[1.8] md:leading-[1.944444] font-quicksand mb-4">
                          Relax in beautifully designed two-bedroom villas overlooking lush tropical gardens. Perfect for families or friends seeking tranquility.
                        </p>
-                      <Link href="#" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book">
+                      <Link href="/rooms" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book">
                          <span className="relative z-10">Book Now</span>
                          <span className="absolute inset-0 bg-white/30 scale-x-0 group-hover/book:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
                        </Link>
@@ -164,7 +164,7 @@ export default function VillasPage() {
                         <span className="relative z-10">Booking Enquiry</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
                       </Link>
-                      <Link href="#" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
+                      <Link href="/rooms" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Book Now</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
                       </Link>
@@ -219,7 +219,7 @@ export default function VillasPage() {
                       <p className="text-[#655D4E] text-[16px] md:text-[18px] font-medium leading-[1.8] md:leading-[1.944444] font-quicksand mb-4">
                          Experience ultimate luxury in our two-bedroom Beach Villa, featuring exclusive amenities and direct beach access.
                        </p>
-                      <Link href="#" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book relative overflow-hidden">
+                        <Link href="/rooms" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book relative overflow-hidden">
                          <span className="relative z-10">Book Now</span>
                          <span className="absolute inset-0 bg-white/30 scale-x-0 group-hover/book:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
                        </Link>
@@ -265,7 +265,7 @@ export default function VillasPage() {
                         <span className="relative z-10">Booking Enquiry</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
                       </Link>
-                      <Link href="#" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
+                      <Link href="/rooms" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Book Now</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
                       </Link>
