@@ -64,7 +64,7 @@ export default function RoomsVillas() {
                 <div className="flex items-start justify-between mb-4 md:mb-5 lg:mb-[18px]">
                   <div className="flex flex-col gap-3 md:gap-4 lg:gap-5 xl:gap-[22px]">
                     <div className="flex flex-col gap-1 md:gap-[5px]">
-                      <h3 className="text-black font-quicksand font-medium text-[22px] md:text-[24px] lg:text-[26px] leading-[1.25]">{room.name}</h3>
+                      <h3 className="text-black font-quicksand font-medium text-[22px] md:text-[24px] lg:text-[26px] leading-[1.25]">{room.name === 'Imperial view' ? 'Imperial suite' : room.name}</h3>
                       <span className="text-[#4D4D4D] font-quicksand text-[16px] md:text-[18px] lg:text-[20px] leading-[1.25]">{room.beds}</span>
                     </div>
                     <span className="text-[#202C3B] font-quicksand font-semibold text-[18px] md:text-[20px] lg:text-[22px] leading-[1.25]">${room.price} / Night</span>
