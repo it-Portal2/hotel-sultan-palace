@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [typing, setTyping] = useState(false);
   const [shake, setShake] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const pupilOffset = useMemo(() => {
@@ -77,16 +79,34 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="block text-base font-medium text-gray-800">Password</label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setTyping(true); }}
-              className="mt-2 block w-full h-14 rounded-2xl border border-gray-300 bg-gray-50/60 px-5 text-lg shadow-sm placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30"
-              placeholder="••••••••"
-            />
+            <div className="relative mt-2">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setTyping(true); }}
+                className="block w-full h-14 rounded-2xl border border-gray-300 bg-gray-50/60 px-5 pr-12 text-lg shadow-sm placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors cursor-pointer z-10 p-1 flex items-center justify-center"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
           {error && (
             <div className="rounded-lg bg-red-50 p-3.5 text-sm text-red-700 border border-red-200">{error}</div>
