@@ -49,18 +49,18 @@ export default function ExclusivelyYours() {
 
   return (
     <section ref={sectionRef} className="w-full exclusive-section" style={{ background: "linear-gradient(2deg, #EFDEC7 11%, #FFFFFF 100%)" }}>
-      <div className="mx-auto w-full max-w-8xl px-4 md:px-8 py-14 lg:py-20">
+      <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-[20px] py-8 md:py-12 lg:py-16 xl:py-20">
         
-        <h2 className={`font-kaisei font-medium text-3xl md:text-4xl text-[#1D2A3A] text-center exclusive-heading ${isVisible ? 'exclusive-heading-visible' : ''}`}>
+        <h2 className={`font-kaisei font-medium text-[28px] md:text-[32px] lg:text-[36px] xl:text-[40px] 2xl:text-[44px] text-[#1D2A3A] text-center exclusive-heading ${isVisible ? 'exclusive-heading-visible' : ''}`}>
           EXCLUSIVELY YOURS TO EXPLORE
         </h2>
 
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+        <div className="mt-8 md:mt-10 lg:mt-12 xl:mt-14 2xl:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-6 2xl:gap-x-8 gap-y-8 md:gap-y-10 lg:gap-y-12">
           {features.map((feature, index) => (
             <div key={index} className={`group flex flex-col items-center text-center sm:items-start sm:text-left exclusive-card ${isVisible ? 'exclusive-card-visible' : ''}`} style={{ transitionDelay: `${index * 0.15}s` }}>
               
               {/* Image Container with hover effect */}
-              <div className="relative h-[400px] md:h-[420px] w-[350px] md:w-[380px] rounded-3xl shadow-lg overflow-hidden transition-transform duration-300 ease-in-out group-hover:-translate-y-4 active:-translate-y-4">
+              <div className="relative h-[300px] md:h-[350px] lg:h-[380px] xl:h-[400px] 2xl:h-[420px] w-full max-w-[320px] md:max-w-[350px] lg:max-w-[360px] xl:max-w-[340px] 2xl:max-w-[380px] rounded-3xl shadow-lg overflow-hidden transition-transform duration-300 ease-in-out group-hover:-translate-y-4 active:-translate-y-4">
                 <Image
                   src={feature.imgSrc}
                   alt={feature.title}
@@ -71,11 +71,11 @@ export default function ExclusivelyYours() {
               </div>
               
               {/* Text Content below the image */}
-              <div className="mt-6 px-2">
-                <h3 className="font-kaisei font-medium text-2xl text-black">
+              <div className="mt-4 md:mt-5 lg:mt-6 px-2 w-full">
+                <h3 className="font-kaisei font-medium text-[20px] md:text-[22px] lg:text-[24px] xl:text-[26px] 2xl:text-[28px] text-black">
                   {feature.title}
                 </h3>
-                <p className="mt-3 font-kaisei text-base leading-relaxed text-[#363636]">
+                <p className="mt-2 md:mt-3 font-kaisei text-[14px] md:text-[15px] lg:text-[16px] xl:text-[17px] 2xl:text-[18px] leading-relaxed text-[#363636]">
                   {feature.description}
                 </p>
               </div>

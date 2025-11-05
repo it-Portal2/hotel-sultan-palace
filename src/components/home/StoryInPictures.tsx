@@ -14,6 +14,18 @@ export default function StoryInPictures() {
   const [index, setIndex] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (sectionRef.current) {
@@ -42,49 +54,87 @@ export default function StoryInPictures() {
 
   const allImages = useMemo(() => [...staticImages, ...extra], [extra]);
   const visible = useMemo(() => {
+    // On mobile, show only 1 image at a time. On desktop, show 3.
+    if (isMobile) {
+      return [allImages[index % allImages.length]];
+    }
     if (allImages.length <= 3) return allImages;
     const arr: {src:string; alt:string}[] = [];
     for (let i = 0; i < 3; i++) {
       arr.push(allImages[(index + i) % allImages.length]);
     }
     return arr;
-  }, [allImages, index]);
+  }, [allImages, index, isMobile]);
+
+  // Touch handlers for mobile swipe
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && allImages.length > 1) {
+      setIndex((prev) => (prev + 1) % allImages.length);
+    }
+    if (isRightSwipe && allImages.length > 1) {
+      setIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    }
+  };
 
   return (
-    <section ref={sectionRef} className="w-full bg-white py-12 md:py-16 lg:py-24 story-section">
-      <div className="mx-auto w-full max-w-[1512px] px-2 md:px-4">
+    <section ref={sectionRef} className="w-full bg-white py-12 md:py-16 lg:py-24 story-section overflow-hidden md:overflow-visible">
+      <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-8 xl:px-4 2xl:px-4">
         <h2 className={`font-kaisei text-center font-bold text-2xl md:text-3xl lg:text-4xl leading-tight text-[#202C3B] mb-8 md:mb-10 story-heading ${isVisible ? 'story-heading-visible' : ''}`}>
           The Story in Pictures
         </h2>
 
-        <div className="relative flex items-center justify-center gap-4 md:gap-[26px] overflow-x-auto scrollbar-hide pb-4">
+        <div 
+          className="relative flex items-center justify-center gap-4 md:gap-6 lg:gap-[26px] overflow-hidden md:overflow-visible"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           {visible.map((image, i) => (
-            <figure key={image.src} className={`group relative w-full md:w-[459px] h-[320px] md:h-[576px] flex-shrink-0 story-image ${isVisible ? 'story-image-visible' : ''}`} style={{ transitionDelay: `${i * 0.2}s` }}>
+            <figure key={image.src} className={`group relative w-full md:w-[280px] lg:w-[380px] xl:w-[460px] 2xl:w-[490px] h-[350px] md:h-[400px] lg:h-[480px] xl:h-[540px] 2xl:h-[576px] flex-shrink-0 story-image ${isVisible ? 'story-image-visible' : ''}`} style={{ transitionDelay: `${i * 0.2}s`, overflow: 'visible' }}>
               <Image
                 src={image.src}
                 alt={image.alt}
                 fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 459px"
+                className="object-contain md:object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 280px, (max-width: 1280px) 380px, (max-width: 1536px) 460px, 490px"
                 priority={i === 0}
               />
 
-              {/* Navigation arrows on middle image */}
-              {i === 1 && allImages.length > 3 && (
+              {/* Navigation arrows - show on mobile (single image) and desktop (middle image) */}
+              {((isMobile && i === 0) || (!isMobile && i === 1)) && allImages.length > 1 && (
                 <>
                   <button
                     aria-label="Previous"
-                    className="hidden md:flex absolute -left-8 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded bg-white text-[#be8c53]"
+                    className="flex absolute top-1/2 -translate-y-1/2 z-50 h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
                     onClick={() => setIndex((prev) => (prev - 1 + allImages.length) % allImages.length)}
+                    style={{ position: 'absolute', left: isMobile ? '8px' : '-24px', zIndex: 50 }}
                   >
-                    <span className="text-3xl">←</span>
+                    <span className="text-3xl md:text-4xl lg:text-5xl">←</span>
                   </button>
                   <button
                     aria-label="Next"
-                    className="hidden md:flex absolute -right-8 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded bg-white text-[#be8c53]"
+                    className="flex absolute top-1/2 -translate-y-1/2 z-50 h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
                     onClick={() => setIndex((prev) => (prev + 1) % allImages.length)}
+                    style={{ position: 'absolute', right: isMobile ? '8px' : '-24px', zIndex: 50 }}
                   >
-                    <span className="text-3xl">→</span>
+                    <span className="text-3xl md:text-4xl lg:text-5xl">→</span>
                   </button>
                 </>
               )}

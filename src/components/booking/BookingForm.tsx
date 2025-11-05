@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Calendar from '@/components/calendar/Calendar';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -22,6 +23,11 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
   const guestButtonRef = useRef<HTMLDivElement>(null);
   const [datePopupPosition, setDatePopupPosition] = useState({ top: 0, left: 0, width: 0 });
   const [guestPopupPosition, setGuestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const updateDatePosition = () => {
@@ -100,51 +106,55 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
 
   return (
     <>
-    <div className="bg-white rounded-[12px] shadow-lg overflow-visible w-full max-w-[1083px] mx-auto relative">
-      <div className="bg-white rounded-[14px] p-2 md:p-[7px]">
+    <div className="rounded-[12px]  overflow-visible w-full max-w-full sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1083px] xl:max-w-[1200px] 2xl:max-w-[1300px] mx-auto relative px-2 sm:px-4" style={{ position: 'relative', zIndex: 1001 }}>
+      <div className="bg-white rounded-[14px] p-1 md:p-1.5 lg:p-2 m-0">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-center gap-0 font-opensans">
-          <div ref={dateButtonRef} className="relative px-4 md:px-[29px] py-4 md:py-[29px] border-b md:border-b-0 md:border-r border-black/31">
-            <button onClick={() => setIsCalendarOpen(true)} className="text-[#3F3F3F] text-[16px] md:text-[18px] font-normal text-left w-full hover:opacity-80 transition-opacity">
+          <div ref={dateButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-6 xl:px-[24px] py-1.5 sm:py-2 md:py-2.5 lg:py-3 xl:py-[14px] border-b md:border-b-0 md:border-r border-black/31">
+            <button onClick={() => setIsCalendarOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity">
               {checkInDate && checkOutDate ? `${formatDate(checkInDate)} - ${formatDate(checkOutDate)}` : 'Add Dates'}
             </button>
           </div>
-          <div ref={guestButtonRef} className="relative px-4 md:px-[29px] py-4 md:py-[29px] border-b md:border-b-0 md:border-r border-black/31">
-            <button onClick={() => setIsGuestOpen(true)} className="text-[#3F3F3F] text-[16px] md:text-[18px] font-normal text-left w-full hover:opacity-80 transition-colors">
+          <div ref={guestButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-6 xl:px-[24px] py-1.5 sm:py-2 md:py-2.5 lg:py-3 xl:py-[14px] border-b md:border-b-0 md:border-r border-black/31">
+            <button onClick={() => setIsGuestOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-colors">
               {guests.adults} Adults . {guests.children} {guests.children === 1 ? 'Child' : 'Children'}
             </button>
           </div>
-          <div className="p-4 md:p-[22px]">
-            <button onClick={handleCheckAvailability} className="w-full bg-[#FF6A00] text-white px-4 md:px-[26px] py-3 md:py-[22px] rounded-[14px] flex items-center justify-center gap-2 md:gap-[15px] hover:opacity-90 transition-opacity">
-              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-1.5 sm:p-2 md:p-3 lg:p-4 xl:p-[16px]">
+            <button onClick={handleCheckAvailability} className="w-full bg-[#FF6A00] text-white px-2.5 sm:px-3 md:px-4 lg:px-5 xl:px-[22px] py-1.5 sm:py-2 md:py-2 lg:py-2.5 xl:py-[14px] rounded-[14px] flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-[12px] hover:opacity-90 transition-opacity">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] lg:w-5 lg:h-5 xl:w-6 xl:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="font-open-sans font-bold text-[16px] md:text-[18px]">Check Availability</span>
+              <span className="font-open-sans font-bold text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] text-center">Check Availability</span>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-      {/* Calendar Popup Backdrop */}
-      {isCalendarOpen && (
-        <div className="fixed inset-0 z-[100] bg-transparent" onClick={() => setIsCalendarOpen(false)} />
+      {/* Calendar Popup Backdrop - Portal */}
+      {isMounted && isCalendarOpen && createPortal(
+        <div className="fixed inset-0 bg-transparent" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
+        document.body
       )}
       
-      {/* Guest Popup Backdrop */}
-      {isGuestOpen && (
-        <div className="fixed inset-0 z-[100] bg-transparent" onClick={() => setIsGuestOpen(false)} />
+      {/* Guest Popup Backdrop - Portal */}
+      {isMounted && isGuestOpen && createPortal(
+        <div className="fixed inset-0 bg-transparent" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
+        document.body
       )}
 
-      {/* Calendar Popup */}
-      {isCalendarOpen && datePopupPosition.top > 0 && (
+      {/* Calendar Popup - Portal */}
+      {isMounted && isCalendarOpen && datePopupPosition.top > 0 && createPortal(
         <div 
-          className="fixed z-[101] transition-all duration-200 ease-out opacity-100"
+          className="fixed transition-all duration-200 ease-out opacity-100"
           onClick={(e) => e.stopPropagation()}
           style={{
+            zIndex: 99999,
             top: `${datePopupPosition.top}px`,
             left: `${datePopupPosition.left}px`,
             minWidth: '350px',
-            maxWidth: datePopupPosition.width > 0 ? `${datePopupPosition.width}px` : 'auto'
+            maxWidth: datePopupPosition.width > 0 ? `${datePopupPosition.width}px` : 'auto',
+            position: 'fixed'
           }}
         >
           <div className="relative">
@@ -154,19 +164,22 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
               <Calendar isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onDateSelect={handleDateSelect} selectedCheckIn={checkInDate} selectedCheckOut={checkOutDate} />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Guest Popup */}
-      {isGuestOpen && guestPopupPosition.top > 0 && (
+      {/* Guest Popup - Portal */}
+      {isMounted && isGuestOpen && guestPopupPosition.top > 0 && createPortal(
         <div
-          className="fixed z-[101] transition-all duration-200 ease-out opacity-100"
+          className="fixed transition-all duration-200 ease-out opacity-100"
           onClick={(e) => e.stopPropagation()}
           style={{
+            zIndex: 99999,
             top: `${guestPopupPosition.top}px`,
             left: `${guestPopupPosition.left}px`,
             width: guestPopupPosition.width > 0 ? `${guestPopupPosition.width}px` : 'auto',
-            minWidth: '280px'
+            minWidth: '280px',
+            position: 'fixed'
           }}
         >
           <div className="relative">
@@ -204,7 +217,8 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

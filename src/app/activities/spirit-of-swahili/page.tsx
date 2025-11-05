@@ -26,7 +26,7 @@ export default function SpiritOfSwahiliPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero */}
         <section className="relative w-full h-[560px] md:h-[700px] lg:h-[928px] overflow-hidden">
         
@@ -46,11 +46,11 @@ export default function SpiritOfSwahiliPage() {
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                "linear-gradient(0deg, rgba(255,252,246,0) 67%, rgba(255,252,246,1) 100%)",
+                "linear-gradient(0deg, rgba(255,252,246,0) 77%, rgba(255,252,246,1) 100%)",
             }}
           />
         
-          <div className="absolute inset-0 z-10 flex items-end justify-center pb-10 md:pb-14 lg:pb-16">
+          <div className="absolute inset-0 z-10 flex items-end justify-center pb-3 md:pb-4 lg:pb-8">
             <div className="w-full max-w-[1120px] px-6 text-center space-y-4 so-animate so-delay-1">
               <h1 className="text-[#554019] text-[22px] md:text-[24px] lg:text-[24px] font-semibold leading-[1.125] font-open-sans">
                 Where Culture Meets Coastal Elegance
@@ -77,25 +77,25 @@ export default function SpiritOfSwahiliPage() {
 
        
         <section className="relative z-20 -mt-12 md:-mt-16 lg:-mt-20 pb-20 md:pb-26">
-          <div className="w-full px-4 md:px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="w-full px-2 md:px-3 lg:px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
               <div className="relative  overflow-hidden so-animate">
-                <div className="relative w-full h-[180px] sm:h-[220px] md:h-[300px] lg:h-[400px] xl:h-[550px]">
+                <div className="relative w-full h-[180px] sm:h-[200px] md:h-[220px] lg:h-[360px] xl:h-[520px]">
                   <Image src="/spirit/spirit-strip-1.png" alt="Spirit Image 1" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
               </div>
               <div className="relative  overflow-hidden so-animate so-delay-1">
-                <div className="relative w-full h-[180px] sm:h-[220px] md:h-[300px] lg:h-[400px] xl:h-[550px]">
+                <div className="relative w-full h-[180px] sm:h-[200px] md:h-[220px] lg:h-[360px] xl:h-[520px]">
                   <Image src="/spirit/spirit-strip-2.png" alt="Spirit Image 2" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
               </div>
               <div className="relative  overflow-hidden so-animate so-delay-2">
-                <div className="relative w-full h-[180px] sm:h-[220px] md:h-[300px] lg:h-[400px] xl:h-[550px]">
+                <div className="relative w-full h-[180px] sm:h-[200px] md:h-[220px] lg:h-[360px] xl:h-[520px]">
                   <Image src="/spirit/spirit-strip-3.png" alt="Spirit Image 3" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
               </div>
               <div className="relative  overflow-hidden so-animate so-delay-3">
-                <div className="relative w-full h-[180px] sm:h-[220px] md:h-[300px] lg:h-[400px] xl:h-[550px]">
+                <div className="relative w-full h-[180px] sm:h-[200px] md:h-[220px] lg:h-[360px] xl:h-[520px]">
                   <Image src="/spirit/spirit-strip-4.png" alt="Spirit Image 4" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
               </div>
@@ -220,14 +220,14 @@ export default function SpiritOfSwahiliPage() {
         </section>
 
         <section>
-          <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]">
+          <div className="w-full max-w-full overflow-hidden">
             <Image src="/spirit/spirit-deco-1.svg" alt="Spirit Decorative" width={1512} height={769} className="w-full h-auto" />
           </div>
         </section>
 
       
 
-        <section className="relative w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] py-12 md:py-16 lg:py-20 -mt-20 overflow-hidden">
+        <section className="relative w-full max-w-full py-12 md:py-16 lg:py-20 -mt-20 overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image src="/spirit/black.png" alt="Background" fill className="object-cover" />
           </div>
@@ -251,7 +251,7 @@ export default function SpiritOfSwahiliPage() {
         </section>
             
 
-        <section className="relative w-screen h-[520px] md:h-[620px] lg:h-[769px] overflow-hidden ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]">
+        <section className="relative w-full max-w-full h-[520px] md:h-[620px] lg:h-[769px] overflow-hidden">
           <Image src="/spirit/footer-1.jpg" alt="Pre-footer Background" fill className="object-cover" />
         </section>
       </main>

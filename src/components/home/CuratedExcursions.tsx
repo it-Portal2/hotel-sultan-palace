@@ -27,19 +27,19 @@ export default function CuratedExcursions() {
 
   return (
     <section ref={sectionRef} className="w-full bg-[linear-gradient(-2deg,_#F4F4F5_70%,_#FFFCF6_100%)] curated-section">
-      <div className="mx-auto w-full max-w-[1512px] px-4 md:px-[30px] py-8 md:py-10 lg:py-20">
+      <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-[30px] py-8 md:py-10 lg:py-20">
         
-        <div className="flex flex-col lg:flex-row items-start lg:items-end gap-6 md:gap-8 lg:gap-[241px] mb-8 md:mb-12 lg:mb-[113px]">
-          <div className="flex flex-col">
+        <div className="flex flex-col lg:flex-row items-start lg:items-end gap-6 md:gap-8 lg:gap-8 xl:gap-12 2xl:gap-[241px] mb-8 md:mb-12 lg:mb-[113px]">
+          <div className="flex flex-col flex-shrink-0">
             <p className={`text-[#BE8C53] font-quicksand font-medium text-[20px] md:text-[24px] leading-[1.25] mb-4 md:mb-[26px] curated-label ${isVisible ? 'curated-label-visible' : ''}`}>
               Curated Excursions
             </p>
-            <h2 className={`text-[#202C3B] font-quicksand font-semibold text-[28px] md:text-[36px] lg:text-[44px] leading-[1.25] max-w-full lg:max-w-[499px] curated-heading ${isVisible ? 'curated-heading-visible' : ''}`}>
+            <h2 className={`text-[#202C3B] font-quicksand font-semibold text-[28px] md:text-[36px] lg:text-[40px] xl:text-[44px] leading-[1.25] max-w-full lg:max-w-[450px] xl:max-w-[499px] curated-heading ${isVisible ? 'curated-heading-visible' : ''}`}>
               Explore Zanzibar, The Island of Wonders
             </h2>
           </div>
-          <div className="flex items-start">
-            <p className={`text-[#5E5E5E] font-quicksand font-medium text-[16px] md:text-[18px] leading-[1.25] max-w-full lg:max-w-[631px] curated-text ${isVisible ? 'curated-text-visible' : ''}`}>
+          <div className="flex items-start flex-1 min-w-0">
+            <p className={`text-[#5E5E5E] font-quicksand font-medium text-[16px] md:text-[18px] leading-[1.25] max-w-full lg:max-w-[550px] xl:max-w-[631px] curated-text ${isVisible ? 'curated-text-visible' : ''}`}>
               Let us take you beyond the hotel. From Stone Town&apos;s historic alleys to spice farm adventures and sunset dhow cruises, our curated excursions reveal Zanzibar&apos;s soul. Every journey is arranged with care—just for you.
             </p>
           </div>
@@ -47,20 +47,20 @@ export default function CuratedExcursions() {
 
         <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-0">
           
-          <div className={`w-full lg:w-[650px] overflow-hidden flex-shrink-0 curated-image-left ${isVisible ? 'curated-image-left-visible' : ''}`}>
-            <div className="relative w-full h-[300px] md:h-[400px] lg:h-[595px]">
+          <div className={`w-full lg:w-[45%] xl:w-[500px] 2xl:w-[650px] overflow-hidden flex-shrink-0 curated-image-left ${isVisible ? 'curated-image-left-visible' : ''}`}>
+            <div className="relative w-full h-[300px] md:h-[400px] lg:h-[595px] 2xl:h-[700px]">
               <Image
                 src="/figma/curated-excursions-left.png"
                 alt="Beautiful villa in Zanzibar"
                 fill
-                sizes="(max-width: 1024px) 100vw, 650px"
+                sizes="(max-width: 1024px) 100vw, 45vw"
                 className="object-cover transition-transform duration-500 ease-in-out hover:scale-140 active:scale-140"
                 priority
               />
             </div>
           </div>
 
-          <div className={`w-full lg:flex-1 bg-[#202C3B] text-white p-6 md:p-8 lg:p-[81px] flex flex-col justify-start items-start relative min-h-[400px] lg:h-[595px] curated-dark-panel ${isVisible ? 'curated-dark-panel-visible' : ''}`}>
+          <div className={`w-full lg:flex-1 bg-[#202C3B] text-white p-6 md:p-8 lg:p-8 xl:p-12 2xl:p-[81px] flex flex-col justify-start items-start relative min-h-[400px] lg:h-[595px] 2xl:h-[700px] curated-dark-panel ${isVisible ? 'curated-dark-panel-visible' : ''}`}>
             
             <div className="flex flex-col items-start w-full mb-6 md:mb-[40px]">
               <div className="flex items-center gap-[8px] justify-center mb-6 md:mb-[49px]">
@@ -72,7 +72,7 @@ export default function CuratedExcursions() {
               </span>
             </div>
 
-            <div className="w-full max-w-full lg:max-w-[467px] mb-4 md:mb-[20px] flex-shrink-0">
+            <div className="w-full max-w-full lg:max-w-[400px] xl:max-w-[467px] mb-4 md:mb-[20px] flex-shrink-0">
               <div className="relative w-full h-[200px] md:h-[282px] overflow-hidden rounded-lg">
                 {!showMap ? (
                   <Image

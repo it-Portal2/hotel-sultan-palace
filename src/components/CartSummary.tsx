@@ -18,17 +18,17 @@ export default function CartSummary({ className = "" }: CartSummaryProps) {
   const totalItems = rooms.length + addOns.length;
 
   return (
-    <div className={`bg-[#FFFCF6] mr-6 shadow-lg border border-[rgba(101,93,78,0.15)] ${className}`}>
-      <div className="p-6">
+    <div className={`${className}`}>
+      <div className="p-0">
         <h2 className="text-xl font-bold text-[#3A3326] mb-4">
           Your Cart (Item - {totalItems})
         </h2>
         
         {/* Divider Line */}
-        <div className="w-full h-px bg-[rgba(66,59,45,0.13)] mb-6"></div>
+        <div className="h-1 w-full rounded bg-gradient-to-r from-[#FFEDD5] via-[#FFE8CC] to-[#FFF5EA] mb-5"></div>
       
         {/* Cart Content */}
-        <div className="bg-[#F8F5EF] p-6">
+        <div className="bg-[#F8F5EF] p-6 rounded-lg">
           {/* Room Items */}
           {rooms.map((room, index) => (
             <div key={room.id} className="mb-6 ">

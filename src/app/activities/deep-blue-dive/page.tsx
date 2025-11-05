@@ -51,7 +51,7 @@ export default function DeepBlueDivePage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[560px] md:h-[700px] lg:h-[977px] overflow-hidden">
           <Image

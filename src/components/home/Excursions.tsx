@@ -71,31 +71,40 @@ export default function Excursions() {
           {CARDS.map((card, index) => (
             <div
               key={card.title}
-              className={`group relative h-[200px] md:h-[280px] w-full md:w-[300px] overflow-hidden rounded-[7px] shadow-lg excursions-card ${isVisible ? 'excursions-card-visible' : ''}`}
+              className={`group relative w-full md:w-[300px] overflow-hidden rounded-[7px] shadow-lg excursions-card ${isVisible ? 'excursions-card-visible' : ''}`}
               style={{ transitionDelay: `${index * 0.15}s` }}
             >
-              <Image
-                width={300}
-                height={280}
-                src={card.img}
-                alt={card.title}
-                className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150 active:scale-150"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-
-              <div className="absolute bottom-0 left-0 right-0 pb-4 md:pb-[19px] text-center">
-                <h3 className="text-[18px] md:text-[22px] font-normal font-jomolhari leading-[1.602] text-white drop-shadow-md">
-                  {card.title}
-                </h3>
+              <div className="relative w-full aspect-[300/280]">
+                <Image
+                  fill
+                  src={card.img}
+                  alt={card.title}
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
+                  sizes="(max-width: 768px) 50vw, 300px"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 pb-4 md:pb-[19px] text-center z-10">
+                  <h3 className="text-[18px] md:text-[22px] font-normal font-jomolhari leading-[1.602] text-white drop-shadow-lg">
+                    {card.title}
+                  </h3>
+                </div>
               </div>
             </div>
           ))}
           {showAll && extra.map((item) => (
-            <div key={item.id} className="group relative h-[200px] md:h-[280px] w-full md:w-[300px] overflow-hidden rounded-[7px] shadow-lg">
-              <Image width={300} height={280} src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-150 active:scale-150" />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 pb-4 md:pb-[19px] text-center">
-                <h3 className="text-[18px] md:text-[22px] font-normal font-jomolhari leading-[1.602] text-white drop-shadow-md">{item.title}</h3>
+            <div key={item.id} className="group relative w-full md:w-[300px] overflow-hidden rounded-[7px] shadow-lg">
+              <div className="relative w-full aspect-[300/280]">
+                <Image 
+                  fill 
+                  src={item.image} 
+                  alt={item.title} 
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110" 
+                  sizes="(max-width: 768px) 50vw, 300px"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 pb-4 md:pb-[19px] text-center z-10">
+                  <h3 className="text-[18px] md:text-[22px] font-normal font-jomolhari leading-[1.602] text-white drop-shadow-lg">{item.title}</h3>
+                </div>
               </div>
             </div>
           ))}

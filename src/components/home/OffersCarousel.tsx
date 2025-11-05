@@ -55,58 +55,73 @@ export default function OffersCarousel() {
     return <section className="w-full bg-[#FFFCF6] py-12 text-center">Loading Offers...</section>;
   }
 
-  const translateValue = `calc(10% - ${index * 80}%)`;
-
   return (
-    <section className="w-full bg-[#FFFCF6] overflow-hidden py-12">
-      <div className="container mx-auto px-4 md:px-10">
+    <section className="w-full overflow-hidden" style={{ padding: 0, margin: 0 }}>
+      <div className="w-full max-w-full mx-auto" style={{ padding: 0 }}>
         
-        <div className="text-center mb-[100px] px-4">
-          <h2 className="text-[40px] font-normal text-[#323232] font-['Oooh_Baby'] leading-[1.225] tracking-[8%] mb-[30px]">
+        <div className="text-center mb-3 md:mb-6 lg:mb-8 xl:mb-12 2xl:mb-16 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
+          <h2 className="text-[26px] md:text-[30px] lg:text-[36px] xl:text-[40px] font-normal text-[#323232] font-['Oooh_Baby'] leading-[1.225] tracking-[8%] mb-2 md:mb-3 lg:mb-4 xl:mb-6">
             Best Offers for you
           </h2>
           <div className="flex justify-center">
-            <div className="w-[678px] h-[2px] bg-gradient-to-r from-transparent via-[#CBBB9D] to-transparent" />
+            <div className="w-full max-w-[250px] md:max-w-[350px] lg:max-w-[450px] xl:max-w-[550px] 2xl:max-w-[678px] h-[2px] bg-gradient-to-r from-transparent via-[#CBBB9D] to-transparent" />
           </div>
         </div>
 
-        <div className="relative py-4">
-          <div
-            className="flex items-center transition-transform duration-700 ease-in-out"
-            style={{ transform: `translateX(${translateValue})` }}
-          >
-            {offers.map((offer, i) => (
-              <div key={offer.id} className="w-4/5 flex-shrink-0 px-4">
-                <div className={`relative w-full aspect-[5/1] rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${index === i ? 'scale-100 opacity-100' : 'scale-90 opacity-60'}`}>
-                  <Image
-                    src={offer.imageUrl}
-                    alt={`Offer ${i + 1}`}
-                    fill
-                    className="object-cover" 
-                    priority={i === 0}
-                    sizes="80vw"
-                    onError={(e) => {
-                      console.log('Carousel image load error:', e);
-                      // Fallback to a placeholder or hide the image
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  {/* Book Now overlay */}
-                  <div className="absolute inset-0 flex items-end justify-center p-4">
-                    <span
-                      onClick={() => setBookingOpen(true)}
-                      className="cursor-pointer text-[#FF6A00] font-semibold underline decoration-[#FF6A00]/70 underline-offset-4 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] hover:opacity-90"
+        {/* Full Width Carousel - No gaps, extends to edges */}
+        <div className="relative w-full" style={{ padding: 0, margin: 0 }}>
+          <div className="relative w-full overflow-hidden">
+            <div 
+              className="flex transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${index * 100}%)` }}
+            >
+              {offers.map((offer, i) => (
+                <div 
+                  key={offer.id} 
+                  className="flex-shrink-0 w-full"
+                  style={{ padding: 0, margin: 0 }}
+                >
+                  <div className="relative w-full h-[280px] md:h-[380px] lg:h-[480px] xl:h-[580px] 2xl:h-[680px]" style={{ position: 'relative', isolation: 'isolate', padding: 0, margin: 0 }}>
+                    <Image
+                      src={offer.imageUrl}
+                      alt={`Offer ${i + 1}`}
+                      fill
+                      className="object-contain w-full h-full" 
+                      priority={i === 0}
+                      sizes="100vw"
+                      style={{ position: 'absolute', zIndex: 1, top: 0, left: 0, width: '100%', height: '100%' }}
+                      onError={(e) => {
+                        console.log('Carousel image load error:', e);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    {/* Book Now overlay - On top of image */}
+                    <div 
+                      className="absolute bottom-0 left-0 right-0 flex items-center justify-center pointer-events-none"
+                      style={{ 
+                        zIndex: 100,
+                        position: 'absolute',
+                        bottom: '10px',
+                        left: 0,
+                        right: 0
+                      }}
                     >
-                      Book now
-                    </span>
+                      <span
+                        onClick={() => setBookingOpen(true)}
+                        className="cursor-pointer text-[#FF6A00] font-semibold text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl underline decoration-[#FF6A00]/70 underline-offset-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:opacity-90 pointer-events-auto"
+                        style={{ position: 'relative', zIndex: 101 }}
+                      >
+                        Book now
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <div className="mt-3 md:mt-4 lg:mt-6 xl:mt-8 flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
           {offers.map((_, i) => (
             <button
               key={i}

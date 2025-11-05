@@ -24,9 +24,8 @@ export default function Intro() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="w-full bg-[#FFFCF6] intro-section -mt-12 md:mt-0">
-      <div className="container-xl py-4">
-        <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-[82px] pt-4 md:pt-8 lg:pt-[73px] pb-8 md:pb-12 lg:pb-[126px]">
+    <section ref={sectionRef} className="w-full bg-[#FFFCF6] intro-section -mt-8 md:-mt-4 lg:mt-0" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-4 md:pt-8 lg:pt-[73px] pb-8 md:pb-12 lg:pb-[126px]">
           <div className="flex flex-col gap-4 md:gap-[18px] mb-6 md:mb-[53px]">
             <div className={`inline-flex h-[32px] md:h-[36px] items-center rounded-[49px] bg-[rgba(255,106,0,0.19)] px-2 md:px-[10px] py-2 md:py-[10px] self-start intro-badge ${isVisible ? 'intro-badge-visible' : ''}`}>
               <span className="whitespace-nowrap font-quicksand text-[16px] md:text-[18px] font-semibold leading-[1.25] text-[#ED6200]">
@@ -34,29 +33,28 @@ export default function Intro() {
               </span>
             </div>
 
-            <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4 md:gap-6 lg:gap-[122px]">
-              <h2 className={`font-quicksand text-[28px] md:text-[36px] lg:text-[48px] font-bold leading-[1.25] text-[#242F3C] max-w-full lg:max-w-[807px] intro-title ${isVisible ? 'intro-title-visible' : ''}`}>
+            <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4 md:gap-6 lg:gap-8 xl:gap-12 2xl:gap-[122px]">
+              <h2 className={`font-quicksand text-[28px] md:text-[36px] lg:text-[42px] xl:text-[48px] font-bold leading-[1.25] text-[#242F3C] max-w-full lg:max-w-[600px] xl:max-w-[707px] 2xl:max-w-[807px] intro-title ${isVisible ? 'intro-title-visible' : ''}`}>
                 Experience Zanzibar in Timeless Luxury
               </h2>
-              <p className={`font-quicksand text-left text-[20px] md:text-[24px] font-medium leading-[1.25] text-black max-w-full lg:max-w-[415px] intro-subtitle ${isVisible ? 'intro-subtitle-visible' : ''}`}>
+              <p className={`font-quicksand text-left text-[20px] md:text-[22px] lg:text-[24px] font-medium leading-[1.25] text-black max-w-full lg:max-w-[350px] xl:max-w-[415px] intro-subtitle ${isVisible ? 'intro-subtitle-visible' : ''}`}>
                 Where Tranquility Meets Timeless Elegance
               </p>
             </div>
           </div>
 
-          <div className="flex max-w-[1348px] flex-col gap-4 md:gap-[18px]">
-            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25] text-[#282828] intro-text ${isVisible ? 'intro-text-visible' : ''}`}>
+          <div className="flex w-full text-[#5E5E5E] flex-col gap-4 md:gap-[18px]">
+            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25]  intro-text ${isVisible ? 'intro-text-visible' : ''}`}>
               Sultan Palace Hotel invites you to discover the art of refined relaxation. Nestled along the tranquil shores of Zanzibar&apos;s east coast, our resort blends elegant design, personalized hospitality, and breathtaking ocean vistas.
             </p>
-            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25] text-[#282828] intro-text ${isVisible ? 'intro-text-visible' : ''}`} style={{ transitionDelay: '0.2s' }}>
+            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25]  intro-text ${isVisible ? 'intro-text-visible' : ''}`} style={{ transitionDelay: '0.2s' }}>
               Whether you&apos;re celebrating love, exploring with family, or simply recharging, our all-inclusive experience surrounds you with indulgence and warmth.
             </p>
-            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25] text-[#282828] intro-text ${isVisible ? 'intro-text-visible' : ''}`} style={{ transitionDelay: '0.4s' }}>
+            <p className={`font-quicksand text-[16px] md:text-[18px] font-medium leading-[1.25]  intro-text ${isVisible ? 'intro-text-visible' : ''}`} style={{ transitionDelay: '0.4s' }}>
               From curated dining to ocean adventures — <span className="font-semibold text-[#282828]">every detail is crafted for your perfect getaway.</span>
             </p>
           </div>
         </div>
-      </div>
 
       <style jsx global>{`
         .intro-section {

@@ -32,38 +32,74 @@ export default function Hero() {
   return (
     <>
      
-      <section ref={heroRef} className="relative w-full font-opensans hero-section mb-0">
-        {/* Video Container with Form */}
-        <div className="relative w-full h-[600px] md:h-[928px] overflow-visible">
-          <div className="absolute inset-0 z-0">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline 
-              className="w-full h-full object-cover"
-            >
-              <source src="/hero.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
+      <section ref={heroRef} className="relative w-full font-opensans hero-section mb-0" style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Video Container with Form Overlay - All devices */}
+        <div 
+          className="relative w-full h-[600px] md:h-[928px]" 
+          style={{ 
+            position: 'relative',
+            overflow: 'visible',
+            zIndex: 0
+          }}
+        >
+          {/* Video Background - Behind everything */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ 
+              zIndex: 0,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          >
+            <source src="/hero.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
           
-          {/* Booking Form - Mobile: Overlapping video, Desktop: At bottom with padding */}
-          <div className="absolute bottom-0 left-0 right-0 z-20 px-4 transform -translate-y-[50%] md:absolute md:bottom-8 md:left-0 md:right-0 md:z-10 md:translate-y-0 md:transform-none">
-            <div className="w-full max-w-4xl mx-auto">
-              <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-6 px-6 mb-2">
-                <span className="text-white text-base font-bold">Check-in / Check-out</span>
-                <span className="text-white text-base font-bold">Guest</span>
+          {/* Booking Form Overlay - Always on top of video, all screen sizes */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 w-full" 
+            style={{ 
+              zIndex: 1000,
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              width: '100%',
+              pointerEvents: 'none',
+              willChange: 'transform'
+            }}
+          >
+            <div className="w-full max-w-full sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1083px] xl:max-w-[1200px] 2xl:max-w-[1300px] mx-auto px-2 sm:px-4 pb-2 sm:pb-3 md:pb-4 lg:pb-6">
+              <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-4 xl:gap-x-6 px-4 xl:px-6 mb-1 md:mb-1.5">
+                <span className="text-white text-sm md:text-base font-bold text-center">Check-in / Check-out</span>
+                <span className="text-white text-sm md:text-base font-bold text-left pl-2 md:pl-4">Guest</span>
               </div>
-              <div id="booking-form" className="w-full">
+              <div 
+                id="booking-form" 
+                className="w-full" 
+                style={{ 
+                  pointerEvents: 'auto', 
+                  position: 'relative', 
+                  zIndex: 1001,
+                  willChange: 'transform'
+                }}
+              >
                 <BookingForm />
               </div>
             </div>
           </div>
         </div>
         
-        {/* Spacer for form visibility on mobile, padding for desktop */}
-        <div className="h-12 md:h-16 lg:h-20"></div>
+        {/* Spacer to ensure next component is visible */}
+        <div className="h-16 md:h-20 lg:h-24 xl:h-28"></div>
 
         {/* Audio */}
         <audio autoPlay loop className="hidden">

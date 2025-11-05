@@ -215,7 +215,7 @@ export default function AddOnsPage() {
         </div>
       </div>
 
-      <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] mb-16 lg:mb-20">
+      <div className="w-full max-w-full mb-16 lg:mb-20">
         <div className="w-full px-4 md:px-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Add-ons List */}
@@ -323,10 +323,9 @@ export default function AddOnsPage() {
             </div>
           </div>
 
-          {/* Cart Sidebar */}
-            <div className="w-full lg:basis-[38%] mt-6 lg:-mt-28 flex-shrink-0">
-              <div className="rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-0 lg:sticky lg:top-8">
-                <div className="p-6">
+          {/* Cart Sidebar (match Rooms design) */}
+            <div className="w-full lg:basis-[38%] flex-shrink-0 mt-6 lg:mt-0">
+              <div className={"rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-5 lg:sticky lg:top-28"}>
                   <h2 className="text-2xl font-bold text-[#3A3326] mb-2">
                     Your Cart (Item - {cartAddOns.length + (roomData ? 1 : 0)})
                   </h2>
@@ -481,7 +480,6 @@ export default function AddOnsPage() {
                   >
                     Checkout
                   </button>
-                </div>
               </div>
             </div>
           </div>

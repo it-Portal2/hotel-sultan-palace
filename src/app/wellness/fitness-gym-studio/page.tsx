@@ -9,7 +9,7 @@ export default function FitnessGymStudioPage() {
   return (
     <>
       <Header />
-      <main className="w-full bg-[#FFFCF6] font-open-sans relative">
+      <main className="w-full max-w-full bg-[#FFFCF6] font-open-sans relative overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[520px] md:h-[800px] lg:h-[1018px] overflow-hidden">
           <Image 
@@ -52,7 +52,7 @@ export default function FitnessGymStudioPage() {
         {/* Treatment Cards Section */}
         <section className="relative w-full px-4 md:px-0 mt-8 md:mt-12 lg:mt-16">
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
-            <div className="flex flex-wrap justify-center gap-4 md:gap-[23px] px-4 md:px-0 lg:px-[39px]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-3 lg:px-4">
               {[
                 { 
                   title: "Cardio Zone", 
@@ -81,9 +81,9 @@ export default function FitnessGymStudioPage() {
               ].map((item, i) => (
                 <div 
                   key={i} 
-                  className="w-full sm:w-[calc(50%-12px)] lg:w-[341px] flex-shrink-0 overflow-hidden group cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-2 hover:shadow-2xl"
+                  className="w-full overflow-hidden group cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-2 hover:shadow-2xl"
                 >
-                  <div className="relative w-full h-[500px] overflow-hidden">
+                  <div className="relative w-full h-[300px] sm:h-[360px] md:h-[400px] lg:h-[500px] overflow-hidden">
                     <Image 
                       src={item.image} 
                       alt={item.title} 

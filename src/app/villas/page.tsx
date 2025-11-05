@@ -42,7 +42,7 @@ export default function VillasPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
           <Image
@@ -69,7 +69,7 @@ export default function VillasPage() {
  
         {/* Villas Section */}
         <section className="py-16 md:py-24 bg-[#FFFCF6]">
-          <div className="w-full max-w-[1475px] mx-auto px-4 md:px-6">
+          <div className="w-full max-w-[1596px] mx-auto px-0 md:px-1 lg:px-2 xl:px-4 2xl:px-2">
             <div className="flex flex-col gap-[68px]">
               
               {/* Garden View Villas */}
@@ -87,8 +87,8 @@ export default function VillasPage() {
                   </Link>
                 </div>
                 
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[0] = el; }} className="relative w-full md:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image group/image-main">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[0] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/garden-villa-main.png"
@@ -115,7 +115,7 @@ export default function VillasPage() {
                        </Link>
                      </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[1] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image group/image-side">
+                  <div ref={(el) => { imageRefs.current[1] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/garden-villa-1.png"
                       alt="Garden Villa Interior"
@@ -124,7 +124,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[2] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image group/image-side">
+                  <div ref={(el) => { imageRefs.current[2] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/garden-villa-2.png"
                       alt="Garden Villa Exterior"
@@ -137,7 +137,7 @@ export default function VillasPage() {
               </div>
 
               {/* Ocean Front Villas */}
-              <div ref={(el) => { sectionRefs.current[1] = el; }} className="relative w-screen h-[761px] overflow-hidden villa-full-section" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+              <div ref={(el) => { sectionRefs.current[1] = el; }} className="relative w-full h-[761px] overflow-hidden villa-full-section">
                 <Image
                   src="/villas/ocean-front-bg.png"
                   alt="Ocean Front Villas Background"
@@ -188,8 +188,8 @@ export default function VillasPage() {
                   </Link>
                 </div>
                 
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[3] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 villa-side-image group/image-side">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[3] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 villa-side-image">
                     <Image
                       src="/villas/sultan-villa-1.png"
                       alt="Sultan Villa Interior"
@@ -198,7 +198,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[4] = el; }} className="relative w-full md:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image group/image-main">
+                  <div ref={(el) => { imageRefs.current[4] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/sultan-villa-main.png"
@@ -225,7 +225,7 @@ export default function VillasPage() {
                        </Link>
                      </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[5] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image group/image-side">
+                  <div ref={(el) => { imageRefs.current[5] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/sultan-villa-2.png"
                       alt="Sultan Villa Exterior"
@@ -238,7 +238,7 @@ export default function VillasPage() {
               </div>
 
               {/* Sultan's Villas */}
-              <div ref={(el) => { sectionRefs.current[3] = el; }} className="relative w-screen h-[761px] overflow-hidden villa-full-section" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+              <div ref={(el) => { sectionRefs.current[3] = el; }} className="relative w-full h-[761px] overflow-hidden villa-full-section">
                 <Image
                   src="/villas/sultans-villa-bg.png"
                   alt="Sultan's Villas Background"
@@ -289,8 +289,8 @@ export default function VillasPage() {
                   </Link>
                 </div>
                 
-                  <div className="relative flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[6] = el; }} className="relative w-full md:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image group/image-main">
+                  <div className="relative flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[6] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/one-bedroom-main.png"
@@ -317,7 +317,7 @@ export default function VillasPage() {
                       </Link>
                     </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[7] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image group/image-side">
+                  <div ref={(el) => { imageRefs.current[7] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/one-bedroom-1.png"
                       alt="One-Bedroom Interior"
@@ -326,7 +326,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[8] = el; }} className="relative w-full md:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image group/image-side">
+                  <div ref={(el) => { imageRefs.current[8] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/one-bedroom-2.png"
                       alt="One-Bedroom Exterior"

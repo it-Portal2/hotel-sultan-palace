@@ -25,12 +25,12 @@ export default function ContactUs() {
   return (
     <section className="w-full">
       {/* Top Section: Contact Form */}
-      <div className="w-full bg-[#2C2B28] py-8 md:py-12 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-20">
-        <div className="w-full max-w-screen-3xl mx-auto">
+      <div className="w-full bg-[#2C2B28] py-8 md:py-12 px-4 sm:px-6 md:px-8 lg:px-8 xl:px-12 2xl:px-20">
+        <div className="w-full max-w-[1512px] mx-auto">
           <p className="font-kaisei text-sm md:text-base text-[#BE8C53]">Contact Us</p>
           <h2 className="mt-2 font-kaisei font-bold text-2xl sm:text-3xl md:text-4xl text-white">Find Out More</h2>
 
-          <div className="mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-y-10 lg:gap-x-12">
+          <div className="mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-x-8 xl:gap-x-12">
             {/* Left: contact details */}
             <div className="space-y-5 md:space-y-6">
               {info.map((item, idx) => (
@@ -60,7 +60,7 @@ export default function ContactUs() {
             </div>
 
             {/* Right: form */}
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-4 z-10">
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0">
               <div className="relative">
                 <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Your name" />
                 <MdPerson className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
@@ -97,6 +97,7 @@ export default function ContactUs() {
             <h3 className="font-kaisei text-white text-lg md:text-xl lg:text-2xl">Get Timely Updates</h3>
             <div className="mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 w-full max-w-[420px] mx-auto">
               <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-3 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Enter Your Email Address" />
+              
               <button className="w-full sm:w-auto bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei px-8 md:px-10 py-2.5 md:py-2 text-sm rounded-md transition-colors whitespace-nowrap">Subscribe</button>
             </div>
           </div>

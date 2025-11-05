@@ -30,7 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={"antialiased overflow-x-hidden"}
+        className={"antialiased overflow-x-hidden max-w-full"}
       >
         {/* Tailwind keep animation classes */}
         <div className="hidden animate-slide-in-bottom animate-slide-in-left animate-slide-in-left-delay-200 animate-slide-in-left-delay-400" />

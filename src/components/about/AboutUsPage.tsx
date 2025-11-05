@@ -144,7 +144,7 @@ export default function AboutUsPage() {
               
               {/* Left Image - Rectangle 52 */}
               <div 
-                className="md:absolute left-0 md:top-[92px] w-full md:w-[785px] h-[280px] sm:h-[380px] md:h-[568px] rounded-none md:rounded-[14px] overflow-hidden mt-12 md:mt-0 content-image-left group/image-left"
+                className="md:absolute left-0 md:top-[92px] w-[350px] sm:w-[450px]   md:w-[700px] h-[280px] sm:h-[380px] md:h-[568px] rounded-none md:rounded-[14px] overflow-hidden mt-12 md:mt-0 content-image-left group/image-left"
                 style={{
                   backgroundImage: 'url(/about-content-left-bg.png)',
                   backgroundSize: 'cover',
@@ -153,7 +153,7 @@ export default function AboutUsPage() {
               />
               
               {/* Right Text Frame - Frame 820 */}
-              <div className="md:absolute left-[838px] md:top-[92px] w-full md:w-[571px] h-auto px-4 md:px-0 mt-4 md:mt-0 content-text-right">
+              <div className="md:absolute left-[838px] md:top-[92px] w-full md:w-[500px] h-auto px-2 md:px-3 lg:px-4 content-text-right">
                 <div className="flex flex-col gap-[31px]">
                   <h3 className="text-[#2D2922] text-[22px] sm:text-[24px] md:text-[26px] font-semibold leading-[1.25] font-['Quicksand'] group-hover:text-[#F96406] transition-colors duration-300">
                     Where Timeless Elegance Meets the Ocean Breeze

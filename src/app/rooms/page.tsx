@@ -198,7 +198,7 @@ function RoomsContent() {
       </div>
       )}
 
-      <div className="w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] mb-16 lg:mb-20">
+      <div className="w-full max-w-full mb-16 lg:mb-20">
         <div className="w-full px-4 md:px-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Rooms List */}

@@ -156,31 +156,31 @@ export default function Header() {
     <>
       <header className={`w-full absolute top-0 left-0 z-30 font-open-sans ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`}>
         {/* Top Section - Desktop Only */}
-        <div className="hidden md:block w-full px-10 lg:px-20">
-          <div className="flex items-center justify-between py-1 md:py-4">
+        <div className="hidden md:block w-full px-4 md:px-6 lg:px-10 xl:px-20">
+          <div className="flex items-center justify-between py-1 md:py-4 gap-2 xl:gap-4">
             <TimeAndTemperature />
-            <div className="flex items-center gap-5 text-white text-[16px] font-semibold">
-              <div className="flex items-center gap-2">
-                <Phone size={12} color="#79C9E9" />
-                <div className="flex gap-2 text-[16px]">
-                  <Link href="tel:+255684888111" className="hover:text-orange-300 transition-colors">+255 684 888 111</Link>
+            <div className="flex items-center gap-2 xl:gap-3 2xl:gap-5 text-white text-[12px] md:text-[14px] xl:text-[16px] font-semibold flex-shrink-0">
+              <div className="flex items-center gap-1 xl:gap-2">
+                <Phone size={12} className="md:w-3 md:h-3 xl:w-4 xl:h-4" color="#79C9E9" />
+                <div className="flex gap-1 xl:gap-2 text-[12px] md:text-[14px] xl:text-[16px]">
+                  <Link href="tel:+255684888111" className="hover:text-orange-300 transition-colors whitespace-nowrap">+255 684 888 111</Link>
                   <span>,</span>
-                  <Link href="tel:+255657269674" className="hover:text-orange-300 transition-colors">+255 657 269 674</Link>
+                  <Link href="tel:+255657269674" className="hover:text-orange-300 transition-colors whitespace-nowrap">+255 657 269 674</Link>
                 </div>
               </div>
               <Link
                 href="mailto:portalholdingsznz@gmail.com"
-                className="flex items-center gap-2 hover:text-orange-300 transition-colors"
+                className="flex items-center gap-1 xl:gap-2 hover:text-orange-300 transition-colors"
               >
-                <Mail size={16} color="#79C9E9" />
-                <span className="text-[16px]">portalholdingsznz@gmail.com</span>
+                <Mail size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4" color="#79C9E9" />
+                <span className="text-[12px] md:text-[14px] xl:text-[16px] truncate max-w-[180px] xl:max-w-none">portalholdingsznz@gmail.com</span>
               </Link>
-              <button className="flex items-center gap-2 border border-white rounded-full px-2 py-1 hover:opacity-80 transition-opacity">
-                <Globe size={16} className="text-white" />
-                <span className="text-white font-medium text-[16px]">
+              <button className="flex items-center gap-1 xl:gap-2 border border-white rounded-full px-2 py-1 hover:opacity-80 transition-opacity flex-shrink-0">
+                <Globe size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4 text-white" />
+                <span className="text-white font-medium text-[12px] md:text-[14px] xl:text-[16px] whitespace-nowrap">
                   English
                 </span>
-                <ChevronDown size={16} className="text-white" />
+                <ChevronDown size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4 text-white" />
               </button>
             </div>
           </div>
@@ -188,9 +188,9 @@ export default function Header() {
         </div>
 
         {/* Menu Bar Section - Logo, Social Icons, Navigation */}
-        <div className="w-full px-4 md:px-10 lg:px-[82px]">
-          <div className="flex items-center justify-between py-1">
-            <div className="flex items-center gap-3 md:gap-4">
+        <div className="w-full px-4 md:px-6 lg:px-8 xl:px-[82px]">
+          <div className="flex items-center justify-between py-1 gap-2 xl:gap-4">
+            <div className="flex items-center gap-2 md:gap-3 xl:gap-4 flex-shrink-0">
               <Link href="/" className="flex-shrink-0 z-50">
                 <Image
                   src="/sultan-logo.png"
@@ -198,7 +198,7 @@ export default function Header() {
                   width={200}
                   height={200}
                   priority
-                  className="!h-[50px] md:!h-[84px] !w-auto" 
+                  className="!h-[50px] md:!h-[70px] xl:!h-[84px] !w-auto" 
                   style={{ height: "50px", width: "auto" }}
                 />
               </Link>
@@ -216,7 +216,7 @@ export default function Header() {
               </div>
             </div>
 
-            <nav className="hidden lg:flex items-center justify-center gap-[54px] text-white text-[16px] font-semibold font-open-sans w-full">
+            <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 text-white text-[14px] xl:text-[16px] font-semibold font-open-sans flex-1 min-w-0">
               {navLinks.map((item) => (
                 <div key={item.label} className="relative">
                   {item.hasSubmenu ? (
@@ -237,9 +237,9 @@ export default function Header() {
                           setIsWellnessMenuOpen(false);
                         }
                       }}
-                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
+                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-1 xl:gap-2 text-[13px] xl:text-[16px]"
                     >
-                      {item.label}
+                      <span className="truncate max-w-[120px] xl:max-w-none">{item.label}</span>
                       {item.caret && (
                         <ChevronDown 
                           size={14} 
@@ -255,9 +255,9 @@ export default function Header() {
                   ) : (
                     <Link
                       href={item.href}
-                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-2"
+                      className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-1 xl:gap-2 text-[13px] xl:text-[16px]"
                     >
-                      {item.label}
+                      <span className="truncate max-w-[120px] xl:max-w-none">{item.label}</span>
                       {item.caret && <ChevronDown size={14} />}
                     </Link>
                   )}
@@ -334,9 +334,9 @@ export default function Header() {
               ))}
             </nav>
 
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 hidden md:block">
-                <BookNowButton scrollTo="booking-form" size="sm" className="text-[14px]" />
+            <div className="flex items-center gap-2 xl:gap-4 flex-shrink-0">
+              <div className="hidden md:block">
+                <BookNowButton scrollTo="booking-form" size="sm" className="px-4 md:px-6 lg:px-8 xl:px-[40px] 2xl:px-[53px] py-2 md:py-2.5 lg:py-3 xl:py-[14px] rounded-[9px] text-[12px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-auto md:h-[45px] lg:h-[49px] w-fit whitespace-nowrap" />
               </div>
               <div className="lg:hidden z-50">
                 <button

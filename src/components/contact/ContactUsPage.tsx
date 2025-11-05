@@ -163,7 +163,7 @@ export default function ContactUsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 w-full">
         {/* Left Side - Contact Form Background */}
         <div 
-          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1 min-h-[260px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[645px]"
+          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px]"
           style={{
             backgroundImage: 'url(/contact-form-bg.png)',
             backgroundSize: 'cover',
@@ -172,7 +172,7 @@ export default function ContactUsPage() {
         />
         
         {/* Right Side - Contact Form */}
-        <div className="bg-[#242424] flex items-center order-1 lg:order-2">
+        <div className="bg-[#242424] flex items-center order-1 lg:order-2 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px]">
           <div className="px-4 sm:px-6 md:px-8 lg:px-16 py-8 sm:py-12 lg:py-16 w-full">
             <h3 className="text-white text-[20px] sm:text-[24px] md:text-[28px] lg:text-[32px] xl:text-[36px] font-medium uppercase leading-[1.2] sm:leading-[1.3] md:leading-[1.4] lg:leading-[1.44] tracking-[8%] sm:tracking-[9%] md:tracking-[10%] lg:tracking-[11.11%] mb-6 sm:mb-8 font-['Kaisei_Decol']">
               Reach Out — Your Island Escape Awaits

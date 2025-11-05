@@ -40,17 +40,17 @@ export default function Discover() {
         </div>
 
        
-        <div className="w-full lg:col-span-7 flex items-center px-4 md:px-8 lg:px-[82px] py-8 md:py-12 lg:py-[148px]">
-          <div className="flex flex-col gap-4 md:gap-[20px] max-w-full lg:max-w-[682px]">
+        <div className="w-full lg:col-span-7 flex items-center px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-[82px] py-8 md:py-12 lg:py-[148px]">
+          <div className="flex flex-col gap-4 md:gap-[20px] max-w-full lg:max-w-[600px] xl:max-w-[682px]">
             <p className={`font-[Shadows_Into_Light_Two] text-[28px] md:text-[34px] leading-[1.451] text-[#783A0C] discover-label ${isVisible ? 'discover-label-visible' : ''}`}>
               Discover Our Paradise
             </p>
 
-            <h2 className={`text-[28px] md:text-[36px] lg:text-[40px] font-medium font-quicksand leading-[1.25] text-[#242F3C] max-w-full lg:max-w-[661px] discover-title ${isVisible ? 'discover-title-visible' : ''}`}>
+            <h2 className={`text-[28px] md:text-[36px] lg:text-[38px] xl:text-[40px] font-medium font-quicksand leading-[1.25] text-[#242F3C] max-w-full lg:max-w-[580px] xl:max-w-[661px] discover-title ${isVisible ? 'discover-title-visible' : ''}`}>
               Endless Discoveries, Unforgettable Memories
             </h2>
 
-            <p className={`text-[16px] md:text-[18px] font-medium font-quicksand leading-[1.556] text-[#5E5E5E] max-w-full lg:max-w-[663px] discover-text ${isVisible ? 'discover-text-visible' : ''}`}>
+            <p className={`text-[16px] md:text-[18px] font-medium font-quicksand leading-[1.556] text-[#5E5E5E] max-w-full lg:max-w-[580px] xl:max-w-[663px] discover-text ${isVisible ? 'discover-text-visible' : ''}`}>
               Wake up to ocean whispers, walk barefoot on white sands, and let
               the rhythm of Zanzibar slow your world down. Sultan Palace Hotel
               isn&apos;t just a destination — it&apos;s a feeling.
