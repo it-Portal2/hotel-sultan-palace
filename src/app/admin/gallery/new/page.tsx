@@ -56,14 +56,15 @@ export default function NewGalleryImagePage() {
       const url = await getDownloadURL(obj);
       setImageUrl(url);
       showToast('Image uploaded successfully!', 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Image upload failed:', err);
       let errorMsg = 'Unable to upload image. ';
-      if (err?.code === 'storage/unauthorized') {
+      const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError?.code === 'storage/unauthorized') {
         errorMsg = 'Please make sure you are logged in and try again.';
-      } else if (err?.code === 'storage/quota-exceeded') {
+      } else if (firebaseError?.code === 'storage/quota-exceeded') {
         errorMsg = 'Storage limit reached. Please contact administrator.';
-      } else if (err?.code === 'storage/canceled') {
+      } else if (firebaseError?.code === 'storage/canceled') {
         errorMsg = 'Upload was cancelled.';
       } else {
         errorMsg = 'Please check your connection and try again.';

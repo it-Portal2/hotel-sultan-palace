@@ -76,8 +76,10 @@ export default function AdminBookingsPage() {
 
     // sort
     list.sort((a,b)=>{
-      if (sort === 'newest') return ((b.createdAt as any) - (a.createdAt as any));
-      if (sort === 'oldest') return ((a.createdAt as any) - (b.createdAt as any));
+      const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+      const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+      if (sort === 'newest') return bTime - aTime;
+      if (sort === 'oldest') return aTime - bTime;
       if (sort === 'amount_desc') return (b.totalAmount||0) - (a.totalAmount||0);
       if (sort === 'amount_asc') return (a.totalAmount||0) - (b.totalAmount||0);
       return 0;
@@ -142,7 +144,7 @@ export default function AdminBookingsPage() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
-          <select value={status} onChange={e => { setStatus(e.target.value as any); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
+          <select value={status} onChange={e => { setStatus(e.target.value as 'all' | 'pending' | 'confirmed' | 'cancelled'); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
             <option value="all">All</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
@@ -159,7 +161,7 @@ export default function AdminBookingsPage() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">Sort</label>
-          <select value={sort} onChange={e => setSort(e.target.value as any)} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
+          <select value={sort} onChange={e => setSort(e.target.value as 'newest' | 'oldest' | 'amount_desc' | 'amount_asc')} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
             <option value="amount_desc">Amount: High to Low</option>

@@ -53,7 +53,6 @@ export default function NewStoryPicturePage() {
     try {
       const key = `story-${Date.now()}`;
       const fileExt = selectedFile.name.split('.').pop();
-      const safeFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '-');
       const fileName = `${key}.${fileExt || 'png'}`;
       const obj = storageRef(storage, `story/${key}/${fileName}`);
       await uploadBytes(obj, selectedFile, { contentType: selectedFile.type });
@@ -68,14 +67,15 @@ export default function NewStoryPicturePage() {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       showToast('Image uploaded successfully!', 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Image upload failed:', err);
       let errorMsg = 'Unable to upload image. ';
-      if (err?.code === 'storage/unauthorized') {
+      const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError?.code === 'storage/unauthorized') {
         errorMsg = 'Please make sure you are logged in and try again.';
-      } else if (err?.code === 'storage/quota-exceeded') {
+      } else if (firebaseError?.code === 'storage/quota-exceeded') {
         errorMsg = 'Storage limit reached. Please contact administrator.';
-      } else if (err?.code === 'storage/canceled') {
+      } else if (firebaseError?.code === 'storage/canceled') {
         errorMsg = 'Upload was cancelled.';
       } else {
         errorMsg = 'Please check your connection and try again.';
