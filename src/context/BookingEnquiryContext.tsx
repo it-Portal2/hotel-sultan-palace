@@ -8,7 +8,7 @@ interface BookingEnquiryContextType {
   closeModal: () => void;
 }
 
-const BookingEnquiryContext = createContext<BookingEnquiryContextType | undefined>(undefined);
+export const BookingEnquiryContext = createContext<BookingEnquiryContextType | undefined>(undefined);
 
 export function BookingEnquiryProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);

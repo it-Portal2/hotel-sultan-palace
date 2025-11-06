@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
+import { useContext } from "react";
+import { BookingEnquiryContext } from "@/context/BookingEnquiryContext";
 
 interface ContactUsButtonProps {
   href?: string;
@@ -29,9 +30,9 @@ export default function ContactUsButton({
   onClick,
   showArrow = true
 }: ContactUsButtonProps) {
-  const bookingCtx = (() => {
-    try { return useBookingEnquiry(); } catch { return null; }
-  })();
+  // Use useContext directly to safely check if context is available
+  const bookingCtx = useContext(BookingEnquiryContext);
+  
   const buttonClasses = `text-white px-5 py-2 ${rounded} ${textSize} font-medium ${height} flex items-center justify-center font-quicksand ${width} relative overflow-hidden group/button transition-all duration-300 hover:scale-110 hover:shadow-lg whitespace-nowrap ${className}`;
 
   const buttonStyle = {

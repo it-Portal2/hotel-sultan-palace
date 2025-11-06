@@ -17,8 +17,7 @@ import {
 import { 
   BuildingOfficeIcon as BuildingOfficeIconSolid,
   PlusIcon as PlusIconSolid,
-  ChartBarIcon as ChartBarIconSolid,
-  UsersIcon as UsersIconSolid
+  ChartBarIcon as ChartBarIconSolid
 } from '@heroicons/react/24/solid';
 import { getRooms, getAddOns, getAllBookings, Booking, getAllContactForms, getAllBookingEnquiries } from '@/lib/firestoreService';
 
@@ -158,7 +157,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="mt-2 text-gray-600 text-lg">Welcome back! Here's what's happening today.</p>
+        <p className="mt-2 text-gray-600 text-lg">Welcome back! Here&apos;s what&apos;s happening today.</p>
       </div>
 
       {/* Stats Grid */}
