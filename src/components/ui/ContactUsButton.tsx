@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
 
 interface ContactUsButtonProps {
   href?: string;
@@ -28,6 +29,9 @@ export default function ContactUsButton({
   onClick,
   showArrow = true
 }: ContactUsButtonProps) {
+  const bookingCtx = (() => {
+    try { return useBookingEnquiry(); } catch { return null; }
+  })();
   const buttonClasses = `text-white px-5 py-2 ${rounded} ${textSize} font-medium ${height} flex items-center justify-center font-quicksand ${width} relative overflow-hidden group/button transition-all duration-300 hover:scale-110 hover:shadow-lg whitespace-nowrap ${className}`;
 
   const buttonStyle = {
@@ -48,10 +52,13 @@ export default function ContactUsButton({
     </>
   );
 
-  if (onClick) {
+  // Force Booking Enquiry to open modal when context available
+  const shouldOpenBookingModal = bookingCtx && (text?.toLowerCase().includes('booking enquiry'));
+
+  if (onClick || shouldOpenBookingModal) {
     return (
       <button 
-        onClick={onClick} 
+        onClick={onClick || bookingCtx?.openModal} 
         className={buttonClasses} 
         style={buttonStyle}
         onMouseEnter={(e) => {

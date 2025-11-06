@@ -105,6 +105,19 @@ export interface ContactForm {
   name: string;
   phone: string;
   email: string;
+  website?: string;
+  message: string;
+  status: 'new' | 'read' | 'replied';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BookingEnquiry {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  website?: string;
   message: string;
   status: 'new' | 'read' | 'replied';
   createdAt: Date;
@@ -130,6 +143,10 @@ export interface StoryImage {
   id: string;
   imageUrl: string;
   alt?: string;
+  title?: string;
+  text?: string; // full message for Our Stories page
+  author?: string;
+  location?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -687,6 +704,79 @@ export const getAllContactForms = async (): Promise<ContactForm[]> => {
   }
 };
 
+export const updateContactFormStatus = async (
+  id: string,
+  status: ContactForm['status']
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'contactForms', id);
+    await updateDoc(r, { status, updatedAt: new Date() });
+    return true;
+  } catch (e) {
+    console.error('Error updating contact form status:', e);
+    return false;
+  }
+};
+
+// Booking Enquiry Operations (separate from Contact Forms)
+export const createBookingEnquiry = async (data: Omit<BookingEnquiry, 'id'|'createdAt'|'updatedAt'|'status'>): Promise<string|null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create booking enquiry');
+    return null;
+  }
+  try {
+    console.log('Creating booking enquiry in collection: bookingEnquiries', data);
+    const c = collection(db, 'bookingEnquiries');
+    const docData = { 
+      ...data, 
+      status: 'new', 
+      createdAt: serverTimestamp(), 
+      updatedAt: serverTimestamp() 
+    };
+    console.log('Document data to save:', docData);
+    const dr = await addDoc(c, docData);
+    console.log('Booking enquiry created successfully with ID:', dr.id, 'in collection: bookingEnquiries');
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating booking enquiry:', e);
+    return null;
+  }
+};
+
+export const getAllBookingEnquiries = async (): Promise<BookingEnquiry[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'bookingEnquiries');
+    const qy = query(c, orderBy('createdAt','desc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as BookingEnquiry;
+    });
+  } catch (e) {
+    console.error('Error fetching booking enquiries:', e);
+    return [];
+  }
+};
+
+export const updateBookingEnquiryStatus = async (id: string, status: BookingEnquiry['status']): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'bookingEnquiries', id);
+    await updateDoc(r, { status, updatedAt: new Date() });
+    return true;
+  } catch (e) {
+    console.error('Error updating booking enquiry:', e);
+    return false;
+  }
+};
+
 // Excursions CRUD Operations
 export const getExcursions = async (): Promise<Excursion[]> => {
   if (!db) return [];
@@ -798,16 +888,21 @@ export const getStoryImages = async (): Promise<StoryImage[]> => {
     const c = collection(db, 'storyImages');
     const qy = query(c, orderBy('createdAt', 'desc'));
     const snap = await getDocs(qy);
-    return snap.docs.map(d => {
+    const items = snap.docs.map(d => {
       const data = d.data();
       return {
         id: d.id,
         imageUrl: data.imageUrl,
         alt: data.alt || '',
+        title: data.title || '',
+        text: data.text || '',
+        author: data.author || '',
+        location: data.location || '',
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as StoryImage;
     });
+    return items;
   } catch (e) {
     console.error('Error fetching story images:', e);
     return [];
@@ -822,6 +917,42 @@ export const createStoryImage = async (data: Omit<StoryImage,'id'|'createdAt'|'u
     return dr.id;
   } catch (e) {
     console.error('Error creating story image:', e);
+    return null;
+  }
+};
+
+export const updateStoryImage = async (id: string, data: Partial<StoryImage>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'storyImages', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating story image:', e);
+    return false;
+  }
+};
+
+export const getStoryImage = async (id: string): Promise<StoryImage | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'storyImages', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      imageUrl: data.imageUrl,
+      alt: data.alt || '',
+      title: data.title || '',
+      text: data.text || '',
+      author: data.author || '',
+      location: data.location || '',
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as StoryImage;
+  } catch (e) {
+    console.error('Error getting story image:', e);
     return null;
   }
 };
@@ -872,6 +1003,18 @@ export const createGalleryImage = async (data: Omit<GalleryImage,'id'|'createdAt
   } catch (e) {
     console.error('Error creating gallery image:', e);
     return null;
+  }
+};
+
+export const updateGalleryImage = async (id: string, data: Partial<GalleryImage>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'gallery', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating gallery image:', e);
+    return false;
   }
 };
 

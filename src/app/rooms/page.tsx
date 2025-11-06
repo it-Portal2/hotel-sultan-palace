@@ -159,11 +159,13 @@ function RoomsContent() {
     });
   };
 
-  const getCancellationDate = () => {
+  const getCancellationDate = (room: Room) => {
     if (!bookingData) return '';
     const checkIn = new Date(bookingData.checkIn);
     const cancellationDate = new Date(checkIn);
-    cancellationDate.setDate(checkIn.getDate() - 2);
+    // Use room's cancellationFreeDays, default to 2 if not set
+    const daysBefore = room.cancellationFreeDays ?? 2;
+    cancellationDate.setDate(checkIn.getDate() - daysBefore);
     return cancellationDate.toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
@@ -171,11 +173,13 @@ function RoomsContent() {
     });
   };
 
-  const getPaymentDate = () => {
+  const getPaymentDate = (room: Room) => {
     if (!bookingData) return '';
     const checkIn = new Date(bookingData.checkIn);
     const paymentDate = new Date(checkIn);
-    paymentDate.setDate(checkIn.getDate() - 2);
+    // Use room's cancellationFreeDays for payment date as well, default to 2 if not set
+    const daysBefore = room.cancellationFreeDays ?? 2;
+    paymentDate.setDate(checkIn.getDate() - daysBefore);
     return paymentDate.toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
@@ -422,11 +426,11 @@ function RoomsContent() {
                             <>
                               <div className="flex items-center gap-2 text-[#464035] text-sm">
                                 <Shield size={14} color="#BE8C53" />
-                                <span>Free cancellation before {getCancellationDate()}</span>
+                                <span>Free cancellation before {getCancellationDate(room)}</span>
                               </div>
                               <div className="flex items-center gap-2 text-[#464035] text-sm">
                                 <CreditCard size={14} color="#BE8C53" />
-                                <span>Pay nothing until {getPaymentDate()}</span>
+                                <span>Pay nothing until {getPaymentDate(room)}</span>
                               </div>
                             </>
                           )}

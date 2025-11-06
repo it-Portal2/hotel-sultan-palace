@@ -1,22 +1,44 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getGalleryImages, deleteGalleryImage, GalleryImage } from '@/lib/firestoreService';
-import { PlusIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 export default function AdminGalleryPage() {
   const [items, setItems] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [sizes, setSizes] = useState<Record<string, {w:number; h:number}>>({});
 
+  const dedupeRun = useRef(false);
   useEffect(() => {
     (async () => {
       setLoading(true);
       const data = await getGalleryImages();
       setItems(data);
       setLoading(false);
+
+      if (!dedupeRun.current) {
+        dedupeRun.current = true;
+        try {
+          const keyOf = (i: GalleryImage) => `${i.imageUrl}|${i.type}`;
+          const seen = new Map<string, string>();
+          const toDelete: string[] = [];
+          for (const it of data) {
+            const k = keyOf(it);
+            if (!seen.has(k)) seen.set(k, it.id); else toDelete.push(it.id);
+          }
+          if (toDelete.length) {
+            await Promise.all(toDelete.map(id => deleteGalleryImage(id)));
+            const keep = new Set(seen.values());
+            setItems(prev => prev.filter(i => keep.has(i.id)));
+          }
+        } catch (e) {
+          console.warn('Gallery dedupe skipped:', e);
+        }
+      }
     })();
   }, []);
 
@@ -30,6 +52,18 @@ export default function AdminGalleryPage() {
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin"/></div>;
+
+  const onImgLoad = (id: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (!sizes[id]) {
+      setSizes(prev => ({ ...prev, [id]: { w: img.naturalWidth, h: img.naturalHeight } }));
+    }
+  };
+
+  const prettySize = (id: string) => {
+    const s = sizes[id];
+    return s ? `${s.w}×${s.h}` : '…';
+  };
 
   return (
     <div className="space-y-6">
@@ -50,13 +84,26 @@ export default function AdminGalleryPage() {
           <p className="mt-1 text-sm text-gray-500">Add your first gallery image.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
           {items.map(i => (
-            <div key={i.id} className="relative border rounded-lg overflow-hidden">
-              <img src={i.imageUrl} alt={i.type} className="h-40 w-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/gallery/gallery-1.png'}} />
-              <div className="flex items-center justify-between p-2 text-xs text-gray-600">
-                <span className="capitalize">{i.type.replace('_',' ')}</span>
-                <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50"><TrashIcon className="h-4 w-4"/></button>
+            <div key={i.id} className="group relative rounded-xl overflow-hidden bg-white shadow hover:shadow-lg transition-shadow duration-300" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+              <div className="relative w-full aspect-[4/3] bg-gray-100">
+                <img
+                  src={i.imageUrl}
+                  alt={i.type}
+                  onLoad={(e)=>onImgLoad(i.id, e)}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/gallery/gallery-1.png'}}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-2 right-2 flex items-center gap-2">
+                  <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow"><PencilSquareIcon className="h-4 w-4"/></Link>
+                  <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50"><TrashIcon className="h-4 w-4"/></button>
+                </div>
+              </div>
+              <div className="px-3 py-2 flex items-center justify-between text-xs text-gray-700 border-t">
+                <span className="capitalize font-medium">{i.type.replace('_',' ')}</span>
+                <span className="text-gray-500">{prettySize(i.id)}</span>
               </div>
             </div>
           ))}

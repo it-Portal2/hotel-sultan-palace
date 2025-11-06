@@ -6,6 +6,67 @@ export default function CuratedExcursions() {
   const [showMap, setShowMap] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Location coordinates for multiple markers
+  // Sultan Palace Hotel location from the provided Google Maps link
+  const locations = {
+    sultanPalace: {
+      name: "The Sultan Palace Hotel Zanzibar",
+      lat: -6.2220,
+      lng: 39.2242,
+      address: "The Sultan Palace Hotel Zanzibar, Zanzibar, Tanzania"
+    },
+    dongwe: {
+      name: "Dongwe, East Coast, Zanzibar",
+      lat: -6.1659,
+      lng: 39.1990,
+      address: "Dongwe, East Coast, Zanzibar, Tanzania"
+    },
+    dongweClub: {
+      name: "Dongwe Club",
+      lat: -6.1600,
+      lng: 39.2000,
+      address: "Dongwe Club, Zanzibar"
+    },
+    sandsBeach: {
+      name: "The Sands Beach Resort",
+      lat: -6.1580,
+      lng: 39.1980,
+      address: "The Sands Beach Resort, Zanzibar"
+    },
+    xanadu: {
+      name: "Xanadu Luxury Villas & Retreat Zanzibar",
+      lat: -6.1620,
+      lng: 39.2010,
+      address: "Xanadu Luxury Villas & Retreat Zanzibar"
+    }
+  };
+  
+  // Create Google Maps embed URL with multiple markers
+  const getMapUrl = () => {
+    // Center the map on Sultan Palace Hotel (main location)
+    const center = `${locations.sultanPalace.lat},${locations.sultanPalace.lng}`;
+    
+    // Create markers string for all locations
+    const allMarkers = [
+      `${locations.sultanPalace.lat},${locations.sultanPalace.lng}`,
+      `${locations.dongwe.lat},${locations.dongwe.lng}`,
+      `${locations.dongweClub.lat},${locations.dongweClub.lng}`,
+      `${locations.sandsBeach.lat},${locations.sandsBeach.lng}`,
+      `${locations.xanadu.lat},${locations.xanadu.lng}`
+    ];
+    
+    // Use Google Maps with multiple markers
+    // Format: markers=lat1,lng1|lat2,lng2|...
+    const markersParam = allMarkers.join('|');
+    
+    return `https://www.google.com/maps?q=${encodeURIComponent(locations.sultanPalace.address)}&output=embed&zoom=13&center=${center}&markers=${markersParam}`;
+  };
+  
+  // Google Maps directions URL to Sultan Palace Hotel
+  const getDirectionsUrl = () => {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locations.sultanPalace.address)}`;
+  };
 
   useEffect(() => {
     if (sectionRef.current) {
@@ -67,9 +128,14 @@ export default function CuratedExcursions() {
                 <Image src="/figma/icon-location-mini.svg" alt="Location" width={19} height={19} />
                 <span className="font-quicksand font-semibold text-[18px] md:text-[20px] leading-[1.25]">Location</span>
               </div>
-              <span className="font-quicksand font-semibold text-[24px] md:text-[32px] leading-[1.25]">
-                Dongwe, East Coast, Zanzibar
-              </span>
+              <div className="flex flex-col gap-1">
+                <span className="font-quicksand font-semibold text-[24px] md:text-[32px] leading-[1.25]">
+                  The Sultan Palace Hotel Zanzibar
+                </span>
+                <span className="font-quicksand text-[16px] md:text-[18px] text-white/80 leading-[1.25]">
+                  Dongwe, East Coast, Zanzibar
+                </span>
+              </div>
             </div>
 
             <div className="w-full max-w-full lg:max-w-[400px] xl:max-w-[467px] mb-4 md:mb-[20px] flex-shrink-0">
@@ -77,7 +143,7 @@ export default function CuratedExcursions() {
                 {!showMap ? (
                   <Image
                     src="/figma/curated-excursions-rect.png"
-                    alt="Map preview of Dongwe"
+                    alt="Map preview of Zanzibar locations"
                     fill
                     sizes="(max-width: 1024px) 90vw, 467px"
                     className="w-full h-full object-cover"
@@ -85,16 +151,31 @@ export default function CuratedExcursions() {
                   />
                 ) : (
                   <iframe
-                    title="Map of Dongwe, East Coast, Zanzibar"
+                    title="Map of Zanzibar locations including Sultan Palace Hotel"
                     loading="lazy"
                     className="absolute inset-0 h-full w-full border-0"
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent("Dongwe, East Coast, Zanzibar")}&output=embed`}
+                    src={getMapUrl()}
+                    allowFullScreen
                   />
                 )}
               </div>
             </div>
+            
+            {/* Location markers info when map is shown */}
+            {showMap && (
+              <div className="w-full mb-4 space-y-2">
+                <div className="flex items-center gap-2 text-white/90 text-sm">
+                  <div className="w-3 h-3 rounded-full bg-[#FF6A00] border-2 border-white"></div>
+                  <span className="font-quicksand">{locations.sultanPalace.name}</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/70 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 border border-white"></div>
+                  <span className="font-quicksand">Other locations in Dongwe area</span>
+                </div>
+              </div>
+            )}
 
-            {!showMap && (
+            {!showMap ? (
               <div className="mt-auto w-full lg:w-auto">
                 <button
                   type="button"
@@ -103,6 +184,36 @@ export default function CuratedExcursions() {
                 >
                   <Image src="/figma/icon-location.svg" alt="Location Icon" width={20} height={20} className="md:w-6 md:h-6" />
                   Find in map
+                </button>
+              </div>
+            ) : (
+              <div className="mt-auto w-full lg:w-auto flex flex-col sm:flex-row gap-3">
+                <a
+                  href={getDirectionsUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 md:gap-[11px] bg-[#FF6A00] hover:bg-orange-600 transition-colors text-white px-4 md:px-[10px] py-3 md:py-[10px] rounded-[161px] font-quicksand font-semibold text-[16px] md:text-[20px] leading-[1.25]"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 md:w-6 md:h-6"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Get Directions to Sultan Palace
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowMap(false)}
+                  className="inline-flex items-center justify-center gap-2 md:gap-[11px] bg-white/20 hover:bg-white/30 transition-colors text-white px-4 md:px-[10px] py-3 md:py-[10px] rounded-[161px] font-quicksand font-semibold text-[16px] md:text-[20px] leading-[1.25]"
+                >
+                  Close Map
                 </button>
               </div>
             )}

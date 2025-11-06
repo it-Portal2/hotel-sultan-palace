@@ -62,7 +62,7 @@ export default function Excursions() {
           </div>
           <button
             onClick={() => setShowAll((v) => !v)}
-            className={`shrink-0 items-center gap-2 md:gap-3 text-[20px] md:text-[24px] font-normal font-jomolhari text-[#FF6A00] transition-all hover:scale-105 inline-flex excursions-view-btn ${isVisible ? 'excursions-view-btn-visible' : ''}`}
+            className={`shrink-0 items-center gap-2 md:gap-3 text-[20px] md:text-[24px] font-normal font-jomolhari text-[#FF6A00] transition-all hover:scale-130 inline-flex excursions-view-btn ${isVisible ? 'excursions-view-btn-visible' : ''}`}
           >
             {showAll ? 'Hide' : 'View All'}
             <HiArrowRight 
@@ -84,7 +84,7 @@ export default function Excursions() {
                   fill
                   src={card.img}
                   alt={card.title}
-                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-130 active:scale-130"
                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
@@ -115,7 +115,7 @@ export default function Excursions() {
                     fill 
                     src={item.image} 
                     alt={item.title} 
-                    className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110" 
+                    className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-130 active:scale-130" 
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />

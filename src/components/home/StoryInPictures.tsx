@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { getStoryImages } from "@/lib/firestoreService";
 
@@ -48,11 +49,20 @@ export default function StoryInPictures() {
   useEffect(() => {
     (async () => {
       const items = await getStoryImages();
-      setExtra(items.map(i => ({ src: i.imageUrl, alt: i.alt || "Story image" })));
+      let imgs = items.map(i => ({ src: i.imageUrl, alt: i.alt || "Story image" }));
+      if (imgs.length === 0) {
+        imgs = staticImages;
+      } else if (imgs.length < 3) {
+        // Pad with static images to always have at least 3 on desktop
+        const pad = staticImages.filter(s => !imgs.some(i => i.src === s.src));
+        imgs = [...imgs, ...pad].slice(0, Math.max(3, imgs.length));
+      }
+      setExtra(imgs);
     })();
   }, []);
 
-  const allImages = useMemo(() => [...staticImages, ...extra], [extra]);
+  // Use computed images (padded to 3 when needed)
+  const allImages = useMemo(() => (extra.length > 0 ? extra : staticImages), [extra]);
   const visible = useMemo(() => {
     // On mobile, show only 1 image at a time. On desktop, show 3.
     if (isMobile) {
@@ -107,7 +117,7 @@ export default function StoryInPictures() {
           onTouchEnd={onTouchEnd}
         >
           {visible.map((image, i) => (
-            <figure key={image.src} className={`group relative w-full md:w-[280px] lg:w-[380px] xl:w-[460px] 2xl:w-[490px] h-[350px] md:h-[400px] lg:h-[480px] xl:h-[540px] 2xl:h-[576px] flex-shrink-0 story-image ${isVisible ? 'story-image-visible' : ''}`} style={{ transitionDelay: `${i * 0.2}s`, overflow: 'visible' }}>
+            <Link href="/our-stories" key={`${image.src}-${i}`} className={`group relative w-full md:w-[280px] lg:w-[380px] xl:w-[460px] 2xl:w-[490px] h-[350px] md:h-[400px] lg:h-[480px] xl:h-[540px] 2xl:h-[576px] flex-shrink-0 story-image ${isVisible ? 'story-image-visible' : ''}`} style={{ transitionDelay: `${i * 0.2}s`, overflow: 'visible' }}>
               <Image
                 src={image.src}
                 alt={image.alt}
@@ -152,7 +162,7 @@ export default function StoryInPictures() {
               </figcaption>
 
               <div className="pointer-events-none absolute inset-0 ring-1 ring-black/5" />
-            </figure>
+            </Link>
           ))}
         </div>
       </div>

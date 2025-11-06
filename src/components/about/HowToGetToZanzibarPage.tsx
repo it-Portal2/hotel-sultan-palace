@@ -8,6 +8,7 @@ import { IoLocationOutline } from "react-icons/io5";
 import { BiSolidPlaneAlt } from "react-icons/bi";
 import { useState, useEffect } from "react";
 import TransfersSection from "@/components/shared/TransfersSection";
+import MapModal from "./MapModal";
 
 
 export default function HowToGetToZanzibarPage() {
@@ -16,8 +17,50 @@ export default function HowToGetToZanzibarPage() {
   const [showPlane, setShowPlane] = useState(false);
   const [planePosition, setPlanePosition] = useState(-100);
   const [showCursor, setShowCursor] = useState(true);
+  const [mapModal, setMapModal] = useState<{ isOpen: boolean; location: { name: string; address: string; coordinates: string } | null }>({
+    isOpen: false,
+    location: null,
+  });
   
   const fullText = "YOUR JOURNEY TO SULTAN PALACE HOTEL";
+
+  // Location data for different sections
+  const locations = {
+    zanzibarAirport: {
+      name: "Zanzibar International Airport (ZNZ)",
+      address: "Abeid Amani Karume International Airport, Zanzibar, Tanzania",
+      coordinates: "-6.2220,39.2242",
+    },
+    darEsSalaam: {
+      name: "Dar es Salaam Airport (DAR)",
+      address: "Julius Nyerere International Airport, Dar es Salaam, Tanzania",
+      coordinates: "-6.8781,39.2026",
+    },
+    nairobi: {
+      name: "Nairobi Airport (NBO)",
+      address: "Jomo Kenyatta International Airport, Nairobi, Kenya",
+      coordinates: "-1.3192,36.9278",
+    },
+    ferry: {
+      name: "Zanzibar Ferry Terminal",
+      address: "Zanzibar Port, Stone Town, Zanzibar, Tanzania",
+      coordinates: "-6.1659,39.1990",
+    },
+  };
+
+  const openMapModal = (locationKey: keyof typeof locations) => {
+    setMapModal({
+      isOpen: true,
+      location: locations[locationKey],
+    });
+  };
+
+  const closeMapModal = () => {
+    setMapModal({
+      isOpen: false,
+      location: null,
+    });
+  };
   
   useEffect(() => {
     let index = 0;
@@ -257,7 +300,10 @@ export default function HowToGetToZanzibarPage() {
               </div>
 
               <div className="mt-6">
-              <button className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow">
+              <button 
+                onClick={() => openMapModal('zanzibarAirport')}
+                className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow transition-colors"
+              >
             <TiLocationArrowOutline size={20} className="text-white" />
             View on Map
           </button>
@@ -317,7 +363,10 @@ export default function HowToGetToZanzibarPage() {
             ))}
           </div>
          
-          <button className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow">
+          <button 
+            onClick={() => openMapModal('darEsSalaam')}
+            className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow transition-colors"
+          >
             <TiLocationArrowOutline size={20} className="text-white" />
             View on Map
           </button>
@@ -401,7 +450,10 @@ export default function HowToGetToZanzibarPage() {
           </div>
 
          
-          <button className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow">
+          <button 
+            onClick={() => openMapModal('nairobi')}
+            className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow transition-colors"
+          >
             <TiLocationArrowOutline size={20} className="text-white" />
             View on Map
           </button>
@@ -470,7 +522,10 @@ export default function HowToGetToZanzibarPage() {
           </div>
           
          
-          <button className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow">
+          <button 
+            onClick={() => openMapModal('ferry')}
+            className="mt-8 inline-flex items-center gap-3 bg-[#FF6A00] hover:bg-[#e67a00] text-white font-quicksand text-[18px] px-5 py-2 rounded-sm shadow transition-colors"
+          >
             <TiLocationArrowOutline size={20} className="text-white" />
             View on Map
           </button>
@@ -490,6 +545,15 @@ export default function HowToGetToZanzibarPage() {
 
   
     <TransfersSection />
+
+    {/* Map Modal */}
+    {mapModal.location && (
+      <MapModal
+        isOpen={mapModal.isOpen}
+        onClose={closeMapModal}
+        location={mapModal.location}
+      />
+    )}
 
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import React from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useEffect, useState, useRef } from "react";
@@ -23,6 +24,9 @@ export default function GalleryPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string>("");
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     setIsVisible(true);
@@ -56,7 +60,16 @@ export default function GalleryPage() {
     })();
   }, []);
 
-  const filtered = extra.filter((i) => active === "all" || i.type === active).map((i) => i.imageUrl);
+  // Filter by active type and remove duplicates (by URL) while preserving order
+  const filtered = (() => {
+    const arr = extra.filter((i) => active === "all" || i.type === active).map((i) => i.imageUrl);
+    const seen = new Set<string>();
+    const uniq: string[] = [];
+    for (const src of arr) {
+      if (!seen.has(src)) { seen.add(src); uniq.push(src); }
+    }
+    return uniq;
+  })();
 
   return (
     <>
@@ -118,79 +131,66 @@ export default function GalleryPage() {
           {/* Content */}
           <div className="relative z-10">
             <div className="max-w-9xl mx-auto px-4 md:px-6">
-              {/* Row 1 - mixed static + dynamic */}
-              <div className="mb-8">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                  {["/gallery/gallery-1.png", "/gallery/gallery-2.png", "/gallery/gallery-3.png", "/gallery/gallery-4.png", ...filtered]
-                    .slice(0, 8)
-                    .map((src, idx) => (
-                      <div key={src + idx} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card">
-                        <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
+              {/* Pattern: 8 images (4x2) then 1 full-width image, repeat */}
+              {(() => {
+                const sections: React.ReactElement[] = [];
+                for (let i = 0; i < filtered.length; i += 9) {
+                  const gridChunk = filtered.slice(i, i + 8);
+                  const hero = filtered[i + 8];
+                  if (gridChunk.length) {
+                    sections.push(
+                      <div key={`grid-${i}`} className="mb-8">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+                          {gridChunk.map((src, idx) => (
+                            <button onClick={()=>{setLightboxSrc(src); setLightboxOpen(true); setZoom(1);}} key={`${src}-${i+idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
+                              <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-1.5" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-300"></div>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300 underline underline-offset-4 decoration-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">View</span>
+                              </div>
+                              <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100 pointer-events-none"></div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Full width */}
-              <div className="mb-8 gallery-full-image">
-                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group">
-                  <Image src="/gallery/gallery-full-1.png" alt="Full Width Image" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
-                </div>
-              </div>
-
-              {/* Row 2 - dynamic */}
-              <div className="mb-8">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                  {filtered.slice(0, 8).map((src, idx) => (
-                    <div key={src + idx} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card">
-                      <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Full width */}
-              <div className="mb-8 gallery-full-image">
-                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group">
-                  <Image src="/gallery/gallery-full-2.png" alt="Full Width Image" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
-                </div>
-              </div>
-
-              {/* Row 3 - static showcase */}
-              <div className="mb-8">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                  {["/gallery/gallery-3.png", "/gallery/gallery-4.png", "/gallery/gallery-5.png", "/gallery/gallery-6.png", "/gallery/gallery-7.png", "/gallery/gallery-1.png", "/gallery/gallery-2.png", "/gallery/gallery-3.png"]
-                    .map((src, idx) => (
-                      <div key={src + idx} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card">
-                        <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
+                    );
+                  }
+                  if (hero) {
+                    sections.push(
+                      <div key={`hero-${i}`} className="mb-8 gallery-full-image">
+                        <button onClick={()=>{setLightboxSrc(hero); setLightboxOpen(true); setZoom(1);}} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
+                          <Image src={hero} alt="Gallery Feature" fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-1.5" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-300"></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300 underline underline-offset-4 decoration-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">View</span>
+                          </div>
+                          <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100 pointer-events-none"></div>
+                        </button>
                       </div>
-                    ))}
-                </div>
-              </div>
+                    );
+                  }
+                }
+                return sections;
+              })()}
 
-              {/* Final full width */}
-              <div className="mb-8 gallery-full-image">
-                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group">
-                  <Image src="/gallery/gallery-full-1.png" alt="Final Full Width Image" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100"></div>
-                </div>
-              </div>
+              {/* No extra static rows; only data-driven grid above */}
             </div>
           </div>
         </section>
       </main>
       <Footer />
+
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={()=>setLightboxOpen(false)}>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.min(3, z+0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">+</button>
+            <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.max(1, z-0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">-</button>
+            <button onClick={(e)=>{e.stopPropagation(); setZoom(1);}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">Reset</button>
+            <button onClick={(e)=>{e.stopPropagation(); setLightboxOpen(false);}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">Close</button>
+          </div>
+          <img src={lightboxSrc} alt="zoom" style={{ transform: `scale(${zoom})`, transition: 'transform 200ms', maxWidth: '90vw', maxHeight: '90vh' }} className="object-contain" onClick={(e)=>e.stopPropagation()} />
+        </div>
+      )}
 
       <style jsx global>{`
         /* Hero Section Animations */
@@ -351,6 +351,14 @@ export default function GalleryPage() {
         .gallery-full-image.section-visible:hover {
           transform: translateY(-5px) scale(1.02);
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Centered View label animation */
+        .gallery-view-label {
+          transform: translateY(8px) scale(0.98);
+        }
+        .group:hover .gallery-view-label {
+          transform: translateY(0) scale(1);
         }
       `}</style>
     </>

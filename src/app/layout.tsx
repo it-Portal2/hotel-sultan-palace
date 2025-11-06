@@ -5,6 +5,7 @@ import "./globals.css";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { BookingEnquiryProvider } from "@/context/BookingEnquiryContext";
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -37,7 +38,9 @@ export default function RootLayout({
         <div className="hidden animate-slide-in-bottom animate-slide-in-left animate-slide-in-left-delay-200 animate-slide-in-left-delay-400" />
         <CartProvider>
           <ToastProvider>
-            {children}
+            <BookingEnquiryProvider>
+              {children}
+            </BookingEnquiryProvider>
           </ToastProvider>
         </CartProvider>
 

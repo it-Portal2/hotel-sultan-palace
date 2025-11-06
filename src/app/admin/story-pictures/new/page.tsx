@@ -14,6 +14,10 @@ export default function NewStoryPicturePage() {
   const { showToast } = useToast();
   const [imageUrl, setImageUrl] = useState('');
   const [alt, setAlt] = useState('');
+  const [title, setTitle] = useState('');
+  const [text, setText] = useState('');
+  const [author, setAuthor] = useState('');
+  const [location, setLocation] = useState('');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,18 +32,7 @@ export default function NewStoryPicturePage() {
     return () => unsubscribe();
   }, []);
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setUploadMethod('device');
-    // Clear URL when device upload is selected
-    setImageUrl('');
-  };
-
-  const handleDeviceUpload = async () => {
-    if (!selectedFile) {
-      showToast('Please select a file first.', 'warning');
-      return;
-    }
+  const uploadSelectedFile = async (file: File) => {
     if (!storage) {
       showToast('Storage service is not available. Please refresh the page.', 'error');
       return;
@@ -52,49 +45,56 @@ export default function NewStoryPicturePage() {
     setUploading(true);
     try {
       const key = `story-${Date.now()}`;
-      const fileExt = selectedFile.name.split('.').pop();
+      const fileExt = file.name.split('.').pop();
       const fileName = `${key}.${fileExt || 'png'}`;
       const obj = storageRef(storage, `story/${key}/${fileName}`);
-      await uploadBytes(obj, selectedFile, { contentType: selectedFile.type });
+      await uploadBytes(obj, file, { contentType: file.type });
       const url = await getDownloadURL(obj);
-      // Verify URL is valid
       if (!url || !url.includes('firebasestorage.googleapis.com')) {
         throw new Error('Invalid download URL received');
       }
       setImageUrl(url);
       setSelectedFile(null);
-      // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       showToast('Image uploaded successfully!', 'success');
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('Image upload failed:', err);
-      let errorMsg = 'Unable to upload image. ';
-      const firebaseError = err as { code?: string; message?: string };
-      if (firebaseError?.code === 'storage/unauthorized') {
-        errorMsg = 'Please make sure you are logged in and try again.';
-      } else if (firebaseError?.code === 'storage/quota-exceeded') {
-        errorMsg = 'Storage limit reached. Please contact administrator.';
-      } else if (firebaseError?.code === 'storage/canceled') {
-        errorMsg = 'Upload was cancelled.';
-      } else {
-        errorMsg = 'Please check your connection and try again.';
-      }
-      showToast(errorMsg, 'error');
-    } finally { 
-      setUploading(false); 
+      showToast('Please check your connection and try again.', 'error');
+    } finally {
+      setUploading(false);
     }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    setSelectedFile(file);
+    setUploadMethod('device');
+    setImageUrl('');
+    // Auto-upload immediately on selection
+    await uploadSelectedFile(file);
+  };
+
+  const handleDeviceUpload = async () => {
+    if (!selectedFile) {
+      showToast('Please select a file first.', 'warning');
+      return;
+    }
+    await uploadSelectedFile(selectedFile);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // If device method and a file is still selected but not uploaded, upload now
+    if (uploadMethod === 'device' && selectedFile && !imageUrl) {
+      await uploadSelectedFile(selectedFile);
+    }
     if (!imageUrl) {
-      showToast('Please provide an image URL or upload an image.', 'warning');
+      showToast('Please provide an image (URL or upload).', 'warning');
       return;
     }
     setSaving(true);
     try {
-      const id = await createStoryImage({ imageUrl, alt, createdAt: new Date(), updatedAt: new Date() } as { imageUrl: string; alt: string; createdAt: Date; updatedAt: Date });
+      const id = await createStoryImage({ imageUrl, alt, title, text, author, location, createdAt: new Date(), updatedAt: new Date() } as unknown as { imageUrl: string; alt?: string; title?: string; text?: string; author?: string; location?: string; createdAt: Date; updatedAt: Date });
       if (id) {
         showToast('Story image created successfully!', 'success');
         router.push('/admin/story-pictures');
@@ -114,6 +114,26 @@ export default function NewStoryPicturePage() {
         <div>
           <label className="block text-sm font-medium text-gray-700">Alt text (optional)</label>
           <input value={alt} onChange={(e)=>setAlt(e.target.value)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Title (optional)</label>
+            <input value={title} onChange={(e)=>setTitle(e.target.value)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Author (optional)</label>
+            <input value={author} onChange={(e)=>setAuthor(e.target.value)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Location (optional)</label>
+            <input value={location} onChange={(e)=>setLocation(e.target.value)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Story text (optional)</label>
+          <textarea value={text} onChange={(e)=>setText(e.target.value)} rows={5} className="mt-2 block w-full rounded-xl border border-gray-300 bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" />
         </div>
         <div className="space-y-4">
           {/* Upload Method Selection */}

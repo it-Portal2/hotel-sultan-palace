@@ -6,8 +6,10 @@ import OffersCarousel from "@/components/home/OffersCarousel";
 import TransfersSection from "@/components/shared/TransfersSection";
 import ContactUsButton from "@/components/ui/ContactUsButton";
 import { useEffect, useRef, useState } from "react";
+import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
 
 export default function OffersPage() {
+  const { openModal } = useBookingEnquiry();
   const [isVisible, setIsVisible] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -203,7 +205,7 @@ export default function OffersPage() {
                     </div>
                     <div className="mt-6">
                       <ContactUsButton 
-                        href="/contact-us"
+                        onClick={openModal}
                         text="Booking Enquiry"
                         width="w-[170px]"
                         bgColor="#FF6A00"

@@ -4,8 +4,10 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { FiArrowRight } from "react-icons/fi";
+import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
 
 export default function FitnessGymStudioPage() {
+  const { openModal } = useBookingEnquiry();
   return (
     <>
       <Header />
@@ -136,14 +138,14 @@ export default function FitnessGymStudioPage() {
                       <p>Stay active, stay inspired, and embrace wellness on every level.</p>
                     </div>
                   </div>
-                  <Link
-                    href="#"
+                  <button
+                    onClick={openModal}
                     className="inline-flex items-center justify-center gap-[10px] bg-[#FF6A00] hover:opacity-95 transition-opacity text-white px-[10px] py-[10px] rounded-[6px] text-[16px] md:text-[17px] font-medium leading-[1.944] font-quicksand w-fit h-[42px] shadow-md"
                     aria-label="Booking Enquiry"
                   >
                     Booking Enquiry
                     <FiArrowRight size={23} className="text-white" strokeWidth={1.3} />
-                  </Link>
+                  </button>
                 </div>
               </div>
               

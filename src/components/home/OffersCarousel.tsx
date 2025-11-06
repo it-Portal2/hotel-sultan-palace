@@ -75,17 +75,18 @@ export default function OffersCarousel() {
               style={{ transform: `translateX(-${index * 100}%)` }}
             >
               {offers.map((offer, i) => (
-                <div 
+                <Link 
                   key={offer.id} 
-                  className="flex-shrink-0 w-full"
+                  href="/rooms"
+                  className="flex-shrink-0 w-full block"
                   style={{ padding: 0, margin: 0 }}
                 >
-                  <div className="relative w-full h-[280px] md:h-[380px] lg:h-[480px] xl:h-[580px] 2xl:h-[680px]" style={{ position: 'relative', isolation: 'isolate', padding: 0, margin: 0 }}>
+                  <div className="relative w-full h-[280px] md:h-[380px] lg:h-[480px] xl:h-[580px] 2xl:h-[680px] cursor-pointer" style={{ position: 'relative', isolation: 'isolate', padding: 0, margin: 0 }}>
                     <Image
                       src={offer.imageUrl}
                       alt={`Offer ${i + 1}`}
                       fill
-                      className="object-contain w-full h-full" 
+                      className="object-contain w-full h-full transition-opacity duration-300 hover:opacity-90" 
                       priority={i === 0}
                       sizes="100vw"
                       style={{ position: 'absolute', zIndex: 1, top: 0, left: 0, width: '100%', height: '100%' }}
@@ -94,34 +95,14 @@ export default function OffersCarousel() {
                         e.currentTarget.style.display = 'none';
                       }}
                     />
-                    {/* Book Now overlay - On top of image */
-                    }
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 flex items-center justify-center pointer-events-none"
-                      style={{ 
-                        zIndex: 100,
-                        position: 'absolute',
-                        bottom: '10px',
-                        left: 0,
-                        right: 0
-                      }}
-                    >
-                      <Link
-                        href="/rooms"
-                        className="cursor-pointer text-[#FF6A00] font-semibold text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl underline decoration-[#FF6A00]/70 underline-offset-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:opacity-90 pointer-events-auto"
-                        style={{ position: 'relative', zIndex: 101 }}
-                      >
-                        Book now
-                      </Link>
-                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="mt-3 md:mt-4 lg:mt-6 xl:mt-8 flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
+        <div className="mt-3  flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
           {offers.map((_, i) => (
             <button
               key={i}

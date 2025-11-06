@@ -12,7 +12,12 @@ import {
   PhotoIcon,
   Bars3Icon,
   XMarkIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  RectangleStackIcon,
+  FilmIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -29,15 +34,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: HomeIcon },
-    { name: 'Rooms Management', href: '/admin/rooms', icon: BuildingOfficeIcon },
-    { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon },
-    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon },
-    { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon },
-    { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
-    { name: 'Offers', href: '/admin/offers', icon: PhotoIcon },
-    { name: 'Story in Pictures', href: '/admin/story-pictures', icon: PhotoIcon },
-    { name: 'Gallery', href: '/admin/gallery', icon: PhotoIcon },
+    { name: 'Dashboard', href: '/admin', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50' },
+    { name: 'Rooms Management', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+    { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50' },
+    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+    { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50' },
+    { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50' },
+    { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50' },
+    { name: 'Contacts', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50' },
+    { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
+    { name: 'Story in Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50' },
+    { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50' },
   ];
 
   useEffect(() => {
@@ -114,21 +121,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-1 px-3 py-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all ${
                     isActive
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? `${item.bgColor} ${item.color} shadow-md border-l-4 ${item.color.replace('text-', 'border-')}`
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent'
                   }`}
                 >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <div className={`mr-3 p-1.5 rounded-md ${isActive ? item.bgColor : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                    <item.icon className={`h-5 w-5 ${isActive ? item.color : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  </div>
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && (
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </Link>
               );
             })}
@@ -138,25 +152,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-grow flex-col overflow-y-auto bg-white border-r border-gray-200">
-          <div className="flex h-16 items-center px-4">
+        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 shadow-sm">
+          <div className="flex h-16 items-center px-4 border-b border-gray-200 bg-white">
             <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-1 px-3 py-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all ${
                     isActive
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? `${item.bgColor} ${item.color} shadow-md border-l-4 ${item.color.replace('text-', 'border-')}`
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent'
                   }`}
                 >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <div className={`mr-3 p-1.5 rounded-md ${isActive ? item.bgColor : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                    <item.icon className={`h-5 w-5 ${isActive ? item.color : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  </div>
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && (
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </Link>
               );
             })}

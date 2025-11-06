@@ -50,16 +50,22 @@ export default function NewAddOnPage() {
     setUploading(true);
     try {
       const key = `${form.name || 'addon'}-${Date.now()}`.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const fileExt = selectedFile.name.split('.').pop();
+      const fileExt = selectedFile.name.split('.').pop() || 'jpg';
       const fileName = `${key}.${fileExt}`;
       const objRef = storageRef(storage, `addons/${key}/${fileName}`);
       await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
       const url = await getDownloadURL(objRef);
-      setForm(prev => ({ ...prev, image: url }));
-      setSelectedFile(null);
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      showToast('Image uploaded successfully!', 'success');
+      
+      // Ensure URL is properly formatted
+      if (url && url.trim() !== '') {
+        setForm(prev => ({ ...prev, image: url.trim() }));
+        setSelectedFile(null);
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        showToast('Image uploaded successfully! URL has been set.', 'success');
+      } else {
+        throw new Error('Failed to get image URL');
+      }
     } catch (err: unknown) {
       console.error('Image upload failed:', err);
       let errorMsg = 'Unable to upload image. ';
@@ -81,6 +87,18 @@ export default function NewAddOnPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If file is selected but not uploaded, upload it first
+    if (selectedFile && !form.image) {
+      showToast('Please upload the selected image first.', 'warning');
+      return;
+    }
+    
+    if (!form.image || form.image.trim() === '') {
+      showToast('Please provide an image URL or upload an image.', 'warning');
+      return;
+    }
+    
     setLoading(true);
     try {
       const id = await createAddOn({
@@ -88,7 +106,7 @@ export default function NewAddOnPage() {
         price: Number(form.price),
         type: form.type,
         description: form.description,
-        image: form.image,
+        image: form.image.trim(), // Ensure no extra spaces
       });
       if (id) {
         showToast('Add-on created successfully!', 'success');
@@ -137,8 +155,8 @@ export default function NewAddOnPage() {
           </div>
 
           <div className="col-span-6">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)</label>
-            <input name="image" value={form.image} onChange={handleChange} type="url" required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="https://..." />
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><LinkIcon className="h-4 w-4 text-gray-500" /> Image URL</label>
+            <input name="image" value={form.image} onChange={handleChange} type="url" className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="Image URL will appear here after upload or paste URL" />
             <div className="mt-3 flex items-center gap-3">
               <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
                 <PhotoIcon className="h-4 w-4" /> Upload from device

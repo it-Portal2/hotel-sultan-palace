@@ -4,8 +4,10 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useEffect, useRef, useState } from "react";
+import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
 
 export default function VillasPage() {
+  const { openModal } = useBookingEnquiry();
   const headingRefs = useRef<(HTMLHeadingElement | null)[]>([]);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -81,10 +83,10 @@ export default function VillasPage() {
                   >
                     Garden View Villas
                   </h2>
-                  <Link href="#" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn">
+                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
-                  </Link>
+                  </button>
                 </div>
                 
                 <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
@@ -160,10 +162,10 @@ export default function VillasPage() {
                       Wake up to stunning sea views from your private terrace. Ideal for couples looking for a romantic escape.
                     </p>
                     <div className="flex gap-[18px] justify-center">
-                      <Link href="#" className="bg-[#655D4E] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[42px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
+                      <button onClick={openModal} className="bg-[#655D4E] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[42px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Booking Enquiry</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
-                      </Link>
+                      </button>
                       <Link href="/rooms" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Book Now</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
@@ -182,10 +184,10 @@ export default function VillasPage() {
                   >
                     Sultan Place Hotel Villa
                   </h2>
-                  <Link href="#" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
+                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
-                  </Link>
+                  </button>
                 </div>
                 
                 <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
@@ -261,10 +263,10 @@ export default function VillasPage() {
                       Spacious two-bedroom villas with elegant Swahili-inspired interiors, private plunge pools, and personalized services for a regal stay.
                     </p>
                     <div className="flex gap-[18px] justify-center">
-                      <Link href="#" className="bg-[#655D4E] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[42px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
+                      <button onClick={openModal} className="bg-[#655D4E] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[42px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Booking Enquiry</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
-                      </Link>
+                      </button>
                       <Link href="/rooms" className="bg-[#FF6A00] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[40px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
                         <span className="relative z-10">Book Now</span>
                         <span className="absolute inset-0 bg-white/20 translate-x-full group-hover/btn-full:translate-x-0 transition-transform duration-500"></span>
@@ -283,10 +285,10 @@ export default function VillasPage() {
                   >
                     One-Bedroom Retreats
                   </h2>
-                  <Link href="#" className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
+                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
-                  </Link>
+                  </button>
                 </div>
                 
                   <div className="relative flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">

@@ -4,9 +4,10 @@ import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { GrLinkNext } from "react-icons/gr";
 import { GrLinkPrevious } from "react-icons/gr";
+import { getStoryImages, StoryImage } from '@/lib/firestoreService';
 
 export default function OurStoriesPage() {
-  const totalPages = 15;
+  const [stories, setStories] = useState<StoryImage[]>([]);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [openFaqItems, setOpenFaqItems] = useState<number[]>([]);
   const [showAllFaq, setShowAllFaq] = useState<boolean>(false);
@@ -16,6 +17,10 @@ export default function OurStoriesPage() {
 
   useEffect(() => {
     setIsVisible(true);
+    (async () => {
+      const data = await getStoryImages();
+      setStories(data);
+    })();
 
     // Intersection Observer for testimonial card
     const testimonialObserver = new IntersectionObserver(
@@ -56,18 +61,27 @@ export default function OurStoriesPage() {
     };
   }, []);
 
-  const testimonials = [
-    {
-      title: "Where I Found My Calm Again",
-      text: `From the moment I arrived at Sultan Palace Hotel, I felt the world slow down. The ocean breeze, gentle smiles, and golden light made everything feel calm and effortless. My villa opened to the turquoise sea — every morning began with the sound of waves and the scent of salt in the air.
+  const totalPages = Math.max(stories.length, 1);
+  // Build effective list: ensure at least 3 items by padding with defaults
+  const defaultText = `From the moment I arrived at Sultan Palace Hotel, I felt the world slow down. The ocean breeze, gentle smiles, and golden light made everything feel calm and effortless. My villa opened to the turquoise sea — every morning began with the sound of waves and the scent of salt in the air.
 
-Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn't just a hotel; it was where I found my calm again — a place I'll always carry in my heart.`,
-      author: "— Anastasia Ivanova",
-      location: "Moscow"
-    },
+Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn't just a hotel; it was where I found my calm again — a place I'll always carry in my heart.`;
+
+  const fallbackImages: StoryImage[] = [
+    { id: 'f1', imageUrl: '/story/story1.png', alt: 'Story image', title: 'Where I Found My Calm Again', text: defaultText, author: '', location: '', createdAt: new Date(), updatedAt: new Date() },
+    { id: 'f2', imageUrl: '/story/story2.png', alt: 'Story image', title: 'Where I Found My Calm Again', text: defaultText, author: '', location: '', createdAt: new Date(), updatedAt: new Date() },
+    { id: 'f3', imageUrl: '/story/story3.png', alt: 'Story image', title: 'Where I Found My Calm Again', text: defaultText, author: '', location: '', createdAt: new Date(), updatedAt: new Date() },
   ];
 
-  const testimonialIndex = currentTestimonial % testimonials.length;
+  let effectiveStories: StoryImage[] = stories;
+  if (effectiveStories.length === 0) {
+    effectiveStories = fallbackImages;
+  } else if (effectiveStories.length < 3) {
+    const pad = fallbackImages.filter(f => !effectiveStories.some(s => s.imageUrl === f.imageUrl));
+    effectiveStories = [...effectiveStories, ...pad].slice(0, Math.max(3, effectiveStories.length));
+  }
+
+  const testimonialIndex = currentTestimonial % effectiveStories.length;
   
   const nextTestimonial = () => {
     setCurrentTestimonial((prev) => (prev + 1) % totalPages);
@@ -207,22 +221,18 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               <div className="flex flex-col justify-center order-2 lg:order-1 group">
                 <div className="space-y-[64px] mb-[52px]">
                   <h3 className="text-[#000000] text-[28px] md:text-[30px] lg:text-[32px] font-moon-dance leading-[0.84375] tracking-[0.1em] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00]">
-                  {testimonials[testimonialIndex].title}
+                  {effectiveStories[testimonialIndex]?.title || 'Where I Found My Calm Again'}
                 </h3>
                 
                   <div className="space-y-[32px]">
                     <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] leading-[1.35] font-moon-dance tracking-[0.05em] whitespace-pre-line transition-all duration-300 group-hover:translate-x-1">
-                      From the moment I arrived at Sultan Palace Hotel, I felt the world slow down. The ocean breeze, gentle smiles, and golden light made everything feel calm and effortless. My villa opened to the turquoise sea — every morning began with the sound of waves and the scent of salt in the air.
-                    </p>
-                    
-                    <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] leading-[1.35] font-moon-dance tracking-[0.05em] whitespace-pre-line transition-all duration-300 group-hover:translate-x-1">
-                      Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn&apos;t just a hotel; it was where I found my calm again — a place I&apos;ll always carry in my heart.
+                      {effectiveStories[testimonialIndex]?.text || defaultText}
                     </p>
                   </div>
                 </div>
                 
                 <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] font-moon-dance leading-[1.35] tracking-[0.1em] mb-8 lg:mb-0 transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#BE8C53]">
-                  {testimonials[testimonialIndex].author}, {testimonials[testimonialIndex].location}
+                  {[effectiveStories[testimonialIndex]?.author, effectiveStories[testimonialIndex]?.location].filter(Boolean).join(', ')}
                 </p>
          
                 {/* Pagination Controls */}
@@ -253,8 +263,8 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             {/* Right Column - Image */}
               <div className="relative h-[400px] md:h-[550px] lg:h-[698px] w-full order-1 lg:order-2 group/image overflow-hidden rounded">
               <Image
-                src="/our-story/story1.png" 
-                alt="Hotel guest and staff"
+                src={effectiveStories[testimonialIndex]?.imageUrl || '/our-story/story1.png'} 
+                alt={effectiveStories[testimonialIndex]?.alt || 'Hotel guest and staff'}
                 fill
                   className="object-cover rounded transition-transform duration-700 ease-out group-hover/image:scale-110"
               />

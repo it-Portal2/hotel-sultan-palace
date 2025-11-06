@@ -15,6 +15,7 @@ export default function ContactUsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errors, setErrors] = useState<{name?:string; phone?:string; email?:string; message?:string}>({});
 
   // Animation states
   const [isVisible, setIsVisible] = useState(false);
@@ -66,6 +67,16 @@ export default function ContactUsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Basic validation
+    const nextErrors: {name?:string; phone?:string; email?:string; message?:string} = {};
+    if (!formData.name.trim()) nextErrors.name = 'Required';
+    if (!formData.phone.trim()) nextErrors.phone = 'Required';
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) nextErrors.email = 'Valid email required';
+    if (!formData.message.trim()) nextErrors.message = 'Required';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
@@ -192,9 +203,11 @@ export default function ContactUsPage() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full h-8 sm:h-8 bg-white/8 border border-white rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400"
+                      required
+                      className={`w-full h-8 sm:h-8 bg-white/8 border ${errors.name? 'border-red-400':'border-white'} rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400`}
                       placeholder=""
                     />
+                    {errors.name && <p className="text-red-300 text-xs mt-1">{errors.name}</p>}
                   </div>
 
                   {/* Phone Field */}
@@ -207,9 +220,11 @@ export default function ContactUsPage() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full h-8 sm:h-8 bg-white/8 border border-white rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400"
+                      required
+                      className={`w-full h-8 sm:h-8 bg-white/8 border ${errors.phone? 'border-red-400':'border-white'} rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400`}
                       placeholder=""
                     />
+                    {errors.phone && <p className="text-red-300 text-xs mt-1">{errors.phone}</p>}
                   </div>
 
                   {/* Email Field */}
@@ -222,9 +237,11 @@ export default function ContactUsPage() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full h-8 sm:h-8 bg-white/8 border border-white rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400"
+                      required
+                      className={`w-full h-8 sm:h-8 bg-white/8 border ${errors.email? 'border-red-400':'border-white'} rounded-[5px] px-3 text-white placeholder-white/50 focus:outline-none focus:border-orange-400`}
                       placeholder=""
                     />
+                    {errors.email && <p className="text-red-300 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </div>
 
@@ -240,9 +257,11 @@ export default function ContactUsPage() {
                       value={formData.message}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full h-[80px] sm:h-[100px] lg:h-[119px] bg-white/8 border border-white rounded-[5px] px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-orange-400 resize-none"
+                      required
+                      className={`w-full h-[80px] sm:h-[100px] lg:h-[119px] bg-white/8 border ${errors.message? 'border-red-400':'border-white'} rounded-[5px] px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-orange-400 resize-none`}
                       placeholder=""
                     />
+                    {errors.message && <p className="text-red-300 text-xs mt-1">{errors.message}</p>}
                   </div>
 
                   {/* Submit Button */}

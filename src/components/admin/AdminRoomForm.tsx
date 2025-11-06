@@ -109,6 +109,18 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If file is selected but not uploaded, upload it first
+    if (selectedFile && !formData.image) {
+      showToast('Please upload the selected image first.', 'warning');
+      return;
+    }
+    
+    if (!formData.image || formData.image.trim() === '') {
+      showToast('Please provide an image URL or upload an image.', 'warning');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -118,7 +130,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         amenities: formData.amenities.filter(a => a.trim() !== ''),
         price: Number(formData.price),
         maxGuests: Number(formData.maxGuests),
-        cancellationFreeDays: Number((formData as { cancellationFreeDays?: number }).cancellationFreeDays ?? 0)
+        cancellationFreeDays: Number((formData as { cancellationFreeDays?: number }).cancellationFreeDays ?? 0),
+        image: formData.image.trim() // Ensure no extra spaces
       };
 
       if (isEdit && roomId) {
@@ -165,17 +178,23 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     try {
       const key = roomId || `${formData.name || 'room'}-${Date.now()}`;
       const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const fileExt = selectedFile.name.split('.').pop();
+      const fileExt = selectedFile.name.split('.').pop() || 'jpg';
       const fileName = `${safeKey}.${fileExt}`;
       const objRef = storageRef(storage, `rooms/${safeKey}/${fileName}`);
       await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
       const url = await getDownloadURL(objRef);
-      setFormData(prev => ({ ...prev, image: url }));
-      setSelectedFile(null);
-      // Reset file input
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      showToast('Image uploaded successfully!', 'success');
+      
+      // Ensure URL is properly formatted
+      if (url && url.trim() !== '') {
+        setFormData(prev => ({ ...prev, image: url.trim() }));
+        setSelectedFile(null);
+        // Reset file input
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        showToast('Image uploaded successfully! URL has been set.', 'success');
+      } else {
+        throw new Error('Failed to get image URL');
+      }
     } catch (err: unknown) {
       console.error('Image upload failed:', err);
       let errorMsg = 'Unable to upload image. ';
@@ -355,7 +374,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
 
                 <div className="col-span-6">
                   <label htmlFor="image" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)
+                    <LinkIcon className="h-4 w-4 text-gray-500" /> Image URL
                   </label>
                   <input
                     type="url"
@@ -363,8 +382,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="image"
                     value={formData.image}
                     onChange={handleInputChange}
-                    required
-                    placeholder="https://example.com/room-image.jpg"
+                    placeholder="Image URL will appear here after upload or paste URL"
                     className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
 

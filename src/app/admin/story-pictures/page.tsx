@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getStoryImages, deleteStoryImage, StoryImage } from '@/lib/firestoreService';
-import { PlusIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 export default function AdminStoryPicturesPage() {
   const [items, setItems] = useState<StoryImage[]>([]);
@@ -11,12 +11,39 @@ export default function AdminStoryPicturesPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  const dedupeRun = useRef(false);
   useEffect(() => {
     (async () => {
       setLoading(true);
       const data = await getStoryImages();
       setItems(data);
       setLoading(false);
+
+      // One-time background de-duplication (same imageUrl+title+text)
+      if (!dedupeRun.current) {
+        dedupeRun.current = true;
+        try {
+          const keyOf = (i: StoryImage) => `${i.imageUrl}|${i.title || ''}|${(i.text || '').slice(0,64)}`;
+          const seen = new Map<string, string>(); // key -> id to keep
+          const toDelete: string[] = [];
+          for (const it of data) {
+            const k = keyOf(it);
+            if (!seen.has(k)) {
+              seen.set(k, it.id);
+            } else {
+              toDelete.push(it.id);
+            }
+          }
+          if (toDelete.length) {
+            // delete extras silently and update UI
+            await Promise.all(toDelete.map(id => deleteStoryImage(id)));
+            const remainingIds = new Set<string>([...seen.values()]);
+            setItems(prev => prev.filter(i => remainingIds.has(i.id)));
+          }
+        } catch (e) {
+          console.warn('De-duplication skipped:', e);
+        }
+      }
     })();
   }, []);
 
@@ -54,9 +81,22 @@ export default function AdminStoryPicturesPage() {
           <ul className="divide-y divide-gray-200">
             {items.map(i => (
               <li key={i.id}>
-                <div className="px-4 py-4 flex items-center justify-between sm:px-6">
-                  <img src={i.imageUrl} alt={i.alt || 'image'} className="h-16 w-32 object-cover rounded" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
-                  <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50"><TrashIcon className="h-5 w-5"/></button>
+                <div className="px-4 py-4 flex items-center justify-between sm:px-6 gap-4">
+                  <div className="flex items-center gap-4">
+                    <img src={i.imageUrl} alt={i.alt || 'image'} className="h-16 w-32 object-cover rounded" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{i.title || i.alt || 'Untitled story'}</p>
+                      {(i.author || i.location) && (
+                        <p className="text-xs text-gray-500 truncate">{[i.author, i.location].filter(Boolean).join(', ')}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/admin/story-pictures/edit/${i.id}`} title="Edit" className="text-blue-600 hover:text-blue-800 inline-flex items-center">
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </Link>
+                    <button onClick={()=>setConfirmId(i.id)} title="Delete" disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50"><TrashIcon className="h-5 w-5"/></button>
+                  </div>
                 </div>
               </li>
             ))}

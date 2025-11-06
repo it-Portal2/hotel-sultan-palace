@@ -31,13 +31,31 @@ if (typeof window !== 'undefined') {
 
 export { db, auth, storage };
 
-// Suppress Firebase connection warnings in development
-if (process.env.NODE_ENV === 'development') {
-  // Disable Firebase connection warnings
+// Suppress Firebase connection timeout errors and warnings
+if (typeof window !== 'undefined') {
+  const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
+  
+  console.error = (...args) => {
+    const message = args[0]?.toString() || '';
+    // Suppress Firestore connection timeout errors
+    if (message.includes('@firebase/firestore') && 
+        (message.includes('Could not reach Cloud Firestore backend') || 
+         message.includes('Backend didn\'t respond within') ||
+         message.includes('operate in offline mode'))) {
+      return; // Suppress this specific error
+    }
+    originalConsoleError.apply(console, args);
+  };
+  
   console.warn = (...args) => {
-    if (args[0] && typeof args[0] === 'string' && args[0].includes('@firebase/firestore')) {
-      return; // Suppress Firebase Firestore warnings
+    const message = args[0]?.toString() || '';
+    // Suppress Firestore connection warnings
+    if (message.includes('@firebase/firestore') && 
+        (message.includes('Could not reach Cloud Firestore backend') || 
+         message.includes('Backend didn\'t respond within') ||
+         message.includes('operate in offline mode'))) {
+      return; // Suppress these warnings
     }
     originalConsoleWarn.apply(console, args);
   };

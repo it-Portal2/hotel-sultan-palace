@@ -1,5 +1,7 @@
 "use client";
+import { useState } from "react";
 import { MdEmail, MdPhone, MdAccessTime, MdLocationOn, MdPerson, MdAlternateEmail, MdLanguage, MdMessage } from "react-icons/md";
+import { createBookingEnquiry } from "@/lib/firestoreService";
 
 const info = [
   { 
@@ -22,6 +24,66 @@ const info = [
 ];
 
 export default function ContactUs() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    website: '',
+    message: ''
+  });
+  const [errors, setErrors] = useState<{name?:string; email?:string; phone?:string; message?:string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nextErrors: {name?:string; email?:string; phone?:string; message?:string} = {};
+    if (!formData.name.trim()) nextErrors.name = 'Required';
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) nextErrors.email = 'Valid email required';
+    if (!formData.phone.trim()) nextErrors.phone = 'Required';
+    if (!formData.message.trim()) nextErrors.message = 'Required';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    try {
+      console.log('Home Contact section: Submitting to bookingEnquiries collection');
+      const enquiryData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        website: formData.website.trim() || undefined,
+        message: formData.message.trim()
+      };
+      console.log('Home Contact section: Data to save:', enquiryData);
+      const result = await createBookingEnquiry(enquiryData);
+      console.log('Home Contact section: Result from createBookingEnquiry:', result);
+      if (result) {
+        console.log('Home Contact section: Success! Saved to bookingEnquiries collection');
+        setSubmitStatus('success');
+        setFormData({ name: '', email: '', phone: '', website: '', message: '' });
+        setTimeout(() => setSubmitStatus('idle'), 5000);
+      } else {
+        console.error('Home Contact section: Failed to save - result is null');
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      console.error('Home Contact section: Error submitting form:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="w-full">
       {/* Top Section: Contact Form */}
@@ -60,30 +122,84 @@ export default function ContactUs() {
             </div>
 
             {/* Right: form */}
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0">
               <div className="relative">
-                <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Your name" />
+                <input 
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.name ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
+                  placeholder="Your name" 
+                />
                 <MdPerson className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
+                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
               <div className="relative">
-                <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Enter email" />
+                <input 
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.email ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
+                  placeholder="Enter email" 
+                />
                 <MdAlternateEmail className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
+                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
               </div>
               <div className="relative">
-                <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Phone No." />
+                <input 
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.phone ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
+                  placeholder="Phone No." 
+                />
                 <MdPhone className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
+                {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
               </div>
               <div className="relative">
-                <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Website" />
+                <input 
+                  type="url"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" 
+                  placeholder="Website" 
+                />
                 <MdLanguage className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
               </div>
               <div className="relative md:col-span-2">
-                <textarea rows={5} className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none" placeholder="Message" />
+                <textarea 
+                  rows={5}
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.message ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none`} 
+                  placeholder="Message" 
+                />
                 <MdMessage className="absolute right-3 md:right-4 top-4 text-white/50 text-base md:text-lg pointer-events-none" />
+                {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
               </div>
 
-              <div className="md:col-span-2 mt-2">
-                <button type="button" className="w-full bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei py-3 tracking-wider text-sm md:text-base rounded-md transition-colors">SEND MESSAGE</button>
+              <div className="md:col-span-2 mt-2 space-y-2">
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei py-3 tracking-wider text-sm md:text-base rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'SENDING...' : 'SEND MESSAGE'}
+                </button>
+                {submitStatus === 'success' && (
+                  <p className="text-green-400 text-sm text-center">✓ Message sent successfully!</p>
+                )}
+                {submitStatus === 'error' && (
+                  <p className="text-red-400 text-sm text-center">✗ Error sending message. Please try again.</p>
+                )}
               </div>
             </form>
           </div>
