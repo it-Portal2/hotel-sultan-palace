@@ -16,10 +16,12 @@ html, body, :root {
   width: 100%;
 }
 
-/* Hide scrollbar but keep scrolling functionality */
+/* Smooth scrolling */
 html {
+  scroll-behavior: smooth;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
 }
 
 html::-webkit-scrollbar {
@@ -32,6 +34,8 @@ body {
   max-width: 100vw;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
 }
 
 body::-webkit-scrollbar {
@@ -40,6 +44,14 @@ body::-webkit-scrollbar {
 
 * {
   box-sizing: border-box;
+}
+
+/* Optimize scroll performance - GPU acceleration */
+main, section {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 .container-xl {

@@ -64,14 +64,14 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
 
     if (isCalendarOpen) {
       setTimeout(updateDatePosition, 0);
-      window.addEventListener('scroll', updateDatePosition, true);
-      window.addEventListener('resize', updateDatePosition);
+      window.addEventListener('scroll', updateDatePosition, { passive: true, capture: true });
+      window.addEventListener('resize', updateDatePosition, { passive: true });
     }
 
     if (isGuestOpen) {
       setTimeout(updateGuestPosition, 0);
-      window.addEventListener('scroll', updateGuestPosition, true);
-      window.addEventListener('resize', updateGuestPosition);
+      window.addEventListener('scroll', updateGuestPosition, { passive: true, capture: true });
+      window.addEventListener('resize', updateGuestPosition, { passive: true });
     }
 
     return () => {

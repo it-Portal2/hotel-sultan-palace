@@ -74,7 +74,7 @@ export default function GalleryPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden overflow-y-hidden">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
           <Image 
