@@ -5,9 +5,63 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { FiArrowRight } from "react-icons/fi";
 import { useBookingEnquiry } from "@/context/BookingEnquiryContext";
+import { useEffect, useRef, useState } from "react";
 
 export default function OceanBreezeSpaPage() {
   const { openModal } = useBookingEnquiry();
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const observedElements = new Set<HTMLElement>();
+
+    const setupObservers = () => {
+      const keys = ['title', 'cards', 'portrait', 'video'];
+      
+      keys.forEach((key) => {
+        const element = sectionRefs.current[key];
+        if (element && !observedElements.has(element)) {
+          observedElements.add(element);
+          
+          const rect = element.getBoundingClientRect();
+          const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isVisibleNow) {
+            setTimeout(() => {
+              setIsVisible((prev) => ({ ...prev, [key]: true }));
+              element.classList.add(`wellness-${key}-visible`);
+            }, 100);
+          } else {
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    setIsVisible((prev) => ({ ...prev, [key]: true }));
+                    entry.target.classList.add(`wellness-${key}-visible`);
+                    observer.unobserve(entry.target);
+                  }
+                });
+              },
+              { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+            );
+            observer.observe(element);
+            observers.push(observer);
+          }
+        }
+      });
+    };
+
+    setupObservers();
+    const timeoutId = setTimeout(setupObservers, 200);
+    const timeoutId2 = setTimeout(setupObservers, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
   return (
     <>
       <Header />
@@ -19,7 +73,12 @@ export default function OceanBreezeSpaPage() {
             alt="Spa Hero Background"
             fill
             priority
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
             className="object-cover"
+            style={{ opacity: 1 }}
           />
           
           {/* Gradient Overlays */}
@@ -38,7 +97,7 @@ export default function OceanBreezeSpaPage() {
         </section>
 
         {/* Title Section */}
-        <section className="relative w-full px-4 md:px-0 pt-8 md:pt-12">
+        <section ref={(el) => { if (el) sectionRefs.current['title'] = el; }} className={`relative w-full px-4 md:px-0 pt-8 md:pt-12 wellness-title ${isVisible['title'] ? 'wellness-title-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="flex flex-col items-center px-4 md:px-0">
               <h2 className="text-[#554019] text-[20px] md:text-[22px] lg:text-[24px] font-semibold leading-[1.125] font-open-sans text-center mb-[15px] max-w-[558px]">
@@ -52,7 +111,7 @@ export default function OceanBreezeSpaPage() {
         </section>
 
         {/* Treatment Cards Section */}
-        <section className="relative w-full px-4 md:px-0 mt-8 md:mt-12 lg:mt-16">
+        <section ref={(el) => { if (el) sectionRefs.current['cards'] = el; }} className={`relative w-full px-4 md:px-0 mt-8 md:mt-12 lg:mt-16 wellness-cards ${isVisible['cards'] ? 'wellness-cards-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-3 lg:px-4">
               {[
@@ -79,13 +138,16 @@ export default function OceanBreezeSpaPage() {
               ].map((treatment, i) => (
                 <div 
                   key={i} 
-                  className="w-full overflow-hidden group cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-2 hover:shadow-2xl"
+                  className={`w-full overflow-hidden group cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-2 hover:shadow-2xl wellness-card-item ${isVisible['cards'] ? 'wellness-card-item-visible' : ''}`}
+                  style={{ transitionDelay: `${i * 0.15}s` }}
                 >
                   <div className="relative w-full h-[320px] sm:h-[380px] md:h-[500px] overflow-hidden">
                     <Image 
                       src={treatment.image} 
                       alt={treatment.title} 
                       fill 
+                      quality={85}
+                      sizes="(max-width: 768px) 50vw, 25vw"
                       className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110" 
                     />
                     {/* Overlay gradient on hover */}
@@ -106,7 +168,7 @@ export default function OceanBreezeSpaPage() {
         </section>
 
         {/* Portrait Image and Text Section */}
-        <section className="relative w-full px-4 md:px-0 mt-12 md:mt-16 lg:mt-20">
+        <section ref={(el) => { if (el) sectionRefs.current['portrait'] = el; }} className={`relative w-full px-4 md:px-0 mt-12 md:mt-16 lg:mt-20 wellness-portrait ${isVisible['portrait'] ? 'wellness-portrait-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="relative px-4 md:px-0">
               {/* Mobile/Tablet Layout */}
@@ -116,6 +178,8 @@ export default function OceanBreezeSpaPage() {
                     src="/spa_portrait-62b712.png" 
                     alt="Spa Portrait" 
                     fill 
+                    quality={85}
+                    sizes="100vw"
                     className="object-cover" 
                   />
                 </div>
@@ -147,6 +211,8 @@ export default function OceanBreezeSpaPage() {
                     src="/spa_portrait-62b712.png" 
                     alt="Spa Portrait" 
                     fill 
+                    quality={85}
+                    sizes="558px"
                     className="object-cover" 
                   />
                 </div>
@@ -178,12 +244,14 @@ export default function OceanBreezeSpaPage() {
         </section>
 
         {/* Video Section */}
-        <section className="relative w-full mt-12 md:mt-16 lg:mt-20">
+        <section ref={(el) => { if (el) sectionRefs.current['video'] = el; }} className={`relative w-full mt-12 md:mt-16 lg:mt-20 wellness-video ${isVisible['video'] ? 'wellness-video-visible' : ''}`}>
           <div className="relative w-full h-[300px] md:h-[500px] lg:h-[672px]">
             <Image 
               src="/spa_video_bg.png" 
               alt="Video Background" 
               fill 
+              quality={85}
+              sizes="100vw"
               className="object-cover" 
             />
             <div className="absolute inset-0 bg-black/20"></div>
@@ -211,6 +279,54 @@ export default function OceanBreezeSpaPage() {
         </section>
       </main>
       <Footer />
+
+      <style jsx global>{`
+        .wellness-title {
+          opacity: 0 !important;
+          transform: translateY(-50px) !important;
+          transition: all 1s ease-out 0.2s !important;
+        }
+        .wellness-title.wellness-title-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+        .wellness-cards {
+          opacity: 0 !important;
+          transform: translateY(50px) !important;
+          transition: all 1s ease-out 0.3s !important;
+        }
+        .wellness-cards.wellness-cards-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+        .wellness-card-item {
+          opacity: 0 !important;
+          transform: translateY(60px) scale(0.9) !important;
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .wellness-card-item.wellness-card-item-visible {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+        .wellness-portrait {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.95) !important;
+          transition: all 1s ease-out 0.4s !important;
+        }
+        .wellness-portrait.wellness-portrait-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .wellness-video {
+          opacity: 0 !important;
+          transform: translateY(50px) scale(0.95) !important;
+          transition: all 1s ease-out 0.5s !important;
+        }
+        .wellness-video.wellness-video-visible {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+      `}</style>
     </>
   );
 }

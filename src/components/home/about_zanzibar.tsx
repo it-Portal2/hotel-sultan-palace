@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 
 type FaqItem = {
@@ -79,6 +79,25 @@ export default function AboutZanzibar() {
   const [openItems, setOpenItems] = useState<number[]>([]);
   const [showAll, setShowAll] = useState<boolean>(false);
   const sectionRef = useRef<HTMLElement | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('about-zanzibar-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
 
   const toggleItem = (index: number) => {
     setOpenItems(prev => 
@@ -89,9 +108,9 @@ export default function AboutZanzibar() {
   };
 
   return (
-    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-12 md:py-16 lg:py-24">
+    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-12 md:py-16 lg:py-24 about-zanzibar-section">
       {/* Background Pattern */}
-      <div className="absolute inset-0 z-0">
+      <div className={`absolute inset-0 z-0 about-zanzibar-bg ${isVisible ? 'about-zanzibar-bg-visible' : ''}`}>
         <Image
           src="/Pattern.png"
           alt="Background pattern"
@@ -103,14 +122,14 @@ export default function AboutZanzibar() {
       
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-8xl px-4 sm:px-6 md:px-8 lg:px-10">
-        <h2 className="text-center font-kaisei text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#655D4E] mb-8 md:mb-12 px-2">
+        <h2 className={`text-center font-kaisei text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#655D4E] mb-8 md:mb-12 px-2 about-zanzibar-title ${isVisible ? 'about-zanzibar-title-visible' : ''}`}>
         About Zanzibar as a Destination
         </h2>
         
       
         <div className="w-full max-w-[900px] mx-auto">
           {(showAll ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
-            <div key={index} className="border-b border-[#CBBB9D]">
+            <div key={index} className={`border-b border-[#CBBB9D] about-zanzibar-item ${isVisible ? 'about-zanzibar-item-visible' : ''}`} style={{ transitionDelay: `${index * 0.1}s` }}>
               <button
                 onClick={() => toggleItem(index)}
                 className="w-full py-3 md:py-4 flex items-center justify-between text-left gap-3"
@@ -139,7 +158,7 @@ export default function AboutZanzibar() {
             </div>
           ))}
           {faqItems.length > 5 && (
-            <div className="text-center mt-6">
+            <div className={`text-center mt-6 about-zanzibar-button ${isVisible ? 'about-zanzibar-button-visible' : ''}`}>
               <button
                 onClick={() =>
                   setShowAll(prev => {
@@ -161,6 +180,55 @@ export default function AboutZanzibar() {
           )}
         </div>
       </div>
+
+      <style jsx global>{`
+        .about-zanzibar-section {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1s ease-out;
+        }
+        .about-zanzibar-section.about-zanzibar-visible,
+        .about-zanzibar-visible .about-zanzibar-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .about-zanzibar-bg {
+          opacity: 0;
+          transform: scale(1.1);
+          transition: all 1.5s ease-out;
+        }
+        .about-zanzibar-bg-visible {
+          opacity: 1;
+          transform: scale(1);
+        }
+        .about-zanzibar-title {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.3s;
+        }
+        .about-zanzibar-title-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .about-zanzibar-item {
+          opacity: 0;
+          transform: translateX(-50px);
+          transition: all 0.6s ease-out;
+        }
+        .about-zanzibar-item-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .about-zanzibar-button {
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
+          transition: all 0.8s ease-out 0.8s;
+        }
+        .about-zanzibar-button-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      `}</style>
     </section>
   );
 }

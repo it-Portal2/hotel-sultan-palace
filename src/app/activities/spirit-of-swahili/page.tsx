@@ -30,7 +30,18 @@ export default function SpiritOfSwahiliPage() {
         {/* Hero */}
         <section className="relative w-full h-[560px] md:h-[700px] lg:h-[928px] overflow-hidden">
         
-          <Image src="/spirit/spirit-hero-2.png" alt="Spirit of Swahili" fill priority className="object-cover" />
+          <Image 
+            src="/spirit/spirit-hero-2.png" 
+            alt="Spirit of Swahili" 
+            fill 
+            priority 
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
+            className="object-cover" 
+            style={{ opacity: 1 }}
+          />
          
           <div className="absolute inset-0 pointer-events-none">
             <Image src="/spirit/spirit-top-mask.svg" alt="Mask" fill className="object-cover" />

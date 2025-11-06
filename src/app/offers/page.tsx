@@ -13,27 +13,85 @@ export default function OffersPage() {
   const [isVisible, setIsVisible] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const [sectionVisible, setSectionVisible] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     setIsVisible(true);
     
-    // Intersection Observer for cards
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("card-visible");
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
+    // Enhanced Intersection Observer for sections and cards
+    const observers: IntersectionObserver[] = [];
+    const observedElements = new Set<HTMLElement>();
 
-    const cards = document.querySelectorAll(".offer-card");
-    cards.forEach((card) => observer.observe(card));
+    const setupObservers = () => {
+      // Observe sections
+      const sectionKeys = ['cards-section', 'carousel-section', 'transfers-section'];
+      
+      sectionKeys.forEach((key) => {
+        const element = sectionRefs.current[key];
+        if (element && !observedElements.has(element)) {
+          observedElements.add(element);
+          
+          const rect = element.getBoundingClientRect();
+          const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isVisibleNow) {
+            setTimeout(() => {
+              setSectionVisible((prev) => ({ ...prev, [key]: true }));
+              element.classList.add(`offers-${key}-visible`);
+            }, 100);
+          } else {
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    setSectionVisible((prev) => ({ ...prev, [key]: true }));
+                    entry.target.classList.add(`offers-${key}-visible`);
+                    observer.unobserve(entry.target);
+                  }
+                });
+              },
+              { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+            );
+            observer.observe(element);
+            observers.push(observer);
+          }
+        }
+      });
+
+      // Observe individual cards with different animations
+      const cards = document.querySelectorAll(".offer-card");
+      cards.forEach((card, index) => {
+        if (!observedElements.has(card as HTMLElement)) {
+          observedElements.add(card as HTMLElement);
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add("card-visible");
+                  // Add specific animation class based on index
+                  const animationType = index % 4;
+                  entry.target.classList.add(`card-animation-${animationType}`);
+                  observer.unobserve(entry.target);
+                }
+              });
+            },
+            { threshold: 0.15, rootMargin: '0px 0px -100px 0px' }
+          );
+          observer.observe(card);
+          observers.push(observer);
+        }
+      });
+    };
+
+    setupObservers();
+    const timeoutId = setTimeout(setupObservers, 200);
+    const timeoutId2 = setTimeout(setupObservers, 500);
 
     return () => {
-      cards.forEach((card) => observer.unobserve(card));
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      observers.forEach((observer) => observer.disconnect());
     };
   }, []);
 
@@ -49,7 +107,12 @@ export default function OffersPage() {
             alt="Offers Hero Background"
             fill
             priority
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
             className="object-cover"
+            style={{ opacity: 1 }}
           />
         
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24 px-4">
@@ -95,7 +158,7 @@ export default function OffersPage() {
           </div>
         </section>
 
-        <section className="relative min-h-[631px] overflow-hidden">
+        <section ref={(el) => { if (el) sectionRefs.current['cards-section'] = el; }} className={`relative min-h-[631px] overflow-hidden offers-cards-section ${sectionVisible['cards-section'] ? 'offers-cards-section-visible' : ''}`}>
           <div 
             className="absolute inset-0 w-full h-full"
             style={{
@@ -166,14 +229,15 @@ export default function OffersPage() {
               ].map((offer, index) => (
                 <div 
                   key={index}
-                  className={`offer-card flex flex-col ${offer.layout} items-center gap-[92px] opacity-0 translate-y-12 transition-all duration-1000 ease-out`}
-                  style={{ animationDelay: `${index * 0.15}s` }}
+                  className={`offer-card flex flex-col ${offer.layout} items-center gap-[92px]`}
                 >
-                  <div className="relative w-full md:w-[650px] h-[450px] rounded-[15px] overflow-hidden flex-shrink-0 group cursor-pointer">
+                  <div className="relative w-full md:w-[650px] h-[450px] rounded-[15px] overflow-hidden flex-shrink-0 group cursor-pointer offer-card-image">
                     <Image
                       src={offer.image}
                       alt={offer.title}
                       fill
+                      quality={85}
+                      sizes="(max-width: 768px) 100vw, 650px"
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                     />
                     {/* Gradient overlay on hover */}
@@ -183,7 +247,7 @@ export default function OffersPage() {
                       <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                     </div>
                   </div>
-                  <div className="w-full flex flex-col justify-between group">
+                  <div className="w-full flex flex-col justify-between group offer-card-content">
                     <div className="space-y-[31px]">
                       <h3 className="text-[#16130E] text-[26px] font-semibold leading-[1.25] font-quicksand transform transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00]">
                         {offer.title}
@@ -192,18 +256,19 @@ export default function OffersPage() {
                         {offer.description.map((desc, i) => (
                           <p 
                             key={i}
-                            className={`transform transition-all duration-300 ${
+                            className={`transform transition-all duration-300 offer-desc-item ${
                               desc.includes("Not valid") || desc.includes("Blackout") || desc.includes("Offer not valid")
                                 ? "text-[#FF6A00] group-hover:translate-x-1"
                                 : "group-hover:translate-x-1"
                             }`}
+                            style={{ transitionDelay: `${i * 0.05}s` }}
                           >
                             {desc}
                           </p>
                         ))}
                       </div>
                     </div>
-                    <div className="mt-6">
+                    <div className="mt-6 offer-card-button">
                       <ContactUsButton 
                         onClick={openModal}
                         text="Booking Enquiry"
@@ -222,9 +287,13 @@ export default function OffersPage() {
           </div>
         </section>
 
-        <OffersCarousel />
+        <div ref={(el) => { if (el) sectionRefs.current['carousel-section'] = el; }} className={`offers-carousel-section ${sectionVisible['carousel-section'] ? 'offers-carousel-section-visible' : ''}`}>
+          <OffersCarousel />
+        </div>
 
-        <TransfersSection />
+        <div ref={(el) => { if (el) sectionRefs.current['transfers-section'] = el; }} className={`offers-transfers-section ${sectionVisible['transfers-section'] ? 'offers-transfers-section-visible' : ''}`}>
+          <TransfersSection />
+        </div>
       </main>
       <Footer />
 
@@ -281,14 +350,125 @@ export default function OffersPage() {
           }
         }
 
-        /* Card Animations */
-        .offer-card.card-visible {
+        /* Section Animations */
+        .offers-cards-section {
+          opacity: 0 !important;
+          transform: translateY(80px) scale(0.98) !important;
+          transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        }
+        .offers-cards-section.offers-cards-section-visible {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+
+        .offers-carousel-section {
+          opacity: 0 !important;
+          transform: translateX(100px) !important;
+          transition: all 1s ease-out 0.3s !important;
+        }
+        .offers-carousel-section.offers-carousel-section-visible {
+          opacity: 1 !important;
+          transform: translateX(0) !important;
+        }
+
+        .offers-transfers-section {
+          opacity: 0 !important;
+          transform: translateY(60px) !important;
+          transition: all 1s ease-out 0.4s !important;
+        }
+        .offers-transfers-section.offers-transfers-section-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
 
+        /* Card Animations - Different for each card */
         .offer-card {
+          opacity: 0 !important;
           will-change: transform, opacity;
+        }
+
+        /* Animation Type 0: Slide from left + rotate */
+        .offer-card.card-animation-0 {
+          transform: translateX(-150px) rotateY(-15deg) scale(0.9) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .offer-card.card-animation-0.card-visible {
+          opacity: 1 !important;
+          transform: translateX(0) rotateY(0deg) scale(1) !important;
+        }
+
+        /* Animation Type 1: Slide from right + rotate */
+        .offer-card.card-animation-1 {
+          transform: translateX(150px) rotateY(15deg) scale(0.9) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s !important;
+        }
+        .offer-card.card-animation-1.card-visible {
+          opacity: 1 !important;
+          transform: translateX(0) rotateY(0deg) scale(1) !important;
+        }
+
+        /* Animation Type 2: Slide from bottom + scale + rotate */
+        .offer-card.card-animation-2 {
+          transform: translateY(120px) rotateX(10deg) scale(0.85) !important;
+          transition: all 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s !important;
+        }
+        .offer-card.card-animation-2.card-visible {
+          opacity: 1 !important;
+          transform: translateY(0) rotateX(0deg) scale(1) !important;
+        }
+
+        /* Animation Type 3: Fade + zoom + rotate */
+        .offer-card.card-animation-3 {
+          transform: scale(0.7) rotateZ(-5deg) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s !important;
+        }
+        .offer-card.card-animation-3.card-visible {
+          opacity: 1 !important;
+          transform: scale(1) rotateZ(0deg) !important;
+        }
+
+        /* Card Image Animation */
+        .offer-card-image {
+          opacity: 0 !important;
+          transform: scale(1.1) !important;
+          transition: all 0.8s ease-out 0.4s !important;
+        }
+        .offer-card.card-visible .offer-card-image {
+          opacity: 1 !important;
+          transform: scale(1) !important;
+        }
+
+        /* Card Content Animation */
+        .offer-card-content {
+          opacity: 0 !important;
+          transform: translateY(30px) !important;
+          transition: all 0.8s ease-out 0.6s !important;
+        }
+        .offer-card.card-visible .offer-card-content {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+
+        /* Description Items Staggered Animation */
+        .offer-desc-item {
+          opacity: 0 !important;
+          transform: translateX(-20px) !important;
+          transition: all 0.6s ease-out !important;
+        }
+        .offer-card.card-visible .offer-desc-item {
+          opacity: 1 !important;
+          transform: translateX(0) !important;
+        }
+
+        /* Button Animation */
+        .offer-card-button {
+          opacity: 0 !important;
+          transform: scale(0.8) translateY(20px) !important;
+          transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+        }
+        .offer-card.card-visible .offer-card-button {
+          opacity: 1 !important;
+          transform: scale(1) translateY(0) !important;
         }
 
         /* Additional hover effects */
@@ -312,6 +492,15 @@ export default function OffersPage() {
 
         .group\/btn:hover {
           animation: buttonPulse 2s infinite;
+        }
+
+        /* Enhanced card hover effect */
+        .offer-card.card-visible:hover {
+          transform: translateY(-8px) !important;
+        }
+
+        .offer-card.card-visible:hover .offer-card-image {
+          transform: scale(1.05) !important;
         }
       `}</style>
     </>

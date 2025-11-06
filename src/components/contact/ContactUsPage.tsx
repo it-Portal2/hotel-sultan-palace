@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { MdEmail, MdPhone, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import { FaMapMarkerAlt } from 'react-icons/fa';
@@ -16,6 +16,8 @@ export default function ContactUsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errors, setErrors] = useState<{name?:string; phone?:string; email?:string; message?:string}>({});
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const [sectionVisible, setSectionVisible] = useState<{ [key: string]: boolean }>({});
 
   // Animation states
   const [isVisible, setIsVisible] = useState(false);
@@ -56,6 +58,58 @@ export default function ContactUsPage() {
       clearTimeout(timer);
     };
   }, []); // Empty dependency array - runs only once on mount
+
+  // Intersection Observer for section animations
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const observedElements = new Set<HTMLElement>();
+
+    const setupObservers = () => {
+      const sectionKeys = ['form-section', 'contact-info-section', 'cta-section'];
+      
+      sectionKeys.forEach((key) => {
+        const element = sectionRefs.current[key];
+        if (element && !observedElements.has(element)) {
+          observedElements.add(element);
+          
+          const rect = element.getBoundingClientRect();
+          const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isVisibleNow) {
+            setTimeout(() => {
+              setSectionVisible((prev) => ({ ...prev, [key]: true }));
+              element.classList.add(`contact-${key}-visible`);
+            }, 100);
+          } else {
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    setSectionVisible((prev) => ({ ...prev, [key]: true }));
+                    entry.target.classList.add(`contact-${key}-visible`);
+                    observer.unobserve(entry.target);
+                  }
+                });
+              },
+              { threshold: 0.15, rootMargin: '0px 0px -50px 0px' }
+            );
+            observer.observe(element);
+            observers.push(observer);
+          }
+        }
+      });
+    };
+
+    setupObservers();
+    const timeoutId = setTimeout(setupObservers, 200);
+    const timeoutId2 = setTimeout(setupObservers, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -119,8 +173,8 @@ export default function ContactUsPage() {
 
   return (
     <>
-      {/* Custom CSS for typewriter cursor only */}
-      <style jsx>{`
+      {/* Custom CSS for animations */}
+      <style jsx global>{`
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
@@ -129,26 +183,193 @@ export default function ContactUsPage() {
         .typewriter-cursor {
           animation: blink 1s infinite;
         }
+
+        /* Form Section Animations */
+        .contact-form-section {
+          opacity: 0 !important;
+          transform: translateY(60px) !important;
+          transition: all 1s ease-out 0.2s !important;
+        }
+        .contact-form-section.contact-form-section-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+
+        .contact-form-image {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.95) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+        }
+        .contact-form-section-visible .contact-form-image {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+
+        .contact-form-content {
+          opacity: 0 !important;
+          transform: translateX(100px) scale(0.95) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s !important;
+        }
+        .contact-form-section-visible .contact-form-content {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+
+        .contact-form-form {
+          opacity: 0 !important;
+          transform: translateY(30px) !important;
+          transition: all 0.8s ease-out 0.7s !important;
+        }
+        .contact-form-section-visible .contact-form-form {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+
+        .contact-form-left {
+          opacity: 0 !important;
+          transform: translateX(-40px) !important;
+          transition: all 0.6s ease-out 0.9s !important;
+        }
+        .contact-form-section-visible .contact-form-left {
+          opacity: 1 !important;
+          transform: translateX(0) !important;
+        }
+
+        .contact-form-right {
+          opacity: 0 !important;
+          transform: translateX(40px) !important;
+          transition: all 0.6s ease-out 1s !important;
+        }
+        .contact-form-section-visible .contact-form-right {
+          opacity: 1 !important;
+          transform: translateX(0) !important;
+        }
+
+        .contact-form-field {
+          opacity: 0 !important;
+          transform: translateY(20px) !important;
+          transition: all 0.5s ease-out !important;
+        }
+        .contact-form-section-visible .contact-form-field {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+
+        .contact-form-button {
+          opacity: 0 !important;
+          transform: scale(0.9) translateY(20px) !important;
+          transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .contact-form-section-visible .contact-form-button {
+          opacity: 1 !important;
+          transform: scale(1) translateY(0) !important;
+        }
+
+        /* Contact Info Section Animations */
+        .contact-info-section {
+          opacity: 0 !important;
+          transform: translateY(80px) !important;
+          transition: all 1.2s ease-out 0.2s !important;
+        }
+        .contact-info-section.contact-info-section-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+
+        .contact-info-image {
+          opacity: 0 !important;
+          transform: translateX(-150px) rotateY(-10deg) !important;
+          transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s !important;
+        }
+        .contact-info-section-visible .contact-info-image {
+          opacity: 1 !important;
+          transform: translateX(0) rotateY(0deg) !important;
+        }
+
+        .contact-info-button {
+          opacity: 0 !important;
+          transform: translateY(30px) scale(0.9) !important;
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+        }
+        .contact-info-section-visible .contact-info-button {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+
+        .contact-info-content {
+          opacity: 0 !important;
+          transform: translateX(150px) rotateY(10deg) !important;
+          transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s !important;
+        }
+        .contact-info-section-visible .contact-info-content {
+          opacity: 1 !important;
+          transform: translateX(0) rotateY(0deg) !important;
+        }
+
+        .contact-info-item {
+          opacity: 0 !important;
+          transform: translateX(50px) !important;
+          transition: all 0.7s ease-out !important;
+        }
+        .contact-info-section-visible .contact-info-item {
+          opacity: 1 !important;
+          transform: translateX(0) !important;
+        }
+
+        /* CTA Section Animations */
+        .contact-cta-section {
+          opacity: 0 !important;
+          transform: translateY(100px) scale(0.95) !important;
+          transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s !important;
+        }
+        .contact-cta-section.contact-cta-section-visible {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+
+        .contact-cta-title {
+          opacity: 0 !important;
+          transform: translateY(50px) rotateX(15deg) !important;
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s !important;
+        }
+        .contact-cta-section-visible .contact-cta-title {
+          opacity: 1 !important;
+          transform: translateY(0) rotateX(0deg) !important;
+        }
+
+        .contact-cta-button {
+          opacity: 0 !important;
+          transform: scale(0.8) translateY(30px) !important;
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+        }
+        .contact-cta-section-visible .contact-cta-button {
+          opacity: 1 !important;
+          transform: scale(1) translateY(0) !important;
+        }
       `}</style>
       
       <div className="w-full">
       {/* Hero Section */}
-      <div className="relative h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] xl:h-[845px] w-full">
+      <div className="relative h-[600px] md:h-[928px] w-full">
         {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: 'url(/hero-section-bg.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
+        <Image
+          src="/hero-section-bg.png"
+          alt="Contact Us Hero Background"
+          fill
+          priority
+          loading="eager"
+          fetchPriority="high"
+          quality={90}
+          sizes="100vw"
+          className="object-cover"
+          style={{ opacity: 1 }}
         />
         
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/20" />
         
-        {/* Content */}
-        <div className="relative z-10 flex flex-col items-start justify-center h-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-15">
+        {/* Content - Positioned at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-start justify-end px-4 sm:px-6 md:px-8 lg:px-12 xl:px-15 pb-8 sm:pb-12 md:pb-16 lg:pb-20">
           <div className="text-left max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-xl xl:max-w-3xl">
             {/* Animated Subtitle */}
             <div className={`mb-4 sm:mb-6 transition-all duration-1000 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -171,10 +392,10 @@ export default function ContactUsPage() {
       </div>
 
       {/* Main Content Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 w-full">
+      <div ref={(el) => { if (el) sectionRefs.current['form-section'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 w-full contact-form-section ${sectionVisible['form-section'] ? 'contact-form-section-visible' : ''}`}>
         {/* Left Side - Contact Form Background */}
         <div 
-          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px]"
+          className="bg-cover bg-center bg-no-repeat order-2 lg:order-1 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px] contact-form-image"
           style={{
             backgroundImage: 'url(/contact-form-bg.png)',
             backgroundSize: 'cover',
@@ -183,18 +404,18 @@ export default function ContactUsPage() {
         />
         
         {/* Right Side - Contact Form */}
-        <div className="bg-[#242424] flex items-center order-1 lg:order-2 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px]">
+        <div className="bg-[#242424] flex items-center order-1 lg:order-2 min-h-[360px] sm:min-h-[420px] md:min-h-[500px] lg:min-h-[645px] xl:min-h-[700px] contact-form-content">
           <div className="px-4 sm:px-6 md:px-8 lg:px-16 py-8 sm:py-12 lg:py-16 w-full">
             <h3 className="text-white text-[20px] sm:text-[24px] md:text-[28px] lg:text-[32px] xl:text-[36px] font-medium uppercase leading-[1.2] sm:leading-[1.3] md:leading-[1.4] lg:leading-[1.44] tracking-[8%] sm:tracking-[9%] md:tracking-[10%] lg:tracking-[11.11%] mb-6 sm:mb-8 font-['Kaisei_Decol']">
               Reach Out — Your Island Escape Awaits
             </h3>
             
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 contact-form-form">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-[83px]">
                 {/* Left Column */}
-                <div className="space-y-4 sm:space-y-[17px]">
+                <div className="space-y-4 sm:space-y-[17px] contact-form-left">
                   {/* Name Field */}
-                  <div className="space-y-1 sm:space-y-[-1px]">
+                  <div className="space-y-1 sm:space-y-[-1px] contact-form-field">
                     <label className="text-white text-[12px] sm:text-[14px] font-medium leading-[1.8] sm:leading-[2.07] block font-['Kaisei_Decol']">
                       Name
                     </label>
@@ -211,7 +432,7 @@ export default function ContactUsPage() {
                   </div>
 
                   {/* Phone Field */}
-                  <div className="space-y-1 sm:space-y-[-1px]">
+                  <div className="space-y-1 sm:space-y-[-1px] contact-form-field" style={{ transitionDelay: '0.1s' }}>
                     <label className="text-white text-[12px] sm:text-[14px] font-medium leading-[1.8] sm:leading-[2.07] block font-['Kaisei_Decol']">
                       Phone No.
                     </label>
@@ -228,7 +449,7 @@ export default function ContactUsPage() {
                   </div>
 
                   {/* Email Field */}
-                  <div className="space-y-1 sm:space-y-[-1px]">
+                  <div className="space-y-1 sm:space-y-[-1px] contact-form-field" style={{ transitionDelay: '0.2s' }}>
                     <label className="text-white text-[12px] sm:text-[14px] font-medium leading-[1.8] sm:leading-[2.07] block font-['Kaisei_Decol']">
                       Email
                     </label>
@@ -246,9 +467,9 @@ export default function ContactUsPage() {
                 </div>
 
                 {/* Right Column */}
-                <div className="space-y-4 sm:space-y-[14px]">
+                <div className="space-y-4 sm:space-y-[14px] contact-form-right">
                   {/* Message Field */}
-                  <div className="space-y-1 sm:space-y-[-1px]">
+                  <div className="space-y-1 sm:space-y-[-1px] contact-form-field" style={{ transitionDelay: '0.3s' }}>
                     <label className="text-white text-[12px] sm:text-[14px] font-medium leading-[1.8] sm:leading-[2.07] block font-['Kaisei_Decol']">
                       Message
                     </label>
@@ -265,13 +486,15 @@ export default function ContactUsPage() {
                   </div>
 
                   {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full h-[35px] sm:h-[39px] bg-[#F96406] text-white text-[12px] sm:text-[14px] font-medium rounded-[5px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol'] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'SUBMITTING...' : 'SUBMIT'}
-                  </button>
+                  <div className="contact-form-button" style={{ transitionDelay: '0.4s' }}>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-[35px] sm:h-[39px] bg-[#F96406] text-white text-[12px] sm:text-[14px] font-medium rounded-[5px] hover:bg-[#E55A05] transition-colors font-['Kaisei_Decol'] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? 'SUBMITTING...' : 'SUBMIT'}
+                    </button>
+                  </div>
                   
                   {/* Success/Error Messages */}
                   {submitStatus === 'success' && (
@@ -292,11 +515,11 @@ export default function ContactUsPage() {
       </div>
 
       {/* Contact Information Section */}
-      <div className="w-full">
+      <div ref={(el) => { if (el) sectionRefs.current['contact-info-section'] = el; }} className={`w-full contact-info-section ${sectionVisible['contact-info-section'] ? 'contact-info-section-visible' : ''}`}>
         <div className="grid grid-cols-1 lg:grid-cols-[3fr_4fr] w-full">
           {/* Left Side Image */}
           <div 
-            className="bg-cover bg-center bg-no-repeat relative min-h-[260px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[527px]"
+            className="bg-cover bg-center bg-no-repeat relative min-h-[260px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[527px] contact-info-image"
             style={{
               backgroundImage: 'url(/contact-info-bg.png)',
               backgroundSize: 'cover',
@@ -304,7 +527,7 @@ export default function ContactUsPage() {
             }}
           >
             {/* Map Button Overlay */}
-            <div className="absolute inset-0 flex items-end justify-center pb-4 sm:pb-6 z-10">
+            <div className="absolute inset-0 flex items-end justify-center pb-4 sm:pb-6 z-10 contact-info-button">
               <button 
                 onClick={handleFindInMap}
                 className="bg-black/90 text-white px-4 py-2 rounded-full flex items-center gap-2 sm:gap-3 hover:bg-black transition-colors cursor-pointer shadow-md"
@@ -316,10 +539,10 @@ export default function ContactUsPage() {
           </div>
           
           {/* Right Side - Contact Info Background */}
-          <div className="bg-[#E8E4D9] flex items-center w-full">
+          <div className="bg-[#E8E4D9] flex items-center w-full contact-info-content">
             <div className="px-8 lg:px-16 py-12 sm:py-16 w-full space-y-6">
             {/* Address */}
-            <div className="flex items-start gap-4 lg:gap-[61px]">
+            <div className="flex items-start gap-4 lg:gap-[61px] contact-info-item" style={{ transitionDelay: '0.1s' }}>
               <div className="w-[34px] h-[36px] bg-black rounded-sm flex items-center justify-center flex-shrink-0">
                 <MdLocationOn className="text-white text-xl" />
               </div>
@@ -334,7 +557,7 @@ export default function ContactUsPage() {
             <hr className="border-[rgba(118,76,49,0.21)]" />
 
             {/* Email */}
-            <div className="flex items-start gap-4 lg:gap-[61px]">
+            <div className="flex items-start gap-4 lg:gap-[61px] contact-info-item" style={{ transitionDelay: '0.2s' }}>
               <div className="w-[34px] h-[36px] bg-black rounded-sm flex items-center justify-center flex-shrink-0">
                 <MdEmail className="text-white text-xl" />
               </div>
@@ -350,7 +573,7 @@ export default function ContactUsPage() {
             <hr className="border-[rgba(118,76,49,0.21)]" />
 
             {/* Phone */}
-            <div className="flex items-start gap-4 lg:gap-[67px]">
+            <div className="flex items-start gap-4 lg:gap-[67px] contact-info-item" style={{ transitionDelay: '0.3s' }}>
               <div className="w-[34px] h-[36px] bg-black rounded-sm flex items-center justify-center flex-shrink-0">
                 <MdPhone className="text-white text-xl" />
               </div>
@@ -367,7 +590,7 @@ export default function ContactUsPage() {
             <hr className="border-[rgba(118,76,49,0.21)]" />
 
             {/* Working Hours */}
-            <div className="flex items-start gap-4 lg:gap-[61px]">
+            <div className="flex items-start gap-4 lg:gap-[61px] contact-info-item" style={{ transitionDelay: '0.4s' }}>
               <div className="w-[34px] h-[36px] bg-black rounded-sm flex items-center justify-center flex-shrink-0">
                 <MdAccessTime className="text-white text-xl" />
               </div>
@@ -384,7 +607,7 @@ export default function ContactUsPage() {
       </div>
 
       {/* Resort Aerial View Section with Call to Action */}
-      <div className="relative h-[360px] sm:h-[480px] md:h-[540px] lg:h-[590px] w-full">
+      <div ref={(el) => { if (el) sectionRefs.current['cta-section'] = el; }} className={`relative h-[360px] sm:h-[480px] md:h-[540px] lg:h-[590px] w-full contact-cta-section ${sectionVisible['cta-section'] ? 'contact-cta-section-visible' : ''}`}>
         {/* Background Image - Tropical Resort Aerial View */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -401,10 +624,10 @@ export default function ContactUsPage() {
     
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
           <div className="text-center">
-            <h3 className="text-white text-[22px] sm:text-[26px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.15] sm:leading-[1.18] md:leading-[1.2] lg:leading-[1.22] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol']">
+            <h3 className="text-white text-[22px] sm:text-[26px] md:text-[32px] lg:text-[40px] xl:text-[48px] font-bold leading-[1.15] sm:leading-[1.18] md:leading-[1.2] lg:leading-[1.22] mb-4 sm:mb-6 md:mb-8 font-['Kaisei_Decol'] contact-cta-title">
               Let&apos;s Begin Your Zanzibar Journey
             </h3>
-            <div className="flex justify-center">
+            <div className="flex justify-center contact-cta-button">
               <ContactUsButton />
             </div>
           </div>

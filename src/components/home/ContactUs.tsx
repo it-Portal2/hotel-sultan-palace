@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MdEmail, MdPhone, MdAccessTime, MdLocationOn, MdPerson, MdAlternateEmail, MdLanguage, MdMessage } from "react-icons/md";
 import { createBookingEnquiry } from "@/lib/firestoreService";
 
@@ -24,6 +24,8 @@ const info = [
 ];
 
 export default function ContactUs() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -34,6 +36,24 @@ export default function ContactUs() {
   const [errors, setErrors] = useState<{name?:string; email?:string; phone?:string; message?:string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('contact-us-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -85,18 +105,18 @@ export default function ContactUs() {
   };
 
   return (
-    <section className="w-full">
+    <section ref={sectionRef} className="w-full contact-us-section">
       {/* Top Section: Contact Form */}
       <div className="w-full bg-[#2C2B28] py-8 md:py-12 px-4 sm:px-6 md:px-8 lg:px-8 xl:px-12 2xl:px-20">
         <div className="w-full max-w-[1512px] mx-auto">
-          <p className="font-kaisei text-sm md:text-base text-[#BE8C53]">Contact Us</p>
-          <h2 className="mt-2 font-kaisei font-bold text-2xl sm:text-3xl md:text-4xl text-white">Find Out More</h2>
+          <p className={`font-kaisei text-sm md:text-base text-[#BE8C53] contact-us-label ${isVisible ? 'contact-us-label-visible' : ''}`}>Contact Us</p>
+          <h2 className={`mt-2 font-kaisei font-bold text-2xl sm:text-3xl md:text-4xl text-white contact-us-title ${isVisible ? 'contact-us-title-visible' : ''}`}>Find Out More</h2>
 
           <div className="mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-x-8 xl:gap-x-12">
             {/* Left: contact details */}
-            <div className="space-y-5 md:space-y-6">
+            <div className={`space-y-5 md:space-y-6 contact-us-info ${isVisible ? 'contact-us-info-visible' : ''}`}>
               {info.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 md:gap-5">
+                <div key={idx} className={`flex items-start gap-3 md:gap-5 contact-us-info-item ${isVisible ? 'contact-us-info-item-visible' : ''}`} style={{ transitionDelay: `${idx * 0.1}s` }}>
                   <div className="grid h-7 w-7 md:h-8 md:w-8 flex-shrink-0 place-items-center rounded-full bg-[#BE8C53] text-white">
                     <item.icon className="text-xl md:text-2xl" />
                   </div>
@@ -122,7 +142,7 @@ export default function ContactUs() {
             </div>
 
             {/* Right: form */}
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0">
+            <form onSubmit={handleSubmit} className={`grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0 contact-us-form ${isVisible ? 'contact-us-form-visible' : ''}`}>
               <div className="relative">
                 <input 
                   name="name"
@@ -207,11 +227,11 @@ export default function ContactUs() {
       </div>
       
       {/* Bottom Section: Subscribe */}
-      <div className="w-full bg-[#1F1F1E] py-8 md:py-10">
+      <div className={`w-full bg-[#1F1F1E] py-8 md:py-10 contact-us-subscribe ${isVisible ? 'contact-us-subscribe-visible' : ''}`}>
         <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
           <div className="text-center">
-            <h3 className="font-kaisei text-white text-lg md:text-xl lg:text-2xl">Get Timely Updates</h3>
-            <div className="mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 w-full max-w-[420px] mx-auto">
+            <h3 className={`font-kaisei text-white text-lg md:text-xl lg:text-2xl contact-us-subscribe-title ${isVisible ? 'contact-us-subscribe-title-visible' : ''}`}>Get Timely Updates</h3>
+            <div className={`mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 w-full max-w-[420px] mx-auto contact-us-subscribe-form ${isVisible ? 'contact-us-subscribe-form-visible' : ''}`}>
               <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-3 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Enter Your Email Address" />
               
               <button className="w-full sm:w-auto bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei px-8 md:px-10 py-2.5 md:py-2 text-sm rounded-md transition-colors whitespace-nowrap">Subscribe</button>
@@ -219,6 +239,91 @@ export default function ContactUs() {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .contact-us-section {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1s ease-out;
+        }
+        .contact-us-section.contact-us-visible,
+        .contact-us-visible .contact-us-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .contact-us-label {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.2s;
+        }
+        .contact-us-label-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .contact-us-title {
+          opacity: 0;
+          transform: translateX(-50px);
+          transition: all 1s ease-out 0.4s;
+        }
+        .contact-us-title-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .contact-us-info {
+          opacity: 0;
+          transform: translateX(-50px);
+          transition: all 1s ease-out 0.6s;
+        }
+        .contact-us-info-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .contact-us-info-item {
+          opacity: 0;
+          transform: translateX(-30px);
+          transition: all 0.6s ease-out;
+        }
+        .contact-us-info-item-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .contact-us-form {
+          opacity: 0;
+          transform: translateX(50px);
+          transition: all 1s ease-out 0.8s;
+        }
+        .contact-us-form-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .contact-us-subscribe {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1s ease-out 0.5s;
+        }
+        .contact-us-subscribe-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .contact-us-subscribe-title {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.7s;
+        }
+        .contact-us-subscribe-title-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .contact-us-subscribe-form {
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
+          transition: all 0.8s ease-out 0.9s;
+        }
+        .contact-us-subscribe-form-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      `}</style>
     </section>
   );
 }

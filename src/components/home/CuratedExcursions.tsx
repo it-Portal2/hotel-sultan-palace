@@ -114,9 +114,10 @@ export default function CuratedExcursions() {
                 src="/figma/curated-excursions-left.png"
                 alt="Beautiful villa in Zanzibar"
                 fill
-                sizes="(max-width: 1024px) 100vw, 45vw"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 45vw, 500px"
                 className="object-cover transition-transform duration-500 ease-in-out hover:scale-140 active:scale-140"
                 priority
+                quality={85}
               />
             </div>
           </div>
@@ -145,9 +146,10 @@ export default function CuratedExcursions() {
                     src="/figma/curated-excursions-rect.png"
                     alt="Map preview of Zanzibar locations"
                     fill
-                    sizes="(max-width: 1024px) 90vw, 467px"
+                    sizes="(max-width: 768px) 90vw, (max-width: 1024px) 90vw, 467px"
                     className="w-full h-full object-cover"
                     priority
+                    quality={85}
                   />
                 ) : (
                   <iframe

@@ -47,7 +47,8 @@ export default function Hero() {
             autoPlay
             loop
             muted
-            playsInline 
+            playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover"
             style={{ 
               zIndex: 0,

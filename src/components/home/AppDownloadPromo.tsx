@@ -1,25 +1,47 @@
 "use client";
 import Image from "next/image";
 import { FaGooglePlay, FaApple } from "react-icons/fa";
+import { useEffect, useRef, useState } from "react";
 
 export default function AppDownloadPromo() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (sectionRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              entry.target.classList.add('app-promo-visible');
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      observer.observe(sectionRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
-    <section className="relative w-full -mt-20 z-10 bg-[linear-gradient(180deg,#FFFCF6_0%,#CBBB9D_100%)] px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20 overflow-hidden py-12 md:py-16 lg:py-20 xl:py-24 2xl:py-32">
+    <section ref={sectionRef} className="relative w-full -mt-20 z-10 bg-[linear-gradient(180deg,#FFFCF6_0%,#CBBB9D_100%)] px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20 overflow-hidden py-12 md:py-16 lg:py-20 xl:py-24 2xl:py-32 app-promo-section">
       <div className="mx-auto w-full max-w-[1512px]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-center">
           <div className="order-2 lg:order-1 lg:col-span-5">
-            <p className="font-kaisei text-sm md:text-base lg:text-lg text-[#CE5600]/90 mb-4 md:mb-5 lg:mb-6">
+            <p className={`font-kaisei text-sm md:text-base lg:text-lg text-[#CE5600]/90 mb-4 md:mb-5 lg:mb-6 app-promo-label ${isVisible ? 'app-promo-label-visible' : ''}`}>
               Book, relax, and explore—right at your fingertips.
             </p>
-            <h3 className="font-kaisei font-bold text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-[56px] text-[#202C3B] leading-tight mb-4 md:mb-5 lg:mb-6">
+            <h3 className={`font-kaisei font-bold text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-[56px] text-[#202C3B] leading-tight mb-4 md:mb-5 lg:mb-6 app-promo-title ${isVisible ? 'app-promo-title-visible' : ''}`}>
               Experience Royal Comfort,<br />
               Download Our App
             </h3>
-            <p className="mt-4 md:mt-5 lg:mt-6 max-w-xl font-kaisei text-sm md:text-base lg:text-lg leading-relaxed text-[#3D3D3D] mb-6 md:mb-8 lg:mb-10">
+            <p className={`mt-4 md:mt-5 lg:mt-6 max-w-xl font-kaisei text-sm md:text-base lg:text-lg leading-relaxed text-[#3D3D3D] mb-6 md:mb-8 lg:mb-10 app-promo-text ${isVisible ? 'app-promo-text-visible' : ''}`}>
               Book your stay, check in online, and explore The Sultan Palace world with ease. Discover restaurant menus, spa schedules, beach activities, and personalized services—all at your fingertips.
             </p>
 
-            <div className="mt-6 md:mt-8 lg:mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
+            <div className={`mt-6 md:mt-8 lg:mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6 app-promo-buttons ${isVisible ? 'app-promo-buttons-visible' : ''}`}>
               <button className="relative inline-flex items-center gap-3 rounded-lg bg-[#655D4E] px-5 md:px-6 lg:px-8 py-3 md:py-3.5 lg:py-4 text-white font-kaisei text-sm md:text-base tracking-wide overflow-hidden transition-colors duration-300 ease-in-out before:absolute before:inset-0 before:bg-[#ED6200] before:w-0 hover:before:w-full before:transition-all before:duration-300">
                 <span className="relative z-10">Explore Our App</span>
                 <svg className="relative z-10 w-4 h-4 md:w-5 md:h-5" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +64,7 @@ export default function AppDownloadPromo() {
             </div>
           </div>
 
-          <div className="relative order-1 lg:order-2 lg:col-span-7 h-[300px] md:h-[400px] lg:h-[500px] xl:h-[600px] 2xl:h-[700px]">
+          <div className={`relative order-1 lg:order-2 lg:col-span-7 h-[300px] md:h-[400px] lg:h-[500px] xl:h-[600px] 2xl:h-[700px] app-promo-image ${isVisible ? 'app-promo-image-visible' : ''}`}>
             <Image
               src="/story/phone.png"
               alt="Mobile app preview"
@@ -54,6 +76,64 @@ export default function AppDownloadPromo() {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .app-promo-section {
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 1s ease-out;
+        }
+        .app-promo-section.app-promo-visible,
+        .app-promo-visible .app-promo-section {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .app-promo-label {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.2s;
+        }
+        .app-promo-label-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .app-promo-title {
+          opacity: 0;
+          transform: translateX(-50px);
+          transition: all 1s ease-out 0.4s;
+        }
+        .app-promo-title-visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .app-promo-text {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.8s ease-out 0.6s;
+        }
+        .app-promo-text-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .app-promo-buttons {
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
+          transition: all 0.8s ease-out 0.8s;
+        }
+        .app-promo-buttons-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        .app-promo-image {
+          opacity: 0;
+          transform: translateX(100px) scale(0.8) rotate(10deg);
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+        }
+        .app-promo-image-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1) rotate(6deg);
+        }
+      `}</style>
     </section>
   );
 }

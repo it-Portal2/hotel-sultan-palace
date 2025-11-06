@@ -16,14 +16,30 @@ html, body, :root {
   width: 100%;
 }
 
-* {
-  box-sizing: border-box;
+/* Hide scrollbar but keep scrolling functionality */
+html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 body {
   position: relative;
   width: 100%;
   max-width: 100vw;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .container-xl {

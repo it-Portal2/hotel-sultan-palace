@@ -181,8 +181,8 @@ export default function InRoomFacilities() {
 
       <style jsx global>{`
         .inroom-section {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(50px);
           transition: all 1s ease-out;
         }
         .inroom-section.inroom-visible,
@@ -191,8 +191,8 @@ export default function InRoomFacilities() {
           transform: translateY(0);
         }
         .inroom-heading {
-          opacity: 1;
-          transform: translateX(0);
+          opacity: 0;
+          transform: translateX(-100px);
           transition: all 1s ease-out 0.2s;
         }
         .inroom-heading-visible {
@@ -200,8 +200,8 @@ export default function InRoomFacilities() {
           transform: translateX(0);
         }
         .inroom-subheading {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(-30px);
           transition: all 0.8s ease-out 0.4s;
         }
         .inroom-subheading-visible {
@@ -209,8 +209,8 @@ export default function InRoomFacilities() {
           transform: translateY(0);
         }
         .inroom-card {
-          opacity: 1;
-          transform: translateY(0) scale(1);
+          opacity: 0;
+          transform: translateY(60px) scale(0.8);
           transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .inroom-card-visible {

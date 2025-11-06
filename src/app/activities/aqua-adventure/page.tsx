@@ -4,8 +4,78 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { FiArrowRight } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
 
 export default function AquaAdventurePage() {
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const observedElements = new Set<HTMLElement>();
+
+    // Function to check if element is in viewport
+    const isInViewport = (element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
+    };
+
+    // Function to set up observers
+    const setupObservers = () => {
+      const keys = ['title', 'coral', 'kite', 'sailing', 'dhow', 'beach', 'kayak', 'snorkel'];
+      
+      keys.forEach((key) => {
+        const element = sectionRefs.current[key];
+        if (element && !observedElements.has(element)) {
+          observedElements.add(element);
+          
+          // Check if already visible on mount
+          const rect = element.getBoundingClientRect();
+          const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isVisibleNow) {
+            // If already visible, trigger animation immediately
+            setTimeout(() => {
+              setIsVisible((prev) => ({ ...prev, [key]: true }));
+              element.classList.add(`aqua-${key}-visible`);
+            }, 100);
+          } else {
+            // Otherwise, observe for intersection
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    setIsVisible((prev) => ({ ...prev, [key]: true }));
+                    entry.target.classList.add(`aqua-${key}-visible`);
+                    observer.unobserve(entry.target);
+                  }
+                });
+              },
+              { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+            );
+            observer.observe(element);
+            observers.push(observer);
+          }
+        }
+      });
+    };
+
+    // Try immediately and also after delays to catch late-rendered elements
+    setupObservers();
+    const timeoutId = setTimeout(setupObservers, 200);
+    const timeoutId2 = setTimeout(setupObservers, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
   return (
     <>
       <Header />
@@ -32,12 +102,16 @@ export default function AquaAdventurePage() {
             alt="Aqua Adventure Hero Background"
               fill
               priority
+              loading="eager"
+              fetchPriority="high"
+              quality={90}
               className="object-cover"
             sizes="100vw"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
+              opacity: 1,
               objectPosition: 'center'
             }}
             />
@@ -56,8 +130,8 @@ export default function AquaAdventurePage() {
           }}
         />
         
-        {/* Hero Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-[25] pointer-events-none">
+        {/* Hero Content - Positioned at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end px-4 z-[25] pointer-events-none pb-8 sm:pb-12 md:pb-16 lg:pb-20">
           <div className="text-center max-w-[680px]">
             <h1 
               className="text-[#FFFFFF] text-3xl md:text-4xl lg:text-[48px] font-semibold leading-[1.56] tracking-[0.05em] drop-shadow-[0px_4px_26.4px_rgba(0,0,0,0.69)] font-quicksand"
@@ -140,6 +214,7 @@ export default function AquaAdventurePage() {
               alt="Beach Background"
                  fill
                  priority
+                 quality={85}
               className="object-cover object-left"
                  sizes="100vw"
                 />
@@ -148,7 +223,7 @@ export default function AquaAdventurePage() {
           {/* Content Container - Reduced padding for edge-to-edge */}
             <div className="relative z-10 w-full overflow-x-hidden">
             {/* Title: Where the Sultan's Spirit Meets the Sea */}
-            <div className="px-4 md:px-6 lg:px-6 pt-16 md:pt-20 lg:pt-24 pb-12 md:pb-16">
+            <div ref={(el) => { if (el) sectionRefs.current['title'] = el; }} className={`px-4 md:px-6 lg:px-6 pt-16 md:pt-20 lg:pt-24 pb-12 md:pb-16 aqua-title ${isVisible['title'] ? 'aqua-title-visible' : ''}`}>
               <h2 className="text-[#242424] text-[28px] md:text-[36px] lg:text-[40px] font-semibold leading-[1.25] font-quicksand" style={{ width: '750px', maxWidth: '100%' }}>
                 Where the Sultan&apos;s Spirit Meets the Sea
                 </h2>
@@ -159,9 +234,9 @@ export default function AquaAdventurePage() {
               {/* Mobile Layout */}
               <div className="block space-y-12 md:space-y-16">
                {/* Coral Reef Exploration - Responsive grid row */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4">
+               <div ref={(el) => { if (el) sectionRefs.current['coral'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-coral ${isVisible['coral'] ? 'aqua-coral-visible' : ''}`}>
                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
-                   <Image src="/aqua-adventure/kite-surfing.png" alt="Coral Reef Exploration" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                   <Image src="/aqua-adventure/kite-surfing.png" alt="Coral Reef Exploration" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
                    <div className="flex flex-col gap-[25px]">
@@ -180,7 +255,7 @@ export default function AquaAdventurePage() {
                </div>
 
                {/* Kite Surfing - Responsive grid row (text left, image right) */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4">
+               <div ref={(el) => { if (el) sectionRefs.current['kite'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-kite ${isVisible['kite'] ? 'aqua-kite-visible' : ''}`}>
                  <div className="order-2 lg:order-1">
                    <div className="flex flex-col gap-[25px]">
                      <div className="flex flex-col gap-[31px]">
@@ -196,14 +271,14 @@ export default function AquaAdventurePage() {
                    </div>
                  </div>
                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 lg:order-2">
-                   <Image src="/aqua-adventure/sailing-1.png" alt="Kite Surfing" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                   <Image src="/aqua-adventure/sailing-1.png" alt="Kite Surfing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                </div>
 
                {/* Sailing - Responsive grid row */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4">
+               <div ref={(el) => { if (el) sectionRefs.current['sailing'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-sailing ${isVisible['sailing'] ? 'aqua-sailing-visible' : ''}`}>
                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
-                   <Image src="/aqua-adventure/sailing-2.png" alt="Sailing" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                   <Image src="/aqua-adventure/sailing-2.png" alt="Sailing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
                    <div className="flex flex-col gap-[25px]">
@@ -338,7 +413,7 @@ export default function AquaAdventurePage() {
             </div>
           
         {/* Dhow Excursions Full Width Section */}
-        <section className="relative w-full h-[500px] md:h-[650px] lg:h-[830px] overflow-hidden mt-0 mb-16 md:mb-20 lg:mb-24">
+        <section ref={(el) => { if (el) sectionRefs.current['dhow'] = el; }} className={`relative w-full h-[500px] md:h-[650px] lg:h-[830px] overflow-hidden mt-0 mb-16 md:mb-20 lg:mb-24 aqua-dhow ${isVisible['dhow'] ? 'aqua-dhow-visible' : ''}`}>
           <div className="absolute inset-0 w-full h-full">
             <div 
               className="absolute inset-0 pointer-events-none z-10"
@@ -350,6 +425,7 @@ export default function AquaAdventurePage() {
                   src="/aqua-adventure/dhow-excursions.png"
                   alt="Dhow Excursions"
                   fill
+                  quality={85}
                   className="object-cover"
               sizes="100vw"
                 />
@@ -388,6 +464,7 @@ export default function AquaAdventurePage() {
               alt="Dock Background"
                   fill
                   priority
+                  quality={85}
               className="object-cover object-left"
                   sizes="100vw"
                 />
@@ -399,9 +476,9 @@ export default function AquaAdventurePage() {
             <div className="relative px-4 md:px-6 py-16 md:py-20">
               <div className="space-y-12 md:space-y-16">
                 {/* Beach Walking - Grid row (image first) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                <div ref={(el) => { if (el) sectionRefs.current['beach'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-beach ${isVisible['beach'] ? 'aqua-beach-visible' : ''}`}>
                   <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
-                    <Image src="/aqua-adventure/kayaking.png" alt="Beach Walking" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                    <Image src="/aqua-adventure/kayaking.png" alt="Beach Walking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                   <div className="order-2">
                     <div className="flex flex-col gap-[25px]">
@@ -419,7 +496,7 @@ export default function AquaAdventurePage() {
                   </div>
                 </div>
                 {/* Kayaking - Grid row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                <div ref={(el) => { if (el) sectionRefs.current['kayak'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-kayak ${isVisible['kayak'] ? 'aqua-kayak-visible' : ''}`}>
                   <div className="order-1">
                     <div className="flex flex-col gap-[25px]">
                       <div className="flex flex-col gap-[31px]">
@@ -435,12 +512,12 @@ export default function AquaAdventurePage() {
                     </div>
                   </div>
                   <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-2">
-                    <Image src="/aqua-adventure/snorkelling-1.png" alt="Kayaking" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                    <Image src="/aqua-adventure/snorkelling-1.png" alt="Kayaking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                 </div>
 
                 {/* Snorkelling - Grid row (image first) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                <div ref={(el) => { if (el) sectionRefs.current['snorkel'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-snorkel ${isVisible['snorkel'] ? 'aqua-snorkel-visible' : ''}`}>
                   <div className="order-2 lg:order-2">
                     <div className="flex flex-col gap-[25px]">
                       <div className="flex flex-col gap-[31px]">
@@ -456,7 +533,7 @@ export default function AquaAdventurePage() {
                     </div>
                   </div>
                   <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 lg:order-1">
-                    <Image src="/aqua-adventure/snorkelling-2.png" alt="Snorkelling" fill className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                    <Image src="/aqua-adventure/snorkelling-2.png" alt="Snorkelling" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                 </div>
               </div>
@@ -467,6 +544,81 @@ export default function AquaAdventurePage() {
         {/* Spacer before footer removed to eliminate gap */}
       </main>
       <Footer />
+
+      <style jsx global>{`
+        .aqua-title {
+          opacity: 0 !important;
+          transform: translateY(-50px) !important;
+          transition: all 1s ease-out 0.2s !important;
+        }
+        .aqua-title.aqua-title-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+        .aqua-coral {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.3s !important;
+        }
+        .aqua-coral.aqua-coral-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .aqua-kite {
+          opacity: 0 !important;
+          transform: translateX(100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.5s !important;
+        }
+        .aqua-kite.aqua-kite-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .aqua-sailing {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.7s !important;
+        }
+        .aqua-sailing.aqua-sailing-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .aqua-dhow {
+          opacity: 0 !important;
+          transform: translateY(50px) scale(0.95) !important;
+          transition: all 1s ease-out 0.3s !important;
+        }
+        .aqua-dhow.aqua-dhow-visible {
+          opacity: 1 !important;
+          transform: translateY(0) scale(1) !important;
+        }
+        .aqua-beach {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.4s !important;
+        }
+        .aqua-beach.aqua-beach-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .aqua-kayak {
+          opacity: 0 !important;
+          transform: translateX(100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.6s !important;
+        }
+        .aqua-kayak.aqua-kayak-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        .aqua-snorkel {
+          opacity: 0 !important;
+          transform: translateX(-100px) scale(0.9) !important;
+          transition: all 1s ease-out 0.8s !important;
+        }
+        .aqua-snorkel.aqua-snorkel-visible {
+          opacity: 1 !important;
+          transform: translateX(0) scale(1) !important;
+        }
+      `}</style>
     </>
   );
 }

@@ -2,6 +2,7 @@
 import { FaPlay, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import ContactUsButton from "@/components/ui/ContactUsButton";
 
 export default function AboutUsPage() {
@@ -71,13 +72,17 @@ export default function AboutUsPage() {
       {/* Hero Section */}
       <div ref={heroRef} className="relative h-[520px] sm:h-[800px] md:h-[1000px] lg:h-[1319px] w-full">
         {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: 'url(/about-main-bg.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
+        <Image
+          src="/about-main-bg.png"
+          alt="About Us Hero Background"
+          fill
+          priority
+          loading="eager"
+          fetchPriority="high"
+          quality={90}
+          sizes="100vw"
+          className="object-cover"
+          style={{ opacity: 1 }}
         />
         
         {/* Overlay */}

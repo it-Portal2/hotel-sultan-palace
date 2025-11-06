@@ -14,6 +14,8 @@ export default function OurStoriesPage() {
   const [isVisible, setIsVisible] = useState(false);
   const faqSectionRef = useRef<HTMLDivElement | null>(null);
   const testimonialCardRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  const [sectionVisible, setSectionVisible] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     setIsVisible(true);
@@ -58,6 +60,336 @@ export default function OurStoriesPage() {
         testimonialObserver.unobserve(testimonialCardRef.current);
       }
       videoElements.forEach((el) => videoObserver.unobserve(el));
+    };
+  }, []);
+
+  // Enhanced Intersection Observer for sections
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const observedElements = new Set<HTMLElement>();
+
+    const setupObservers = () => {
+      const sectionKeys = ['testimonials-section', 'media-section', 'faq-section'];
+      
+      sectionKeys.forEach((key) => {
+        const element = sectionRefs.current[key];
+        if (element && !observedElements.has(element)) {
+          observedElements.add(element);
+          
+          const rect = element.getBoundingClientRect();
+          const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isVisibleNow) {
+            setTimeout(() => {
+              setSectionVisible((prev) => ({ ...prev, [key]: true }));
+              element.classList.add(`stories-${key}-visible`);
+            }, 100);
+          } else {
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    setSectionVisible((prev) => ({ ...prev, [key]: true }));
+                    entry.target.classList.add(`stories-${key}-visible`);
+                    observer.unobserve(entry.target);
+                  }
+                });
+              },
+              { threshold: 0.15, rootMargin: '0px 0px -50px 0px' }
+            );
+            observer.observe(element);
+            observers.push(observer);
+          }
+        }
+      });
+    };
+
+    setupObservers();
+    const timeoutId = setTimeout(setupObservers, 200);
+    const timeoutId2 = setTimeout(setupObservers, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
+
+  // Inject styles via useEffect
+  useEffect(() => {
+    const styleId = 'our-stories-page-styles';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* Hero Heading Animations - Text Animation */
+      .hero-word {
+        opacity: 0;
+      }
+
+      .hero-word-visible {
+        opacity: 1;
+      }
+
+      /* Character-by-character animation */
+      .char-animate {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(30px) scale(0.5) rotateX(90deg);
+        animation: charReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      @keyframes charReveal {
+        0% {
+          opacity: 0;
+          transform: translateY(30px) scale(0.5) rotateX(90deg);
+          filter: blur(8px);
+        }
+        50% {
+          opacity: 0.8;
+          transform: translateY(-5px) scale(1.1) rotateX(0deg);
+          filter: blur(2px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1) rotateX(0deg);
+          filter: blur(0px);
+        }
+      }
+
+      /* Continuous text animation effects */
+      .text-animate {
+        animation: textGlow 3s ease-in-out infinite;
+      }
+
+      @keyframes textGlow {
+        0%, 100% {
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+        }
+        50% {
+          filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.4));
+        }
+      }
+
+      /* Word container animation */
+      .hero-word-visible .text-animate {
+        animation: wordFloat 4s ease-in-out infinite;
+      }
+
+      @keyframes wordFloat {
+        0%, 100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+
+      /* Testimonials Section Animations */
+      .stories-testimonials-section {
+        opacity: 0 !important;
+        transform: translateY(80px) !important;
+        transition: all 1.2s ease-out 0.2s !important;
+      }
+      .stories-testimonials-section.stories-testimonials-section-visible {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+      }
+
+      .stories-testimonial-card {
+        opacity: 0 !important;
+        transform: translateY(60px) scale(0.95) !important;
+        transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-card {
+        opacity: 1 !important;
+        transform: translateY(0) scale(1) !important;
+      }
+
+      .stories-testimonial-content {
+        opacity: 0 !important;
+        transform: translateX(-80px) !important;
+        transition: all 0.8s ease-out 0.6s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-content {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+
+      .stories-testimonial-title {
+        opacity: 0 !important;
+        transform: translateY(-30px) scale(0.9) !important;
+        transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-title {
+        opacity: 1 !important;
+        transform: translateY(0) scale(1) !important;
+      }
+
+      .stories-testimonial-text {
+        opacity: 0 !important;
+        transform: translateY(30px) !important;
+        transition: all 0.8s ease-out 1s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-text {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+      }
+
+      .stories-testimonial-author {
+        opacity: 0 !important;
+        transform: translateX(-30px) !important;
+        transition: all 0.6s ease-out 1.2s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-author {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+
+      .stories-testimonial-pagination {
+        opacity: 0 !important;
+        transform: translateY(30px) scale(0.9) !important;
+        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-pagination {
+        opacity: 1 !important;
+        transform: translateY(0) scale(1) !important;
+      }
+
+      .stories-testimonial-image {
+        opacity: 0 !important;
+        transform: translateX(100px) scale(0.9) rotateY(-10deg) !important;
+        transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s !important;
+      }
+      .stories-testimonials-section-visible .stories-testimonial-image {
+        opacity: 1 !important;
+        transform: translateX(0) scale(1) rotateY(0deg) !important;
+      }
+
+      /* Media Section Animations */
+      .stories-media-section {
+        opacity: 0 !important;
+        transform: translateY(80px) !important;
+        transition: all 1.2s ease-out 0.2s !important;
+      }
+      .stories-media-section.stories-media-section-visible {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+      }
+
+      .stories-media-left {
+        opacity: 0 !important;
+        transform: translateX(-150px) rotateY(-15deg) scale(0.9) !important;
+        transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+      }
+      .stories-media-section-visible .stories-media-left {
+        opacity: 1 !important;
+        transform: translateX(0) rotateY(0deg) scale(1) !important;
+      }
+
+      .stories-media-right {
+        opacity: 0 !important;
+        transform: translateX(150px) !important;
+        transition: all 0.8s ease-out 0.5s !important;
+      }
+      .stories-media-section-visible .stories-media-right {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+
+      .stories-media-item-1 {
+        opacity: 0 !important;
+        transform: translateX(100px) scale(0.9) !important;
+        transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s !important;
+      }
+      .stories-media-section-visible .stories-media-item-1 {
+        opacity: 1 !important;
+        transform: translateX(0) scale(1) !important;
+      }
+
+      .stories-media-item-2 {
+        opacity: 0 !important;
+        transform: translateX(100px) scale(0.9) !important;
+        transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s !important;
+      }
+      .stories-media-section-visible .stories-media-item-2 {
+        opacity: 1 !important;
+        transform: translateX(0) scale(1) !important;
+      }
+
+      /* FAQ Section Animations */
+      .stories-faq-section {
+        opacity: 0 !important;
+        transform: translateY(80px) scale(0.98) !important;
+        transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s !important;
+      }
+      .stories-faq-section.stories-faq-section-visible {
+        opacity: 1 !important;
+        transform: translateY(0) scale(1) !important;
+      }
+
+      .stories-faq-title {
+        opacity: 0 !important;
+        transform: translateY(-50px) rotateX(10deg) !important;
+        transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+      }
+      .stories-faq-section-visible .stories-faq-title {
+        opacity: 1 !important;
+        transform: translateY(0) rotateX(0deg) !important;
+      }
+
+      .stories-faq-item {
+        opacity: 0 !important;
+        transform: translateX(-50px) !important;
+        transition: all 0.7s ease-out !important;
+      }
+      .stories-faq-section-visible .stories-faq-item {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+
+      /* Legacy Card Animations */
+      .card-visible {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+      }
+
+      /* Legacy Media Animations */
+      .media-visible {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+
+      @media (max-width: 768px) {
+        .media-visible {
+          transform: translateY(0) !important;
+        }
+        
+        .media-item {
+          transform: translateY(30px) !important;
+        }
+
+        .stories-media-left,
+        .stories-media-item-1,
+        .stories-media-item-2 {
+          transform: translateY(50px) scale(0.9) !important;
+        }
+        .stories-media-section-visible .stories-media-left,
+        .stories-media-section-visible .stories-media-item-1,
+        .stories-media-section-visible .stories-media-item-2 {
+          transform: translateY(0) scale(1) !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      const existingStyle = document.getElementById(styleId);
+      if (existingStyle) {
+        existingStyle.remove();
+      }
     };
   }, []);
 
@@ -140,13 +472,18 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
   return (
     <div className="w-full bg-[#FFFCF6] overflow-x-hidden">
       {/* Hero Section */}
-      <div className="relative h-[520px] md:h-[700px] lg:h-[860px] w-full overflow-hidden">
+      <div className="relative h-[600px] md:h-[928px] w-full overflow-hidden">
         <Image
           src="/our-story/hero.png"
           alt="Hero Background"
           fill
           priority
+          loading="eager"
+          fetchPriority="high"
+          quality={90}
+          sizes="100vw"
           className="object-cover"
+          style={{ opacity: 1 }}
         />
         
         {/* Gradient Overlays */}
@@ -163,8 +500,8 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           }}
         />
        
-        {/* Content */}
-        <div className="relative z-20 flex flex-col items-center justify-center h-full  px-4 sm:px-6 md:px-8 w-full">
+        {/* Content - Positioned at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full pb-8 sm:pb-12 md:pb-16 lg:pb-20">
           <h1 
             className="relative z-10 text-[#FFFFFF] text-[32px] sm:text-[42px] md:text-[56px] lg:text-[72px] xl:text-[96px] font-moon-dance leading-[1.2] tracking-[0.05em] text-center w-full max-w-full px-2"
             style={{
@@ -205,12 +542,12 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
       </div>
 
       {/* Testimonials Section */}
-      <div className="bg-[#FFFCF6] py-12 md:py-16 lg:py-20 w-full overflow-x-hidden">
+      <div ref={(el) => { if (el) sectionRefs.current['testimonials-section'] = el; }} className={`bg-[#FFFCF6] py-12 md:py-16 lg:py-20 w-full overflow-x-hidden stories-testimonials-section ${sectionVisible['testimonials-section'] ? 'stories-testimonials-section-visible' : ''}`}>
         <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
           {/* Card Container */}
           <div 
             ref={testimonialCardRef}
-            className="bg-white rounded-lg w-full p-8 md:p-12 lg:p-16 opacity-0 translate-y-12 transition-all duration-1000 ease-out"
+            className="bg-white rounded-lg w-full p-8 md:p-12 lg:p-16 stories-testimonial-card"
             style={{
               boxShadow: '0px 4px 42.5px rgba(121, 201, 233, 0.21)'
             }}
@@ -218,25 +555,25 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               
               {/* Left Column - Testimonials Content */}
-              <div className="flex flex-col justify-center order-2 lg:order-1 group">
+              <div className="flex flex-col justify-center order-2 lg:order-1 group stories-testimonial-content">
                 <div className="space-y-[64px] mb-[52px]">
-                  <h3 className="text-[#000000] text-[28px] md:text-[30px] lg:text-[32px] font-moon-dance leading-[0.84375] tracking-[0.1em] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00]">
+                  <h3 className="text-[#000000] text-[28px] md:text-[30px] lg:text-[32px] font-moon-dance leading-[0.84375] tracking-[0.1em] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00] stories-testimonial-title">
                   {effectiveStories[testimonialIndex]?.title || 'Where I Found My Calm Again'}
                 </h3>
                 
-                  <div className="space-y-[32px]">
+                  <div className="space-y-[32px] stories-testimonial-text">
                     <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] leading-[1.35] font-moon-dance tracking-[0.05em] whitespace-pre-line transition-all duration-300 group-hover:translate-x-1">
                       {effectiveStories[testimonialIndex]?.text || defaultText}
                     </p>
                   </div>
                 </div>
                 
-                <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] font-moon-dance leading-[1.35] tracking-[0.1em] mb-8 lg:mb-0 transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#BE8C53]">
+                <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] font-moon-dance leading-[1.35] tracking-[0.1em] mb-8 lg:mb-0 transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#BE8C53] stories-testimonial-author">
                   {[effectiveStories[testimonialIndex]?.author, effectiveStories[testimonialIndex]?.location].filter(Boolean).join(', ')}
                 </p>
          
                 {/* Pagination Controls */}
-                <div className="flex items-center gap-4 md:gap-[97px] justify-start mt-8 w-full overflow-x-auto pb-2">
+                <div className="flex items-center gap-4 md:gap-[97px] justify-start mt-8 w-full overflow-x-auto pb-2 stories-testimonial-pagination">
                 <button 
                   onClick={prevTestimonial}
                     className="w-[38px] h-[37px] rounded-[43px] bg-[#FF6A00] text-white hover:opacity-90 hover:scale-110 transition-all duration-300 flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg"
@@ -261,11 +598,13 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             </div>
 
             {/* Right Column - Image */}
-              <div className="relative h-[400px] md:h-[550px] lg:h-[698px] w-full order-1 lg:order-2 group/image overflow-hidden rounded">
+              <div className="relative h-[400px] md:h-[550px] lg:h-[698px] w-full order-1 lg:order-2 group/image overflow-hidden rounded stories-testimonial-image">
               <Image
                 src={effectiveStories[testimonialIndex]?.imageUrl || '/our-story/story1.png'} 
                 alt={effectiveStories[testimonialIndex]?.alt || 'Hotel guest and staff'}
                 fill
+                quality={85}
+                sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover rounded transition-transform duration-700 ease-out group-hover/image:scale-110"
               />
                 {/* Gradient overlay on hover */}
@@ -277,7 +616,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
       </div>
 
       {/* Video/Images Section */}
-      <div className="relative w-full overflow-x-hidden">
+      <div ref={(el) => { if (el) sectionRefs.current['media-section'] = el; }} className={`relative w-full overflow-x-hidden stories-media-section ${sectionVisible['media-section'] ? 'stories-media-section-visible' : ''}`}>
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
@@ -294,13 +633,14 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               
               {/* Left Image - 687×965px */}
               <div 
-                className="media-item relative h-[400px] md:h-[965px] w-full md:w-[687px] flex-shrink-0 group cursor-pointer opacity-0 md:translate-x-[-50px] transition-all duration-1000 ease-out overflow-hidden rounded"
-                style={{ animationDelay: '0.1s' }}
+                className="media-item relative h-[400px] md:h-[965px] w-full md:w-[687px] flex-shrink-0 group cursor-pointer overflow-hidden rounded stories-media-left"
               >
                 <Image
                   src="/our-story/video1.png"
                   alt="Pool relaxation"
                   fill
+                  quality={85}
+                  sizes="(max-width: 768px) 100vw, 687px"
                   className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
                 />
                 {/* Gradient overlay on hover */}
@@ -320,16 +660,17 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               </div>
 
               {/* Right Column - Two Images - 659px width */}
-              <div className="flex flex-col gap-4 w-full md:w-[659px] flex-shrink-0">
+              <div className="flex flex-col gap-4 w-full md:w-[659px] flex-shrink-0 stories-media-right">
                 {/* First Right Image - 659×295px */}
                 <div 
-                  className="media-item relative h-[250px] md:h-[295px] w-full group cursor-pointer opacity-0 md:translate-x-[50px] transition-all duration-1000 ease-out overflow-hidden rounded"
-                  style={{ animationDelay: '0.2s' }}
+                  className="media-item relative h-[250px] md:h-[295px] w-full group cursor-pointer overflow-hidden rounded stories-media-item-1"
                 >
                   <Image
                     src="/our-story/video2.png"
                     alt="Infinity pool"
                     fill
+                    quality={85}
+                    sizes="(max-width: 768px) 100vw, 659px"
                     className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
                   />
                   {/* Gradient overlay */}
@@ -346,13 +687,14 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
 
                 {/* Second Right Image - 659×421px */}
                 <div 
-                  className="media-item relative h-[350px] md:h-[421px] w-full group cursor-pointer opacity-0 md:translate-x-[50px] transition-all duration-1000 ease-out overflow-hidden rounded"
-                  style={{ animationDelay: '0.3s' }}
+                  className="media-item relative h-[350px] md:h-[421px] w-full group cursor-pointer overflow-hidden rounded stories-media-item-2"
                 >
                   <Image
                     src="/our-story/video3.png"
                     alt="Dining area"
                     fill
+                    quality={85}
+                    sizes="(max-width: 768px) 100vw, 659px"
                     className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
                   />
                   {/* Gradient overlay */}
@@ -372,14 +714,14 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
         </div>
 
         {/* FAQ Section */}
-        <div className="relative z-10 py-16 md:py-24 bg-[#FFFCF6] w-full overflow-x-hidden">
+        <div ref={(el) => { if (el) sectionRefs.current['faq-section'] = el; }} className={`relative z-10 py-16 md:py-24 bg-[#FFFCF6] w-full overflow-x-hidden stories-faq-section ${sectionVisible['faq-section'] ? 'stories-faq-section-visible' : ''}`}>
           <div ref={faqSectionRef} className="mx-auto max-w-[845px] px-4 md:px-8 w-full">
-            <h2 className="text-[#2C271C] text-[32px] md:text-[36px] lg:text-[40px] font-kaisei-decol font-bold leading-[1.448] mb-12 md:mb-16 text-center lg:text-left">
+            <h2 className="text-[#2C271C] text-[32px] md:text-[36px] lg:text-[40px] font-kaisei-decol font-bold leading-[1.448] mb-12 md:mb-16 text-center lg:text-left stories-faq-title">
               About Zanzibar as a Destination
             </h2>
             <div className="w-full">
               {(showAllFaq ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
-                <div key={index}>
+                <div key={index} className="stories-faq-item" style={{ transitionDelay: `${index * 0.1}s` }}>
                   <button
                     onClick={() => toggleFaqItem(index)}
                     className="w-full py-4 flex items-center justify-between text-left gap-[212px] hover:bg-[#FFFCF6]/50 transition-colors duration-300 rounded px-2 -mx-2 group/faq"
@@ -434,99 +776,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           </div>
         </div>
       </div>
-      
-      <style jsx global>{`
-        /* Hero Heading Animations - Text Animation */
-        .hero-word {
-          opacity: 0;
-        }
-
-        .hero-word-visible {
-          opacity: 1;
-        }
-
-        /* Character-by-character animation */
-        .char-animate {
-          display: inline-block;
-          opacity: 0;
-          transform: translateY(30px) scale(0.5) rotateX(90deg);
-          animation: charReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-
-        @keyframes charReveal {
-          0% {
-            opacity: 0;
-            transform: translateY(30px) scale(0.5) rotateX(90deg);
-            filter: blur(8px);
-          }
-          50% {
-            opacity: 0.8;
-            transform: translateY(-5px) scale(1.1) rotateX(0deg);
-            filter: blur(2px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1) rotateX(0deg);
-            filter: blur(0px);
-          }
-        }
-
-        /* Continuous text animation effects */
-        .text-animate {
-          animation: textGlow 3s ease-in-out infinite;
-        }
-
-        @keyframes textGlow {
-          0%, 100% {
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
-          }
-          50% {
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 40px rgba(255, 255, 255, 0.4));
-          }
-        }
-
-        /* Word container animation */
-        .hero-word-visible .text-animate {
-          animation: wordFloat 4s ease-in-out infinite;
-        }
-
-        @keyframes wordFloat {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-8px);
-          }
-        }
-
-
-        /* Card Animations */
-        .card-visible {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
-
-        /* Media Animations */
-        .media-visible {
-          opacity: 1 !important;
-          transform: translateX(0) !important;
-        }
-
-        @media (max-width: 768px) {
-          .media-visible {
-            transform: translateY(0) !important;
-          }
-          
-          .media-item {
-            transform: translateY(30px) !important;
-          }
-        }
-
-        /* FAQ Animations */
-        .faq-item {
-          transition: all 0.3s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }

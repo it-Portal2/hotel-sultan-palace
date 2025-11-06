@@ -59,7 +59,12 @@ export default function DeepBlueDivePage() {
             alt="Deep Blue Dive Hero"
             fill
             priority
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
             className="object-cover"
+            style={{ opacity: 1 }}
           />
           <div 
             className="absolute inset-0 pointer-events-none z-10"

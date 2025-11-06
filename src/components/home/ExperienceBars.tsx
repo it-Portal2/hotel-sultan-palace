@@ -30,11 +30,11 @@ export default function ExperienceBars() {
       {/* Mobile Layout */}
       <div className="lg:hidden p-4 md:p-8 mb-32">
         <div className="flex flex-col gap-8">
-          <h2 className="font-[Kaisei_Decol] font-bold text-[40px] md:text-[70px] leading-[1.448] text-white">
+          <h2 className={`font-[Kaisei_Decol] font-bold text-[40px] md:text-[70px] leading-[1.448] text-white experience-mobile-heading ${isVisible ? 'experience-mobile-heading-visible' : ''}`}>
             Savor Every Moment, Feel Alive
           </h2>
           
-          <div className="relative w-full h-[400px]">
+          <div className={`relative w-full h-[400px] experience-mobile-image-left ${isVisible ? 'experience-mobile-image-left-visible' : ''}`}>
             <Image 
               src="/figma/experience-left.png" 
               alt="Beach bar with stools" 
@@ -45,21 +45,21 @@ export default function ExperienceBars() {
           </div>
 
           <div className="flex flex-col gap-8">
-            <div>
-              <h4 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-[#BE8C53] mb-[32px]">
+            <div className={`experience-mobile-text-block ${isVisible ? 'experience-mobile-text-block-visible' : ''}`}>
+              <h4 className={`font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-[#BE8C53] mb-[32px] experience-mobile-title ${isVisible ? 'experience-mobile-title-visible' : ''}`}>
                 Oceanfront Bars & Bliss
               </h4>
-              <p className="font-[Kaisei_Decol] font-medium text-[16px] leading-[1.448] text-white mb-6">
+              <p className={`font-[Kaisei_Decol] font-medium text-[16px] leading-[1.448] text-white mb-6 experience-mobile-text ${isVisible ? 'experience-mobile-text-visible' : ''}`}>
                 Enjoy handcrafted cocktails at our beach and in-house bars, where every sip comes with breathtaking ocean views.
               </p>
               
-              <Link href="/rooms" className="group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-fit">
+              <Link href="/rooms" className={`group flex items-center gap-2 border border-white text-white px-4 py-2 font-[Kaisei_Decol] font-bold text-sm tracking-wider transition-all duration-300 ease-in-out hover:bg-white hover:text-black active:bg-white active:text-black w-fit experience-mobile-button ${isVisible ? 'experience-mobile-button-visible' : ''}`}>
                 <span>Book Now</span>
                 <span className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-active:w-5 group-active:opacity-100 transition-all duration-300 ease-in-out text-lg">→</span>
               </Link>
             </div>
 
-            <div className="relative w-full h-[400px] md:h-[595px]">
+            <div className={`relative w-full h-[400px] md:h-[595px] experience-mobile-image-right ${isVisible ? 'experience-mobile-image-right-visible' : ''}`}>
               <Image 
                 src="/figma/experience-right.png" 
                 alt="Indoor bar with bright lights" 
@@ -68,7 +68,7 @@ export default function ExperienceBars() {
                 sizes="100vw"
               />
               
-              <div className="absolute top-4 right-4 bg-white p-6 md:p-8 w-[280px] md:w-[340px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 active:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] active:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)]">
+              <div className={`absolute top-4 right-4 bg-white p-6 md:p-8 w-[280px] md:w-[340px] transition-all duration-300 ease-in-out origin-top-left hover:scale-110 active:scale-110 hover:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] active:shadow-[0_15px_40px_rgba(190,140,83,0.4),0_0_0_1px_rgba(190,140,83,0.15),-15px_15px_30px_rgba(190,140,83,0.3),15px_15px_30px_rgba(190,140,83,0.3)] experience-mobile-card ${isVisible ? 'experience-mobile-card-visible' : ''}`}>
                 <h3 className="font-[Kaisei_Decol] font-bold text-[32px] leading-[1.448] text-black mb-8">
                   Refresh, Relax, Repeat
                 </h3>
@@ -77,7 +77,7 @@ export default function ExperienceBars() {
                 </p>
               </div>
 
-              <div className="absolute bottom-0 left-0">
+              <div className={`absolute bottom-0 left-0 experience-mobile-journey-button ${isVisible ? 'experience-mobile-journey-button-visible' : ''}`}>
                 <button className="group flex items-center justify-between gap-6 border border-white px-6 py-5 text-white bg-black bg-opacity-50 hover:bg-[#ff6a00] active:bg-[#ff6a00] transition-colors duration-300">
                   <span className="font-[Kaisei_Decol] font-bold text-lg uppercase">Start your journey</span>
                   <span className="text-2xl transition-transform duration-300 ease-in-out group-hover:translate-x-2">→</span>
@@ -159,7 +159,7 @@ export default function ExperienceBars() {
           </div>
 
           {/* Left image - Exact Figma position */}
-          <div className="absolute" style={{ 
+          <div className={`absolute experience-image-left ${isVisible ? 'experience-image-left-visible' : ''}`} style={{ 
             left: 'clamp(50px, 6.6%, 100px)',
             top: 'clamp(400px, 55.6%, 566px)',
             width: 'clamp(500px, 31.9%, 482px)',
@@ -178,7 +178,7 @@ export default function ExperienceBars() {
           </div>
 
           {/* Right image - Wider on large screens to remove right black space */}
-          <div className="absolute" style={{ 
+          <div className={`absolute experience-image-right ${isVisible ? 'experience-image-right-visible' : ''}`} style={{ 
             left: 'clamp(500px, 45.1%, 682px)',
             top: 'clamp(250px, 37.9%, 386px)',
             width: 'clamp(620px, 55%, 950px)',
@@ -213,8 +213,8 @@ export default function ExperienceBars() {
 
       <style jsx global>{`
         .experience-section {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(50px);
           transition: all 1.2s ease-out;
         }
         .experience-section.experience-visible,
@@ -223,49 +223,149 @@ export default function ExperienceBars() {
           transform: translateY(0);
         }
         .experience-heading {
-          opacity: 1;
-          transform: translateY(0) scale(1);
+          opacity: 0;
+          transform: translateX(-100px) scale(0.9);
           transition: all 1s ease-out 0.3s;
         }
         .experience-heading-visible {
           opacity: 1;
-          transform: translateY(0) scale(1);
+          transform: translateX(0) scale(1);
         }
         .experience-text-block {
-          opacity: 1;
-          transform: translateX(0);
+          opacity: 0;
+          transform: translateY(-50px);
           transition: all 1s ease-out 0.5s;
         }
         .experience-text-block-visible {
           opacity: 1;
-          transform: translateX(0);
+          transform: translateY(0);
         }
         .experience-card {
-          opacity: 1;
-          transform: translateX(0) scale(1) rotateY(0deg);
-          transition: all 1s ease-out 0.7s;
+          opacity: 0;
+          transform: translateX(100px) scale(0.8) rotateY(-15deg);
+          transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s;
         }
         .experience-card-visible {
           opacity: 1;
           transform: translateX(0) scale(1) rotateY(0deg);
         }
         .experience-book-button {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
           transition: all 0.8s ease-out 0.6s;
         }
         .experience-book-button-visible {
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(0) scale(1);
         }
         .experience-button {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(50px) scale(0.9);
           transition: all 0.8s ease-out 0.9s;
         }
         .experience-button-visible {
           opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        .experience-image-left {
+          opacity: 0;
+          transform: translateX(-100px) scale(0.9);
+          transition: all 1s ease-out 0.4s;
+        }
+        .experience-image-left-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .experience-image-right {
+          opacity: 0;
+          transform: translateX(100px) scale(0.9);
+          transition: all 1s ease-out 0.6s;
+        }
+        .experience-image-right-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        /* Mobile Animations */
+        .experience-mobile-heading {
+          opacity: 0;
+          transform: translateX(-50px) scale(0.95);
+          transition: all 1s ease-out 0.2s;
+        }
+        .experience-mobile-heading-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .experience-mobile-image-left {
+          opacity: 0;
+          transform: translateX(-100px) scale(0.9);
+          transition: all 1s ease-out 0.4s;
+        }
+        .experience-mobile-image-left-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .experience-mobile-text-block {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.8s ease-out 0.6s;
+        }
+        .experience-mobile-text-block-visible {
+          opacity: 1;
           transform: translateY(0);
+        }
+        .experience-mobile-title {
+          opacity: 0;
+          transform: translateY(-30px);
+          transition: all 0.8s ease-out 0.8s;
+        }
+        .experience-mobile-title-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .experience-mobile-text {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.8s ease-out 1s;
+        }
+        .experience-mobile-text-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .experience-mobile-button {
+          opacity: 0;
+          transform: translateY(20px) scale(0.9);
+          transition: all 0.8s ease-out 1.2s;
+        }
+        .experience-mobile-button-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        .experience-mobile-image-right {
+          opacity: 0;
+          transform: translateX(100px) scale(0.9);
+          transition: all 1s ease-out 0.5s;
+        }
+        .experience-mobile-image-right-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        .experience-mobile-card {
+          opacity: 0;
+          transform: translateX(50px) scale(0.9) rotateY(-10deg);
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s;
+        }
+        .experience-mobile-card-visible {
+          opacity: 1;
+          transform: translateX(0) scale(1) rotateY(0deg);
+        }
+        .experience-mobile-journey-button {
+          opacity: 0;
+          transform: translateY(30px) scale(0.9);
+          transition: all 0.8s ease-out 0.9s;
+        }
+        .experience-mobile-journey-button-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
         }
       `}</style>
     </section>

@@ -77,7 +77,18 @@ export default function GalleryPage() {
       <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden overflow-y-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
-          <Image src="/gallery/hero-main-6ecfac.png" alt="Gallery Hero Background" fill priority className="object-cover gallery-hero-bg" />
+          <Image 
+            src="/gallery/hero-main-6ecfac.png" 
+            alt="Gallery Hero Background" 
+            fill 
+            priority 
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
+            className="object-cover gallery-hero-bg" 
+            style={{ opacity: 1 }}
+          />
           <div ref={heroRef} className="absolute inset-0 flex flex-col items-center justify-end pb-90 px-4">
             <div className="text-center max-w-[680px]">
               <h1 className={`text-[#FFFFFF] text-3xl md:text-4xl lg:text-[48px] font-semibold leading-[0.56] tracking-[0.05em] mb-10 drop-shadow-[0px_4px_26.4px_rgba(0,0,0,0.69)] gallery-hero-title ${isVisible ? 'gallery-hero-title-visible' : ''}`}>

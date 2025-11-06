@@ -52,7 +52,12 @@ export default function VillasPage() {
             alt="Villas Hero Background"
             fill
             priority
+            loading="eager"
+            fetchPriority="high"
+            quality={90}
+            sizes="100vw"
             className="object-cover"
+            style={{ opacity: 1 }}
           />
           
           <div ref={heroRef} className="absolute inset-0 flex flex-col items-center justify-center px-4">
