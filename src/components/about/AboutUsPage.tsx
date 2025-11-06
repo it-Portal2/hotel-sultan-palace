@@ -176,7 +176,7 @@ export default function AboutUsPage() {
               
               {/* Right Image - Rectangle 53 */}
               <div 
-                className="md:absolute left-[838px] md:top-[501px] w-full md:w-[785px] h-[280px] sm:h-[380px] md:h-[481px] rounded-none md:rounded-[14px] overflow-hidden mt-8 md:mt-0 content-image-right group/image-right"
+                className="md:absolute left-[838px] md:top-[501px] w-full md:w-[785px] h-[280px] sm:h-[380px] md:h-[481px] rounded-none md:rounded-[14px] overflow-hidden mt-8 md:mt-20 content-image-right group/image-right"
                 style={{
                   backgroundImage: 'url(/about-content-right-bg.png)',
                   backgroundSize: 'cover',
