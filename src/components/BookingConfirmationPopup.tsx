@@ -10,6 +10,7 @@ interface BookingConfirmationPopupProps {
   checkIn: string;
   checkOut: string;
   email: string;
+  allocatedRoomType?: string;
 }
 
 export default function BookingConfirmationPopup({
@@ -18,7 +19,8 @@ export default function BookingConfirmationPopup({
   bookingId,
   checkIn,
   checkOut,
-  email
+  email,
+  allocatedRoomType
 }: BookingConfirmationPopupProps) {
   if (!isOpen) return null;
 
@@ -69,6 +71,12 @@ export default function BookingConfirmationPopup({
                   year: 'numeric' 
                 })}
               </p>
+              {allocatedRoomType && (
+                <p className="text-[13px] md:text-[14px] text-[#484848] font-['Poppins'] leading-[1.5] tracking-[-0.03em] mt-2">
+                  <span className="text-gray-500">Room: </span>
+                  <span className="font-semibold text-green-700">{allocatedRoomType}</span>
+                </p>
+              )}
             </div>
           </div>
 

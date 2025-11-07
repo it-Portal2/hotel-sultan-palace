@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { getAddOns, AddOn } from '@/lib/firestoreService';
-import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
   Calendar, 
@@ -160,9 +159,9 @@ export default function AddOnsPage() {
       
       {/* Booking Form Section */}
       <div className="w-full px-4 py-6 -mt-18">
-        <div className="max-w-5xl  mt-15">
+        <div className="max-w-[1130px]   mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4">
               
               {/* Guest Input */}
               <div className="flex flex-col gap-1">
@@ -201,14 +200,6 @@ export default function AddOnsPage() {
                     {formatDate(bookingData.checkOut)}
                   </span>
                 </div>
-              </div>
-
-              {/* Filter Button */}
-              <div className="flex flex-col items-start gap-1">
-                <div className="text-[#3A3326] text-xs font-semibold mb-1">Filter by</div>
-                <button className="flex items-center justify-center gap-1 bg-[#FF6A00] text-white px-2 py-1 rounded-md w-12 h-8">
-                  <BsFilterSquare size={14} />
-                </button>
               </div>
             </div>
           </div>

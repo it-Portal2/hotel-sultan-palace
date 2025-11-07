@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 import { createBookingService } from "@/lib/bookingService";
 import { 
   PencilIcon,
@@ -54,6 +55,7 @@ interface PaymentData {
 export default function CheckoutPage() {
   const router = useRouter();
   const { bookingData, rooms, addOns, calculateTotal, getNumberOfNights } = useCart();
+  const { showToast } = useToast();
 
   const [guests, setGuests] = useState<Guest[]>([
     {
@@ -102,7 +104,8 @@ export default function CheckoutPage() {
     bookingId: "",
     checkIn: "",
     checkOut: "",
-    email: ""
+    email: "",
+    allocatedRoomType: ""
   });
 
   // Removed redirect logic to allow direct URL access
@@ -313,6 +316,17 @@ export default function CheckoutPage() {
       };
       
       console.log('Submitting booking details to Firestore:', bookingDetails);
+      
+      // Check availability before creating booking
+      const { checkRoomAvailability } = await import('@/lib/bookingService');
+      const availability = await checkRoomAvailability(bookingDetails);
+      
+      if (!availability.available) {
+        showToast(availability.message, 'error');
+        setIsSubmitting(false);
+        return;
+      }
+      
       const bookingId = await createBookingService(bookingDetails);
       
       if (!bookingId) {
@@ -321,11 +335,19 @@ export default function CheckoutPage() {
       
       console.log('Booking created successfully with ID:', bookingId);
       
+      // Fetch the created booking to get allocated room types
+      const { getBookingById } = await import('@/lib/bookingService');
+      const createdBooking = await getBookingById(bookingId);
+      
       // Transform data for confirmation page
       const confirmationData = {
         ...bookingDetails,
         id: bookingId,
-        room: bookingDetails.rooms[0], // Convert rooms array to single room object
+        room: {
+          ...bookingDetails.rooms[0],
+          allocatedRoomType: createdBooking?.rooms[0]?.allocatedRoomType,
+          suiteType: createdBooking?.rooms[0]?.suiteType
+        }, // Convert rooms array to single room object with allocated room type
         total: bookingDetails.totalAmount, // Convert totalAmount to total
         guestDetails: [{
           prefix: guests[0].prefix,
@@ -346,7 +368,8 @@ export default function CheckoutPage() {
         bookingId: bookingDetails.bookingId,
         checkIn: bookingDetails.checkIn,
         checkOut: bookingDetails.checkOut,
-        email: guests[0].email
+        email: guests[0].email,
+        allocatedRoomType: createdBooking?.rooms[0]?.allocatedRoomType || ""
       });
       
       // Show confirmation popup
@@ -1046,6 +1069,7 @@ export default function CheckoutPage() {
         checkIn={popupBookingData.checkIn}
         checkOut={popupBookingData.checkOut}
         email={popupBookingData.email}
+        allocatedRoomType={popupBookingData.allocatedRoomType}
       />
     </div>
   );

@@ -27,6 +27,15 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
 
   useEffect(() => {
     setIsMounted(true);
+    
+    // Auto-fill dates: current date for check-in, next day for check-out
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    setCheckInDate(today);
+    setCheckOutDate(tomorrow);
   }, []);
 
   useEffect(() => {
@@ -110,17 +119,17 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
       <div className="bg-white p-0.5 md:p-1 m-0">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-stretch gap-0 font-opensans">
           <div ref={dateButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
-            <button onClick={() => setIsCalendarOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity">
+            <button onClick={() => setIsCalendarOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
               {checkInDate && checkOutDate ? `${formatDate(checkInDate)} - ${formatDate(checkOutDate)}` : 'Add Dates'}
             </button>
           </div>
           <div ref={guestButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
-            <button onClick={() => setIsGuestOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-colors">
+            <button onClick={() => setIsGuestOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-colors cursor-pointer">
               {guests.adults} Adults . {guests.children} {guests.children === 1 ? 'Child' : 'Children'}
             </button>
           </div>
           <div className="p-1 sm:p-1.5 md:p-2 lg:p-3 xl:p-[10px]">
-            <button onClick={handleCheckAvailability} className="w-full bg-[#FF6A00] text-white px-3 md:px-4 lg:px-5 xl:px-[18px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded">
+            <button onClick={handleCheckAvailability} className="w-full bg-[#FF6A00] text-white px-3 md:px-4 lg:px-5 xl:px-[18px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity rounded cursor-pointer">
               <svg className="w-4 h-4 md:w-[18px] md:h-[18px] lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>

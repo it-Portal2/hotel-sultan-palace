@@ -1,12 +1,186 @@
-import { createBooking, getBooking, getAllBookings, Booking } from './firestoreService';
+import { createBooking, getBooking, getAllBookings, Booking, getRoomTypes, getAllBookings as getAllBookingsFromFirestore, SuiteType } from './firestoreService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Using Booking interface from firestoreService
 
+// Helper function to check if two date ranges overlap
+const datesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
+  const s1 = new Date(start1).getTime();
+  const e1 = new Date(end1).getTime();
+  const s2 = new Date(start2).getTime();
+  const e2 = new Date(end2).getTime();
+  return s1 < e2 && s2 < e1;
+};
+
+// Get available room types for a suite on specific dates
+export const getAvailableRoomTypes = async (
+  suiteType: SuiteType,
+  checkIn: string,
+  checkOut: string,
+  excludeBookingId?: string
+): Promise<string[]> => {
+  try {
+    // Get all room types for this suite
+    const allRoomTypes = await getRoomTypes(suiteType);
+    if (allRoomTypes.length === 0) return [];
+
+    // Get all confirmed and pending bookings that overlap with the date range
+    const allBookings = await getAllBookingsFromFirestore();
+    const overlappingBookings = allBookings.filter(booking => {
+      if (excludeBookingId && booking.id === excludeBookingId) return false;
+      if (booking.status === 'cancelled') return false;
+      return datesOverlap(booking.checkIn, booking.checkOut, checkIn, checkOut);
+    });
+
+    // Track which room types are booked
+    const bookedRoomTypes = new Set<string>();
+    overlappingBookings.forEach(booking => {
+      booking.rooms.forEach(room => {
+        if (room.suiteType === suiteType && room.allocatedRoomType) {
+          bookedRoomTypes.add(room.allocatedRoomType);
+        }
+      });
+    });
+
+    // Return available room types
+    return allRoomTypes
+      .filter(rt => !bookedRoomTypes.has(rt.roomName))
+      .map(rt => rt.roomName);
+  } catch (error) {
+    console.error('Error getting available room types:', error);
+    return [];
+  }
+};
+
+// Auto-allocate room types for a booking
+export const allocateRoomTypes = async (
+  bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>> => {
+  try {
+    const allocatedRooms = await Promise.all(
+      bookingData.rooms.map(async (room) => {
+        // Determine suite type from room type name
+        let suiteType: SuiteType | undefined;
+        const roomTypeLower = room.type.toLowerCase();
+        if (roomTypeLower.includes('garden')) {
+          suiteType = 'Garden Suite';
+        } else if (roomTypeLower.includes('imperial')) {
+          suiteType = 'Imperial Suite';
+        } else if (roomTypeLower.includes('ocean')) {
+          suiteType = 'Ocean Suite';
+        }
+
+        if (!suiteType) {
+          // If we can't determine suite type, return room as is
+          return room;
+        }
+
+        // Get available room types for this suite
+        const available = await getAvailableRoomTypes(
+          suiteType,
+          bookingData.checkIn,
+          bookingData.checkOut
+        );
+
+        if (available.length === 0) {
+          // No available room types - this shouldn't happen if booking was validated
+          console.warn(`No available room types for ${suiteType} on ${bookingData.checkIn} to ${bookingData.checkOut}`);
+          return { ...room, suiteType };
+        }
+
+        // Allocate the first available room type
+        const allocatedRoomType = available[0];
+        return {
+          ...room,
+          suiteType,
+          allocatedRoomType
+        };
+      })
+    );
+
+    return {
+      ...bookingData,
+      rooms: allocatedRooms
+    };
+  } catch (error) {
+    console.error('Error allocating room types:', error);
+    // Return original booking data if allocation fails
+    return bookingData;
+  }
+};
+
+// Check if rooms are available before booking
+export const checkRoomAvailability = async (
+  bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<{ available: boolean; message: string; unavailableSuites: SuiteType[] }> => {
+  try {
+    const unavailableSuites: SuiteType[] = [];
+
+    for (const room of bookingData.rooms) {
+      // Determine suite type from room type name
+      let suiteType: SuiteType | undefined;
+      const roomTypeLower = room.type.toLowerCase();
+      if (roomTypeLower.includes('garden')) {
+        suiteType = 'Garden Suite';
+      } else if (roomTypeLower.includes('imperial')) {
+        suiteType = 'Imperial Suite';
+      } else if (roomTypeLower.includes('ocean')) {
+        suiteType = 'Ocean Suite';
+      }
+
+      if (!suiteType) {
+        continue; // Skip if we can't determine suite type
+      }
+
+      // Check availability for this suite
+      const available = await getAvailableRoomTypes(
+        suiteType,
+        bookingData.checkIn,
+        bookingData.checkOut
+      );
+
+      if (available.length === 0) {
+        unavailableSuites.push(suiteType);
+      }
+    }
+
+    if (unavailableSuites.length > 0) {
+      const suiteNames = unavailableSuites.join(', ');
+      return {
+        available: false,
+        message: `Sorry, no rooms are available for ${suiteNames} on the selected dates. Please choose different dates.`,
+        unavailableSuites
+      };
+    }
+
+    return {
+      available: true,
+      message: '',
+      unavailableSuites: []
+    };
+  } catch (error) {
+    console.error('Error checking room availability:', error);
+    return {
+      available: false,
+      message: 'Error checking room availability. Please try again.',
+      unavailableSuites: []
+    };
+  }
+};
+
 export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   try {
-    const bookingId = await createBooking(bookingData);
+    // First check if rooms are available
+    const availability = await checkRoomAvailability(bookingData);
+    if (!availability.available) {
+      throw new Error(availability.message);
+    }
+
+    // Auto-allocate room types before creating booking
+    const bookingWithAllocatedRooms = await allocateRoomTypes(bookingData);
+    
+    const bookingId = await createBooking(bookingWithAllocatedRooms);
     if (!bookingId) {
       throw new Error('Failed to create booking');
     }

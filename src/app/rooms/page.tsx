@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { getRooms, Room } from '@/lib/firestoreService';
-import { BsFilterSquare } from "react-icons/bs";
 import { 
   User, 
   Calendar,
@@ -39,6 +38,7 @@ function RoomsContent() {
   const [loading, setLoading] = useState(true);
   const [addedRoomId, setAddedRoomId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   // Local UI state for inline date/guest editors
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -86,17 +86,77 @@ function RoomsContent() {
   const ignoreBooking = search?.get('view') === 'explore';
   const hasBooking = Boolean(bookingData) && bookingSetThisSession && !ignoreBooking;
 
-  const addToCart = (room: Room) => {
+  const addToCart = async (room: Room) => {
     if (!hasBooking) {
       setShowToast('Select dates first to book');
       setTimeout(() => setShowToast(null), 1800);
       return;
     }
-    addRoom(room);
-    setAddedRoomId(room.id);
-    setShowToast(`${room.type} added to cart`);
-    setTimeout(() => setAddedRoomId(null), 1500);
-    setTimeout(() => setShowToast(null), 1800);
+
+    // Check room availability before adding to cart
+    try {
+      const { checkRoomAvailability } = await import('@/lib/bookingService');
+      
+      // Determine suite type from room type name
+      let suiteType: 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite' | undefined;
+      const roomTypeLower = room.type.toLowerCase();
+      if (roomTypeLower.includes('garden')) {
+        suiteType = 'Garden Suite';
+      } else if (roomTypeLower.includes('imperial')) {
+        suiteType = 'Imperial Suite';
+      } else if (roomTypeLower.includes('ocean')) {
+        suiteType = 'Ocean Suite';
+      }
+
+      if (suiteType && bookingData) {
+        const bookingDataForCheck = {
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          rooms: [{
+            type: room.type,
+            price: room.price,
+            suiteType: suiteType
+          }],
+          guests: bookingData.guests,
+          guestDetails: {
+            firstName: '',
+            lastName: '',
+            email: '',
+            phone: '',
+            prefix: ''
+          },
+          address: {
+            country: '',
+            city: '',
+            zipCode: '',
+            address1: '',
+            address2: ''
+          },
+          reservationGuests: [],
+          addOns: [],
+          totalAmount: 0,
+          bookingId: '',
+          status: 'pending' as const
+        };
+
+        const availability = await checkRoomAvailability(bookingDataForCheck);
+        
+        if (!availability.available) {
+          setAvailabilityError(availability.message);
+          return;
+        }
+      }
+
+      // If available, add to cart
+      addRoom(room);
+      setAddedRoomId(room.id);
+      setShowToast(`${room.type} added to cart`);
+      setTimeout(() => setAddedRoomId(null), 1500);
+      setTimeout(() => setShowToast(null), 1800);
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      setAvailabilityError('Error checking room availability. Please try again.');
+    }
   };
 
   const removeFromCart = (roomId: string) => {
@@ -216,11 +276,11 @@ function RoomsContent() {
       `}</style>
       <Header />
 
-      {/* Booking Context Bar - always visible with placeholders when not selected */}
+     
       <div className="w-full px-4 py-6 mt-20">
-        <div className="max-w-5xl  mt-15">
+        <div className="max-w-[1130px]   mt-15">
           <div className="bg-[#F8F5EF] rounded-lg shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 p-3 md:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4">
               
               {/* Guest Input */}
               <div className="flex flex-col gap-1" ref={guestButtonRef}>
@@ -228,7 +288,7 @@ function RoomsContent() {
                   <User size={16} />
                   <span>Guest</span>
                 </div>
-                <button onClick={openGuests} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                <button onClick={openGuests} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
                   <span className="text-[#423B2D] text-xs font-semibold w-full">
                     {(bookingData ? `${bookingData.guests.adults} guests, ${bookingData.guests.rooms} room` : `${tempGuests.adults} guests, ${tempGuests.rooms} room`)}
                   </span>
@@ -241,7 +301,7 @@ function RoomsContent() {
                   <Calendar size={14} />
                   <span>Check-in</span>
                 </div>
-                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
                   <span className="text-[#423B2D] text-xs font-semibold w-full">
                     {bookingData ? formatDate(bookingData.checkIn) : (tempCheckIn ? formatDateObj(tempCheckIn) : 'Add Date')}
                   </span>
@@ -254,18 +314,10 @@ function RoomsContent() {
                   <Calendar size={14} />
                   <span>Check-Out</span>
                 </div>
-                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors">
+                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
                   <span className="text-[#423B2D] text-xs font-semibold w-full">
                     {bookingData ? formatDate(bookingData.checkOut) : (tempCheckOut ? formatDateObj(tempCheckOut) : 'Add Date')}
                   </span>
-                </button>
-              </div>
-
-              {/* Filter Button */}
-              <div className="flex flex-col items-start gap-1">
-                <div className="text-[#3A3326] text-xs font-semibold mb-1">Filter by</div>
-                <button className="flex items-center justify-center gap-1 bg-[#FF6A00] text-white px-2 py-1 rounded-md w-12 h-8">
-                  <BsFilterSquare size={14} />
                 </button>
               </div>
             </div>
@@ -334,118 +386,118 @@ function RoomsContent() {
             <div className="w-full lg:basis-[62%]">
               <div className="space-y-6 lg:space-y-8">
                 {rooms.map((room) => (
-                  <div key={room.id} className="bg-[#F8F5EF] rounded-[14px] overflow-hidden border border-[rgba(101,93,78,0.12)]">
-                    <div className="flex flex-col lg:flex-row">
-                      {/* Left Side - Image and Features */}
-                      <div className="w-full lg:w-[520px] flex-shrink-0">
-                        {/* Room Image */}
-                        <div className="w-full h-64 lg:h-[380px] relative mb-0 rounded-b-none overflow-hidden">
-                          <Image 
-                            src={room.image || '/figma/rooms-garden-suite.png'} 
-                            alt={room.name}
-                            fill
-                            className="object-cover transition-transform duration-700 ease-out hover:scale-105"
-                            sizes="(max-width: 768px) 100vw, 320px"
-                          />
-                          {/* Bed info overlay */}
-                          <div className="absolute left-2 bottom-2 bg-white/90 rounded px-2 py-1 text-xs flex items-center gap-1">
-                            <BedDouble size={14} color="#1D2A3A" />
-                            <span className="font-semibold text-[#1D2A3A]">{room.beds}</span>
-                          </div>
-                        </div>
-
-                        <div className="p-3 bg-[#FFFDF8]">
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <DoorOpen size={12} color="#3A3326" />
-                              <span>Private suite</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Maximize2 size={12} color="#3A3326" />
-                              <span>150 m²</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Umbrella size={12} color="#3A3326" />
-                              <span>Balcony</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <TreePine size={12} color="#3A3326" />
-                              <span>Garden view</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Waves size={12} color="#3A3326" />
-                              <span>Pool view</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Snowflake size={12} color="#3A3326" />
-                              <span>AC</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Bath size={10} color="#3A3326" />
-                              <span>Bathroom</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[#3A3326]">
-                              <Wifi size={12} color="#3A3326" />
-                              <span>WiFi</span>
+                    <div key={room.id} className="bg-[#F8F5EF] rounded-[14px] overflow-hidden border border-[rgba(101,93,78,0.12)]">
+                      <div className="flex flex-col lg:flex-row">
+                        {/* Left Side - Image and Features */}
+                        <div className="w-full lg:w-[520px] flex-shrink-0">
+                          {/* Room Image */}
+                          <div className="w-full h-64 lg:h-[380px] relative mb-0 rounded-b-none overflow-hidden">
+                            <Image 
+                              src={room.image || '/figma/rooms-garden-suite.png'} 
+                              alt={room.name}
+                              fill
+                              className="object-cover transition-transform duration-700 ease-out hover:scale-105"
+                              sizes="(max-width: 768px) 100vw, 320px"
+                            />
+                            {/* Bed info overlay */}
+                            <div className="absolute left-2 bottom-2 bg-white/90 rounded px-2 py-1 text-xs flex items-center gap-1">
+                              <BedDouble size={14} color="#1D2A3A" />
+                              <span className="font-semibold text-[#1D2A3A]">{room.beds}</span>
                             </div>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Right Side - Room Details */}
-                      <div className="w-full flex-1 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
-                        {/* Room Info */}
-                        <div>
-                          <h3 className="text-[20px] md:text-[22px] font-semibold text-[#2D2922] mb-2 font-quicksand">{room.type}</h3>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[#FF6A00] font-bold text-[18px]">${room.price} / Night</span>
-                            <span className="text-[#655D4E] text-xs">including general taxes and fees</span>
-                          </div>
-                        </div>
-
-                        {/* Offer Banner */}
-                        <div className="bg-[rgba(21,166,2,0.16)] w-full h-6 flex items-center px-2 rounded">
-                          <div className="flex items-center gap-1 text-[#067832] text-xs font-semibold">
-                            <Tag size={12} />
-                            <span>Book now and unlock 15% total savings!</span>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-[#423B2D] text-sm leading-6 flex-grow">
-                          {room.description}
-                        </p>
-
-                        {/* Booking Info */}
-                        <div className="space-y-2 font-semibold">
-                          <div className="flex items-center gap-2 text-[#464035] text-sm">
-                            <Coffee size={14} color="#BE8C53" />
-                            <span>Very good breakfast included</span>
-                          </div>
-                          {bookingData && (
-                            <>
-                              <div className="flex items-center gap-2 text-[#464035] text-sm">
-                                <Shield size={14} color="#BE8C53" />
-                                <span>Free cancellation before {getCancellationDate(room)}</span>
+                          <div className="p-3 bg-[#FFFDF8]">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <DoorOpen size={12} color="#3A3326" />
+                                <span>Private suite</span>
                               </div>
-                              <div className="flex items-center gap-2 text-[#464035] text-sm">
-                                <CreditCard size={14} color="#BE8C53" />
-                                <span>Pay nothing until {getPaymentDate(room)}</span>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Maximize2 size={12} color="#3A3326" />
+                                <span>150 m²</span>
                               </div>
-                            </>
-                          )}
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Umbrella size={12} color="#3A3326" />
+                                <span>Balcony</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <TreePine size={12} color="#3A3326" />
+                                <span>Garden view</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Waves size={12} color="#3A3326" />
+                                <span>Pool view</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Snowflake size={12} color="#3A3326" />
+                                <span>AC</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Bath size={10} color="#3A3326" />
+                                <span>Bathroom</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[#3A3326]">
+                                <Wifi size={12} color="#3A3326" />
+                                <span>WiFi</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        <button
-                          onClick={() => addToCart(room)}
-                          disabled={!hasBooking}
-                          className={`${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-[#E55A00] text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
-                        >
-                          {hasBooking ? (addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now') : 'Select dates to book'}
-                        </button>
+                        {/* Right Side - Room Details */}
+                        <div className="w-full flex-1 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
+                          {/* Room Info */}
+                          <div>
+                            <h3 className="text-[20px] md:text-[22px] font-semibold text-[#2D2922] mb-2 font-quicksand">{room.type}</h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-[#FF6A00] font-bold text-[18px]">${room.price} / Night</span>
+                              <span className="text-[#655D4E] text-xs">including general taxes and fees</span>
+                            </div>
+                          </div>
+
+                          {/* Offer Banner */}
+                          <div className="bg-[rgba(21,166,2,0.16)] w-full h-6 flex items-center px-2 rounded">
+                            <div className="flex items-center gap-1 text-[#067832] text-xs font-semibold">
+                              <Tag size={12} />
+                              <span>Book now and unlock 15% total savings!</span>
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-[#423B2D] text-sm leading-6 flex-grow">
+                            {room.description}
+                          </p>
+
+                          {/* Booking Info */}
+                          <div className="space-y-2 font-semibold">
+                            <div className="flex items-center gap-2 text-[#464035] text-sm">
+                              <Coffee size={14} color="#BE8C53" />
+                              <span>Very good breakfast included</span>
+                            </div>
+                            {bookingData && (
+                              <>
+                                <div className="flex items-center gap-2 text-[#464035] text-sm">
+                                  <Shield size={14} color="#BE8C53" />
+                                  <span>Free cancellation before {getCancellationDate(room)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[#464035] text-sm">
+                                  <CreditCard size={14} color="#BE8C53" />
+                                  <span>Pay nothing until {getPaymentDate(room)}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => addToCart(room)}
+                            disabled={!hasBooking}
+                            className={`${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-[#E55A00] text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
+                          >
+                            {hasBooking ? (addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now') : 'Select dates to book'}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
                 ))}
               </div>
             </div>
@@ -569,6 +621,51 @@ function RoomsContent() {
             {showToast}
           </div>
         </div>
+      )}
+
+      {/* Availability Error Popup */}
+      {isMounted && availabilityError && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity duration-200">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative transform transition-all">
+            {/* Close Button */}
+            <button
+              onClick={() => setAvailabilityError(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-bold text-[#202c3b] text-center mb-3">
+              Room Not Available
+            </h3>
+
+            {/* Message */}
+            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+              {availabilityError}
+            </p>
+
+            {/* Action Button */}
+            <button
+              onClick={() => setAvailabilityError(null)}
+              className="w-full bg-[#FF6A00] hover:bg-[#e55a00] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              OK, I Understand
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       <Footer />

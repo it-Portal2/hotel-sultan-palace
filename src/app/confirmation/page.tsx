@@ -35,6 +35,8 @@ interface BookingDetails {
     name: string;
     price: number;
     type: string;
+    allocatedRoomType?: string;
+    suiteType?: string;
   };
   addOns: Array<{
     id: string;
@@ -200,7 +202,20 @@ export default function ConfirmationPage() {
                       <p className="text-gray-600">
                         {bookingDetails.room?.type || 'Standard'}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      {bookingDetails.room?.allocatedRoomType && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <p className="text-xs text-gray-500">Allocated Room:</p>
+                          <p className="text-sm font-semibold text-green-700 mt-1">
+                            {bookingDetails.room.allocatedRoomType}
+                          </p>
+                          {bookingDetails.room.suiteType && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {bookingDetails.room.suiteType}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-500 mt-2">
                         ${(bookingDetails.room?.price || 0).toLocaleString()} per night × {getNumberOfNights()} night{getNumberOfNights() > 1 ? 's' : ''}
                       </p>
                     </div>

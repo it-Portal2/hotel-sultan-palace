@@ -111,11 +111,38 @@ export default function StoryInPictures() {
         </h2>
 
         <div 
-          className="relative flex items-center justify-center gap-4 md:gap-6 lg:gap-[26px] overflow-hidden md:overflow-visible"
+          className="relative flex items-center justify-center gap-4 md:gap-6 lg:gap-[26px] overflow-visible"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
+          {allImages.length > 1 && (
+            <>
+              <button
+                aria-label="Previous"
+                className="absolute -left-16 md:-left-20 lg:-left-25 top-1/2 -translate-y-1/2 z-50 flex h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded-full bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+                }}
+              >
+                <span className="text-3xl md:text-4xl lg:text-5xl">←</span>
+              </button>
+              <button
+                aria-label="Next"
+                className="absolute -right-16 md:-right-20 lg:-right-25 top-1/2 -translate-y-1/2 z-50 flex h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded-full bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIndex((prev) => (prev + 1) % allImages.length);
+                }}
+              >
+                <span className="text-3xl md:text-4xl lg:text-5xl">→</span>
+              </button>
+            </>
+          )}
+
           {visible.map((image, i) => (
             <Link href="/our-stories" key={`${image.src}-${i}`} className={`group relative w-full md:w-[280px] lg:w-[380px] xl:w-[460px] 2xl:w-[490px] h-[350px] md:h-[400px] lg:h-[480px] xl:h-[540px] 2xl:h-[576px] flex-shrink-0 story-image ${isVisible ? 'story-image-visible' : ''}`} style={{ transitionDelay: `${i * 0.2}s`, overflow: 'visible' }}>
               <Image
@@ -126,28 +153,6 @@ export default function StoryInPictures() {
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 280px, (max-width: 1280px) 380px, (max-width: 1536px) 460px, 490px"
                 priority={i === 0}
               />
-
-              {/* Navigation arrows - show on mobile (single image) and desktop (middle image) */}
-              {((isMobile && i === 0) || (!isMobile && i === 1)) && allImages.length > 1 && (
-                <>
-                  <button
-                    aria-label="Previous"
-                    className="flex absolute top-1/2 -translate-y-1/2 z-50 h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
-                    onClick={() => setIndex((prev) => (prev - 1 + allImages.length) % allImages.length)}
-                    style={{ position: 'absolute', left: isMobile ? '8px' : '-24px', zIndex: 50 }}
-                  >
-                    <span className="text-3xl md:text-4xl lg:text-5xl">←</span>
-                  </button>
-                  <button
-                    aria-label="Next"
-                    className="flex absolute top-1/2 -translate-y-1/2 z-50 h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded bg-white text-[#be8c53] shadow-xl hover:bg-[#be8c53] hover:text-white active:bg-[#be8c53] active:text-white transition-all duration-300"
-                    onClick={() => setIndex((prev) => (prev + 1) % allImages.length)}
-                    style={{ position: 'absolute', right: isMobile ? '8px' : '-24px', zIndex: 50 }}
-                  >
-                    <span className="text-3xl md:text-4xl lg:text-5xl">→</span>
-                  </button>
-                </>
-              )}
 
               {/* Hover overlay with View → */}
               <figcaption className="pointer-events-none absolute inset-0 flex items-end overflow-hidden">

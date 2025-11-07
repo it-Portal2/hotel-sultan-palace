@@ -130,19 +130,19 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold">Bookings Management</h1>
-        <p className="mt-2 text-purple-50 text-lg">
+      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
+        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Bookings Management</h1>
+        <p className="mt-2 text-[#202c3b]/70 text-lg">
           {search?.get('day') ? `Bookings for ${search?.get('day')}` : 'Manage all reservations and bookings'}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white/20">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#FF6A00]/10 text-[#202c3b] border border-[#FF6A00]/20">
             Total: <strong className="ml-1">{filtered.length}</strong>
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white/20">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#be8c53]/10 text-[#202c3b] border border-[#be8c53]/20">
             Pending: <strong className="ml-1">{filtered.filter(b => b.status === 'pending').length}</strong>
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white/20">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#FF6A00]/10 text-[#202c3b] border border-[#FF6A00]/20">
             Confirmed: <strong className="ml-1">{filtered.filter(b => b.status === 'confirmed').length}</strong>
           </span>
         </div>
@@ -238,12 +238,17 @@ export default function AdminBookingsPage() {
                         <div className="text-sm text-gray-900">{new Date(b.checkIn).toLocaleDateString()}</div>
                         <div className="text-xs text-gray-500">→ {new Date(b.checkOut).toLocaleDateString()}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
                           {b.guests.adults} Adults
                           {b.guests.children > 0 && `, ${b.guests.children} Children`}
                         </div>
                         <div className="text-xs text-gray-500">{b.guests.rooms} Room{b.guests.rooms > 1 ? 's' : ''}</div>
+                        {b.rooms.some(r => r.allocatedRoomType) && (
+                          <div className="text-xs text-green-600 mt-1">
+                            {b.rooms.filter(r => r.allocatedRoomType).map(r => r.allocatedRoomType).join(', ')}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-gray-900">${b.totalAmount?.toLocaleString() || 0}</div>
@@ -306,12 +311,12 @@ export default function AdminBookingsPage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+            <div className="sticky top-0 bg-gradient-to-r from-white to-[#FFFCF6] border-b border-[#be8c53]/20 text-[#202c3b] p-6 rounded-t-xl flex justify-between items-center">
               <div>
-                <h3 className="text-2xl font-bold">Booking Details</h3>
-                <p className="text-purple-100 text-sm mt-1">Booking ID: {selected.bookingId || selected.id}</p>
+                <h3 className="text-2xl font-bold text-[#202c3b]">Booking Details</h3>
+                <p className="text-[#202c3b]/70 text-sm mt-1">Booking ID: {selected.bookingId || selected.id}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-white hover:text-gray-200 transition-colors">
+              <button onClick={() => setSelected(null)} className="text-[#202c3b]/70 hover:text-[#FF6A00] transition-colors">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -378,9 +383,22 @@ export default function AdminBookingsPage() {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Rooms</h4>
                   <div className="space-y-2">
                     {selected.rooms.map((r, i) => (
-                      <div key={i} className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
-                        <span className="text-sm font-medium text-gray-900">{r.type}</span>
-                        <span className="text-sm font-semibold text-gray-700">${r.price}</span>
+                      <div key={i} className="p-3 bg-white rounded border border-gray-200">
+                        <div className="flex justify-between items-start mb-1">
+                          <div>
+                            <span className="text-sm font-medium text-gray-900">{r.type}</span>
+                            {r.suiteType && (
+                              <span className="ml-2 text-xs text-gray-500">({r.suiteType})</span>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-gray-700">${r.price}</span>
+                        </div>
+                        {r.allocatedRoomType && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <span className="text-xs text-gray-500">Allocated Room:</span>
+                            <span className="ml-2 text-sm font-semibold text-green-700">{r.allocatedRoomType}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -408,7 +426,7 @@ export default function AdminBookingsPage() {
               </div>
 
               {/* Total and Status */}
-              <div className="mt-6 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
+              <div className="mt-6 bg-gradient-to-r from-[#FF6A00]/5 to-[#be8c53]/5 rounded-lg p-6 border border-[#be8c53]/20">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Amount</p>
@@ -425,7 +443,7 @@ export default function AdminBookingsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-3 pt-4 border-t border-purple-200">
+                <div className="flex gap-3 pt-4 border-t border-[#be8c53]/20">
                   {selected.status !== 'confirmed' && (
                     <button 
                       onClick={async () => {

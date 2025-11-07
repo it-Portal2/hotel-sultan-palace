@@ -83,6 +83,8 @@ export interface Booking {
   rooms: Array<{
     type: string;
     price: number;
+    allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
+    suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
   }>;
   
   // Essential add-ons information
@@ -167,6 +169,17 @@ export interface GalleryImage {
   id: string;
   imageUrl: string;
   type: GalleryType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SuiteType = 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite';
+
+export interface RoomType {
+  id: string;
+  suiteType: SuiteType;
+  roomName: string; // e.g., "DESERT ROSE", "EUCALYPTUS", "BOUGAINVILLEA"
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1088,5 +1101,92 @@ export const deleteTestimonial = async (id: string): Promise<boolean> => {
   } catch (e) {
     console.error('Error deleting testimonial:', e);
     return false;
+  }
+};
+
+// Room Types CRUD Operations
+export const getRoomTypes = async (suiteType?: SuiteType): Promise<RoomType[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'roomTypes');
+    const qy = suiteType ? query(c, orderBy('createdAt', 'desc')) : query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        suiteType: data.suiteType as SuiteType,
+        roomName: data.roomName,
+        isActive: data.isActive !== false,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as RoomType;
+    });
+    if (suiteType) items = items.filter(i => i.suiteType === suiteType);
+    return items.filter(i => i.isActive);
+  } catch (e) {
+    console.error('Error fetching room types:', e);
+    return [];
+  }
+};
+
+export const createRoomType = async (data: Omit<RoomType, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'roomTypes');
+    const dr = await addDoc(c, { 
+      ...data, 
+      createdAt: serverTimestamp(), 
+      updatedAt: serverTimestamp() 
+    });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating room type:', e);
+    return null;
+  }
+};
+
+export const updateRoomType = async (id: string, data: Partial<RoomType>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'roomTypes', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating room type:', e);
+    return false;
+  }
+};
+
+export const deleteRoomType = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'roomTypes', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting room type:', e);
+    return false;
+  }
+};
+
+export const getRoomType = async (id: string): Promise<RoomType | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'roomTypes', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      suiteType: data.suiteType as SuiteType,
+      roomName: data.roomName,
+      isActive: data.isActive !== false,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as RoomType;
+  } catch (e) {
+    console.error('Error getting room type:', e);
+    return null;
   }
 };
