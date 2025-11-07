@@ -192,7 +192,7 @@ export default function GalleryPage() {
       <Footer />
 
       {lightboxOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={()=>setLightboxOpen(false)}>
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-pointer" onClick={()=>setLightboxOpen(false)}>
           <div className="absolute top-4 right-4 flex gap-2">
             <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.min(3, z+0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">+</button>
             <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.max(1, z-0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">-</button>

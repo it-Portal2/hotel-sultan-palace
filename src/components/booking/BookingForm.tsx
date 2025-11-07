@@ -142,13 +142,13 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
 
       {/* Calendar Popup Backdrop - Portal */}
       {isMounted && isCalendarOpen && createPortal(
-        <div className="fixed inset-0 bg-transparent" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
+        <div className="fixed inset-0 bg-transparent cursor-pointer" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
         document.body
       )}
       
       {/* Guest Popup Backdrop - Portal */}
       {isMounted && isGuestOpen && createPortal(
-        <div className="fixed inset-0 bg-transparent" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
+        <div className="fixed inset-0 bg-transparent cursor-pointer" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />,
         document.body
       )}
 

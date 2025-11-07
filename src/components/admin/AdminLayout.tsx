@@ -112,7 +112,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-screen bg-[#FFFCF6]">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 cursor-pointer" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gradient-to-b from-[#0a1a2b] to-[#1a2a3b]">
           <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
             <h1 className="text-xl font-bold text-white">Admin Panel</h1>

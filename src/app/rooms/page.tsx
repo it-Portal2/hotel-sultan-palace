@@ -328,7 +328,7 @@ function RoomsContent() {
       {/* Portals for inline editors */}
       {isMounted && isCalendarOpen && datePopupPosition.top > 0 && createPortal(
         <div>
-          <div className="fixed inset-0 bg-transparent" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
+          <div className="fixed inset-0 bg-transparent cursor-pointer" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
           <div 
             className="fixed transition-all duration-200 ease-out opacity-100"
             onClick={(e) => e.stopPropagation()}
@@ -344,7 +344,7 @@ function RoomsContent() {
 
       {isMounted && isGuestOpen && guestPopupPosition.top > 0 && createPortal(
         <div>
-          <div className="fixed inset-0 bg-transparent" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
+          <div className="fixed inset-0 bg-transparent cursor-pointer" onClick={() => setIsGuestOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
           <div
             className="fixed transition-all duration-200 ease-out opacity-100"
             onClick={(e) => e.stopPropagation()}

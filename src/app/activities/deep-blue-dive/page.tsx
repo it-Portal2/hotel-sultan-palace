@@ -259,7 +259,7 @@ export default function DeepBlueDivePage() {
         </section>
         {/* Video Modal */}
         {isVideoOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIsVideoOpen(false)}>
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 cursor-pointer" onClick={() => setIsVideoOpen(false)}>
             <div className="relative w-full max-w-4xl aspect-video bg-black" onClick={(e) => e.stopPropagation()}>
               <button
                 aria-label="Close video"

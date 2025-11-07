@@ -101,6 +101,26 @@ img, video, canvas {
   border-color: #f5f5dc;
 }
 
+/* Cursor pointer for all clickable elements */
+button,
+a,
+[role="button"],
+[onclick],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+label[for] {
+  cursor: pointer;
+}
+
+/* Ensure clickable divs and spans have pointer cursor */
+div[onClick],
+span[onClick],
+div[onclick],
+span[onclick] {
+  cursor: pointer;
+}
+
 @keyframes slideInRight {
   from {
     opacity: 0;
