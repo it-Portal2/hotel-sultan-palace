@@ -5,14 +5,12 @@ import Image from 'next/image';
 import { GrLinkNext } from "react-icons/gr";
 import { GrLinkPrevious } from "react-icons/gr";
 import { getStoryImages, StoryImage } from '@/lib/firestoreService';
+import AboutZanzibar from '@/components/home/about_zanzibar';
 
 export default function OurStoriesPage() {
   const [stories, setStories] = useState<StoryImage[]>([]);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [openFaqItems, setOpenFaqItems] = useState<number[]>([]);
-  const [showAllFaq, setShowAllFaq] = useState<boolean>(false);
   const [isVisible, setIsVisible] = useState(false);
-  const faqSectionRef = useRef<HTMLDivElement | null>(null);
   const testimonialCardRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const [sectionVisible, setSectionVisible] = useState<{ [key: string]: boolean }>({});
@@ -69,7 +67,7 @@ export default function OurStoriesPage() {
     const observedElements = new Set<HTMLElement>();
 
     const setupObservers = () => {
-      const sectionKeys = ['testimonials-section', 'media-section', 'faq-section'];
+      const sectionKeys = ['testimonials-section', 'media-section'];
       
       sectionKeys.forEach((key) => {
         const element = sectionRefs.current[key];
@@ -319,36 +317,6 @@ export default function OurStoriesPage() {
         transform: translateX(0) scale(1) !important;
       }
 
-      /* FAQ Section Animations */
-      .stories-faq-section {
-        opacity: 0 !important;
-        transform: translateY(80px) scale(0.98) !important;
-        transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s !important;
-      }
-      .stories-faq-section.stories-faq-section-visible {
-        opacity: 1 !important;
-        transform: translateY(0) scale(1) !important;
-      }
-
-      .stories-faq-title {
-        opacity: 0 !important;
-        transform: translateY(-50px) rotateX(10deg) !important;
-        transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
-      }
-      .stories-faq-section-visible .stories-faq-title {
-        opacity: 1 !important;
-        transform: translateY(0) rotateX(0deg) !important;
-      }
-
-      .stories-faq-item {
-        opacity: 0 !important;
-        transform: translateX(-50px) !important;
-        transition: all 0.7s ease-out !important;
-      }
-      .stories-faq-section-visible .stories-faq-item {
-        opacity: 1 !important;
-        transform: translateX(0) !important;
-      }
 
       /* Legacy Card Animations */
       .card-visible {
@@ -454,20 +422,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
     );
   };
 
-  type FaqItem = { question: string; answer: string };
-  const faqItems: FaqItem[] = [
-    { question: 'Overview of Zanzibar', answer: 'Zanzibar is a semi-autonomous archipelago off the coast of Tanzania, known for its pristine beaches, rich history, and vibrant culture.' },
-    { question: 'Convenience and Value for Money', answer: 'Zanzibar offers excellent value with beautiful accommodations, delicious cuisine, and unforgettable experiences at competitive prices.' },
-    { question: 'Peace of Mind and Stress-Free Experience', answer: 'Our team ensures a seamless experience from booking to departure, handling all arrangements so you can relax and enjoy.' },
-    { question: 'Wide Range of Facilities and Activities', answer: 'From water sports to cultural tours, our resort offers diverse activities to suit every interest and age group.' },
-    { question: 'Discovering Zanzibar\'s Beaches', answer: 'Explore pristine white sand beaches, coral reefs, and turquoise waters that make Zanzibar a tropical paradise.' },
-    { question: 'Exploring Zanzibar\'s Islands', answer: 'Visit nearby islands like Mnemba, Chumbe, and Prison Island for unique wildlife encounters and stunning natural beauty.' },
-    { question: 'Exciting Activities and Experiences in Zanzibar', answer: 'From spice tours to sunset dhow cruises, Zanzibar offers countless adventures for every type of traveler.' },
-  ];
-
-  const toggleFaqItem = (index: number) => {
-    setOpenFaqItems(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
-  };
 
   return (
     <div className="w-full bg-[#FFFCF6] overflow-x-hidden">
@@ -713,67 +667,9 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div ref={(el) => { if (el) sectionRefs.current['faq-section'] = el; }} className={`relative z-10 py-16 md:py-24 bg-[#FFFCF6] w-full overflow-x-hidden stories-faq-section ${sectionVisible['faq-section'] ? 'stories-faq-section-visible' : ''}`}>
-          <div ref={faqSectionRef} className="mx-auto max-w-[845px] px-4 md:px-8 w-full">
-            <h2 className="text-[#2C271C] text-[32px] md:text-[36px] lg:text-[40px] font-kaisei-decol font-bold leading-[1.448] mb-12 md:mb-16 text-center lg:text-left stories-faq-title">
-              About Zanzibar as a Destination
-            </h2>
-            <div className="w-full">
-              {(showAllFaq ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
-                <div key={index} className="stories-faq-item" style={{ transitionDelay: `${index * 0.1}s` }}>
-                  <button
-                    onClick={() => toggleFaqItem(index)}
-                    className="w-full py-4 flex items-center justify-between text-left gap-[212px] hover:bg-[#FFFCF6]/50 transition-colors duration-300 rounded px-2 -mx-2 group/faq"
-                  >
-                    <span className="text-[#1D1C19] text-[18px] md:text-[20px] font-kaisei-decol leading-[1.448] flex-1 transition-colors duration-300 group-hover/faq:text-[#BE8C53]">
-                      {item.question}
-                    </span>
-                    <div
-                      className="text-[#000000] text-2xl md:text-3xl font-light transition-all duration-300 ease-in-out flex-shrink-0 group-hover/faq:text-[#FF6A00] group-hover/faq:scale-110"
-                      style={{ transform: openFaqItems.includes(index) ? 'rotate(45deg)' : 'rotate(0deg)' }}
-                    >
-                      +
-                    </div>
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                      openFaqItems.includes(index) ? 'max-h-[500px]' : 'max-h-0'
-                    }`}
-                  >
-                    <div className="pt-2 pb-6 pr-8">
-                      <p className="text-[#1D1C19] text-[16px] md:text-[18px] font-kaisei-decol leading-relaxed">
-                        {item.answer}
-                      </p>
-                    </div>
-                  </div>
-                  {index < faqItems.length - 1 && (
-                    <div className="h-px bg-black/24"></div>
-                  )}
-                </div>
-              ))}
-              {faqItems.length > 5 && (
-                <div className="text-center mt-6">
-                  <button
-                    onClick={() =>
-                      setShowAllFaq(prev => {
-                        const next = !prev;
-                        if (prev) {
-                          requestAnimationFrame(() => {
-                            faqSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          });
-                        }
-                        return next;
-                      })
-                    }
-                    className="px-6 py-2 border border-[#BE8C53] text-[#BE8C53] hover:bg-[#BE8C53] hover:text-white transition-all duration-300 rounded hover:scale-105 hover:shadow-md"
-                  >
-                    {showAllFaq ? 'View less' : 'View more'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+        {/* About Zanzibar Component */}
+        <div className="relative z-10 bg-[#FFFCF6] w-full">
+          <AboutZanzibar />
         </div>
       </div>
     </div>

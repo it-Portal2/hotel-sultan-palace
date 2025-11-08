@@ -58,46 +58,69 @@ export const allocateRoomTypes = async (
   bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>> => {
   try {
-    const allocatedRooms = await Promise.all(
-      bookingData.rooms.map(async (room) => {
-        // Determine suite type from room type name
-        let suiteType: SuiteType | undefined;
-        const roomTypeLower = room.type.toLowerCase();
-        if (roomTypeLower.includes('garden')) {
-          suiteType = 'Garden Suite';
-        } else if (roomTypeLower.includes('imperial')) {
-          suiteType = 'Imperial Suite';
-        } else if (roomTypeLower.includes('ocean')) {
-          suiteType = 'Ocean Suite';
-        }
+    // Track allocated room types per suite to avoid duplicates in the same booking
+    const allocatedPerSuite: Record<SuiteType, Set<string>> = {
+      'Garden Suite': new Set(),
+      'Imperial Suite': new Set(),
+      'Ocean Suite': new Set()
+    };
 
-        if (!suiteType) {
-          // If we can't determine suite type, return room as is
-          return room;
-        }
+    // Process rooms sequentially to ensure proper tracking of allocated rooms
+    const allocatedRooms = [];
+    for (const room of bookingData.rooms) {
+      // Determine suite type from room type name
+      let suiteType: SuiteType | undefined;
+      const roomTypeLower = room.type.toLowerCase();
+      if (roomTypeLower.includes('garden')) {
+        suiteType = 'Garden Suite';
+      } else if (roomTypeLower.includes('imperial')) {
+        suiteType = 'Imperial Suite';
+      } else if (roomTypeLower.includes('ocean')) {
+        suiteType = 'Ocean Suite';
+      }
 
-        // Get available room types for this suite
-        const available = await getAvailableRoomTypes(
-          suiteType,
-          bookingData.checkIn,
-          bookingData.checkOut
-        );
+      if (!suiteType) {
+        // If we can't determine suite type, return room as is
+        allocatedRooms.push(room);
+        continue;
+      }
 
-        if (available.length === 0) {
-          // No available room types - this shouldn't happen if booking was validated
-          console.warn(`No available room types for ${suiteType} on ${bookingData.checkIn} to ${bookingData.checkOut}`);
-          return { ...room, suiteType };
-        }
+      // Get available room types for this suite
+      const available = await getAvailableRoomTypes(
+        suiteType,
+        bookingData.checkIn,
+        bookingData.checkOut
+      );
 
-        // Allocate the first available room type
-        const allocatedRoomType = available[0];
-        return {
-          ...room,
-          suiteType,
-          allocatedRoomType
-        };
-      })
-    );
+      if (available.length === 0) {
+        // No available room types - this shouldn't happen if booking was validated
+        console.warn(`No available room types for ${suiteType} on ${bookingData.checkIn} to ${bookingData.checkOut}`);
+        allocatedRooms.push({ ...room, suiteType });
+        continue;
+      }
+
+      // Filter out already allocated room types for this suite in the current booking
+      const remainingAvailable = available.filter(
+        roomName => !allocatedPerSuite[suiteType].has(roomName)
+      );
+
+      // Use remaining available, or fall back to all available if all are already allocated
+      const roomsToChooseFrom = remainingAvailable.length > 0 ? remainingAvailable : available;
+
+      // Randomly allocate from available room types to distribute bookings evenly
+      // This prevents the same room type from being booked repeatedly across different bookings
+      const randomIndex = Math.floor(Math.random() * roomsToChooseFrom.length);
+      const allocatedRoomType = roomsToChooseFrom[randomIndex];
+      
+      // Track this allocation to avoid duplicates in the same booking
+      allocatedPerSuite[suiteType].add(allocatedRoomType);
+      
+      allocatedRooms.push({
+        ...room,
+        suiteType,
+        allocatedRoomType
+      });
+    }
 
     return {
       ...bookingData,

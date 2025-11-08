@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   });
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [trend, setTrend] = useState<number[]>([]);
+  const [trendData, setTrendData] = useState<Array<{date: Date, count: number, dayName: string, dayInitial: string, dateStr: string}>>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -69,7 +70,7 @@ export default function AdminDashboard() {
         const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
         const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
 
-        // Last 7 days trend by booking count
+        // Last 7 days trend by booking count with dates
         const days = Array.from({ length: 7 }).map((_, i) => {
           const d = new Date();
           d.setDate(d.getDate() - (6 - i));
@@ -100,6 +101,16 @@ export default function AdminDashboard() {
         });
         setRecentBookings(bookings.slice(0, 5));
         setTrend(counts);
+        
+        // Store trend data with dates
+        const trendDataWithDates = days.map((day, i) => ({
+          date: day,
+          count: counts[i],
+          dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day.getDay()],
+          dayInitial: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.getDay()],
+          dateStr: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        }));
+        setTrendData(trendDataWithDates);
       } catch (error) {
         console.error('Error fetching stats:', error);
         setStats(prev => ({ ...prev, loading: false }));
@@ -320,29 +331,72 @@ export default function AdminDashboard() {
             <ChartBarIcon className="h-5 w-5 text-[#FF6A00] mr-2" />
             Bookings (Last 7 Days)
           </h3>
-          <div className="flex items-end gap-2 h-40">
-            {trend.map((v, i) => {
+          <div className="flex items-end gap-2 h-48">
+            {trendData.length > 0 ? trendData.map((item, i) => {
               const maxVal = Math.max(...trend, 1);
-              const height = maxVal > 0 ? (v / maxVal) * 100 : 0;
+              const height = maxVal > 0 ? (item.count / maxVal) * 100 : 0;
+              
+              // Color gradient based on booking count
+              const getBarColor = (count: number, max: number) => {
+                if (max === 0) return 'from-gray-300 to-gray-400';
+                const ratio = count / max;
+                if (ratio >= 0.7) return 'from-[#FF6A00] to-[#FF8C42]'; // High - Orange
+                if (ratio >= 0.4) return 'from-[#be8c53] to-[#d4a574]'; // Medium - Gold
+                if (ratio > 0) return 'from-[#4CAF50] to-[#66BB6A]'; // Low - Green
+                return 'from-gray-200 to-gray-300'; // Zero - Gray
+              };
+              
+              const isToday = item.date.toDateString() === new Date().toDateString();
+              
               return (
                 <button
                   key={i}
-                  className="flex-1 flex flex-col items-center focus:outline-none group"
+                  className="flex-1 flex flex-col items-center focus:outline-none group relative"
                   onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (6 - i));
-                    const day = d.toISOString().slice(0,10);
+                    const day = item.date.toISOString().slice(0,10);
                     router.push(`/admin/bookings?day=${day}`);
                   }}
-                  title={`${v} bookings on ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i]}`}
+                  title={`${item.count} booking${item.count !== 1 ? 's' : ''} on ${item.dayName}, ${item.dateStr}`}
                 >
-                  <div className="w-full bg-gradient-to-t from-[#FF6A00] via-[#FF6A00] to-[#be8c53] rounded-t-md hover:from-[#FF6A00] hover:via-[#FF6A00] hover:to-[#FF6A00] transition-all group-hover:shadow-lg opacity-80 group-hover:opacity-100" style={{ height: `${Math.max(10, height)}%` }} />
-                  <span className="mt-2 text-xs text-[#202c3b] font-medium">{['S','M','T','W','T','F','S'][i]}</span>
-                  <span className="text-[10px] text-[#202c3b]/60 mt-1">{v}</span>
+                  <div className="w-full relative group/bar">
+                    <div 
+                      className={`w-full bg-gradient-to-t ${getBarColor(item.count, maxVal)} rounded-t-md transition-all duration-300 group-hover/bar:shadow-lg group-hover/bar:scale-105 ${isToday ? 'ring-2 ring-[#FF6A00] ring-offset-2' : ''}`}
+                      style={{ height: `${Math.max(8, height)}%`, minHeight: item.count > 0 ? '20px' : '8px' }}
+                    />
+                    {item.count > 0 && (
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-[#202c3b] text-white text-xs font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        {item.count}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-col items-center w-full">
+                    <span className={`text-xs font-semibold ${isToday ? 'text-[#FF6A00]' : 'text-[#202c3b]'}`}>
+                      {item.dayInitial}
+                    </span>
+                    <span className="text-[10px] text-[#202c3b]/70 mt-1 font-medium">
+                      {item.dateStr}
+                    </span>
+                    <span className={`text-xs font-bold mt-1 ${item.count > 0 ? 'text-[#FF6A00]' : 'text-[#202c3b]/40'}`}>
+                      {item.count}
+                    </span>
+                  </div>
                 </button>
               );
-            })}
+            }) : (
+              <div className="w-full text-center py-8 text-[#202c3b]/60">
+                <ChartBarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Loading booking data...</p>
+              </div>
+            )}
           </div>
+          {trendData.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-[#be8c53]/20">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#202c3b]/60">Total: <span className="font-semibold text-[#202c3b]">{trend.reduce((a, b) => a + b, 0)}</span></span>
+                <span className="text-[#202c3b]/60">Avg: <span className="font-semibold text-[#202c3b]">{Math.round(trend.reduce((a, b) => a + b, 0) / 7 * 10) / 10}</span></span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Recent bookings table */}

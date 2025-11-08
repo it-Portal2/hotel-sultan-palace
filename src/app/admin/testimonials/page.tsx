@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SparklesIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { getTestimonials, deleteTestimonial, Testimonial } from '@/lib/firestoreService';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminTestimonialsPage() {
   const [items, setItems] = useState<Testimonial[]>([]);
@@ -39,6 +40,7 @@ export default function AdminTestimonialsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-3xl font-bold text-gray-900">Testimonials</h1>

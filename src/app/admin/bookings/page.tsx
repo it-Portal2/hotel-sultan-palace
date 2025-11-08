@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { getAllBookings, Booking, updateBooking } from '@/lib/firestoreService';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -130,6 +131,7 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
         <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Bookings Management</h1>
         <p className="mt-2 text-[#202c3b]/70 text-lg">

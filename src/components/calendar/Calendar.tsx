@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface CalendarProps {
@@ -9,6 +9,8 @@ interface CalendarProps {
   onDateSelect: (checkIn: Date | null, checkOut: Date | null) => void;
   selectedCheckIn?: Date | null;
   selectedCheckOut?: Date | null;
+  selectionMode?: 'checkin' | 'checkout' | 'both'; // New prop to control selection mode
+  autoConfirm?: boolean; // Auto-close after selecting check-in
 }
 
 export default function Calendar({ 
@@ -16,11 +18,19 @@ export default function Calendar({
   onClose, 
   onDateSelect, 
   selectedCheckIn, 
-  selectedCheckOut 
+  selectedCheckOut,
+  selectionMode = 'both',
+  autoConfirm = false
 }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [checkInDate, setCheckInDate] = useState<Date | null>(selectedCheckIn || null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(selectedCheckOut || null);
+  
+  // Sync with props when they change
+  useEffect(() => {
+    setCheckInDate(selectedCheckIn || null);
+    setCheckOutDate(selectedCheckOut || null);
+  }, [selectedCheckIn, selectedCheckOut]);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -72,23 +82,49 @@ export default function Calendar({
   const isDateDisabled = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date < today;
+    if (date < today) return true;
+    
+    // If selecting check-out, disable dates before or equal to check-in
+    if (selectionMode === 'checkout' && checkInDate) {
+      return date <= checkInDate;
+    }
+    
+    return false;
   };
 
   const handleDateClick = (date: Date) => {
     if (isDateDisabled(date)) return;
 
-    if (!checkInDate || (checkInDate && checkOutDate)) {
-      // Start new selection
+    if (selectionMode === 'checkin') {
+      // Only selecting check-in
       setCheckInDate(date);
-      setCheckOutDate(null);
-    } else if (checkInDate && !checkOutDate) {
-      // Complete selection
-      if (date > checkInDate) {
+      if (autoConfirm) {
+        onDateSelect(date, checkOutDate);
+        onClose();
+      }
+    } else if (selectionMode === 'checkout') {
+      // Only selecting check-out
+      if (checkInDate && date > checkInDate) {
         setCheckOutDate(date);
-      } else {
+        if (autoConfirm) {
+          onDateSelect(checkInDate, date);
+          onClose();
+        }
+      }
+    } else {
+      // Both dates selection (original behavior)
+      if (!checkInDate || (checkInDate && checkOutDate)) {
+        // Start new selection
         setCheckInDate(date);
         setCheckOutDate(null);
+      } else if (checkInDate && !checkOutDate) {
+        // Complete selection
+        if (date > checkInDate) {
+          setCheckOutDate(date);
+        } else {
+          setCheckInDate(date);
+          setCheckOutDate(null);
+        }
       }
     }
   };
@@ -223,13 +259,37 @@ export default function Calendar({
           >
             Cancel
           </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!checkInDate || !checkOutDate}
-            className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Confirm Dates
-          </button>
+          {selectionMode === 'both' && (
+            <button
+              onClick={handleConfirm}
+              disabled={!checkInDate || !checkOutDate}
+              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Confirm Dates
+            </button>
+          )}
+          {selectionMode === 'checkin' && checkInDate && !autoConfirm && (
+            <button
+              onClick={() => {
+                onDateSelect(checkInDate, checkOutDate);
+                onClose();
+              }}
+              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs hover:bg-orange-600"
+            >
+              Confirm Check-in
+            </button>
+          )}
+          {selectionMode === 'checkout' && checkOutDate && !autoConfirm && (
+            <button
+              onClick={() => {
+                onDateSelect(checkInDate, checkOutDate);
+                onClose();
+              }}
+              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs hover:bg-orange-600"
+            >
+              Confirm Check-out
+            </button>
+          )}
         </div>
       </div>
   );

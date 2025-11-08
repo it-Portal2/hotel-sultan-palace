@@ -122,7 +122,7 @@ export default function OceanBreezeSpaPage() {
                 },
                 { 
                   title: "Ocean Breeze Detox", 
-                  desc: "Cleanse and rejuvenate your body with sea salt and herbal wraps.", 
+                  desc: "Warm stone massage infused with calming spices to ease tension.", 
                   image: "/spa_treatment_2-7c5567.png" 
                 },
                 { 
@@ -132,7 +132,7 @@ export default function OceanBreezeSpaPage() {
                 },
                 { 
                   title: "Golden Sunset Therapy", 
-                  desc: "Warm stone massage infused with calming spices to ease tension.", 
+                  desc: "Cleanse and rejuvenate your body with sea salt and herbal wraps.", 
                   image: "/spa_treatment_4.png" 
                 }
               ].map((treatment, i) => (

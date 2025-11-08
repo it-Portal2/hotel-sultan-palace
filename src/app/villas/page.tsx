@@ -76,11 +76,11 @@ export default function VillasPage() {
  
         {/* Villas Section */}
         <section className="py-16 md:py-24 bg-[#FFFCF6]">
-          <div className="w-full max-w-[1596px] mx-auto px-0 md:px-1 lg:px-2 xl:px-4 2xl:px-2">
+          <div className="w-full mx-auto px-0">
             <div className="flex flex-col gap-[68px]">
               
               {/* Garden View Villas */}
-              <div ref={(el) => { sectionRefs.current[0] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section">
+              <div ref={(el) => { sectionRefs.current[0] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section mx-4 md:mx-6 lg:mx-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[0] = el; }}
@@ -88,14 +88,14 @@ export default function VillasPage() {
                   >
                     Garden View Villas
                   </h2>
-                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
+                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden md:mr-10 lg:mr-16">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
                   </button>
                 </div>
                 
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[0] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-3 lg:gap-4 w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[0] = el; }} className="relative w-full md:flex-[1.6] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/garden-villa-main.png"
@@ -122,7 +122,7 @@ export default function VillasPage() {
                        </Link>
                      </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[1] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
+                  <div ref={(el) => { imageRefs.current[1] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/garden-villa-1.png"
                       alt="Garden Villa Interior"
@@ -131,7 +131,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[2] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
+                  <div ref={(el) => { imageRefs.current[2] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/garden-villa-2.png"
                       alt="Garden Villa Exterior"
@@ -146,7 +146,8 @@ export default function VillasPage() {
               {/* Ocean Front Villas */}
               <div ref={(el) => { sectionRefs.current[1] = el; }} className="relative w-full h-[761px] overflow-hidden villa-full-section">
                 <Image
-                  src="/villas/ocean-front-bg.png"
+                  src="/gallery/hero-main-6ecfac.png" 
+                  
                   alt="Ocean Front Villas Background"
                   fill
                   className="object-cover villa-bg-image"
@@ -164,7 +165,7 @@ export default function VillasPage() {
                       Greet the sunrise over the sparkling Indian Ocean.
                     </p>
                     <p className="text-[#FFFFFF] text-[18px] font-normal leading-[1.5] font-quicksand villa-full-text">
-                      Wake up to stunning sea views from your private terrace. Ideal for couples looking for a romantic escape.
+                      Wake up to stunning sea views from your private balcony. Ideal for couples looking for a romantic escape.
                     </p>
                     <div className="flex gap-[18px] justify-center">
                       <button onClick={openModal} className="bg-[#655D4E] text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944444] w-[180px] h-[42px] flex items-center justify-center font-quicksand villa-full-button group/btn-full relative overflow-hidden">
@@ -181,7 +182,7 @@ export default function VillasPage() {
               </div>
 
               {/* Sultan Place Hotel Villa */}
-              <div ref={(el) => { sectionRefs.current[2] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section">
+              <div ref={(el) => { sectionRefs.current[2] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section mx-4 md:mx-6 lg:mx-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[2] = el; }}
@@ -189,14 +190,14 @@ export default function VillasPage() {
                   >
                     Sultan Place Hotel Villa
                   </h2>
-                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
+                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden md:mr-10 lg:mr-16">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
                   </button>
                 </div>
                 
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[3] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 villa-side-image">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-3 lg:gap-4 w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[3] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 villa-side-image">
                     <Image
                       src="/villas/sultan-villa-1.png"
                       alt="Sultan Villa Interior"
@@ -205,7 +206,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[4] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
+                  <div ref={(el) => { imageRefs.current[4] = el; }} className="relative w-full md:flex-[1.6] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/sultan-villa-main.png"
@@ -232,7 +233,7 @@ export default function VillasPage() {
                        </Link>
                      </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[5] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
+                  <div ref={(el) => { imageRefs.current[5] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/sultan-villa-2.png"
                       alt="Sultan Villa Exterior"
@@ -282,7 +283,7 @@ export default function VillasPage() {
               </div>
 
               {/* One-Bedroom Retreats */}
-              <div ref={(el) => { sectionRefs.current[4] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section">
+              <div ref={(el) => { sectionRefs.current[4] = el; }} className="flex flex-col gap-[24px] md:gap-[44px] w-full villa-section mx-4 md:mx-6 lg:mx-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[4] = el; }}
@@ -290,14 +291,14 @@ export default function VillasPage() {
                   >
                     One-Bedroom Retreats
                   </h2>
-                  <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden">
+                    <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full md:w-[208px] h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden md:mr-10 lg:mr-16">
                     <span className="relative z-10">Booking Enquiry</span>
                     <span className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-500 origin-left rounded-[6px]"></span>
                   </button>
                 </div>
                 
-                  <div className="relative flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-4 lg:gap-[20px] w-full h-auto md:h-[659px]">
-                  <div ref={(el) => { imageRefs.current[6] = el; }} className="relative w-full md:w-[45%] lg:w-[500px] xl:w-[614px] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
+                  <div className="relative flex flex-col md:flex-row items-stretch md:items-center gap-[12px] md:gap-3 lg:gap-4 w-full h-auto md:h-[659px]">
+                  <div ref={(el) => { imageRefs.current[6] = el; }} className="relative w-full md:flex-[1.6] h-[520px] md:h-[659px] flex-shrink-0 villa-main-image">
                     <div className="relative w-full h-[300px] md:h-[384px] overflow-hidden">
                       <Image
                         src="/villas/one-bedroom-main.png"
@@ -324,7 +325,7 @@ export default function VillasPage() {
                       </Link>
                     </div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[7] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
+                  <div ref={(el) => { imageRefs.current[7] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/one-bedroom-1.png"
                       alt="One-Bedroom Interior"
@@ -333,7 +334,7 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[8] = el; }} className="relative w-full md:w-[27%] lg:w-[300px] xl:w-[365px] h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
+                  <div ref={(el) => { imageRefs.current[8] = el; }} className="relative w-full md:flex-1 h-[260px] md:h-[659px] flex-shrink-0 hidden md:block villa-side-image">
                     <Image
                       src="/villas/one-bedroom-2.png"
                       alt="One-Bedroom Exterior"

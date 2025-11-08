@@ -8,6 +8,7 @@ import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
+import BackButton from '@/components/admin/BackButton';
 
 export default function NewExcursionPage() {
   const router = useRouter();
@@ -80,6 +81,7 @@ export default function NewExcursionPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/excursions" label="Back to Excursions" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Add Excursion</h1>
         <p className="mt-2 text-gray-600">Create a new excursion card for the homepage section</p>

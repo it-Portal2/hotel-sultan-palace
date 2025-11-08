@@ -361,7 +361,10 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     
     if (roomSnap.exists()) {
       const data = roomSnap.data();
-      const resolvedImage = resolveRoomImage(data);
+      // Preserve the original image from Firestore if it exists, otherwise use resolved fallback
+      // This ensures edits can preserve the actual stored image URL
+      const originalImage = data.image || '';
+      const resolvedImage = originalImage || resolveRoomImage(data);
       return {
         id: roomSnap.id,
         ...data,

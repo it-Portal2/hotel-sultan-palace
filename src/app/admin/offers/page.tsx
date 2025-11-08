@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PlusIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { getOffers, deleteOffer, OfferBanner } from '@/lib/firestoreService';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminOffersPage() {
   const [items, setItems] = useState<OfferBanner[]>([]);
@@ -33,6 +34,7 @@ export default function AdminOffersPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-3xl font-bold text-gray-900">Offers</h1>

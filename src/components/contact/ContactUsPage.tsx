@@ -25,7 +25,7 @@ export default function ContactUsPage() {
   const [showSubtitle, setShowSubtitle] = useState(false);
   const [typewriterComplete, setTypewriterComplete] = useState(false);
 
-  const fullText = "We're Here to Welcome You to Paradise";
+  const fullText = "We're Here to Welcome You to the Paradise";
   const subtitleText = "CONTACT US";
 
   useEffect(() => {

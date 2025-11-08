@@ -16,10 +16,12 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
   const { updateBookingData } = useCart();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout' | 'both'>('both');
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guests, setGuests] = useState({ adults: 2, children: 0, rooms: 1 });
-  const dateButtonRef = useRef<HTMLDivElement>(null);
+  const checkInButtonRef = useRef<HTMLDivElement>(null);
+  const checkOutButtonRef = useRef<HTMLDivElement>(null);
   const guestButtonRef = useRef<HTMLDivElement>(null);
   const [datePopupPosition, setDatePopupPosition] = useState({ top: 0, left: 0, width: 0 });
   const [guestPopupPosition, setGuestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -28,20 +30,23 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
   useEffect(() => {
     setIsMounted(true);
     
-    // Auto-fill dates: current date for check-in, next day for check-out
+    // Auto-fill with 3 days from current date for check-in, and 1 day after check-in for check-out
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const checkInDate = new Date(today);
+    checkInDate.setDate(checkInDate.getDate() + 3); // 3 days from today
+    const checkOutDate = new Date(checkInDate);
+    checkOutDate.setDate(checkOutDate.getDate() + 1); // 1 day after check-in
     
-    setCheckInDate(today);
-    setCheckOutDate(tomorrow);
+    setCheckInDate(checkInDate);
+    setCheckOutDate(checkOutDate);
   }, []);
 
   useEffect(() => {
     const updateDatePosition = () => {
-      if (dateButtonRef.current) {
-        const rect = dateButtonRef.current.getBoundingClientRect();
+      const activeRef = calendarMode === 'checkin' ? checkInButtonRef.current : checkOutButtonRef.current;
+      if (activeRef) {
+        const rect = activeRef.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
@@ -89,7 +94,7 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
       window.removeEventListener('scroll', updateGuestPosition, true);
       window.removeEventListener('resize', updateGuestPosition);
     };
-  }, [isCalendarOpen, isGuestOpen]);
+  }, [isCalendarOpen, isGuestOpen, calendarMode]);
 
   const formatDate = (date: Date | null) => {
     if (!date) return '';
@@ -97,9 +102,25 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
   };
 
   const handleDateSelect = (checkIn: Date | null, checkOut: Date | null) => {
-    setCheckInDate(checkIn);
-    setCheckOutDate(checkOut);
+    if (checkIn) setCheckInDate(checkIn);
+    if (checkOut) setCheckOutDate(checkOut);
     setIsCalendarOpen(false);
+    setCalendarMode('both');
+  };
+  
+  const handleCheckInClick = () => {
+    setCalendarMode('checkin');
+    setIsCalendarOpen(true);
+  };
+  
+  const handleCheckOutClick = () => {
+    if (!checkInDate) {
+      // If no check-in selected, open calendar in both mode
+      setCalendarMode('both');
+    } else {
+      setCalendarMode('checkout');
+    }
+    setIsCalendarOpen(true);
   };
 
   const handleGuestChange = (type: 'adults' | 'children' | 'rooms', value: number) => {
@@ -117,10 +138,15 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
     <>
     <div className="rounded-[10px] overflow-visible w-full max-w-full sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1083px] xl:max-w-[1200px] 2xl:max-w-[1300px] mx-auto relative px-2" style={{ position: 'relative', zIndex: 1001 }}>
       <div className="bg-white p-0.5 md:p-1 m-0">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-stretch gap-0 font-opensans">
-          <div ref={dateButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
-            <button onClick={() => setIsCalendarOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
-              {checkInDate && checkOutDate ? `${formatDate(checkInDate)} - ${formatDate(checkOutDate)}` : 'Add Dates'}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] items-stretch gap-0 font-opensans">
+          <div ref={checkInButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
+            <button onClick={handleCheckInClick} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
+              {checkInDate ? formatDate(checkInDate) : 'Check-in'}
+            </button>
+          </div>
+          <div ref={checkOutButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
+            <button onClick={handleCheckOutClick} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
+              {checkOutDate ? formatDate(checkOutDate) : 'Check-out'}
             </button>
           </div>
           <div ref={guestButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
@@ -170,7 +196,18 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
             {/* Triangle pointer */}
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[12px] border-l-transparent border-r-transparent border-b-white drop-shadow-lg z-10" />
             <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-visible mt-2">
-              <Calendar isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onDateSelect={handleDateSelect} selectedCheckIn={checkInDate} selectedCheckOut={checkOutDate} />
+              <Calendar 
+                isOpen={isCalendarOpen} 
+                onClose={() => {
+                  setIsCalendarOpen(false);
+                  setCalendarMode('both');
+                }} 
+                onDateSelect={handleDateSelect} 
+                selectedCheckIn={checkInDate} 
+                selectedCheckOut={checkOutDate}
+                selectionMode={calendarMode}
+                autoConfirm={true}
+              />
             </div>
           </div>
         </div>,

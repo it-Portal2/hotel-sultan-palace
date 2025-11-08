@@ -52,9 +52,17 @@ export default function Footer() {
                 
                 {/* Social Media Icons */}
                 <div className={`flex space-x-4 footer-social ${isVisible ? 'footer-social-visible' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{background:'#BE8C53', transitionDelay: '0.1s'}}>
+                  <a 
+                    href="https://wa.me/255684888111" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} 
+                    style={{background:'#BE8C53', transitionDelay: '0.1s'}}
+                    aria-label="Chat on WhatsApp - +255 684 888 111"
+                    title="WhatsApp: +255 684 888 111"
+                  >
                     <FaWhatsapp className="text-[#C0B194] text-base" />
-                  </div>
+                  </a>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{background:'#BE8C53', transitionDelay: '0.2s'}}>
                     <FaFacebookF className="text-[#C0B194] text-base" />
                   </div>

@@ -9,6 +9,7 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { getRooms, deleteRoom, Room } from '@/lib/firestoreService';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminRoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -65,6 +66,7 @@ export default function AdminRoomsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       {/* Header */}
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">

@@ -4,14 +4,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getGalleryImages, deleteGalleryImage, GalleryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminGalleryPage() {
   const [items, setItems] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [sizes, setSizes] = useState<Record<string, {w:number; h:number}>>({});
-
   const dedupeRun = useRef(false);
   useEffect(() => {
     (async () => {
@@ -53,20 +52,9 @@ export default function AdminGalleryPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin"/></div>;
 
-  const onImgLoad = (id: string, e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (!sizes[id]) {
-      setSizes(prev => ({ ...prev, [id]: { w: img.naturalWidth, h: img.naturalHeight } }));
-    }
-  };
-
-  const prettySize = (id: string) => {
-    const s = sizes[id];
-    return s ? `${s.w}×${s.h}` : '…';
-  };
-
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-3xl font-bold text-gray-900">Gallery</h1>
@@ -86,12 +74,16 @@ export default function AdminGalleryPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
           {items.map(i => (
-            <div key={i.id} className="group relative rounded-xl overflow-hidden bg-white shadow hover:shadow-lg transition-shadow duration-300" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
-              <div className="relative w-full aspect-[4/3] bg-gray-100">
+            <div key={i.id} className="group relative rounded-xl overflow-hidden bg-white shadow hover:shadow-lg transition-shadow duration-300 flex flex-col" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+              <div className="px-3 py-2.5 text-center border-b border-gray-200 bg-white min-h-[40px] flex items-center justify-center">
+                <span className="text-xs font-semibold text-gray-800 block w-full">
+                  {i.type ? i.type.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : 'No Type'}
+                </span>
+              </div>
+              <div className="relative w-full aspect-[4/3] bg-gray-100 flex-shrink-0">
                 <img
                   src={i.imageUrl}
-                  alt={i.type}
-                  onLoad={(e)=>onImgLoad(i.id, e)}
+                  alt={i.type || 'Gallery image'}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/gallery/gallery-1.png'}}
                 />
@@ -100,10 +92,6 @@ export default function AdminGalleryPage() {
                   <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow"><PencilSquareIcon className="h-4 w-4"/></Link>
                   <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50"><TrashIcon className="h-4 w-4"/></button>
                 </div>
-              </div>
-              <div className="px-3 py-2 flex items-center justify-between text-xs text-gray-700 border-t">
-                <span className="capitalize font-medium">{i.type.replace('_',' ')}</span>
-                <span className="text-gray-500">{prettySize(i.id)}</span>
               </div>
             </div>
           ))}

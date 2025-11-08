@@ -4,27 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { getOffers } from "@/lib/firestoreService";
 
-const initialOffers = [
-  { 
-    id: 1, 
-    imageUrl: "/offer-image.jpg" 
-  },
-  { 
-    id: 2, 
-    imageUrl: "/offer-image.jpg" 
-  },
-  { 
-    id: 3, 
-    imageUrl: "/offer-image.jpg"
-  },
-  {
-    id: 4,
-    imageUrl: "/offer-image.jpg"
-  }
-];
+
 
 export default function OffersCarousel() {
-  const [offers, setOffers] = useState<{id:number|string,imageUrl:string}[]>(initialOffers);
+  const [offers, setOffers] = useState<{id:number|string,imageUrl:string}[]>([])  ;
   const [index, setIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
   

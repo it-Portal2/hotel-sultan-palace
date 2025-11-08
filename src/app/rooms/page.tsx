@@ -43,10 +43,31 @@ function RoomsContent() {
   // Local UI state for inline date/guest editors
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
-  const [tempCheckIn, setTempCheckIn] = useState<Date | null>(bookingData ? new Date(bookingData.checkIn) : null);
-  const [tempCheckOut, setTempCheckOut] = useState<Date | null>(bookingData ? new Date(bookingData.checkOut) : null);
+  const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout' | 'both'>('both');
+  
+  // Initialize with 3 days from current date for check-in, and 1 day after check-in for check-out
+  const getInitialDates = () => {
+    if (bookingData) {
+      return {
+        checkIn: new Date(bookingData.checkIn),
+        checkOut: new Date(bookingData.checkOut)
+      };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkInDate = new Date(today);
+    checkInDate.setDate(checkInDate.getDate() + 3); // 3 days from today
+    const checkOutDate = new Date(checkInDate);
+    checkOutDate.setDate(checkOutDate.getDate() + 1); // 1 day after check-in
+    return { checkIn: checkInDate, checkOut: checkOutDate };
+  };
+  
+  const initialDates = getInitialDates();
+  const [tempCheckIn, setTempCheckIn] = useState<Date | null>(initialDates.checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState<Date | null>(initialDates.checkOut);
   const [tempGuests, setTempGuests] = useState(bookingData ? bookingData.guests : { adults: 2, children: 0, rooms: 1 });
-  const dateButtonRef = useRef<HTMLDivElement>(null);
+  const checkInButtonRef = useRef<HTMLDivElement>(null);
+  const checkOutButtonRef = useRef<HTMLDivElement>(null);
   const guestButtonRef = useRef<HTMLDivElement>(null);
   const [datePopupPosition, setDatePopupPosition] = useState({ top: 0, left: 0, width: 0 });
   const [guestPopupPosition, setGuestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -80,6 +101,16 @@ function RoomsContent() {
       setTempCheckIn(new Date(bookingData.checkIn));
       setTempCheckOut(new Date(bookingData.checkOut));
       setTempGuests(bookingData.guests);
+    } else {
+      // If no booking data, initialize with 3 days from current date and 1 day after check-in
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const checkInDate = new Date(today);
+      checkInDate.setDate(checkInDate.getDate() + 3); // 3 days from today
+      const checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkOutDate.getDate() + 1); // 1 day after check-in
+      setTempCheckIn(checkInDate);
+      setTempCheckOut(checkOutDate);
     }
   }, [bookingData]);
 
@@ -87,8 +118,9 @@ function RoomsContent() {
   const hasBooking = Boolean(bookingData) && bookingSetThisSession && !ignoreBooking;
 
   const addToCart = async (room: Room) => {
-    if (!hasBooking) {
-      setShowToast('Select dates first to book');
+    // Use tempCheckIn and tempCheckOut if bookingData is not available
+    if (!tempCheckIn || !tempCheckOut) {
+      setShowToast('Please select dates first');
       setTimeout(() => setShowToast(null), 1800);
       return;
     }
@@ -108,16 +140,30 @@ function RoomsContent() {
         suiteType = 'Ocean Suite';
       }
 
-      if (suiteType && bookingData) {
+      if (suiteType) {
+        // Use tempCheckIn/tempCheckOut or bookingData
+        const checkIn = bookingData ? bookingData.checkIn : tempCheckIn.toISOString();
+        const checkOut = bookingData ? bookingData.checkOut : tempCheckOut.toISOString();
+        const guests = bookingData ? bookingData.guests : tempGuests;
+        
+        // Update booking data if not already set
+        if (!bookingData) {
+          updateBookingData({ 
+            checkIn, 
+            checkOut, 
+            guests 
+          });
+        }
+        
         const bookingDataForCheck = {
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
+          checkIn,
+          checkOut,
           rooms: [{
             type: room.type,
             price: room.price,
             suiteType: suiteType
           }],
-          guests: bookingData.guests,
+          guests,
           guestDetails: {
             firstName: '',
             lastName: '',
@@ -177,9 +223,10 @@ function RoomsContent() {
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const openCalendar = () => {
-    if (dateButtonRef.current) {
-      const rect = dateButtonRef.current.getBoundingClientRect();
+  const openCalendar = (mode: 'checkin' | 'checkout') => {
+    const activeRef = mode === 'checkin' ? checkInButtonRef.current : checkOutButtonRef.current;
+    if (activeRef) {
+      const rect = activeRef.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
@@ -187,6 +234,7 @@ function RoomsContent() {
       if (spaceBelow < 400 && spaceAbove > spaceBelow) top = rect.top - 400;
       setDatePopupPosition({ top, left: rect.left, width: rect.width });
     }
+    setCalendarMode(mode);
     setIsCalendarOpen(true);
   };
 
@@ -199,9 +247,10 @@ function RoomsContent() {
   };
 
   const handleDateSelect = (checkIn: Date | null, checkOut: Date | null) => {
-    setTempCheckIn(checkIn);
-    setTempCheckOut(checkOut);
+    if (checkIn) setTempCheckIn(checkIn);
+    if (checkOut) setTempCheckOut(checkOut);
     setIsCalendarOpen(false);
+    setCalendarMode('both');
     if (checkIn && checkOut) {
       const guests = bookingData ? bookingData.guests : tempGuests;
       updateBookingData({ checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString(), guests });
@@ -220,8 +269,23 @@ function RoomsContent() {
   };
 
   const getCancellationDate = (room: Room) => {
-    if (!bookingData) return '';
-    const checkIn = new Date(bookingData.checkIn);
+    // Use tempCheckIn if available, otherwise use bookingData
+    const checkIn = tempCheckIn || (bookingData ? new Date(bookingData.checkIn) : null);
+    if (!checkIn) {
+      // Fallback: use 3 days from today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const checkInDate = new Date(today);
+      checkInDate.setDate(checkInDate.getDate() + 3);
+      const cancellationDate = new Date(checkInDate);
+      const daysBefore = room.cancellationFreeDays ?? 2;
+      cancellationDate.setDate(checkInDate.getDate() - daysBefore);
+      return cancellationDate.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    }
     const cancellationDate = new Date(checkIn);
     // Use room's cancellationFreeDays, default to 2 if not set
     const daysBefore = room.cancellationFreeDays ?? 2;
@@ -234,8 +298,23 @@ function RoomsContent() {
   };
 
   const getPaymentDate = (room: Room) => {
-    if (!bookingData) return '';
-    const checkIn = new Date(bookingData.checkIn);
+    // Use tempCheckIn if available, otherwise use bookingData
+    const checkIn = tempCheckIn || (bookingData ? new Date(bookingData.checkIn) : null);
+    if (!checkIn) {
+      // Fallback: use 3 days from today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const checkInDate = new Date(today);
+      checkInDate.setDate(checkInDate.getDate() + 3);
+      const paymentDate = new Date(checkInDate);
+      const daysBefore = room.cancellationFreeDays ?? 2;
+      paymentDate.setDate(checkInDate.getDate() - daysBefore);
+      return paymentDate.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    }
     const paymentDate = new Date(checkIn);
     // Use room's cancellationFreeDays for payment date as well, default to 2 if not set
     const daysBefore = room.cancellationFreeDays ?? 2;
@@ -296,12 +375,12 @@ function RoomsContent() {
               </div>
               
               {/* Check-in Date */}
-              <div className="flex flex-col gap-1" ref={dateButtonRef}>
+              <div className="flex flex-col gap-1" ref={checkInButtonRef}>
                 <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
                   <Calendar size={14} />
                   <span>Check-in</span>
                 </div>
-                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
+                <button onClick={() => openCalendar('checkin')} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
                   <span className="text-[#423B2D] text-xs font-semibold w-full">
                     {bookingData ? formatDate(bookingData.checkIn) : (tempCheckIn ? formatDateObj(tempCheckIn) : 'Add Date')}
                   </span>
@@ -309,12 +388,12 @@ function RoomsContent() {
               </div>
 
               {/* Check-out Date */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" ref={checkOutButtonRef}>
                 <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
                   <Calendar size={14} />
                   <span>Check-Out</span>
                 </div>
-                <button onClick={openCalendar} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
+                <button onClick={() => openCalendar('checkout')} className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center text-left hover:bg-white/50 transition-colors cursor-pointer">
                   <span className="text-[#423B2D] text-xs font-semibold w-full">
                     {bookingData ? formatDate(bookingData.checkOut) : (tempCheckOut ? formatDateObj(tempCheckOut) : 'Add Date')}
                   </span>
@@ -335,7 +414,18 @@ function RoomsContent() {
             style={{ zIndex: 99999, top: `${datePopupPosition.top}px`, left: `${datePopupPosition.left}px`, minWidth: '350px', maxWidth: datePopupPosition.width > 0 ? `${datePopupPosition.width}px` : 'auto', position: 'fixed' }}
           >
             <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-visible">
-              <CalendarWidget isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} onDateSelect={handleDateSelect} selectedCheckIn={tempCheckIn} selectedCheckOut={tempCheckOut} />
+              <CalendarWidget 
+                isOpen={isCalendarOpen} 
+                onClose={() => {
+                  setIsCalendarOpen(false);
+                  setCalendarMode('both');
+                }} 
+                onDateSelect={handleDateSelect} 
+                selectedCheckIn={tempCheckIn} 
+                selectedCheckOut={tempCheckOut}
+                selectionMode={calendarMode}
+                autoConfirm={true}
+              />
             </div>
           </div>
         </div>,
@@ -474,26 +564,21 @@ function RoomsContent() {
                               <Coffee size={14} color="#BE8C53" />
                               <span>Very good breakfast included</span>
                             </div>
-                            {bookingData && (
-                              <>
-                                <div className="flex items-center gap-2 text-[#464035] text-sm">
-                                  <Shield size={14} color="#BE8C53" />
-                                  <span>Free cancellation before {getCancellationDate(room)}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-[#464035] text-sm">
-                                  <CreditCard size={14} color="#BE8C53" />
-                                  <span>Pay nothing until {getPaymentDate(room)}</span>
-                                </div>
-                              </>
-                            )}
+                            <div className="flex items-center gap-2 text-[#464035] text-sm">
+                              <Shield size={14} color="#BE8C53" />
+                              <span>Free cancellation before {getCancellationDate(room)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[#464035] text-sm">
+                              <CreditCard size={14} color="#BE8C53" />
+                              <span>Pay nothing until {getPaymentDate(room)}</span>
+                            </div>
                           </div>
 
                           <button
                             onClick={() => addToCart(room)}
-                            disabled={!hasBooking}
-                            className={`${!hasBooking ? 'bg-gray-300 cursor-not-allowed text-gray-600' : 'bg-[#FF6A00] hover:bg-[#E55A00] text-white'} font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
+                            className={`bg-[#FF6A00] hover:bg-[#E55A00] text-white font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
                           >
-                            {hasBooking ? (addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now') : 'Select dates to book'}
+                            {addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now'}
                           </button>
                         </div>
                       </div>

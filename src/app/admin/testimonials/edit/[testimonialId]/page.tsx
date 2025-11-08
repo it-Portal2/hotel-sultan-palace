@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { updateTestimonial, Testimonial } from '@/lib/firestoreService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import BackButton from '@/components/admin/BackButton';
 
 async function getTestimonialById(id: string): Promise<Testimonial | null> {
   if (!db) return null;
@@ -79,6 +80,7 @@ export default function EditTestimonialPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/testimonials" label="Back to Testimonials" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Edit Testimonial</h1>
         <p className="mt-2 text-gray-600">Update guest testimonial details</p>

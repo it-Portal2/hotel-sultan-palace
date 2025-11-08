@@ -8,6 +8,7 @@ import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
+import BackButton from '@/components/admin/BackButton';
 
 export default function NewAddOnPage() {
   const router = useRouter();
@@ -124,6 +125,7 @@ export default function NewAddOnPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/addons" label="Back to Add-ons" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Add New Add-on</h1>
         <p className="mt-2 text-gray-600">Create a new upsell service</p>

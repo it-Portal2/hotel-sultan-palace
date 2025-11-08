@@ -79,8 +79,9 @@ export default function Hero() {
             }}
           >
             <div className="w-full max-w-full sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1083px] xl:max-w-[1200px] 2xl:max-w-[1300px] mx-auto px-2 sm:px-4 pb-2 sm:pb-3 md:pb-4 lg:pb-6">
-              <div className="hidden md:grid grid-cols-[1fr_1fr] items-center gap-x-4 xl:gap-x-6 px-4 xl:px-6 mb-1 md:mb-1.5">
-                <span className="text-white text-sm md:text-base font-bold text-center">Check-in / Check-out</span>
+              <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 xl:gap-x-6 px-4 xl:px-6 mb-1 md:mb-1.5">
+                <span className="text-white text-sm md:text-base font-bold text-center">Check-in</span>
+                <span className="text-white text-sm md:text-base font-bold text-center">Check-out</span>
                 <span className="text-white text-sm md:text-base font-bold text-left pl-2 md:pl-4">Guest</span>
               </div>
               <div 

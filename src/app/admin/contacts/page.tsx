@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getAllContactForms, updateContactFormStatus, ContactForm } from '@/lib/firestoreService';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminContactsPage() {
   const [items, setItems] = useState<ContactForm[]>([]);
@@ -28,6 +29,7 @@ export default function AdminContactsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#202C3B]">Contact Forms</h1>

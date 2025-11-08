@@ -8,6 +8,7 @@ import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
+import BackButton from '@/components/admin/BackButton';
 
 export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: string }> }) {
   const router = useRouter();
@@ -152,6 +153,7 @@ export default function EditAddOnPage({ params }: { params: Promise<{ addOnId: s
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/addons" label="Back to Add-ons" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Edit Add-on</h1>
         <p className="mt-2 text-gray-600">Update add-on details</p>

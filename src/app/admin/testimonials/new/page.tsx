@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createTestimonial } from '@/lib/firestoreService';
+import BackButton from '@/components/admin/BackButton';
 
 export default function NewTestimonialPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function NewTestimonialPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/testimonials" label="Back to Testimonials" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Add Testimonial</h1>
         <p className="mt-2 text-gray-600">Create a new guest testimonial</p>

@@ -8,6 +8,7 @@ import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
+import BackButton from '@/components/admin/BackButton';
 
 const TYPES: {label:string; value: GalleryType}[] = [
   { label: 'Villas', value: 'villas' },
@@ -91,6 +92,7 @@ export default function NewGalleryImagePage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/gallery" label="Back to Gallery" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Add Gallery Image</h1>
         <p className="mt-2 text-gray-600">Upload an image and choose its type for user filters</p>

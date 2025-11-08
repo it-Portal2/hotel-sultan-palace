@@ -7,6 +7,7 @@ import { storage, auth } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
+import BackButton from '@/components/admin/BackButton';
 
 export default function EditStoryPicturePage() {
   const router = useRouter();
@@ -96,6 +97,7 @@ export default function EditStoryPicturePage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin/story-pictures" label="Back to Story Pictures" />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Edit Story Image</h1>
         <p className="mt-2 text-gray-600">Update image and details</p>

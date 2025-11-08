@@ -142,8 +142,8 @@ export default function SpiritOfSwahiliPage() {
                     cardamom. Guests can stroll fragrant gardens, learn traditional cultivation, and taste freshly harvested
                     spices — a living tribute to the island’s centuries-old trade and culinary heritage.
                   </p>
-                  <Link href="#" className="mt-6 inline-flex items-center gap-4">
-                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
@@ -159,8 +159,8 @@ export default function SpiritOfSwahiliPage() {
                     mangroves and tropical trees, discovering native flora and fauna while witnessing the playful, vibrant
                     life of Zanzibar’s endemic primates in their natural jungle habitat.
                   </p>
-                  <Link href="#" className="mt-6 inline-flex items-center gap-4">
-                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
@@ -195,8 +195,8 @@ export default function SpiritOfSwahiliPage() {
                     infused with exotic spices. Cooking workshops and chef-led tastings allow guests to experience the
                     authentic culinary traditions that define Zanzibar’s island lifestyle.
                   </p>
-                  <Link href="#" className="mt-6 inline-flex items-center gap-4">
-                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
@@ -215,8 +215,8 @@ export default function SpiritOfSwahiliPage() {
                     woven mats to colorful pottery and jewelry, guests engage with artisans preserving generations-old
                     crafts, connecting deeply with the culture and creative spirit of the island.
                   </p>
-                  <Link href="#" className="mt-6 inline-flex items-center gap-4">
-                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
@@ -253,8 +253,8 @@ export default function SpiritOfSwahiliPage() {
                 fruits, and fragrant herbs bring every creation to life. A memorable activity for families, couples, and
                 culture enthusiasts seeking a true taste of Zanzibar.
               </p>
-              <Link href="#" className="mt-4 inline-flex items-center gap-4">
-                <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+              <Link href="/rooms" className="mt-4 inline-flex items-center gap-4">
+                <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                 <FiArrowRight className="text-[#FF6A00]" size={22} />
               </Link>
             </div>
@@ -262,8 +262,8 @@ export default function SpiritOfSwahiliPage() {
         </section>
             
 
-        <section className="relative w-full max-w-full h-[520px] md:h-[620px] lg:h-[769px] overflow-hidden">
-          <Image src="/spirit/footer-1.jpg" alt="Pre-footer Background" fill className="object-cover" />
+        <section className="relative w-full max-w-full h-[769px] overflow-hidden">
+          <Image src="/spirit/crop.png" alt="Pre-footer Background" fill className="object-cover" />
         </section>
       </main>
       <Footer />

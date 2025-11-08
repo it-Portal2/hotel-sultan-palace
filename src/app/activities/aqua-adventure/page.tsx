@@ -246,8 +246,8 @@ export default function AquaAdventurePage() {
                          Join our guided reef walks and witness the colorful life thriving beneath the surface. Led by marine experts, this gentle ocean safari reveals intricate coral formations, rare shells, and dazzling tropical fish — a serene and educational encounter with Zanzibar&apos;s marine treasure
                        </p>
                      </div>
-                     <Link href="#" className="flex items-center gap-[15px] w-fit">
-                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
                    </div>
@@ -264,8 +264,8 @@ export default function AquaAdventurePage() {
                          Harness the ocean breeze and ride the sparkling waves across Zanzibar&apos;s turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
                        </p>
                      </div>
-                     <Link href="#" className="flex items-center gap-[15px] w-fit">
-                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
                    </div>
@@ -288,8 +288,8 @@ export default function AquaAdventurePage() {
                          Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                        </p>
                      </div>
-                     <Link href="#" className="flex items-center gap-[15px] w-fit">
-                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                       <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
                    </div>
@@ -325,11 +325,11 @@ export default function AquaAdventurePage() {
                       </p>
                     </div>
                     <Link 
-                      href="#"
-                      className="flex items-center gap-[15px] w-fit group/link"
+                      href="/rooms"
+                  className="flex items-center gap-[15px] w-fit group/link"
                     >
-                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
-                        Begin Adventure
+                  <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
+                        Book Your Stay
                       </span>
                       <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
                     </Link>
@@ -348,15 +348,15 @@ export default function AquaAdventurePage() {
                         Harness the ocean breeze and ride the sparkling waves across Zanzibar&apos;s turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
                             </p>
                           </div>
-                          <Link 
-                            href="#"
-                      className="flex items-center gap-[15px] w-fit group/link"
-                          >
-                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
-                              Begin Adventure
-                            </span>
+                    <Link 
+                      href="/rooms"
+                  className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                  <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
+                        Book Your Stay
+                      </span>
                       <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
-                          </Link>
+                    </Link>
                         </div>
                       </div>
 
@@ -396,15 +396,15 @@ export default function AquaAdventurePage() {
                         Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                             </p>
                           </div>
-                          <Link 
-                            href="#"
-                      className="flex items-center gap-[15px] w-fit group/link"
-                          >
-                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
-                              Begin Adventure
-                            </span>
+                    <Link 
+                      href="/rooms"
+                  className="flex items-center gap-[15px] w-fit group/link"
+                    >
+                  <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand transition-all duration-300 group-hover/link:text-[#E55A00]" style={{ letterSpacing: '0.01em' }}>
+                        Book Your Stay
+                      </span>
                       <FiArrowRight size={23} className="text-[#FF6A00] transition-transform duration-300 group-hover/link:translate-x-2" strokeWidth={1.4} />
-                          </Link>
+                    </Link>
                         </div>
                       </div>
                     </div>
@@ -442,11 +442,11 @@ export default function AquaAdventurePage() {
                   </div>
               <div className="flex items-center justify-center gap-[15px] mt-6 md:mt-8">
                     <Link 
-                      href="#"
+                      href="/rooms"
                   className="flex items-center gap-[15px] w-fit group"
                     >
                   <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">
-                        Begin Adventure
+                        Book Your Stay
                       </span>
                   <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                     </Link>
@@ -488,8 +488,8 @@ export default function AquaAdventurePage() {
                           Discover the beauty of Bwejuu Beach on foot. Stroll along powder-soft sands, watch seabirds dance over gentle tides, or join a friendly game by the shore. A simple walk here becomes an unforgettable communion with Zanzibar&apos;s peaceful nature.
                         </p>
                       </div>
-                      <Link href="#" className="flex items-center gap-[15px] w-fit">
-                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>
@@ -505,8 +505,8 @@ export default function AquaAdventurePage() {
                           Glide across calm waters in our sleek sea kayaks and uncover hidden corners of the coastline. Paddle past swaying palms, listen to the rhythm of the waves, and enjoy a tranquil yet invigorating way to explore the island&apos;s coastal charm.
                         </p>
                       </div>
-                      <Link href="#" className="flex items-center gap-[15px] w-fit">
-                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>
@@ -526,8 +526,8 @@ export default function AquaAdventurePage() {
                           Dive into crystal-clear waters and discover a vibrant underwater world. Explore colorful coral reefs, swim alongside tropical fish, and witness the breathtaking marine life that thrives beneath Zanzibar&apos;s turquoise surface — an unforgettable aquatic adventure awaits.
                         </p>
                       </div>
-                      <Link href="#" className="flex items-center gap-[15px] w-fit">
-                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Begin Adventure</span>
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>

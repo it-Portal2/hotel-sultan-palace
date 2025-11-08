@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getStoryImages, deleteStoryImage, StoryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import BackButton from '@/components/admin/BackButton';
 
 export default function AdminStoryPicturesPage() {
   const [items, setItems] = useState<StoryImage[]>([]);
@@ -60,6 +61,7 @@ export default function AdminStoryPicturesPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/admin" label="Back to Dashboard" />
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-3xl font-bold text-gray-900">Story in Pictures</h1>

@@ -27,6 +27,11 @@ export default function GalleryPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string>("");
   const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -59,6 +64,165 @@ export default function GalleryPage() {
       setExtra(items.map((i) => ({ imageUrl: i.imageUrl, type: i.type })));
     })();
   }, []);
+
+  // Reset zoom and position when lightbox opens/closes
+  useEffect(() => {
+    if (lightboxOpen) {
+      setZoom(1);
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [lightboxOpen]);
+
+  // Mouse wheel zoom
+  useEffect(() => {
+    if (!lightboxOpen || !containerRef.current || !imageRef.current) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
+      const newZoom = Math.max(1, Math.min(5, zoom + delta));
+      
+      if (newZoom !== zoom) {
+        const rect = containerRef.current!.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        const zoomChange = newZoom / zoom;
+        let newX = x - (x - position.x) * zoomChange;
+        let newY = y - (y - position.y) * zoomChange;
+        
+        // Apply boundaries
+        if (newZoom > 1 && imageRef.current) {
+          const imgRect = imageRef.current.getBoundingClientRect();
+          const imgWidth = imgRect.width * newZoom;
+          const imgHeight = imgRect.height * newZoom;
+          const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
+          const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
+          newX = Math.max(-maxX, Math.min(maxX, newX));
+          newY = Math.max(-maxY, Math.min(maxY, newY));
+        } else {
+          newX = 0;
+          newY = 0;
+        }
+        
+        setZoom(newZoom);
+        setPosition({ x: newX, y: newY });
+      }
+    };
+
+    containerRef.current.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.removeEventListener('wheel', handleWheel);
+      }
+    };
+  }, [lightboxOpen, zoom, position]);
+
+  // Touch pinch zoom
+  useEffect(() => {
+    if (!lightboxOpen || !imageRef.current) return;
+
+    let initialDistance = 0;
+    let initialZoom = 1;
+    let initialPosition = { x: 0, y: 0 };
+
+    const getDistance = (touch1: Touch, touch2: Touch) => {
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialDistance = getDistance(e.touches[0], e.touches[1]);
+        initialZoom = zoom;
+        initialPosition = { ...position };
+      } else if (e.touches.length === 1 && zoom > 1) {
+        setIsDragging(true);
+        setDragStart({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const currentDistance = getDistance(e.touches[0], e.touches[1]);
+        const scale = currentDistance / initialDistance;
+        const newZoom = Math.max(1, Math.min(5, initialZoom * scale));
+        setZoom(newZoom);
+      } else if (e.touches.length === 1 && isDragging && imageRef.current) {
+        e.preventDefault();
+        const rect = imageRef.current.getBoundingClientRect();
+        const imgWidth = rect.width * zoom;
+        const imgHeight = rect.height * zoom;
+        const maxX = (imgWidth - window.innerWidth) / 2;
+        const maxY = (imgHeight - window.innerHeight) / 2;
+        
+        setPosition({
+          x: Math.max(-maxX, Math.min(maxX, e.touches[0].clientX - dragStart.x)),
+          y: Math.max(-maxY, Math.min(maxY, e.touches[0].clientY - dragStart.y))
+        });
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+
+    const img = imageRef.current;
+    img.addEventListener('touchstart', handleTouchStart);
+    img.addEventListener('touchmove', handleTouchMove, { passive: false });
+    img.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      img.removeEventListener('touchstart', handleTouchStart);
+      img.removeEventListener('touchmove', handleTouchMove);
+      img.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [lightboxOpen, zoom, position, isDragging, dragStart]);
+
+  // Mouse drag for panning when zoomed
+  useEffect(() => {
+    if (!lightboxOpen || zoom <= 1 || !imageRef.current) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button === 0 && (e.target === imageRef.current || imageRef.current?.contains(e.target as Node))) {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+        e.preventDefault();
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && imageRef.current) {
+        const rect = imageRef.current.getBoundingClientRect();
+        const imgWidth = rect.width * zoom;
+        const imgHeight = rect.height * zoom;
+        const maxX = (imgWidth - window.innerWidth) / 2;
+        const maxY = (imgHeight - window.innerHeight) / 2;
+        
+        setPosition({
+          x: Math.max(-maxX, Math.min(maxX, e.clientX - dragStart.x)),
+          y: Math.max(-maxY, Math.min(maxY, e.clientY - dragStart.y))
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const img = imageRef.current;
+    img.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      img.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [lightboxOpen, zoom, position, isDragging, dragStart]);
 
   // Filter by active type and remove duplicates (by URL) while preserving order
   const filtered = (() => {
@@ -192,14 +356,108 @@ export default function GalleryPage() {
       <Footer />
 
       {lightboxOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-pointer" onClick={()=>setLightboxOpen(false)}>
-          <div className="absolute top-4 right-4 flex gap-2">
-            <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.min(3, z+0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">+</button>
-            <button onClick={(e)=>{e.stopPropagation(); setZoom(z=>Math.max(1, z-0.2));}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">-</button>
-            <button onClick={(e)=>{e.stopPropagation(); setZoom(1);}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">Reset</button>
-            <button onClick={(e)=>{e.stopPropagation(); setLightboxOpen(false);}} className="px-3 py-2 rounded bg-white/90 text-[#242424] text-sm font-semibold">Close</button>
+        <div 
+          ref={containerRef}
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-grab active:cursor-grabbing overflow-hidden" 
+          onClick={()=>{if(zoom === 1) setLightboxOpen(false);}}
+          style={{ userSelect: 'none' }}
+        >
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            <button 
+              onClick={(e)=>{
+                e.stopPropagation(); 
+                const newZoom = Math.min(5, zoom + 0.5);
+                if (newZoom > 1 && imageRef.current) {
+                  const rect = imageRef.current.getBoundingClientRect();
+                  const imgWidth = rect.width * newZoom;
+                  const imgHeight = rect.height * newZoom;
+                  const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
+                  const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
+                  setPosition({
+                    x: Math.max(-maxX, Math.min(maxX, position.x)),
+                    y: Math.max(-maxY, Math.min(maxY, position.y))
+                  });
+                }
+                setZoom(newZoom);
+              }} 
+              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              title="Zoom In"
+            >
+              +
+            </button>
+            <button 
+              onClick={(e)=>{
+                e.stopPropagation(); 
+                const newZoom = Math.max(1, zoom - 0.5);
+                if (newZoom === 1) {
+                  setPosition({ x: 0, y: 0 });
+                } else if (imageRef.current) {
+                  const rect = imageRef.current.getBoundingClientRect();
+                  const imgWidth = rect.width * newZoom;
+                  const imgHeight = rect.height * newZoom;
+                  const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
+                  const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
+                  setPosition({
+                    x: Math.max(-maxX, Math.min(maxX, position.x)),
+                    y: Math.max(-maxY, Math.min(maxY, position.y))
+                  });
+                }
+                setZoom(newZoom);
+              }} 
+              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              title="Zoom Out"
+            >
+              −
+            </button>
+            <button 
+              onClick={(e)=>{e.stopPropagation(); setZoom(1); setPosition({ x: 0, y: 0 });}} 
+              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              title="Reset Zoom"
+            >
+              Reset
+            </button>
+            <button 
+              onClick={(e)=>{e.stopPropagation(); setLightboxOpen(false);}} 
+              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              title="Close"
+            >
+              ✕
+            </button>
           </div>
-          <img src={lightboxSrc} alt="zoom" style={{ transform: `scale(${zoom})`, transition: 'transform 200ms', maxWidth: '90vw', maxHeight: '90vh' }} className="object-contain" onClick={(e)=>e.stopPropagation()} />
+          <div 
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ 
+              transform: `translate(${position.x}px, ${position.y}px)`,
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+            }}
+          >
+            <img 
+              ref={imageRef}
+              src={lightboxSrc} 
+              alt="zoom" 
+              style={{ 
+                transform: `scale(${zoom})`,
+                transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                maxWidth: '90vw', 
+                maxHeight: '90vh',
+                cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                touchAction: 'none'
+              }} 
+              className="object-contain select-none" 
+              onClick={(e)=>{
+                e.stopPropagation();
+                if(zoom === 1) {
+                  setLightboxOpen(false);
+                }
+              }}
+              draggable={false}
+            />
+          </div>
+          {zoom > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm z-10">
+              Zoom: {Math.round(zoom * 100)}% • Drag to pan • Scroll to zoom
+            </div>
+          )}
         </div>
       )}
 

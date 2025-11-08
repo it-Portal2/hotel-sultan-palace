@@ -116,7 +116,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
       return;
     }
     
-    if (!formData.image || formData.image.trim() === '') {
+    // For new rooms, image is required. For edits, if image exists, use it; otherwise allow empty (will use fallback)
+    if (!isEdit && (!formData.image || formData.image.trim() === '')) {
       showToast('Please provide an image URL or upload an image.', 'warning');
       return;
     }
@@ -124,15 +125,45 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     setLoading(true);
 
     try {
-      const roomData = {
-        ...formData,
+      // Prepare room data
+      const roomData: {
+        name: string;
+        type: string;
+        price: number;
+        description: string;
+        features: string[];
+        amenities: string[];
+        size: string;
+        view: string;
+        beds: string;
+        maxGuests: number;
+        cancellationFreeDays: number;
+        image: string;
+      } = {
+        name: formData.name.trim(),
+        type: formData.type.trim(),
+        price: Number(formData.price),
+        description: formData.description.trim(),
         features: formData.features.filter(f => f.trim() !== ''),
         amenities: formData.amenities.filter(a => a.trim() !== ''),
-        price: Number(formData.price),
+        size: formData.size?.trim() || '',
+        view: formData.view?.trim() || '',
+        beds: formData.beds?.trim() || '',
         maxGuests: Number(formData.maxGuests),
         cancellationFreeDays: Number((formData as { cancellationFreeDays?: number }).cancellationFreeDays ?? 0),
-        image: formData.image.trim() // Ensure no extra spaces
+        image: formData.image?.trim() || '',
       };
+
+      // Always include image field in update - use the form value or preserve existing
+      // If image is provided (even if it's a fallback from resolveRoomImage), include it
+      if (formData.image && formData.image.trim() !== '') {
+        roomData.image = formData.image.trim();
+      } else if (isEdit) {
+        // For edits, if image field is empty, set it to empty string
+        // This allows clearing the image or using the fallback on read
+        roomData.image = '';
+      }
+      // For new rooms, image is already set above (required)
 
       if (isEdit && roomId) {
         const success = await updateRoom(roomId, roomData);
@@ -143,6 +174,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
           showToast('Failed to update room. Please try again.', 'error');
         }
       } else {
+        // For new rooms, image is required (already validated above)
         const newRoomId = await createRoom(roomData);
         if (newRoomId) {
           showToast('Room created successfully!', 'success');

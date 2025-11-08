@@ -80,7 +80,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
 
   const socialLinks = [
-    { name: "Whatsapp", icon: FaWhatsapp, href: "#" },
+    { name: "Whatsapp", icon: FaWhatsapp, href: "https://wa.me/255777085630", title: "WhatsApp: +255 777 085 630" },
     { name: "Facebook", icon: FaFacebookF, href: "#" },
     { name: "LinkedIn", icon: FaLinkedinIn, href: "#" },
     { name: "Twitter", icon: FaTwitter, href: "#" },
@@ -208,7 +208,11 @@ export default function Header() {
                   <Link
                     key={link.name}
                     href={link.href}
+                    target={link.name === "Whatsapp" ? "_blank" : undefined}
+                    rel={link.name === "Whatsapp" ? "noopener noreferrer" : undefined}
                     className="text-white hover:text-orange-300 transition-colors"
+                    title={link.title || link.name}
+                    aria-label={link.name === "Whatsapp" ? "Chat on WhatsApp - +255 777 085 630" : link.name}
                   >
                     <link.icon size={14} className="md:w-4 md:h-4" />
                   </Link>

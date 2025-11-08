@@ -437,13 +437,34 @@ export default function HowToGetToZanzibarPage() {
           
           <h1 className="font-poppins leading-tight text-[36px] md:text-[64px] lg:text-[45px] mb-12 min-h-[120px] flex flex-col items-center justify-center">
             <span className="typing-text">
-              {displayText.includes("SULTAN") ? (
-                <>
-                  YOUR JOURNEY TO SULTAN
-                  <br />
-                  {displayText.substring(20)}
-                </>
-              ) : (
+              {displayText.includes("SULTAN") ? (() => {
+               
+                const sultanWithSpace = displayText.indexOf("SULTAN ");
+                if (sultanWithSpace !== -1) {
+                  const afterSultan = displayText.substring(sultanWithSpace + 7);
+                  // Remove any "AN" that might appear (case insensitive)
+                  const cleaned = afterSultan.replace(/^AN\s+/i, "").replace(/^\s*AN\s*/i, "");
+                  return (
+                    <>
+                      YOUR JOURNEY TO SULTAN
+                      <br />
+                      {cleaned}
+                    </>
+                  );
+                } else {
+            
+                  const sultanIndex = displayText.indexOf("SULTAN");
+                  const afterSultan = displayText.substring(sultanIndex + 6).trim();
+                  const cleaned = afterSultan.replace(/^AN\s+/i, "").replace(/^\s*AN\s*/i, "");
+                  return (
+                    <>
+                      YOUR JOURNEY TO SULTAN
+                      <br />
+                      {cleaned}
+                    </>
+                  );
+                }
+              })() : (
                 displayText
               )}
               {showCursor && <span className="animate-pulse">|</span>}
@@ -517,7 +538,7 @@ export default function HowToGetToZanzibarPage() {
 
     
       <section ref={(el) => { if (el) sectionRefs.current['airlines-section'] = el; }} className={`bg-[#FFFCF6] py-10 zanzibar-airlines-section ${sectionVisible['airlines-section'] ? 'zanzibar-airlines-section-visible' : ''}`}>
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
+        <div className="w-full px-0 mx-4 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-start">
           
             <div className="w-full overflow-hidden zanzibar-airlines-map">
@@ -636,7 +657,7 @@ export default function HowToGetToZanzibarPage() {
      
   
     <section ref={(el) => { if (el) sectionRefs.current['dar-section'] = el; }} className={`bg-[#FFFCF6] py-12 zanzibar-dar-section ${sectionVisible['dar-section'] ? 'zanzibar-dar-section-visible' : ''}`}>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div className="w-full px-0 mx-4 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
      
           <div className="order-2 md:order-1 mb-20 zanzibar-dar-content">
           {/* Top icon + heading */}
@@ -694,7 +715,7 @@ export default function HowToGetToZanzibarPage() {
       
         <div className="relative order-1 md:order-2 w-full h-[450px] zanzibar-dar-map">
           <Image
-            src="/get-zanzibar/map2.png"
+            src="/get-zanzibar/salam.jpg"
             alt="Connecting Airports Map"
             fill
             quality={85}
@@ -707,11 +728,11 @@ export default function HowToGetToZanzibarPage() {
     </section>
 
     <section ref={(el) => { if (el) sectionRefs.current['nairobi-section'] = el; }} className={`bg-[#FFFCF6] py-12 zanzibar-nairobi-section ${sectionVisible['nairobi-section'] ? 'zanzibar-nairobi-section-visible' : ''}`}>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div className="w-full px-0 mx-4 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
       
         <div className="relative w-full h-[583px] order-1 zanzibar-nairobi-map">
           <Image
-            src="/get-zanzibar/map3.png"
+            src="/get-zanzibar/nbo.jpg"
             alt="Connecting Airports Map"
             fill
             quality={85}
@@ -785,7 +806,7 @@ export default function HowToGetToZanzibarPage() {
     </section>
 
     <section ref={(el) => { if (el) sectionRefs.current['ferry-section'] = el; }} className={`bg-[#FFFCF6] py-12 zanzibar-ferry-section ${sectionVisible['ferry-section'] ? 'zanzibar-ferry-section-visible' : ''}`}>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div className="w-full px-0 mx-4 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
        
         <div className="order-2 md:order-1 mb-20 zanzibar-ferry-content">
         
