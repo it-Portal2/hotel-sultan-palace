@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { 
   PencilIcon,
@@ -13,7 +14,8 @@ interface CartSummaryProps {
 }
 
 export default function CartSummary({ className = "" }: CartSummaryProps) {
-  const { rooms, addOns, calculateTotal, bookingData } = useCart();
+  const router = useRouter();
+  const { rooms, addOns, calculateTotal, bookingData, removeRoom, removeAddOn } = useCart();
 
   const totalItems = rooms.length + addOns.length;
 
@@ -72,13 +74,19 @@ export default function CartSummary({ className = "" }: CartSummaryProps) {
               
               {/* Action Buttons */}
               <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                <button 
+                  onClick={() => router.push('/rooms')}
+                  className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                >
                   <div className="w-5 h-5  flex items-center justify-center">
                     <PencilIcon className="w-3 h-3 text-[#FF6A00]" />
                   </div>
                   Edit
                 </button>
-                <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                <button 
+                  onClick={() => removeRoom(room.id)}
+                  className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                >
                   <div className="w-5 h-5  flex items-center justify-center">
                     <TrashIcon className="w-3 h-3 text-[#FF6A00]" />
                   </div>
@@ -120,13 +128,19 @@ export default function CartSummary({ className = "" }: CartSummaryProps) {
               
               {/* Action Buttons */}
               <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                <button 
+                  onClick={() => router.push('/add-ons')}
+                  className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                >
                   <div className="w-5 h-5 flex items-center justify-center">
                     <PencilIcon className="w-3 h-3 text-[#FF6A00]" />
                   </div>
                   Edit
                 </button>
-                <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                <button 
+                  onClick={() => removeAddOn(addOn.id)}
+                  className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                >
                   <div className="w-5 h-5  flex items-center justify-center">
                     <TrashIcon className="w-3 h-3 text-[#FF6A00]" />
                   </div>

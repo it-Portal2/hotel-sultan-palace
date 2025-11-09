@@ -21,16 +21,15 @@ import {
 
 export default function AddOnsPage() {
   const router = useRouter();
-  const { bookingData, rooms, addOns: cartAddOns, addAddOn, removeAddOn, updateAddOnQuantity, calculateTotal } = useCart();
+  const { bookingData, rooms, addOns: cartAddOns, addAddOn, removeAddOn, removeRoom, updateAddOnQuantity, calculateTotal } = useCart();
   const [roomData, setRoomData] = useState<{ name: string; price: number; description?: string } | null>(null);
-  const [buttonStates, setButtonStates] = useState<{[key: string]: 'add' | 'cancel' | 'update' | 'success'}>({});
+  const [buttonStates, setButtonStates] = useState<{[key: string]: 'add' | 'cancel' | 'update' | 'success' | 'removed'}>({});
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [loading, setLoading] = useState(true);
 
 
 
   useEffect(() => {
-  
     if (rooms.length > 0) {
       const selectedRoom = rooms[0];
       setRoomData({
@@ -38,6 +37,8 @@ export default function AddOnsPage() {
         price: selectedRoom.price,
         description: selectedRoom.description
       });
+    } else {
+      setRoomData(null);
     }
   }, [rooms]);
 
@@ -68,6 +69,7 @@ export default function AddOnsPage() {
   };
 
   const handleCancel = (addOnId: string) => {
+    removeAddOn(addOnId);
     setButtonStates(prev => ({ ...prev, [addOnId]: 'add' }));
   };
 
@@ -85,6 +87,11 @@ export default function AddOnsPage() {
 
   const removeFromCart = (addOnId: string) => {
     removeAddOn(addOnId);
+    setButtonStates(prev => ({ ...prev, [addOnId]: 'removed' }));
+    // Reset to 'add' after 2 seconds
+    setTimeout(() => {
+      setButtonStates(prev => ({ ...prev, [addOnId]: 'add' }));
+    }, 2000);
   };
 
   const updateQuantity = (addOnId: string, quantity: number) => {
@@ -280,33 +287,49 @@ export default function AddOnsPage() {
                         </div>
                       )}
 
-                        {buttonStates[addOn.id] === 'success' ? (
-                          <div className="flex items-center justify-center gap-3">
-                            <button
-                              onClick={() => handleCancel(addOn.id)}
-                              className="bg-[rgba(255,43,43,0.22)] text-[#FF0B0B] font-semibold px-4 py-2 rounded text-sm"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleUpdate(addOn.id)}
-                              className="bg-[rgba(255,106,0,0.29)] text-[#FF6A00] font-semibold px-4 py-2 rounded text-sm"
-                            >
-                              Update
-                            </button>
-                            <div className="flex items-center gap-2 text-[#0C9C16] font-semibold px-4 py-2 text-sm">
-                              <span>Successfully Added</span>
-                              <CheckCircle size={20} color="#0C9C16" />
-                            </div>
-                          </div>
-                        ) : (
-                      <button
-                        onClick={() => addToCart(addOn)}
-                            className="bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm rounded"
-                      >
-                        Add to my Stay
-                      </button>
-                        )}
+                        {(() => {
+                          const isInCart = cartAddOns.find(item => item.id === addOn.id);
+                          const buttonState = buttonStates[addOn.id];
+                          
+                          if (buttonState === 'removed') {
+                            return (
+                              <div className="flex items-center justify-center gap-2 text-[#FF0B0B] font-semibold px-4 py-2 text-sm">
+                                <span>Removed</span>
+                                <CheckCircle size={20} color="#FF0B0B" />
+                              </div>
+                            );
+                          } else if (isInCart || buttonState === 'success') {
+                            return (
+                              <div className="flex items-center justify-center gap-3">
+                                <button
+                                  onClick={() => handleCancel(addOn.id)}
+                                  className="bg-[rgba(255,43,43,0.22)] text-[#FF0B0B] font-semibold px-4 py-2 rounded text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleUpdate(addOn.id)}
+                                  className="bg-[rgba(255,106,0,0.29)] text-[#FF6A00] font-semibold px-4 py-2 rounded text-sm"
+                                >
+                                  Update
+                                </button>
+                                <div className="flex items-center gap-2 text-[#0C9C16] font-semibold px-4 py-2 text-sm">
+                                  <span>Successfully Added</span>
+                                  <CheckCircle size={20} color="#0C9C16" />
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <button
+                                onClick={() => addToCart(addOn)}
+                                className="bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm rounded"
+                              >
+                                Add to my Stay
+                              </button>
+                            );
+                          }
+                        })()}
                       </div>
                   </div>
                 </div>
@@ -369,13 +392,24 @@ export default function AddOnsPage() {
                         
                         {/* Action Buttons */}
                         <div className="flex items-center gap-4">
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                          <button 
+                            onClick={() => router.push('/rooms')}
+                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                          >
                             <div className="w-5 h-5 flex items-center justify-center">
                               <Edit size={12} color="#FF6A00" />
                             </div>
                             Edit
                           </button>
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                          <button 
+                            onClick={() => {
+                              if (rooms.length > 0) {
+                                removeRoom(rooms[0].id);
+                                setRoomData(null);
+                              }
+                            }}
+                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                          >
                             <div className="w-5 h-5 flex items-center justify-center">
                               <Trash2 size={12} color="#FF6A00" />
                             </div>
@@ -417,12 +451,6 @@ export default function AddOnsPage() {
                         
                         {/* Action Buttons */}
                         <div className="flex items-center gap-4">
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Edit size={12} color="#FF6A00" />
-                            </div>
-                            Edit
-                          </button>
                           <button
                             onClick={() => removeFromCart(item.id)}
                             className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"

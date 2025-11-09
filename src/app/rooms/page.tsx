@@ -10,7 +10,6 @@ import { getRooms, Room } from '@/lib/firestoreService';
 import { 
   User, 
   Calendar,
-  Edit, 
   Trash2, 
   Tag, 
 
@@ -576,9 +575,9 @@ function RoomsContent() {
 
                           <button
                             onClick={() => addToCart(room)}
-                            className={`bg-[#FF6A00] hover:bg-[#E55A00] text-white font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px] ${addedRoomId===room.id ? 'opacity-80' : ''}`}
+                            className={`${cartRooms.find(r => r.id === room.id) ? 'bg-green-600 hover:bg-green-700' : 'bg-[#FF6A00] hover:bg-[#E55A00]'} text-white font-semibold transition-colors flex items-center justify-center w-full h-10 text-sm rounded-[6px]`}
                           >
-                            {addedRoomId===room.id ? 'Added to cart ✓' : 'Book Now'}
+                            {cartRooms.find(r => r.id === room.id) ? 'Added to Cart ✓' : 'Add to Cart'}
                           </button>
                         </div>
                       </div>
@@ -649,10 +648,6 @@ function RoomsContent() {
                         </div>
                         
                         <div className="flex items-center gap-5 flex-wrap">
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
-                            <Edit size={14} color="#FF6A00" />
-                            <span>Edit</span>
-                          </button>
                           <button
                             onClick={() => removeFromCart(room.id)}
                             className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
