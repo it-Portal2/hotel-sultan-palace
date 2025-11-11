@@ -12,12 +12,13 @@ import {
   Thermometer,
   Phone,
   Mail,
-  Globe,
-  ChevronDown,
   Menu,
   X,
+  ChevronDown,
 } from "lucide-react";
 import BookNowButton from "../ui/BookNowButton";
+import SimpleGoogleTranslate from "../ui/SimpleGoogleTranslate";
+import SimpleGoogleTranslateMobile from "../ui/SimpleGoogleTranslateMobile";
 import Image from "next/image";
 
 function TimeAndTemperature() {
@@ -105,7 +106,7 @@ export default function Header() {
 
   const wellnessSubmenu = [
     { label: "Ocean Breeze Spa", href: "/wellness/ocean-breeze-spa" },
-    { label: "Fitness & Gym Studio", href: "/wellness/fitness-gym-studio" },
+    // { label: "Fitness & Gym Studio", href: "/wellness/fitness-gym-studio" }, // Temporarily commented out
   ];
 
   const aboutUsSubmenu = [
@@ -129,21 +130,24 @@ export default function Header() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.submenu-container')) {
+      // Close submenu if clicking outside both the button and submenu container
+      const clickedSubmenu = target.closest('.submenu-container');
+      const clickedButton = target.closest('button[aria-haspopup="true"]');
+      
+      if (!clickedSubmenu && !clickedButton) {
         setIsAboutUsMenuOpen(false);
         setIsActivitiesMenuOpen(false);
         setIsWellnessMenuOpen(false);
       }
     };
 
-    if (isAboutUsMenuOpen || isActivitiesMenuOpen || isWellnessMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    // Always listen for clicks to close submenus
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isAboutUsMenuOpen, isActivitiesMenuOpen, isWellnessMenuOpen]);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -154,9 +158,18 @@ export default function Header() {
 
   return (
     <>
-      <header className={`w-full absolute top-0 left-0 z-30 font-open-sans ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`}>
+      <header className={`w-full absolute top-0 left-0 z-[9999] font-open-sans overflow-visible ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`} style={{ position: 'absolute', zIndex: 9999 }}>
+        {/* Black Linear Gradient Overlay at Top - 0% black to 100% transparent */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)",
+            zIndex: 0
+          }}
+        />
+        
         {/* Top Section - Desktop Only */}
-        <div className="hidden md:block w-full px-4 md:px-6 lg:px-10 xl:px-20">
+        <div className="hidden md:block w-full px-4 md:px-6 lg:px-10 xl:px-20 relative z-10">
           <div className="flex items-center justify-between py-1 md:py-4 gap-2 xl:gap-4">
             <TimeAndTemperature />
             <div className="flex items-center gap-2 xl:gap-3 2xl:gap-5 text-white text-[12px] md:text-[14px] xl:text-[16px] font-semibold flex-shrink-0">
@@ -173,23 +186,17 @@ export default function Header() {
                 className="flex items-center gap-1 xl:gap-2 hover:text-orange-300 transition-colors"
               >
                 <Mail size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4" color="#79C9E9" />
-                <span className="text-[12px] md:text-[14px] xl:text-[16px] truncate max-w-[180px] xl:max-w-none">portalholdingsznz@gmail.com</span>
+                <span className="text-[12px] md:text-[14px] xl:text-[16px] truncate max-w-[180px] xl:max-w-none">reservations@sultanpalacehotelznz.com</span>
               </Link>
-              <button className="flex items-center gap-1 xl:gap-2 border border-white rounded-full px-2 py-1 hover:opacity-80 transition-opacity flex-shrink-0">
-                <Globe size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4 text-white" />
-                <span className="text-white font-medium text-[12px] md:text-[14px] xl:text-[16px] whitespace-nowrap">
-                  English
-                </span>
-                <ChevronDown size={14} className="md:w-3 md:h-3 xl:w-4 xl:h-4 text-white" />
-              </button>
+              <SimpleGoogleTranslate />
             </div>
           </div>
           <hr className="border-white/20" />
         </div>
 
         {/* Menu Bar Section - Logo, Social Icons, Navigation */}
-        <div className="w-full px-4 md:px-6 lg:px-8 xl:px-[82px]">
-          <div className="flex items-center justify-between py-1 gap-2 xl:gap-4">
+        <div className="w-full px-4 md:px-6 lg:px-8 xl:px-[82px] overflow-visible relative z-10">
+          <div className="flex items-center justify-between py-1 gap-2 xl:gap-4 overflow-visible">
             <div className="flex items-center gap-2 md:gap-3 xl:gap-4 flex-shrink-0">
               <Link href="/" className="flex-shrink-0 z-50">
                 <Image
@@ -220,12 +227,17 @@ export default function Header() {
               </div>
             </div>
 
-            <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 text-white text-[14px] xl:text-[16px] font-semibold font-open-sans flex-1 min-w-0">
+            <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 text-white text-[14px] xl:text-[16px] font-semibold font-open-sans flex-1 min-w-0 overflow-visible" style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
               {navLinks.map((item) => (
-                <div key={item.label} className="relative">
+                <div
+                  key={item.label}
+                  className="relative"
+                  style={{ overflow: 'visible', position: 'relative' }}
+                >
                   {item.hasSubmenu ? (
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         // Close other submenus and toggle current one
                         if (item.label === "Activities") {
                           setIsActivitiesMenuOpen(!isActivitiesMenuOpen);
@@ -241,6 +253,7 @@ export default function Header() {
                           setIsWellnessMenuOpen(false);
                         }
                       }}
+                      aria-haspopup="true"
                       className="whitespace-nowrap hover:text-orange-300 transition-colors flex items-center gap-1 xl:gap-2 text-[13px] xl:text-[16px]"
                     >
                       <span className="truncate max-w-[120px] xl:max-w-none">{item.label}</span>
@@ -267,15 +280,32 @@ export default function Header() {
                   )}
                   
                   {/* Activities Submenu */}
-                  {item.hasSubmenu && item.label === "Activities" && (
-                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isActivitiesMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
-                      <div className="py-4 px-4 space-y-5">
+                  {item.hasSubmenu && item.label === "Activities" && isActivitiesMenuOpen && (
+                    <div 
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
+                      style={{ 
+                        clipPath: 'none', 
+                        overflow: 'visible', 
+                        zIndex: 10000, 
+                        position: 'absolute',
+                        top: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginTop: '8px', 
+                        willChange: 'opacity, transform',
+                        isolation: 'isolate',
+                        contain: 'none',
+                        maxHeight: 'none',
+                        height: 'auto'
+                      }}
+                    >
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424] z-[101]"></div>
+                      <div className="py-4 px-4 space-y-5 relative z-[101]">
                         {activitiesSubmenu.map((subItem, index) => (
                           <div key={subItem.label}>
                             <Link
                               href={subItem.href}
-                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block whitespace-nowrap"
                               onClick={() => setIsActivitiesMenuOpen(false)}
                             >
                               {subItem.label}
@@ -290,15 +320,32 @@ export default function Header() {
                   )}
 
                   {/* Wellness Submenu */}
-                  {item.hasSubmenu && item.label === "Wellness & Relaxation" && (
-                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isWellnessMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
-                      <div className="py-4 px-4 space-y-5">
+                  {item.hasSubmenu && item.label === "Wellness & Relaxation" && isWellnessMenuOpen && (
+                    <div 
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
+                      style={{ 
+                        clipPath: 'none', 
+                        overflow: 'visible', 
+                        zIndex: 10000, 
+                        position: 'absolute',
+                        top: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginTop: '8px', 
+                        willChange: 'opacity, transform',
+                        isolation: 'isolate',
+                        contain: 'none',
+                        maxHeight: 'none',
+                        height: 'auto'
+                      }}
+                    >
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424] z-[101]"></div>
+                      <div className="py-4 px-4 space-y-5 relative z-[101]">
                         {wellnessSubmenu.map((subItem, index) => (
                           <div key={subItem.label}>
                             <Link
                               href={subItem.href}
-                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block whitespace-nowrap"
                               onClick={() => setIsWellnessMenuOpen(false)}
                             >
                               {subItem.label}
@@ -313,15 +360,32 @@ export default function Header() {
                   )}
                   
                   {/* about Submenu */}
-                  {item.hasSubmenu && item.label === "About Us" && (
-                    <div className={`submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 w-[194px] bg-[#242424] shadow-lg z-50 transition-all duration-300 ease-out ${isAboutUsMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424]"></div>
-                      <div className="py-4 px-4 space-y-5">
+                  {item.hasSubmenu && item.label === "About Us" && isAboutUsMenuOpen && (
+                    <div 
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[280px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
+                      style={{ 
+                        clipPath: 'none', 
+                        overflow: 'visible', 
+                        zIndex: 10000, 
+                        position: 'absolute',
+                        top: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginTop: '8px', 
+                        willChange: 'opacity, transform',
+                        isolation: 'isolate',
+                        contain: 'none',
+                        maxHeight: 'none',
+                        height: 'auto'
+                      }}
+                    >
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[30px] border-l-transparent border-r-transparent border-b-[#242424] z-[101]"></div>
+                      <div className="py-4 px-4 space-y-5 relative z-[101]">
                         {aboutUsSubmenu.map((subItem, index) => (
                           <div key={subItem.label}>
                             <Link
                               href={subItem.href}
-                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block"
+                              className="text-white text-[14px] font-medium hover:text-orange-300 transition-colors block whitespace-nowrap"
                               onClick={() => setIsAboutUsMenuOpen(false)}
                             >
                               {subItem.label}
@@ -486,11 +550,7 @@ export default function Header() {
             <Mail size={16} color="#79C9E9" />
             <span>portalholdingsznz@gmail.com</span>
           </Link>
-          <button className="flex items-center gap-3 mt-2 border border-white rounded-full px-4 py-2 hover:opacity-80 transition-opacity">
-            <Globe size={16} />
-            <span>English</span>
-            <ChevronDown size={16} />
-          </button>
+          <SimpleGoogleTranslateMobile />
         </div>
       </div>
     </>

@@ -118,7 +118,7 @@ export default function AboutUsPage() {
       </div>
 
       {/* YouTube video - Visible on all devices */}
-      <div ref={videoRef} className="w-full px-4 md:px-6 lg:px-8 mt-4 md:-mt-20 lg:-mt-70 mb-4 md:mb-8 relative z-30 video-container">
+      {/* <div ref={videoRef} className="w-full px-4 md:px-6 lg:px-8 mt-4 md:-mt-20 lg:-mt-70 mb-4 md:mb-8 relative z-30 video-container">
         <div className="relative w-full max-w-6xl mx-auto rounded-lg overflow-hidden shadow-2xl">
           <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
             <iframe
@@ -131,7 +131,7 @@ export default function AboutUsPage() {
             ></iframe>
           </div>
         </div>
-      </div>
+      </div> */}
 
      
       <div ref={contentRef} className="relative bg-[#FFFCF6] pt-4 md:pt-8 pb-10 md:pb-16 lg:pt-16 lg:pb-24 -mt-4 md:-mt-8 relative z-30">
@@ -246,7 +246,7 @@ export default function AboutUsPage() {
             
             {/* Header Frame - Happy Moments text and line */}
             <div className="flex flex-col items-center gap-[17px] w-full max-w-[495px]">
-              <h3 className="text-[#353535] text-[28px] sm:text-[32px] md:text-[36px] font-semibold leading-[0.694444] text-center font-['Quicksand'] happy-moments-title">
+              <h3 className="text-[#353535] text-[28px] sm:text-[32px] md:text-[40px] lg:text-[48px] font-semibold leading-[0.694444] text-center font-['Quicksand'] happy-moments-title">
                 Happy Moments
               </h3>
               <div 

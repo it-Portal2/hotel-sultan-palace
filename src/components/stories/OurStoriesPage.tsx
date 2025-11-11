@@ -14,6 +14,16 @@ export default function OurStoriesPage() {
   const testimonialCardRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const [sectionVisible, setSectionVisible] = useState<{ [key: string]: boolean }>({});
+  const v1Ref = useRef<HTMLVideoElement | null>(null);
+  const v2Ref = useRef<HTMLVideoElement | null>(null);
+  const v3Ref = useRef<HTMLVideoElement | null>(null);
+  const [v1Playing, setV1Playing] = useState(false);
+  const [v2Playing, setV2Playing] = useState(false);
+  const [v3Playing, setV3Playing] = useState(false);
+  const v2ContainerRef = useRef<HTMLDivElement | null>(null);
+  const [v2Height, setV2Height] = useState<number | null>(null);
+  const v4Ref = useRef<HTMLVideoElement | null>(null);
+  const [v4Playing, setV4Playing] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -22,7 +32,6 @@ export default function OurStoriesPage() {
       setStories(data);
     })();
 
-    // Intersection Observer for testimonial card
     const testimonialObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -34,7 +43,6 @@ export default function OurStoriesPage() {
       { threshold: 0.2 }
     );
 
-    // Intersection Observer for video/images
     const videoObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -61,7 +69,6 @@ export default function OurStoriesPage() {
     };
   }, []);
 
-  // Enhanced Intersection Observer for sections
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     const observedElements = new Set<HTMLElement>();
@@ -113,7 +120,6 @@ export default function OurStoriesPage() {
     };
   }, []);
 
-  // Inject styles via useEffect
   useEffect(() => {
     const styleId = 'our-stories-page-styles';
     if (document.getElementById(styleId)) return;
@@ -361,8 +367,54 @@ export default function OurStoriesPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const video = v2Ref.current;
+    const container = v2ContainerRef.current;
+    if (!container) return;
+
+    const computeHeight = () => {
+      if (!video) return;
+      const cw = container.clientWidth;
+      const vw = video.videoWidth || 16;
+      const vh = video.videoHeight || 9;
+      const aspect = vw / vh;
+      const ch = Math.round(cw / aspect);
+      setV2Height(ch);
+    };
+
+    const handleLoaded = () => computeHeight();
+    video?.addEventListener('loadedmetadata', handleLoaded);
+
+    const ro = new ResizeObserver(() => computeHeight());
+    ro.observe(container);
+
+    return () => {
+      video?.removeEventListener('loadedmetadata', handleLoaded);
+      ro.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleEndV1 = () => setV1Playing(false);
+    const handleEndV2 = () => setV2Playing(false);
+    const handleEndV3 = () => setV3Playing(false);
+    const handleEndV4 = () => setV4Playing(false);
+
+    const v1 = v1Ref.current; const v2 = v2Ref.current; const v3 = v3Ref.current; const v4 = v4Ref.current;
+    v1?.addEventListener('ended', handleEndV1);
+    v2?.addEventListener('ended', handleEndV2);
+    v3?.addEventListener('ended', handleEndV3);
+    v4?.addEventListener('ended', handleEndV4);
+
+    return () => {
+      v1?.removeEventListener('ended', handleEndV1);
+      v2?.removeEventListener('ended', handleEndV2);
+      v3?.removeEventListener('ended', handleEndV3);
+      v4?.removeEventListener('ended', handleEndV4);
+    };
+  }, []);
+
   const totalPages = Math.max(stories.length, 1);
-  // Build effective list: ensure at least 3 items by padding with defaults
   const defaultText = `From the moment I arrived at Sultan Palace Hotel, I felt the world slow down. The ocean breeze, gentle smiles, and golden light made everything feel calm and effortless. My villa opened to the turquoise sea — every morning began with the sound of waves and the scent of salt in the air.
 
 Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and dining under starlit skies. Every detail felt personal, every moment peaceful. Sultan Palace wasn't just a hotel; it was where I found my calm again — a place I'll always carry in my heart.`;
@@ -424,8 +476,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
 
 
   return (
-    <div className="w-full bg-[#FFFCF6] overflow-x-hidden">
-      {/* Hero Section */}
+    <div className="w-full bg-white overflow-x-hidden">
       <div className="relative h-[600px] md:h-[928px] w-full overflow-hidden">
         <Image
           src="/our-story/hero.png"
@@ -440,7 +491,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           style={{ opacity: 1 }}
         />
         
-        {/* Gradient Overlays */}
         <div 
           className="absolute inset-0 pointer-events-none z-10"
           style={{
@@ -454,8 +504,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           }}
         />
        
-        {/* Content - Positioned at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full pb-8 sm:pb-12 md:pb-16 lg:pb-20">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full pb-8 sm:pb-2 md:pb-4 lg:pb-6">
           <h1 
             className="relative z-10 text-[#FFFFFF] text-[32px] sm:text-[42px] md:text-[56px] lg:text-[72px] xl:text-[96px] font-moon-dance leading-[1.2] tracking-[0.05em] text-center w-full max-w-full px-2"
             style={{
@@ -495,10 +544,8 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
         </div>
       </div>
 
-      {/* Testimonials Section */}
-      <div ref={(el) => { if (el) sectionRefs.current['testimonials-section'] = el; }} className={`bg-[#FFFCF6] py-12 md:py-16 lg:py-20 w-full overflow-x-hidden stories-testimonials-section ${sectionVisible['testimonials-section'] ? 'stories-testimonials-section-visible' : ''}`}>
+      <div ref={(el) => { if (el) sectionRefs.current['testimonials-section'] = el; }} className={`bg-white py-12 md:py-16 lg:py-20 w-full overflow-x-hidden stories-testimonials-section ${sectionVisible['testimonials-section'] ? 'stories-testimonials-section-visible' : ''}`}>
         <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
-          {/* Card Container */}
           <div 
             ref={testimonialCardRef}
             className="bg-white rounded-lg w-full p-8 md:p-12 lg:p-16 stories-testimonial-card"
@@ -508,7 +555,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               
-              {/* Left Column - Testimonials Content */}
               <div className="flex flex-col justify-center order-2 lg:order-1 group stories-testimonial-content">
                 <div className="space-y-[64px] mb-[52px]">
                   <h3 className="text-[#000000] text-[28px] md:text-[30px] lg:text-[32px] font-moon-dance leading-[0.84375] tracking-[0.1em] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00] stories-testimonial-title">
@@ -526,7 +572,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                   {[effectiveStories[testimonialIndex]?.author, effectiveStories[testimonialIndex]?.location].filter(Boolean).join(', ')}
                 </p>
          
-                {/* Pagination Controls */}
                 <div className="flex items-center gap-4 md:gap-[97px] justify-start mt-8 w-full overflow-x-auto pb-2 stories-testimonial-pagination">
                 <button 
                   onClick={prevTestimonial}
@@ -536,7 +581,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     <GrLinkPrevious className="w-4 h-4 transition-transform duration-300 hover:-translate-x-1" />
                 </button>
                 
-                  {/* Numbered Pagination */}
                   <div className="flex items-center h-[37px] flex-shrink-0">
                     {renderPagination()}
                 </div>
@@ -551,7 +595,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               </div>
             </div>
 
-            {/* Right Column - Image */}
               <div className="relative h-[400px] md:h-[550px] lg:h-[698px] w-full order-1 lg:order-2 group/image overflow-hidden rounded stories-testimonial-image">
               <Image
                 src={effectiveStories[testimonialIndex]?.imageUrl || '/our-story/story1.png'} 
@@ -561,7 +604,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                 sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover rounded transition-transform duration-700 ease-out group-hover/image:scale-110"
               />
-                {/* Gradient overlay on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-500 rounded"></div>
               </div>
             </div>
@@ -569,7 +611,6 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
         </div>
       </div>
 
-      {/* Video/Images Section */}
       <div ref={(el) => { if (el) sectionRefs.current['media-section'] = el; }} className={`relative w-full overflow-x-hidden stories-media-section ${sectionVisible['media-section'] ? 'stories-media-section-visible' : ''}`}>
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -580,95 +621,159 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           }}
         />
         
-        {/* Video Section */}
         <div className="relative z-10 py-16 md:py-20 w-full">
           <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
             <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-start justify-center w-full">
               
-              {/* Left Image - 687×965px */}
-              <div 
-                className="media-item relative h-[400px] md:h-[965px] w-full md:w-[687px] flex-shrink-0 group cursor-pointer overflow-hidden rounded stories-media-left"
-              >
-                <Image
-                  src="/our-story/video1.png"
-                  alt="Pool relaxation"
-                  fill
-                  quality={85}
-                  sizes="(max-width: 768px) 100vw, 687px"
-                  className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
-                />
-                {/* Gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none">
-                  <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                </div>
-                {/* Play Button - centered */}
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <div className="w-[70px] h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-white transition-all duration-300">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
-                      <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
-                    </svg>
+              <div className="w-full md:w-1/2 flex flex-col">
+                <div 
+                  className="media-item relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[700px] xl:h-[965px] w-full flex-shrink-0 group cursor-pointer overflow-hidden rounded stories-media-left bg-black"
+                >
+                  <video
+                    ref={v1Ref}
+                    src="/story/v1.mp4"
+                    className="absolute inset-0 w-full h-full object-cover rounded"
+                    muted
+                    playsInline
+                    controls={false}
+                  />
+                  <button
+                    aria-label={v1Playing ? 'Pause video' : 'Play video'}
+                    onClick={() => {
+                      const v = v1Ref.current;
+                      if (!v) return;
+                      if (v1Playing) { v.pause(); setV1Playing(false); } else { v.play(); setV1Playing(true); }
+                    }}
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                  >
+                    <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                      {v1Playing ? (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none">
+                    <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                   </div>
+                </div>
+
+                <div 
+                  className="media-item relative mt-4 h-[280px] sm:h-[320px] md:h-[360px] lg:h-[420px] w-full flex-shrink-0 group cursor-pointer overflow-hidden rounded"
+                >
+                  <video
+                    ref={v3Ref}
+                    src="/story/v3.mp4"
+                    className="absolute inset-0 w-full h-full object-contain"
+                    muted
+                    playsInline
+                    controls={false}
+                  />
+                  <button
+                    aria-label={v3Playing ? 'Pause video' : 'Play video'}
+                    onClick={() => {
+                      const v = v3Ref.current;
+                      if (!v) return;
+                      if (v3Playing) { v.pause(); setV3Playing(false); } else { v.play(); setV3Playing(true); }
+                    }}
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                  >
+                    <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                      {v3Playing ? (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                        </svg>
+                      )}
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* Right Column - Two Images - 659px width */}
-              <div className="flex flex-col gap-4 w-full md:w-[659px] flex-shrink-0 stories-media-right">
-                {/* First Right Image - 659×295px */}
+              <div className="w-full md:w-1/2 flex flex-col">
                 <div 
-                  className="media-item relative h-[250px] md:h-[295px] w-full group cursor-pointer overflow-hidden rounded stories-media-item-1"
+                  className="media-item relative w-full  h-[300px] sm:h-[400px] md:h-[500px] lg:h-[700px] xl:h-[965px] group cursor-pointer overflow-hidden rounded stories-media-item-1"
                 >
-                  <Image
-                    src="/our-story/video2.png"
-                    alt="Infinity pool"
-                    fill
-                    quality={85}
-                    sizes="(max-width: 768px) 100vw, 659px"
-                    className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
+                  <video
+                    ref={v2Ref}
+                    src="/story/v2.mp4"
+                    className="absolute inset-0 w-full h-full object-contain"
+                    muted
+                    playsInline
+                    controls={false}
                   />
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="w-[70px] h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-white transition-all duration-300">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
-                        <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
-                      </svg>
+                  <button
+                    aria-label={v2Playing ? 'Pause video' : 'Play video'}
+                    onClick={() => {
+                      const v = v2Ref.current;
+                      if (!v) return;
+                      if (v2Playing) { v.pause(); setV2Playing(false); } else { v.play(); setV2Playing(true); }
+                    }}
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                  >
+                    <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                      {v2Playing ? (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                        </svg>
+                      )}
                     </div>
-                  </div>
+                  </button>
                 </div>
 
-                {/* Second Right Image - 659×421px */}
-                <div 
-                  className="media-item relative h-[350px] md:h-[421px] w-full group cursor-pointer overflow-hidden rounded stories-media-item-2"
-                >
-                  <Image
-                    src="/our-story/video3.png"
-                    alt="Dining area"
-                    fill
-                    quality={85}
-                    sizes="(max-width: 768px) 100vw, 659px"
-                    className="object-cover rounded transition-transform duration-700 ease-out group-hover:scale-110"
+                <div className="media-item relative mt-4 w-full h-[260px] sm:h-[340px] md:h-[420px] lg:h-[500px] xl:h-[560px] group cursor-pointer overflow-hidden rounded">
+                  <video
+                    ref={v4Ref}
+                    src="/story/v4.mp4"
+                    className="absolute inset-0 w-full h-full object-contain"
+                    muted
+                    playsInline
+                    controls={false}
                   />
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="w-[70px] h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-white transition-all duration-300">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
-                        <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
-                      </svg>
+                  <button
+                    aria-label={v4Playing ? 'Pause video' : 'Play video'}
+                    onClick={() => {
+                      const v = v4Ref.current;
+                      if (!v) return;
+                      if (v4Playing) { v.pause(); setV4Playing(false); } else { v.play(); setV4Playing(true); }
+                    }}
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                  >
+                    <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                      {v4Playing ? (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                        </svg>
+                      )}
                     </div>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* About Zanzibar Component */}
-        <div className="relative z-10 bg-[#FFFCF6] w-full">
+        <div className="relative z-10 bg-white w-full">
           <AboutZanzibar />
         </div>
       </div>

@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { SparklesIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { getTestimonials, deleteTestimonial, Testimonial } from '@/lib/firestoreService';
 import BackButton from '@/components/admin/BackButton';
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminTestimonialsPage() {
+  const { isReadOnly } = useAdminRole();
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -47,7 +49,13 @@ export default function AdminTestimonialsPage() {
           <p className="mt-2 text-gray-600">Manage guest testimonials displayed on the homepage</p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-          <Link href="/admin/testimonials/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Testimonial</Link>
+          {isReadOnly ? (
+            <div className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
+              <PlusIcon className="h-4 w-4 mr-2"/>Add Testimonial (Read-Only)
+            </div>
+          ) : (
+            <Link href="/admin/testimonials/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Testimonial</Link>
+          )}
         </div>
       </div>
 
@@ -74,12 +82,25 @@ export default function AdminTestimonialsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link href={`/admin/testimonials/edit/${i.id}`} className="text-blue-600 hover:text-blue-900">
-                      <PencilIcon className="h-5 w-5" />
-                    </Link>
-                    <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50">
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                    {isReadOnly ? (
+                      <>
+                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Editing disabled">
+                          <PencilIcon className="h-5 w-5" />
+                        </div>
+                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
+                          <TrashIcon className="h-5 w-5" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Link href={`/admin/testimonials/edit/${i.id}`} className="text-blue-600 hover:text-blue-900">
+                          <PencilIcon className="h-5 w-5" />
+                        </Link>
+                        <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50">
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </li>

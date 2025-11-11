@@ -61,33 +61,33 @@ export default function SpiritOfSwahiliPage() {
             }}
           />
         
-          <div className="absolute inset-0 z-10 flex items-end justify-center pb-3 md:pb-4 lg:pb-8">
-            <div className="w-full max-w-[1120px] px-6 text-center space-y-4 so-animate so-delay-1">
-              <h1 className="text-[#554019] text-[22px] md:text-[24px] lg:text-[24px] font-semibold leading-[1.125] font-open-sans">
-                Where Culture Meets Coastal Elegance
-              </h1>
-              <p className="text-[#423B2D] text-[14px] md:text-[16px] lg:text-[16px] font-normal leading-[1.6875] font-open-sans max-w-[742px] mx-auto">
-                Welcome to Sultan Palace Hotel Zanzibar, where timeless Swahili traditions blend with royal island luxury.
-                Every corner tells a story — of spice, sea, and soul — inviting you to experience Zanzibar not just as a
-                destination, but as a living heritage.
-              </p>
-            </div>
-          </div>
-        
         </section>
 
         <section aria-hidden className="h-12 md:h-20 lg:h-24"></section>
 
-        <section className="relative z-30 py-2 md:py-4 mb-10 md:mb-16 lg:mb-20">
+        <section className="relative z-30 ">
+          <div className="max-w-[1120px] mx-auto px-4 md:px-6 text-center space-y-4 so-animate so-delay-1">
+            <h1 className="text-[#554019] text-[28px] md:text-[30px] lg:text-[40px] font-semibold leading-[1.725] font-open-sans">
+              Where Culture Meets Coastal Elegance
+            </h1>
+            <p className="text-[#423B2D] text-[20px] md:text-[22px] lg:text-[24px] font-normal leading-[1.6875] font-open-sans max-w-[1200px] mx-auto">
+              Welcome to Sultan Palace Hotel Zanzibar, where timeless Swahili traditions blend with royal island luxury.
+              Every corner tells a story — of spice, sea, and soul — inviting you to experience Zanzibar not just as a
+              destination, but as a living heritage. 
+            </p>
+          </div>
+        </section>
+
+        <section className="relative z-30 py-10 md:py-20 lg:py-24 mb-10 md:mb-16 lg:mb-20">
           <div className="max-w-[1400px] mx-auto px-4 md:px-6">
-            <h2 className="text-[#2C271D] text-[24px] md:text-[24px] font-semibold -mt-20 font-open-sans text-center so-animate">
+            <h2 className="text-[#2C271D] text-[24px] md:text-[28px] lg:text-[32px] font-semibold font-open-sans text-center so-animate">
               Experience the Spirit of Swahili
             </h2>
           </div>
         </section>
 
        
-        <section className="relative z-20 -mt-12 md:-mt-16 lg:-mt-20 pb-20 md:pb-26">
+        <section className="relative z-20 -mt-12 md:-mt-16 lg:-mt-20 pb-20 md:pb-26 lg:pb-32">
           <div className="w-full px-2 md:px-3 lg:px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
               <div className="relative  overflow-hidden so-animate">
@@ -135,7 +135,7 @@ export default function SpiritOfSwahiliPage() {
                 </div>
               </div>
               <div className="flex items-center so-animate so-delay-1">
-                <div className="p-6 md:p-8">
+                <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
                   <h3 className="text-[#2D2922] text-[30px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Spice Island Adventures</h3>
                   <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
                     Zanzibar’s world-famous spice plantations offer a sensory journey through cloves, cinnamon, nutmeg, and
@@ -152,7 +152,7 @@ export default function SpiritOfSwahiliPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
               <div className="flex items-center order-2 lg:order-1 so-animate so-delay-1">
-                <div className="p-6 md:p-8">
+                <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
                   <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Red Colobus Monkeys & Forest Trails</h3>
                   <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
                     Explore lush Jozani Forest, home to the rare Red Colobus monkeys. Walk guided trails shaded by giant
@@ -188,7 +188,7 @@ export default function SpiritOfSwahiliPage() {
               </div>
               <div className="flex items-center so-animate so-delay-1">
               <div className="flex items-center order-2 lg:order-1">
-                <div className="p-6 md:p-8">
+                <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
                   <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Swahili Culinary Heritage</h3>
                   <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
                     Immerse in the flavors of Swahili cuisine — rich curries, tropical fruits, and freshly caught seafood
@@ -208,7 +208,7 @@ export default function SpiritOfSwahiliPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
               <div className="flex items-center order-2 lg:order-1 so-animate so-delay-1">
-                <div className="p-6 md:p-8">
+                <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
                   <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Traditional Handicrafts & Art</h3>
                     <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
                     Discover Zanzibar’s artistry through visits to local workshops. From intricately carved wooden doors and

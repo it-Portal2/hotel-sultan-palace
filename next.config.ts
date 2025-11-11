@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "sl.bing.net",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
   // Fix for chunk loading issues and stability

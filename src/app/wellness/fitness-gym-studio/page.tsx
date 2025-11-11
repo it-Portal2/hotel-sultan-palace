@@ -1,3 +1,5 @@
+/* GYM PAGE TEMPORARILY COMMENTED OUT - START */
+/*
 "use client";
 import Image from "next/image";
 import Link from "next/link";
@@ -66,7 +68,6 @@ export default function FitnessGymStudioPage() {
     <>
       <Header />
       <main className="w-full max-w-full bg-[#FFFCF6] font-open-sans relative overflow-x-hidden">
-        {/* Hero Section */}
         <section className="relative w-full h-[520px] md:h-[800px] lg:h-[1018px] overflow-hidden">
           <Image 
             src="/gym_hero_overlay.png" 
@@ -81,7 +82,6 @@ export default function FitnessGymStudioPage() {
             style={{ opacity: 1 }}
           />
           
-          {/* Gradient Overlays */}
           <div 
             className="absolute inset-0 pointer-events-none z-10"
             style={{
@@ -96,7 +96,6 @@ export default function FitnessGymStudioPage() {
           />
         </section>
 
-        {/* Title Section */}
         <section ref={(el) => { if (el) sectionRefs.current['title'] = el; }} className={`relative w-full px-4 md:px-0 pt-8 md:pt-12 wellness-title ${isVisible['title'] ? 'wellness-title-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="flex flex-col items-center px-4 md:px-0">
@@ -110,7 +109,6 @@ export default function FitnessGymStudioPage() {
           </div>
         </section>
 
-        {/* Treatment Cards Section */}
         <section ref={(el) => { if (el) sectionRefs.current['cards'] = el; }} className={`relative w-full px-4 md:px-0 mt-8 md:mt-12 lg:mt-16 wellness-cards ${isVisible['cards'] ? 'wellness-cards-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-3 lg:px-4">
@@ -154,7 +152,6 @@ export default function FitnessGymStudioPage() {
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110" 
                     />
-                    {/* Overlay gradient on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
                   <div className="flex flex-col items-center gap-[13px] pt-[13px] pb-4 px-[19px] transition-all duration-300">
@@ -174,11 +171,9 @@ export default function FitnessGymStudioPage() {
           </div>
         </section>
 
-        {/* Portrait Image and Text Section */}
         <section ref={(el) => { if (el) sectionRefs.current['portrait'] = el; }} className={`relative w-full px-4 md:px-0 mt-12 md:mt-16 lg:mt-20 wellness-portrait ${isVisible['portrait'] ? 'wellness-portrait-visible' : ''}`}>
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="relative px-4 md:px-0">
-              {/* Mobile/Tablet Layout */}
               <div className="block lg:hidden grid grid-cols-1 gap-8 items-start">
                 <div className="relative w-full h-[360px] md:h-[500px] order-2">
                   <Image 
@@ -213,9 +208,7 @@ export default function FitnessGymStudioPage() {
                 </div>
               </div>
               
-              {/* Desktop Layout - Exact Figma Positioning */}
               <div className="hidden lg:block relative w-full min-h-[718px]">
-                {/* Portrait Image - Position (-36, 0) - adjusted to left edge */}
                 <div className="absolute left-0 top-0 w-[713px] h-[718px]">
                   <Image 
                     src="/gym_portrait.png" 
@@ -227,7 +220,6 @@ export default function FitnessGymStudioPage() {
                   />
                 </div>
                 
-                {/* Text Section - Position (766, 0) */}
                 <div className="absolute left-[766px] top-0 w-[536px]">
                   <div className="flex flex-col gap-[43px]">
                     <div className="flex flex-col gap-[43px]">
@@ -256,7 +248,6 @@ export default function FitnessGymStudioPage() {
           </div>
         </section>
 
-        {/* Video Section */}
         <section ref={(el) => { if (el) sectionRefs.current['video'] = el; }} className={`relative w-full mt-12 md:mt-16 lg:mt-20 wellness-video ${isVisible['video'] ? 'wellness-video-visible' : ''}`}>
           <div className="relative w-full h-[300px] md:h-[500px] lg:h-[672px]">
             <Image 
@@ -269,7 +260,6 @@ export default function FitnessGymStudioPage() {
             />
             <div className="absolute inset-0 bg-black/62"></div>
             
-            {/* Play Button */}
             <button
               aria-label="Play Gym Video"
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] md:w-[66px] md:h-[66px] lg:w-[72px] lg:h-[72px] rounded-full bg-white grid place-items-center shadow-lg z-20 hover:scale-110 transition-transform"
@@ -342,4 +332,11 @@ export default function FitnessGymStudioPage() {
       `}</style>
     </>
   );
+}
+*/
+/* GYM PAGE TEMPORARILY COMMENTED OUT - END */
+
+// Temporary component - page is commented out, returns empty div
+export default function FitnessGymStudioPage() {
+  return null;
 }

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getRoomTypes, createRoomType, updateRoomType, deleteRoomType, RoomType, SuiteType } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
+import { useAdminRole } from '@/context/AdminRoleContext';
 import { PlusIcon, PencilIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
@@ -15,6 +16,7 @@ const DEFAULT_ROOM_TYPES: Record<SuiteType, string[]> = {
 };
 
 export default function AdminRoomTypesPage() {
+  const { isReadOnly } = useAdminRole();
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
@@ -41,6 +43,10 @@ export default function AdminRoomTypesPage() {
   };
 
   const handleAddDefault = async (suiteType: SuiteType) => {
+    if (isReadOnly) {
+      showToast('Read-only mode: Cannot add room types', 'error');
+      return;
+    }
     try {
       const defaults = DEFAULT_ROOM_TYPES[suiteType];
       const existing = roomTypes.filter(rt => rt.suiteType === suiteType).map(rt => rt.roomName);
@@ -65,6 +71,10 @@ export default function AdminRoomTypesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      showToast('Read-only mode: Cannot modify room types', 'error');
+      return;
+    }
     if (!formData.roomName.trim()) {
       showToast('Room name is required', 'warning');
       return;
@@ -99,6 +109,10 @@ export default function AdminRoomTypesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isReadOnly) {
+      showToast('Read-only mode: Cannot delete room types', 'error');
+      return;
+    }
     if (!confirm('Are you sure you want to delete this room type?')) return;
     try {
       await deleteRoomType(id);
@@ -111,6 +125,10 @@ export default function AdminRoomTypesPage() {
   };
 
   const handleToggleActive = async (roomType: RoomType) => {
+    if (isReadOnly) {
+      showToast('Read-only mode: Cannot modify room types', 'error');
+      return;
+    }
     try {
       await updateRoomType(roomType.id, { isActive: !roomType.isActive });
       showToast(`Room type ${!roomType.isActive ? 'activated' : 'deactivated'}`, 'success');
@@ -221,38 +239,58 @@ export default function AdminRoomTypesPage() {
               </div>
               <div className="flex gap-2">
                 {missing.length > 0 && (
+                  isReadOnly ? (
+                    <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm flex items-center gap-2">
+                      <PlusIcon className="h-4 w-4" />
+                      Add Default Types ({missing.length}) (Read-Only)
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAddDefault(suite)}
+                      className="px-4 py-2 bg-[#be8c53] text-white rounded-lg hover:bg-[#be8c53]/90 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Default Types ({missing.length})
+                    </button>
+                  )
+                )}
+                {isReadOnly ? (
+                  <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm flex items-center gap-2">
+                    <PlusIcon className="h-4 w-4" />
+                    Add Custom (Read-Only)
+                  </div>
+                ) : (
                   <button
-                    onClick={() => handleAddDefault(suite)}
-                    className="px-4 py-2 bg-[#be8c53] text-white rounded-lg hover:bg-[#be8c53]/90 transition-colors text-sm flex items-center gap-2"
+                    onClick={() => {
+                      setSelectedSuite(suite);
+                      setFormData({ suiteType: suite, roomName: '', isActive: true });
+                      setShowAddForm(true);
+                      setEditing(null);
+                    }}
+                    className="px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors text-sm flex items-center gap-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    Add Default Types ({missing.length})
+                    Add Custom
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    setSelectedSuite(suite);
-                    setFormData({ suiteType: suite, roomName: '', isActive: true });
-                    setShowAddForm(true);
-                    setEditing(null);
-                  }}
-                  className="px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors text-sm flex items-center gap-2"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Add Custom
-                </button>
               </div>
             </div>
             <div className="p-6">
               {types.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <p>No room types for this suite yet.</p>
-                  <button
-                    onClick={() => handleAddDefault(suite)}
-                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    Add Default Types
-                  </button>
+                  {isReadOnly ? (
+                    <div className="mt-4 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm inline-block">
+                      Add Default Types (Read-Only)
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAddDefault(suite)}
+                      className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      Add Default Types
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -268,35 +306,55 @@ export default function AdminRoomTypesPage() {
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-gray-900">{rt.roomName}</h3>
                         <div className="flex gap-1">
-                          <button
-                            onClick={() => handleToggleActive(rt)}
-                            className={`p-1 rounded ${
-                              rt.isActive
-                                ? 'text-green-600 hover:bg-green-100'
-                                : 'text-gray-400 hover:bg-gray-100'
-                            }`}
-                            title={rt.isActive ? 'Deactivate' : 'Activate'}
-                          >
-                            {rt.isActive ? (
-                              <CheckIcon className="h-5 w-5" />
-                            ) : (
-                              <XMarkIcon className="h-5 w-5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleEdit(rt)}
-                            className="p-1 rounded text-blue-600 hover:bg-blue-100"
-                            title="Edit"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(rt.id)}
-                            className="p-1 rounded text-red-600 hover:bg-red-100"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                          {isReadOnly ? (
+                            <>
+                              <div className="p-1 rounded text-gray-400 cursor-not-allowed" title="Read-only mode: Cannot modify">
+                                {rt.isActive ? (
+                                  <CheckIcon className="h-5 w-5" />
+                                ) : (
+                                  <XMarkIcon className="h-5 w-5" />
+                                )}
+                              </div>
+                              <div className="p-1 rounded text-gray-400 cursor-not-allowed" title="Read-only mode: Editing disabled">
+                                <PencilIcon className="h-4 w-4" />
+                              </div>
+                              <div className="p-1 rounded text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
+                                <TrashIcon className="h-4 w-4" />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleToggleActive(rt)}
+                                className={`p-1 rounded ${
+                                  rt.isActive
+                                    ? 'text-green-600 hover:bg-green-100'
+                                    : 'text-gray-400 hover:bg-gray-100'
+                                }`}
+                                title={rt.isActive ? 'Deactivate' : 'Activate'}
+                              >
+                                {rt.isActive ? (
+                                  <CheckIcon className="h-5 w-5" />
+                                ) : (
+                                  <XMarkIcon className="h-5 w-5" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleEdit(rt)}
+                                className="p-1 rounded text-blue-600 hover:bg-blue-100"
+                                title="Edit"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(rt.id)}
+                                className="p-1 rounded text-red-600 hover:bg-red-100"
+                                title="Delete"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       <p className="text-xs text-gray-500">{rt.suiteType}</p>

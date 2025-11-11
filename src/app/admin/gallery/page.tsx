@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { getGalleryImages, deleteGalleryImage, GalleryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/admin/BackButton';
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminGalleryPage() {
+  const { isReadOnly } = useAdminRole();
   const [items, setItems] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -61,7 +63,13 @@ export default function AdminGalleryPage() {
           <p className="mt-2 text-gray-600">Upload images for the gallery. Choose the correct type so users can filter.</p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-          <Link href="/admin/gallery/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Image</Link>
+          {isReadOnly ? (
+            <div className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
+              <PlusIcon className="h-4 w-4 mr-2"/>Add Image (Read-Only)
+            </div>
+          ) : (
+            <Link href="/admin/gallery/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Image</Link>
+          )}
         </div>
       </div>
 
@@ -89,8 +97,17 @@ export default function AdminGalleryPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="absolute top-2 right-2 flex items-center gap-2">
-                  <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow"><PencilSquareIcon className="h-4 w-4"/></Link>
-                  <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50"><TrashIcon className="h-4 w-4"/></button>
+                  {isReadOnly ? (
+                    <>
+                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Editing disabled"><PencilSquareIcon className="h-4 w-4"/></div>
+                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Deletion disabled"><TrashIcon className="h-4 w-4"/></div>
+                    </>
+                  ) : (
+                    <>
+                      <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow"><PencilSquareIcon className="h-4 w-4"/></Link>
+                      <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50"><TrashIcon className="h-4 w-4"/></button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

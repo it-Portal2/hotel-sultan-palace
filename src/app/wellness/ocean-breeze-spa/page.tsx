@@ -183,9 +183,9 @@ export default function OceanBreezeSpaPage() {
                     className="object-cover" 
                   />
                 </div>
-                <div className="flex flex-col gap-[43px] order-1 px-4">
-                  <div className="flex flex-col gap-[43px]">
-                    <h2 className="text-[#423B2D] text-[28px] md:text-[34px] font-semibold leading-[0.675] font-open-sans">
+                <div className=" px-4 mt-10 md:mt-20 lg:mt-24 mb-10 md:mb-16 lg:mb-20">
+                  <div className="flex flex-col gap-[43px] max-w-[646px] mx-auto justify-center">
+                    <h2 className="text-[#423B2D] text-[28px] md:text-[34px] font-semibold leading-[.675] font-open-sans">
                       Your Island Escape Awaits
                     </h2>
                     <p className="text-[#000000] text-[16px] md:text-[17px] font-normal leading-[2.277] font-open-sans">
@@ -244,37 +244,17 @@ export default function OceanBreezeSpaPage() {
         </section>
 
         {/* Video Section */}
-        <section ref={(el) => { if (el) sectionRefs.current['video'] = el; }} className={`relative w-full mt-12 md:mt-16 lg:mt-20 wellness-video ${isVisible['video'] ? 'wellness-video-visible' : ''}`}>
-          <div className="relative w-full h-[300px] md:h-[500px] lg:h-[672px]">
-            <Image 
-              src="/spa_video_bg.png" 
-              alt="Video Background" 
-              fill 
-              quality={85}
-              sizes="100vw"
-              className="object-cover" 
+        <section ref={(el) => { if (el) sectionRefs.current['video'] = el; }} className="relative w-full mt-12 md:mt-16 lg:mt-20">
+          <div className="relative w-full h-[320px] md:h-[520px] lg:h-[672px] bg-black overflow-hidden">
+            <video
+              src="/spa.mp4"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls={false}
             />
-            <div className="absolute inset-0 bg-black/20"></div>
-            
-            {/* Play Button */}
-            <button
-              aria-label="Play Spa Video"
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] md:w-[66px] md:h-[66px] lg:w-[72px] lg:h-[72px] rounded-full bg-white grid place-items-center shadow-lg z-20 hover:scale-110 transition-transform"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-                className="md:w-[24] md:h-[24] lg:w-[24] lg:h-[24]"
-              >
-                <path 
-                  d="M8 5v14l11-7L8 5z" 
-                  fill="#242424"
-                />
-              </svg>
-            </button>
           </div>
         </section>
       </main>
@@ -319,12 +299,12 @@ export default function OceanBreezeSpaPage() {
         }
         .wellness-video {
           opacity: 0 !important;
-          transform: translateY(50px) scale(0.95) !important;
-          transition: all 1s ease-out 0.5s !important;
+          transform: translateY(30px) !important; /* removed scale to prevent height shift */
+          transition: opacity 800ms ease-out, transform 800ms ease-out !important;
         }
         .wellness-video.wellness-video-visible {
           opacity: 1 !important;
-          transform: translateY(0) scale(1) !important;
+          transform: none !important; /* ensure final state has no transform */
         }
       `}</style>
     </>

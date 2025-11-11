@@ -28,6 +28,47 @@ html::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Fix Google Translate white space at top */
+html {
+  top: 0 !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Hide Google Translate Bar and prevent white space */
+#google_translate_element {
+  display: none !important;
+}
+
+.goog-te-banner-frame,
+.skiptranslate,
+#google_translate_element,
+body > .goog-te-banner-frame,
+body > .skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide Google Translate select dropdown if visible */
+.goog-te-combo {
+  display: none !important;
+}
+
+/* Ensure notranslate class works */
+.notranslate {
+  -webkit-translate: no !important;
+  translate: no !important;
+}
+
 body {
   position: relative;
   width: 100%;
@@ -36,6 +77,9 @@ body {
   -ms-overflow-style: none; /* IE and Edge */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  top: 0 !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 body::-webkit-scrollbar {

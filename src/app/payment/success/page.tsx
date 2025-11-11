@@ -4,7 +4,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { verifyDPOPayment } from '@/lib/dpoPaymentService';
+import { verifyDPOPayment, type DPOVerifyResponse } from '@/lib/dpoPaymentService';
 import { useCart } from '@/context/CartContext';
 import { createBookingService } from '@/lib/bookingService';
 import BookingConfirmationPopup from '@/components/BookingConfirmationPopup';
@@ -63,7 +63,7 @@ function PaymentSuccessContent() {
     verifyPayment();
   }, [searchParams]);
 
-  const createBookingFromPayment = async (paymentData: any) => {
+  const createBookingFromPayment = async (paymentData: DPOVerifyResponse) => {
     try {
       if (!bookingData) {
         throw new Error('Booking data not found');

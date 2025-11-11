@@ -21,6 +21,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { getAdminRole, AdminRole } from '@/lib/adminRoles';
+import { AdminRoleProvider } from '@/context/AdminRoleContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -30,6 +32,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -55,7 +58,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserEmail(user?.email ?? null);
+      const email = user?.email ?? null;
+      setUserEmail(email);
+      setAdminRole(getAdminRole(email));
       setAuthChecked(true);
     });
     return () => unsubscribe();
@@ -109,6 +114,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
+    <AdminRoleProvider>
     <div className="min-h-screen bg-[#FFFCF6]">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
@@ -216,7 +222,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </Link>
               ) : (
                 <>
-                  <span className="hidden sm:inline text-sm text-[#202c3b]/70">{userEmail}</span>
+                  <div className="hidden sm:flex items-center gap-3">
+                    <div className="flex flex-col items-end">
+                      <span className="text-sm font-medium text-[#202c3b]">{userEmail}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {adminRole === 'readonly' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 rounded-md border border-amber-200 shadow-sm">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            Read-Only Access
+                          </span>
+                        )}
+                        {adminRole === 'full' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 shadow-sm">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Full Access
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                   <button
                     onClick={async () => { if (auth) { await signOut(auth); router.push('/admin/login'); } }}
                     className="text-sm font-medium text-[#202c3b] hover:text-[#FF6A00] transition-colors"
@@ -231,11 +259,58 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Page content */}
         <main className="py-6">
+          {adminRole === 'readonly' && (
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
+              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400 rounded-lg shadow-sm p-5">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-amber-100">
+                      <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-sm font-semibold text-amber-900 mb-1">
+                      Read-Only Access Mode
+                    </h3>
+                    <p className="text-sm text-amber-800 leading-relaxed">
+                      You have view-only access to the admin dashboard. You can browse all data, bookings, and content, but <strong>cannot add, edit, or delete</strong> any information. For full administrative privileges, please contact the primary administrator.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {adminRole === 'full' && (
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-l-4 border-emerald-400 rounded-lg shadow-sm p-5">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-emerald-100">
+                      <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-sm font-semibold text-emerald-900 mb-1">
+                      Full Administrative Access
+                    </h3>
+                    <p className="text-sm text-emerald-800 leading-relaxed">
+                      You have complete access to all administrative features. You can <strong>view, add, edit, and delete</strong> bookings, rooms, gallery images, and all other content. Use this access responsibly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>
       </div>
     </div>
+    </AdminRoleProvider>
   );
 }

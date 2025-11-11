@@ -168,43 +168,18 @@ export default function DeepBlueDivePage() {
         </section>
 
        
-        <section ref={videoRef} className="relative w-full h-[600px] md:h-[800px] lg:h-[945px] overflow-hidden">
-        
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="/deep-dive/bg-texture.png"
-              alt="Background Texture"
-              fill
-              className="object-cover"
-            />
-          </div>
-         
-          <div
-            className="absolute inset-0 z-10 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255, 252, 246, 1) 3%, rgba(255, 252, 246, 0.89) 8%, rgba(255, 252, 246, 0.38) 20%, rgba(255, 252, 246, 0) 47%, rgba(255, 252, 246, 0) 59%, rgba(255, 252, 246, 0) 63%, rgba(255, 252, 246, 0.22) 73%, rgba(255, 252, 246, 1) 86%)",
-            }}
+        <section ref={videoRef} className="relative w-full h-[600px] md:h-[800px] lg:h-[945px] overflow-hidden bg-transparent">
+          {/* Embedded Video - Only video, no background */}
+          <video
+            src="/deep-dive/deep.mp4"
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
           />
-
-        
-          <button
-            type="button"
-            aria-label="Play video"
-            onClick={() => setIsVideoOpen(true)}
-            className="absolute inset-0 z-20 flex items-center justify-center group/play"
-          >
-            <span className="flex items-center justify-center w-[72px] h-[72px] rounded-full border-2 border-white shadow-[0_4px_24px_rgba(0,0,0,0.25)] video-play-button transition-all duration-500 group-hover/play:scale-125 group-hover/play:border-[#F96406] group-hover/play:bg-white/10 group-hover/play:shadow-[0_0_40px_rgba(249,100,6,0.5)]">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" className="transition-transform duration-300 group-hover/play:scale-110 group-hover/play:translate-x-1">
-                <path d="M8 5v14l11-7-11-7z" />
-              </svg>
-              {/* Ripple effect */}
-              <span className="absolute inset-0 rounded-full border-2 border-white opacity-0 group-hover/play:opacity-100 group-hover/play:animate-ripple"></span>
-            </span>
-          </button>
         </section>
 
-      
         <section ref={contentRef} className="-mt-8 md:-mt-12 lg:-mt-20 relative">
           <div className="flex flex-col md:flex-row h-full">
           

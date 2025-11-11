@@ -223,7 +223,7 @@ export default function AquaAdventurePage() {
           {/* Content Container - Reduced padding for edge-to-edge */}
             <div className="relative z-10 w-full overflow-x-hidden">
             {/* Title: Where the Sultan's Spirit Meets the Sea */}
-            <div ref={(el) => { if (el) sectionRefs.current['title'] = el; }} className={`px-4 md:px-6 lg:px-6 pt-16 md:pt-20 lg:pt-24 pb-12 md:pb-16 aqua-title ${isVisible['title'] ? 'aqua-title-visible' : ''}`}>
+            <div ref={(el) => { if (el) sectionRefs.current['title'] = el; }} className={`px-4 md:px-10 lg:px-20 pt-16 md:pt-20 lg:pt-24 pb-12 md:pb-16 aqua-title ${isVisible['title'] ? 'aqua-title-visible' : ''}`}>
               <h2 className="text-[#242424] text-[28px] md:text-[36px] lg:text-[40px] font-semibold leading-[1.25] font-quicksand" style={{ width: '750px', maxWidth: '100%' }}>
                 Where the Sultan&apos;s Spirit Meets the Sea
                 </h2>
@@ -239,7 +239,7 @@ export default function AquaAdventurePage() {
                    <Image src="/aqua-adventure/kite-surfing.png" alt="Coral Reef Exploration" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
-                   <div className="flex flex-col gap-[25px]">
+                   <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Coral Reef Exploration</h3>
                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
@@ -257,7 +257,7 @@ export default function AquaAdventurePage() {
                {/* Kite Surfing - Responsive grid row (text left, image right) */}
                <div ref={(el) => { if (el) sectionRefs.current['kite'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-kite ${isVisible['kite'] ? 'aqua-kite-visible' : ''}`}>
                  <div className="order-2 lg:order-1">
-                   <div className="flex flex-col gap-[25px]">
+                   <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Kite Surfing</h3>
                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
@@ -281,7 +281,7 @@ export default function AquaAdventurePage() {
                    <Image src="/aqua-adventure/sailing-2.png" alt="Sailing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
-                   <div className="flex flex-col gap-[25px]">
+                   <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Sailing</h3>
                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
@@ -315,7 +315,7 @@ export default function AquaAdventurePage() {
 
                 {/* Coral Reef Text - To the right of first image */}
                 <div className="absolute left-[820px] top-[92px]" style={{ width: '571px' }}>
-                  <div className="flex flex-col gap-[25px]">
+                  <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                     <div className="flex flex-col gap-[31px]">
                       <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                         Coral Reef Exploration
@@ -339,7 +339,7 @@ export default function AquaAdventurePage() {
                 {/* Row 2: Kite Surfing - Text Left, Image Right */}
                 {/* Kite Surfing Text - Left side */}
                 <div className="absolute left-[40px] top-[674px]" style={{ width: '571px' }}>
-                  <div className="flex flex-col gap-[25px]">
+                  <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                     <div className="flex flex-col gap-[31px]">
                       <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                               Kite Surfing
@@ -387,7 +387,7 @@ export default function AquaAdventurePage() {
 
                 {/* Sailing Text - Right side */}
                 <div className="absolute left-[820px] top-[1167px]" style={{ width: '571px' }}>
-                  <div className="flex flex-col gap-[25px]">
+                  <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                     <div className="flex flex-col gap-[31px]">
                       <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand transition-colors duration-300 hover:text-[#FF6A00]">
                               Sailing
@@ -481,7 +481,7 @@ export default function AquaAdventurePage() {
                     <Image src="/aqua-adventure/kayaking.png" alt="Beach Walking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                   <div className="order-2">
-                    <div className="flex flex-col gap-[25px]">
+                      <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
                         <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Beach Walking</h3>
                         <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
@@ -498,7 +498,7 @@ export default function AquaAdventurePage() {
                 {/* Kayaking - Grid row */}
                 <div ref={(el) => { if (el) sectionRefs.current['kayak'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-kayak ${isVisible['kayak'] ? 'aqua-kayak-visible' : ''}`}>
                   <div className="order-1">
-                    <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
                         <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Kayaking</h3>
                         <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
@@ -519,7 +519,7 @@ export default function AquaAdventurePage() {
                 {/* Snorkelling - Grid row (image first) */}
                 <div ref={(el) => { if (el) sectionRefs.current['snorkel'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-snorkel ${isVisible['snorkel'] ? 'aqua-snorkel-visible' : ''}`}>
                   <div className="order-2 lg:order-2">
-                    <div className="flex flex-col gap-[25px]">
+                    <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
                         <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Snorkelling</h3>
                         <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>

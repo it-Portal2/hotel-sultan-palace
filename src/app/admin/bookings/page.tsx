@@ -5,8 +5,10 @@ import { getAllBookings, Booking, updateBooking } from '@/lib/firestoreService';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/admin/BackButton';
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminBookingsPage() {
+  const { isFullAdmin, isReadOnly } = useAdminRole();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Booking | null>(null);
@@ -446,44 +448,55 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4 border-t border-[#be8c53]/20">
-                  {selected.status !== 'confirmed' && (
-                    <button 
-                      onClick={async () => {
-                        await updateBooking(selected.id, { status: 'confirmed' });
-                        setSelected({ ...selected, status: 'confirmed' });
-                        const updated = await getAllBookings();
-                        setBookings(updated);
-                      }}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Mark as Confirmed
-                    </button>
-                  )}
-                  {selected.status !== 'cancelled' && (
-                    <button 
-                      onClick={async () => {
-                        await updateBooking(selected.id, { status: 'cancelled' });
-                        setSelected({ ...selected, status: 'cancelled' });
-                        const updated = await getAllBookings();
-                        setBookings(updated);
-                      }}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-                    >
-                      Mark as Cancelled
-                    </button>
-                  )}
-                  {selected.status === 'confirmed' && (
-                    <button 
-                      onClick={async () => {
-                        await updateBooking(selected.id, { status: 'pending' });
-                        setSelected({ ...selected, status: 'pending' });
-                        const updated = await getAllBookings();
-                        setBookings(updated);
-                      }}
-                      className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors"
-                    >
-                      Mark as Pending
-                    </button>
+                  {isReadOnly ? (
+                    <div className="w-full px-4 py-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
+                      <svg className="h-5 w-5 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Read-only mode: Status changes are disabled
+                    </div>
+                  ) : (
+                    <>
+                      {selected.status !== 'confirmed' && (
+                        <button 
+                          onClick={async () => {
+                            await updateBooking(selected.id, { status: 'confirmed' });
+                            setSelected({ ...selected, status: 'confirmed' });
+                            const updated = await getAllBookings();
+                            setBookings(updated);
+                          }}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                        >
+                          Mark as Confirmed
+                        </button>
+                      )}
+                      {selected.status !== 'cancelled' && (
+                        <button 
+                          onClick={async () => {
+                            await updateBooking(selected.id, { status: 'cancelled' });
+                            setSelected({ ...selected, status: 'cancelled' });
+                            const updated = await getAllBookings();
+                            setBookings(updated);
+                          }}
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                        >
+                          Mark as Cancelled
+                        </button>
+                      )}
+                      {selected.status === 'confirmed' && (
+                        <button 
+                          onClick={async () => {
+                            await updateBooking(selected.id, { status: 'pending' });
+                            setSelected({ ...selected, status: 'pending' });
+                            const updated = await getAllBookings();
+                            setBookings(updated);
+                          }}
+                          className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors"
+                        >
+                          Mark as Pending
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

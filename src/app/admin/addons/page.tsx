@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { getAddOns, deleteAddOn, AddOn } from '@/lib/firestoreService';
 import BackButton from '@/components/admin/BackButton';
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminAddOnsPage() {
+  const { isReadOnly } = useAdminRole();
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -62,10 +64,17 @@ export default function AdminAddOnsPage() {
           <p className="mt-2 text-gray-600">Manage your upsell services and extras</p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-          <Link href="/admin/addons/new" className="inline-flex items-center justify-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Add New Add-on
-          </Link>
+          {isReadOnly ? (
+            <div className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add New Add-on (Read-Only)
+            </div>
+          ) : (
+            <Link href="/admin/addons/new" className="inline-flex items-center justify-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add New Add-on
+            </Link>
+          )}
         </div>
       </div>
 
@@ -96,20 +105,33 @@ export default function AdminAddOnsPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Link href={`/admin/addons/edit/${a.id}`} className="text-orange-600 hover:text-orange-900">
-                      <PencilIcon className="h-5 w-5" />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(a.id)}
-                      disabled={deleting === a.id}
-                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                    >
-                      {deleting === a.id ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
-                      ) : (
-                        <TrashIcon className="h-5 w-5" />
-                      )}
-                    </button>
+                    {isReadOnly ? (
+                      <>
+                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Editing disabled">
+                          <PencilIcon className="h-5 w-5" />
+                        </div>
+                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
+                          <TrashIcon className="h-5 w-5" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Link href={`/admin/addons/edit/${a.id}`} className="text-orange-600 hover:text-orange-900">
+                          <PencilIcon className="h-5 w-5" />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(a.id)}
+                          disabled={deleting === a.id}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {deleting === a.id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                          ) : (
+                            <TrashIcon className="h-5 w-5" />
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </li>
