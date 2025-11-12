@@ -28,7 +28,6 @@ export default function SimpleGoogleTranslateMobile() {
   const [currentLang, setCurrentLang] = useState('en');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Detect language from hash on mount and periodically
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
