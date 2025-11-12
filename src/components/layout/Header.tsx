@@ -41,14 +41,38 @@ function TimeAndTemperature() {
 
   useEffect(() => {
     const fetchTemp = async (lat = -6.165, lon = 39.2025) => {
+      // Only fetch in browser environment
+      if (typeof window === "undefined") return;
+      
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&timezone=auto`;
-        const res = await fetch(url, { cache: "no-store" });
+        
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const res = await fetch(url, { 
+          cache: "no-store",
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const data = await res.json();
         const t = data?.current?.temperature_2m;
         if (typeof t === "number") setTempC(Math.round(t));
       } catch (error) {
-        console.error("Failed to fetch temperature:", error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch temperature:", error);
+        }
+        // Keep tempC as null to show "--" in UI
       }
     };
     fetchTemp();
