@@ -735,7 +735,7 @@ function HotelContent() {
                   </div>
 
                   <div>
-                    <h3 className="text-[24px] font-semibold text-[#3F3F3F] mb-[24px]">Comforts You'll Enjoy</h3>
+                    <h3 className="text-[24px] font-semibold text-[#3F3F3F] mb-[24px]">Comforts You&apos;ll Enjoy</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-6 gap-[12px]">
                       {comforts.map((comfort) => (
                         <ComfortCard

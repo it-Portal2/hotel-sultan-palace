@@ -39,9 +39,27 @@ export async function POST(request: NextRequest) {
     const serviceType = process.env.DPO_SERVICE_TYPE ?? '';
     const apiEndpoint = process.env.DPO_API_ENDPOINT ?? '';
 
+    // Validate required environment variables
     if (!companyToken) {
+      console.error('DPO_COMPANY_TOKEN is missing');
       return NextResponse.json(
-        { Result: '001', ResultExplanation: 'Payment gateway not configured' },
+        { Result: '001', ResultExplanation: 'Payment gateway not configured: DPO_COMPANY_TOKEN is missing' },
+        { status: 500 }
+      );
+    }
+
+    if (!apiEndpoint) {
+      console.error('DPO_API_ENDPOINT is missing');
+      return NextResponse.json(
+        { Result: '001', ResultExplanation: 'Payment gateway not configured: DPO_API_ENDPOINT is missing' },
+        { status: 500 }
+      );
+    }
+
+    if (!serviceType) {
+      console.error('DPO_SERVICE_TYPE is missing');
+      return NextResponse.json(
+        { Result: '001', ResultExplanation: 'Payment gateway not configured: DPO_SERVICE_TYPE is missing' },
         { status: 500 }
       );
     }
@@ -89,12 +107,17 @@ export async function POST(request: NextRequest) {
 
     const cleanCompanyRef = body.companyRef.replace(/[^a-zA-Z0-9\-_]/g, '');
 
-    // Build XML request - Compact single-line format
+    // Build XML request according to DPO API documentation
+    // DPO requires XML format sent as form-urlencoded with 'xml' parameter
+    // XML can be single-line or multi-line, both work
     const xmlRequest = `<?xml version="1.0" encoding="utf-8"?><API3G><CompanyToken>${companyToken}</CompanyToken><Request>createToken</Request><Transaction><PaymentAmount>${body.amount.toFixed(2)}</PaymentAmount><PaymentCurrency>${body.currency || 'USD'}</PaymentCurrency><CompanyRef>${escapeXML(cleanCompanyRef)}</CompanyRef><RedirectURL>${escapeXML(body.redirectURL)}</RedirectURL><BackURL>${escapeXML(body.backURL)}</BackURL><CompanyRefUnique>0</CompanyRefUnique><PTL>5</PTL></Transaction><Services><Service><ServiceType>${serviceType}</ServiceType><ServiceDescription>${escapeXML(body.serviceDescription)}</ServiceDescription><ServiceDate>${formatServiceDate()}</ServiceDate></Service></Services><Customer><CustomerFirstName>${escapeXML(body.customerFirstName)}</CustomerFirstName><CustomerLastName>${escapeXML(body.customerLastName)}</CustomerLastName><CustomerEmail>${escapeXML(body.customerEmail)}</CustomerEmail><CustomerPhone>${escapeXML(customerPhone)}</CustomerPhone>${optionalCustomerFields}</Customer></API3G>`;
 
     // Send request to DPO API
     const formData = new URLSearchParams();
     formData.append('xml', xmlRequest);
+
+    console.log('DPO Request XML:', xmlRequest);
+    console.log('DPO API Endpoint:', apiEndpoint);
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -104,14 +127,51 @@ export async function POST(request: NextRequest) {
       body: formData.toString(),
     });
 
+    // Read response text once
     const xmlResponse = await response.text();
+    console.log('DPO Response Status:', response.status);
+    console.log('DPO Response:', xmlResponse.substring(0, 500));
 
-    // Check if response is HTML
-    if (xmlResponse.includes('<html>') || xmlResponse.includes('<!DOCTYPE') || xmlResponse.includes('ERROR:')) {
+    // Check HTTP status code
+    if (!response.ok) {
+      console.error('DPO API HTTP Error:', response.status, xmlResponse);
+      
+      // Handle 403 Forbidden specifically
+      if (response.status === 403) {
+        return NextResponse.json(
+          {
+            Result: '001',
+            ResultExplanation: `DPO API access denied (403). This usually indicates: 1) Server IP needs whitelisting, 2) Account activation required, 3) Invalid CompanyToken, or 4) Endpoint configuration issue. Please verify your DPO credentials and contact DPO support with your server IP address.`,
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
           Result: '001',
-          ResultExplanation: `DPO API connection error (${response.status}). This usually indicates: 1) Server IP needs whitelisting, 2) Account activation required, or 3) Endpoint configuration issue. Please contact DPO support with your server IP address.`,
+          ResultExplanation: `DPO API connection error (${response.status}): ${xmlResponse.substring(0, 200)}`,
+        },
+        { status: response.status }
+      );
+    }
+
+    // Check if response is HTML or error page
+    if (!xmlResponse || xmlResponse.trim().length === 0) {
+      return NextResponse.json(
+        {
+          Result: '001',
+          ResultExplanation: 'DPO API returned empty response. Please check your API endpoint configuration.',
+        },
+        { status: 500 }
+      );
+    }
+
+    if (xmlResponse.includes('<html>') || xmlResponse.includes('<!DOCTYPE') || xmlResponse.includes('ERROR:') || xmlResponse.includes('Forbidden')) {
+      return NextResponse.json(
+        {
+          Result: '001',
+          ResultExplanation: `DPO API connection error (${response.status}). This usually indicates: 1) Server IP needs whitelisting, 2) Account activation required, or 3) Endpoint configuration issue. Response: ${xmlResponse.substring(0, 200)}`,
         },
         { status: 500 }
       );

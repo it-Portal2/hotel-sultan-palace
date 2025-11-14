@@ -110,7 +110,7 @@ export default function FAQSection() {
               <QuestionIcon className="text-4xl text-[#1D69F9]" />
               <h3 className="text-lg font-semibold text-[#2B2B2B]">Have a question?</h3>
               <p className="text-sm text-[#4B4B4B]">
-                Can't find the answer you're looking for? Reach out to our customer support team.
+                Can&apos;t find the answer you&apos;re looking for? Reach out to our customer support team.
               </p>
               <button className="w-full py-2 border border-[#1D69F9] text-[#1D69F9] rounded-md font-medium hover:bg-blue-50 transition-colors">
                 Connect Us

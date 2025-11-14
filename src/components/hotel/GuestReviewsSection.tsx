@@ -25,7 +25,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ avatarUrl, flagUrl, name, count
           </div>
         </div>
       </div>
-      <p className="text-[14px] text-[#3A3A3A] leading-[1.6] italic">"{review}"</p>
+      <p className="text-[14px] text-[#3A3A3A] leading-[1.6] italic">&quot;{review}&quot;</p>
     </div>
   </div>
 );

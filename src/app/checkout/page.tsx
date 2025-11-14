@@ -8,15 +8,15 @@ import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
+// Payment imports commented out - booking can be confirmed without payment
+// import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
 import { 
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
   PlusIcon,
   ArrowUpTrayIcon,
-  ArrowLeftIcon,
-  CreditCardIcon
+  ArrowLeftIcon
 } from "@heroicons/react/24/outline";
 
 interface Guest {
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
-  const [popupBookingData, setPopupBookingData] = useState({
+  const [popupBookingData] = useState({
     bookingId: "",
     checkIn: "",
     checkOut: "",
@@ -220,15 +220,15 @@ export default function CheckoutPage() {
         // Financial details
         totalAmount: totalAmount,
         bookingId: bookingId,
-        status: "pending" as const, // Will be confirmed after payment
+        status: "confirmed" as const, // Confirmed directly without payment
         
         // Booking metadata
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
-      // Check availability before proceeding to payment
-      const { checkRoomAvailability } = await import('@/lib/bookingService');
+      // Check availability before proceeding
+      const { checkRoomAvailability, createBookingService } = await import('@/lib/bookingService');
       const availability = await checkRoomAvailability(bookingDetails);
       
       if (!availability.available) {
@@ -237,6 +237,18 @@ export default function CheckoutPage() {
         return;
       }
       
+      // Create booking directly without payment
+      const createdBookingId = await createBookingService(bookingDetails);
+      
+      if (!createdBookingId) {
+        throw new Error('Failed to create booking');
+      }
+      
+      // Show success message and redirect to confirmation
+      showToast('Booking confirmed successfully!', 'success');
+      router.push('/confirmation');
+      
+      /* PAYMENT CODE COMMENTED OUT - User can confirm booking without payment
       // Store booking details temporarily (will be saved after payment verification)
       localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
       
@@ -272,6 +284,7 @@ export default function CheckoutPage() {
       // Redirect to DPO payment page
       const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
       window.location.href = paymentURL;
+      */
     } catch (err) {
       console.error("Error creating booking:", err);
       alert(`Booking processing error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
