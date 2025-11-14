@@ -162,15 +162,15 @@ export default function AddOnsPage() {
       `}</style>
       <Header />
       
-      <section className="w-full relative" style={{ paddingTop: '191px', zIndex: 10000 }}>
+      <section className="w-full relative" style={{ paddingTop: '191px', zIndex: 10000, pointerEvents: 'none' }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
-            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001 }}>
+            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
               <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check in</span>
               <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check out</span>
               <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-left pl-2">Guests</span>
             </div>
-            <div className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative" style={{ zIndex: 10001 }}>
+            <div id="booking-form" className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative lg:block" style={{ zIndex: 10001, pointerEvents: 'auto' }}>
               <BookingForm 
                 navigateOnSubmit={false}
                 borderColorClass="border-[#BE8C53]"
