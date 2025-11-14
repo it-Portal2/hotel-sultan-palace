@@ -8,14 +8,13 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { getAddOns, AddOn } from '@/lib/firestoreService';
 import { 
-  User, 
-  Calendar, 
   Edit, 
   Trash2, 
   Tag, 
-  ArrowLeft,
   CheckCircle
 } from 'lucide-react';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import BookingForm from '@/components/booking/BookingForm';
 
 
 
@@ -139,11 +138,23 @@ export default function AddOnsPage() {
   console.log('Current button states:', buttonStates);
 
   return (
-    <div className="min-h-screen bg-[#FFFCF6]">
+    <div className="min-h-screen bg-white">
        <style jsx global>{`
         header {
           background-color: rgba(0, 0, 0, 0.8) !important;
           backdrop-filter: blur(8px);
+          position: relative;
+        }
+        header::after {
+          content: '';
+          position: absolute;
+          bottom: -60px;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background-color: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(8px);
+          z-index: 1;
         }
         header * {
           color: white !important;
@@ -151,81 +162,58 @@ export default function AddOnsPage() {
       `}</style>
       <Header />
       
-      {/* Navigation Section */}
-      <div className="w-full px-4 mt-40">
-        <div className="max-w-[1400px] ">
-          <button 
-            onClick={() => router.push('/rooms')}
-            className="flex items-center gap-5 text-black"
-          >
-            <ArrowLeft size={26} strokeWidth={2} />
-            <span className="text-xl font-semibold">Add to your room</span>
-          </button>
-        </div>
-      </div>
-      
-      {/* Booking Form Section */}
-      <div className="w-full px-4 py-6 -mt-18">
-        <div className="max-w-[1130px]   mt-15">
-          <div className="bg-[#F8F5EF] rounded-lg shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4">
-              
-              {/* Guest Input */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
-                  <User size={16} />
-                  <span>Guest</span>
-                </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {bookingData.guests.adults} guests, {bookingData.guests.rooms} room
-                  </span>
-                </div>
-              </div>
-              
-              {/* Check-in Date */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
-                  <Calendar size={14} />
-                  <span>Check-in</span>
-                </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {formatDate(bookingData.checkIn)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Check-out Date */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[#655D4E] text-xs font-semibold">
-                  <Calendar size={14} />
-                  <span>Check-Out</span>
-                </div>
-                <div className="bg-[rgba(255,255,255,0.1)] border border-[#655D4E] rounded-md p-2 h-9 md:h-8 flex items-center">
-                  <span className="text-[#423B2D] text-xs font-semibold">
-                    {formatDate(bookingData.checkOut)}
-                  </span>
-                </div>
-              </div>
+      <section className="w-full relative" style={{ paddingTop: '191px', zIndex: 10000 }}>
+        <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
+          <div className="w-full max-w-[1177px] mx-auto">
+            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001 }}>
+              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check in</span>
+              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check out</span>
+              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-left pl-2">Guests</span>
+            </div>
+            <div className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative" style={{ zIndex: 10001 }}>
+              <BookingForm 
+                navigateOnSubmit={false}
+                borderColorClass="border-[#BE8C53]"
+              />
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Navigation Section */}
+      <div className="w-full px-4 md:px-[230px] pt-[40px] md:pt-[60px]">
+        <div className="max-w-6xl">
+          <button 
+            onClick={() => {
+              router.push('/hotel#rooms-section');
+              setTimeout(() => {
+                const roomsSection = document.getElementById('rooms-section');
+                if (roomsSection) {
+                  roomsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 300);
+            }}
+            className="flex items-center gap-5 text-black"
+          >
+            <ArrowLeftIcon className="w-6 h-6" />
+            <span className="text-xl font-semibold">Add to room</span>
+          </button>
+        </div>
       </div>
 
-      <div className="w-full max-w-full mb-16 lg:mb-20">
-        <div className="w-full px-4 md:px-6">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+      <div className="w-full max-w-full mb-16 lg:mb-20 pt-[40px] md:pt-[60px]">
+        <div className="max-w-[1512px] mx-auto">
+          <div className="flex flex-col lg:flex-row gap-8">
           {/* Add-ons List */}
-            <div className="w-full lg:basis-[62%]">
-              <div className="space-y-6 lg:space-y-8">
+            <div className="w-full lg:w-[844px] lg:pl-[63px] px-4 lg:pr-0">
+              <div className="space-y-[28px]">
               {addOns.map((addOn) => (
-                  <div key={addOn.id} className="bg-[#F8F5EF] rounded-[14px] overflow-hidden border border-[rgba(101,93,78,0.12)]">
+                  <div key={addOn.id} className="bg-[rgba(152,152,152,0.07)] overflow-hidden">
                     <div className="flex flex-col lg:flex-row">
                       {/* Left Side - Image and Features */}
-                      <div className="w-full lg:w-[340px] flex-shrink-0">
+                      <div className="w-full lg:w-[245px] flex-shrink-0">
                         {/* Add-on Image */}
-                        <div className="w-full h-56 md:h-64 lg:w-[340px] lg:h-[260px] relative mb-0 overflow-hidden bg-gray-200">
+                        <div className="w-full h-56 md:h-64 lg:w-[245px] lg:h-[228px] relative mb-0 overflow-hidden bg-gray-200">
                           <Image 
                             src={addOn.image} 
                             alt={addOn.name}
@@ -241,21 +229,21 @@ export default function AddOnsPage() {
                       <div className="w-full flex-1 p-4 md:p-6 lg:p-8 flex flex-col gap-4">
                         {/* Add-on Info */}
                         <div>
-                          <h3 className="text-2xl font-semibold text-[#423B2D] mb-2">{addOn.name}</h3>
+                          <h3 className="text-[25px] font-semibold text-[#423B2D] mb-2">{addOn.name}</h3>
                           <div className="flex flex-col gap-1 mb-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-[#FF6A00] font-bold text-xl">
+                              <span className="text-[#1D69F9] font-bold text-[22px]">
                                 ${addOn.price} / {addOn.type === 'per_room' ? 'Stay' : addOn.type === 'per_day' ? 'each stay' : addOn.type === 'per_guest' ? 'average per guest / stay' : 'Guest'}
                             </span>
                             </div>
                             {addOn.type === 'per_day' && (
-                              <span className="text-[#655D4E] text-xs font-semibold uppercase">Price applies per bed, per day</span>
+                              <span className="text-[#655D4E] text-[10px] font-semibold uppercase">Price applies per bed, per day</span>
                             )}
                         </div>
                       </div>
 
                       {/* Description */}
-                        <p className="text-[#423B2D] text-sm md:text-base leading-6 flex-grow">
+                        <p className="text-[#423B2D] text-base leading-[1.625] flex-grow">
                         {addOn.description}
                       </p>
 
@@ -263,10 +251,10 @@ export default function AddOnsPage() {
                       {(addOn.type === 'per_day' || addOn.type === 'per_guest') && (
                         <div className="mb-4">
                             <div className="flex flex-col gap-2">
-                              <span className="text-sm font-medium text-[#423B2D]">
+                              <span className="text-[15px] font-normal text-[#423B2D]">
                               {addOn.type === 'per_day' ? 'Number of Days' : 'Number of guests'}
                             </span>
-                              <div className="flex items-center border border-[#110D0A] rounded w-full max-w-[310px] h-[37px]">
+                              <div className="flex items-center border border-[#110D0A] rounded-[4px] w-full max-w-[310px] h-[37px]">
                               <button
                                 onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) - 1)}
                                   className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
@@ -303,13 +291,13 @@ export default function AddOnsPage() {
                               <div className="flex items-center justify-center gap-3">
                                 <button
                                   onClick={() => handleCancel(addOn.id)}
-                                  className="bg-[rgba(255,43,43,0.22)] text-[#FF0B0B] font-semibold px-4 py-2 rounded text-sm"
+                                  className="bg-[rgba(255,43,43,0.22)] text-[#FF0B0B] font-semibold px-4 py-2 rounded text-sm hover:bg-[#FF0B0B]/20 transition-colors"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={() => handleUpdate(addOn.id)}
-                                  className="bg-[rgba(255,106,0,0.29)] text-[#FF6A00] font-semibold px-4 py-2 rounded text-sm"
+                                  className="bg-[rgba(255,106,0,0.29)] text-[#FF6A00] font-semibold px-4 py-2 rounded text-sm hover:bg-[#FF6A00]/20 transition-colors"
                                 >
                                   Update
                                 </button>
@@ -323,7 +311,7 @@ export default function AddOnsPage() {
                             return (
                               <button
                                 onClick={() => addToCart(addOn)}
-                                className="bg-[#FF6A00] text-white font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center w-full h-10 text-sm rounded"
+                                className="bg-[#1D69F9] text-white font-semibold hover:bg-[#1D69F9]/80 transition-colors flex items-center justify-center w-full h-[50px] text-[18px] rounded"
                               >
                                 Add to my Stay
                               </button>
@@ -337,30 +325,30 @@ export default function AddOnsPage() {
             </div>
           </div>
 
-          {/* Cart Sidebar (match Rooms design) */}
-            <div className="w-full lg:basis-[38%] flex-shrink-0 mt-6 lg:mt-0">
-              <div className={"rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-5 lg:sticky lg:top-28"}>
-                  <h2 className="text-2xl font-bold text-[#3A3326] mb-2">
+          
+            <div className="w-full lg:w-[534px] flex-shrink-0 mt-6 lg:mt-0 px-4 lg:px-0">
+              <div className={" bg-[#F8F8F8] p-5 lg:p-[26px] lg:sticky lg:top-28"}>
+                  <h2 className="text-[22px] font-bold text-[#3A3326] mb-2">
                     Your Cart (Item - {cartAddOns.length + (roomData ? 1 : 0)})
                   </h2>
                   
                   {/* Divider Line */}
-                  <div className="h-1 w-full rounded bg-gradient-to-r from-[#FFEDD5] via-[#FFE8CC] to-[#FFF5EA] mb-5"></div>
+                  <div className="h-[1px] w-full rounded bg-[rgba(66,59,45,0.13)] mb-5"></div>
                 
                   {/* Cart Content */}
-                  <div className="bg-[#F8F5EF] p-6 rounded-lg">
+                  <div className="bg-white p-6 rounded-lg">
                     {/* Room Item */}
                     {roomData && (
                       <div className="mb-6">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-[#423B2D] mb-2">
+                            <h3 className="text-[22px] font-semibold text-[#423B2D] mb-2">
                               {roomData.name}
                             </h3>
-                            <p className="text-sm text-[#423B2D] leading-relaxed mb-2">
+                            <p className="text-[14px] text-[#423B2D] leading-[1.714] mb-2">
                               {roomData.description || "This suite's standout feature is the pool with a view. Boasting a private entrance, this air..."}
                             </p>
-                            <p className="text-sm text-black font-semibold mb-2">
+                            <p className="text-[15px] text-[#1D69F9] font-bold mb-2">
                               {bookingData?.checkIn && bookingData?.checkOut 
                                 ? `${formatDate(bookingData.checkIn)} - ${formatDate(bookingData.checkOut)}`
                                 : 'Thu, Nov 20, 2025 - Fri, Nov 21, 2025'
@@ -372,7 +360,7 @@ export default function AddOnsPage() {
                         {/* Room Price and Details */}
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="bg-[#FF6A00] text-white px-3 py-1 rounded text-sm font-semibold">
+                            <div className="text-[#1D69F9] px-3 py-1 rounded text-[15px] font-bold">
                               {bookingData ? 
                                 (() => {
                                   const checkIn = new Date(bookingData.checkIn);
@@ -383,21 +371,30 @@ export default function AddOnsPage() {
                                 : '1 Night Stay'
                               }
                             </div>
-                            <div className="text-[#655D4E] text-sm">Taxes and Fees</div>
+                            <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-semibold text-[#FF6A00]">${roomData.price}</div>
+                            <div className="text-[18px] font-semibold text-[#1D2A3A]">${roomData.price.toFixed(2)}</div>
                           </div>
                         </div>
                         
                         {/* Action Buttons */}
                         <div className="flex items-center gap-4">
                           <button 
-                            onClick={() => router.push('/rooms')}
-                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                            onClick={() => {
+                              router.push('/hotel#rooms-section');
+                              // Scroll to rooms section after navigation
+                              setTimeout(() => {
+                                const roomsSection = document.getElementById('rooms-section');
+                                if (roomsSection) {
+                                  roomsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                              }, 300);
+                            }}
+                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
                           >
                             <div className="w-5 h-5 flex items-center justify-center">
-                              <Edit size={12} color="#FF6A00" />
+                              <Edit size={12} color="#3F3F3F" />
                             </div>
                             Edit
                           </button>
@@ -408,16 +405,16 @@ export default function AddOnsPage() {
                                 setRoomData(null);
                               }
                             }}
-                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
                           >
                             <div className="w-5 h-5 flex items-center justify-center">
-                              <Trash2 size={12} color="#FF6A00" />
+                              <Trash2 size={12} color="#3F3F3F" />
                             </div>
                             Remove
                           </button>
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                          <button className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold">
                             <div className="w-5 h-5  flex items-center justify-center">
-                              <Tag size={12} color="#FF6A00" />
+                              <Tag size={12} color="#3F3F3F" />
                             </div>
                             Apply Offer
                           </button>
@@ -433,19 +430,18 @@ export default function AddOnsPage() {
                       <div key={`${item.id}-${index}`} className="mb-4">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-[#423B2D] mb-2">
+                            <h3 className="text-[20px] font-semibold text-[#423B2D] mb-2">
                               {item.name}
                             </h3>
                           </div>
                         </div>
                         
-                        {/* Add-on Price and Details */}
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="text-[#655D4E] text-sm">Taxes and Fees</div>
+                            <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-semibold text-[#FF6A00]">${(item.price * (item.quantity || 1)).toFixed(2)}</div>
+                            <div className="text-[18px] font-semibold text-[#1D2A3A]">${(item.price * (item.quantity || 1)).toFixed(2)}</div>
                           </div>
                         </div>
                         
@@ -453,22 +449,21 @@ export default function AddOnsPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() => removeFromCart(item.id)}
-                            className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold"
+                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
                           >
                             <div className="w-5 h-5 flex items-center justify-center">
-                              <Trash2 size={12} color="#FF6A00" />
+                                <Trash2 size={12} color="#3F3F3F" />
                             </div>
                             Remove
                           </button>
-                          <button className="flex items-center gap-1 text-[#FF6A00] text-sm font-semibold">
+                          <button className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold">
                             <div className="w-5 h-5  flex items-center justify-center">
-                              <Tag size={12} color="#FF6A00" />
+                              <Tag size={12} color="#3F3F3F" />
                             </div>
                             Apply Offer
                           </button>
                         </div>
                         
-                        {/* Divider Line for add-ons */}
                         <div className="w-full h-px bg-[rgba(0,0,0,0.06)] my-4"></div>
                       </div>
                     ))}
@@ -477,11 +472,11 @@ export default function AddOnsPage() {
                     <div className="mt-6 pt-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <h3 className="text-lg font-semibold text-black">Total</h3>
-                          <p className="text-xs text-[#655D4E]">including general taxes and fees</p>
+                          <h3 className="text-[18px] font-semibold text-[#000000]">Total</h3>
+                          <p className="text-[10px] text-[#655D4E]">including general taxes and fees</p>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-semibold text-[#1D2A3A]">
+                          <div className="text-[18px] font-semibold text-[#1D2A3A]">
                             ${calculateTotal().toFixed(2)}
                           </div>
                         </div>
@@ -489,13 +484,11 @@ export default function AddOnsPage() {
                     </div>
                   </div>
 
-                  {/* Divider Line */}
-                  <div className="w-full h-px bg-[rgba(0,0,0,0.61)] my-6" style={{borderStyle: 'dashed'}}></div>
+                  <div className="w-full h-px bg-[#AFAFAF] my-6" style={{borderStyle: 'dashed'}}></div>
 
-                  {/* Checkout Button */}
                   <button
                     onClick={() => router.push('/checkout')}
-                    className="w-full bg-[#FF6A00] text-white py-3 px-6 font-semibold hover:bg-orange-600 transition-colors text-lg"
+                    className="w-full bg-[#1D69F9] text-white py-3 px-6 font-semibold hover:bg-[#1D69F9]/80 transition-colors text-[20px]"
                   >
                     Checkout
                   </button>

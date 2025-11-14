@@ -27,7 +27,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     type: '',
     price: 0,
     description: '',
-    features: [''],
     amenities: [''],
     size: '',
     view: '',
@@ -49,8 +48,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
               type: room.type,
               price: room.price,
               description: room.description,
-              features: room.features,
-              amenities: room.amenities,
+              amenities: room.amenities || [''],
               size: room.size,
               view: room.view,
               beds: room.beds,
@@ -86,21 +84,21 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     }));
   };
 
-  const handleArrayChange = (field: 'features' | 'amenities', index: number, value: string) => {
+  const handleArrayChange = (field: 'amenities', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].map((item, i) => i === index ? value : item)
     }));
   };
 
-  const addArrayItem = (field: 'features' | 'amenities') => {
+  const addArrayItem = (field: 'amenities') => {
     setFormData(prev => ({
       ...prev,
       [field]: [...prev[field], '']
     }));
   };
 
-  const removeArrayItem = (field: 'features' | 'amenities', index: number) => {
+  const removeArrayItem = (field: 'amenities', index: number) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index)
@@ -131,7 +129,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         type: string;
         price: number;
         description: string;
-        features: string[];
         amenities: string[];
         size: string;
         view: string;
@@ -144,7 +141,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         type: formData.type.trim(),
         price: Number(formData.price),
         description: formData.description.trim(),
-        features: formData.features.filter(f => f.trim() !== ''),
         amenities: formData.amenities.filter(a => a.trim() !== ''),
         size: formData.size?.trim() || '',
         view: formData.view?.trim() || '',
@@ -477,46 +473,6 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Features</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Key features of the room.
-              </p>
-            </div>
-            <div className="mt-5 md:col-span-2 md:mt-0">
-              <div className="space-y-3">
-                {formData.features.map((feature, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={feature}
-                      onChange={(e) => handleArrayChange('features', index, e.target.value)}
-                      className="flex-1 h-11 rounded-xl border border-gray-300 bg-gray-50/60 px-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('features', index)}
-                      className="px-3 py-2 border border-red-300 rounded-md text-red-700 hover:bg-red-50"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayItem('features')}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Add Feature
-                </button>
               </div>
             </div>
           </div>

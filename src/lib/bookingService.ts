@@ -53,6 +53,21 @@ export const getAvailableRoomTypes = async (
   }
 };
 
+// Get available room count for a suite on specific dates
+export const getAvailableRoomCount = async (
+  suiteType: SuiteType,
+  checkIn: string,
+  checkOut: string
+): Promise<number> => {
+  try {
+    const availableRooms = await getAvailableRoomTypes(suiteType, checkIn, checkOut);
+    return availableRooms.length;
+  } catch (error) {
+    console.error('Error getting available room count:', error);
+    return 0;
+  }
+};
+
 // Auto-allocate room types for a booking
 export const allocateRoomTypes = async (
   bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>

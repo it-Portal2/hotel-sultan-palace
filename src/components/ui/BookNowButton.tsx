@@ -15,7 +15,7 @@ export default function BookNowButton({
   children = "Book Now",
   className = "",
   onClick,
-  href = "/rooms",
+  href = "/hotel",
   variant = "primary",
   size = "md",
   scrollTo

@@ -19,7 +19,6 @@ export interface Room {
   type: string;
   price: number;
   description: string;
-  features: string[];
   amenities: string[];
   size: string;
   view: string;
@@ -188,31 +187,29 @@ export interface RoomType {
 const sampleRooms: Room[] = [
   {
     id: '1',
-    name: 'Imperial Suite',
-    type: 'Private Suite',
-    price: 350,
-    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
-    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    name: 'Suite with Garden View',
+    type: 'Suite with Garden View',
+    price: 500,
+    description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
     amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
     size: '150 m²',
-    view: 'Ocean',
-    beds: '2 Double bed, 1 Single bed',
-    image: '/figma/rooms-imperial-suite.png',
-    maxGuests: 4,
+    view: 'Garden',
+    beds: '1 double bed, 1 single bed',
+    image: '/figma/rooms-garden-suite.png',
+    maxGuests: 3,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: '2',
-    name: 'Ocean Suite',
-    type: 'Private Suite',
-    price: 300,
-    description: 'This suite\'s standout feature is the Ocean with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with ocean views. The unit has 2 beds.',
-    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    name: 'Queen Room With Sea View',
+    type: 'Queen Room With Sea View',
+    price: 600,
+    description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
     amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
-    size: '150 m²',
-    view: 'Ocean',
-    beds: '1 Double bed, 1 Single bed',
+    size: '100 m²',
+    view: 'Sea',
+    beds: '1 single bed, 1 large double bed',
     image: '/figma/rooms-ocean-suite.png',
     maxGuests: 3,
     createdAt: new Date(),
@@ -220,17 +217,16 @@ const sampleRooms: Room[] = [
   },
   {
     id: '3',
-    name: 'Garden Suite',
-    type: 'Private Suite',
-    price: 250,
-    description: 'This suite\'s standout feature is the Garden with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
-    features: ['Private Suite', 'Balcony', 'Pool View', 'Garden View'],
+    name: 'Deluxe Suite with Sea View',
+    type: 'Deluxe Suite with Sea View',
+    price: 700,
+    description: 'This suite\'s standout feature is the pool with a view. Boasting a private entrance, this air-conditioned suite includes 1 living room, 1 separate bedroom and 1 bathroom with a bath and a shower. The spacious suite offers a tea and coffee maker, a seating area, a wardrobe as well as a balcony with garden views. The unit has 2 beds.',
     amenities: ['WiFi', 'Air Conditioning', 'Bathroom'],
-    size: '150 m²',
-    view: 'Garden',
-    beds: '1 Double bed, 1 Single bed',
-    image: '/figma/rooms-garden-suite.png',
-    maxGuests: 3,
+    size: '190 m²',
+    view: 'Sea',
+    beds: '1 single bed, 2 double bed',
+    image: '/figma/rooms-imperial-suite.png',
+    maxGuests: 5,
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -306,16 +302,16 @@ const roomImages = {
 };
 
 // Helper to resolve room image: prefer static mapping by name, then Firestore field, then default
-const resolveRoomImage = (data: { name?: string; image?: string }): string => {
+const resolveRoomImage = (data: { name?: string; type?: string; image?: string }): string => {
   // Prefer uploaded/explicit image first
   if (data?.image) return data.image;
-  // Fallback to static mapping by name
-  const name = (data?.name || '').toString().toLowerCase();
-  if (name.includes('imperial')) return roomImages.imperialSuite;
-  if (name.includes('ocean')) return roomImages.oceanSuite;
-  if (name.includes('garden')) return roomImages.gardenSuite;
+  // Fallback to static mapping by name or type
+  const name = ((data?.name || data?.type || '').toString().toLowerCase());
+  if (name.includes('garden view') || name.includes('garden')) return roomImages.gardenSuite;
+  if (name.includes('queen room') || name.includes('queen')) return roomImages.oceanSuite;
+  if (name.includes('deluxe') || name.includes('sea view') || name.includes('imperial') || name.includes('ocean')) return roomImages.imperialSuite;
   // Final fallback
-  return roomImages.imperialSuite;
+  return roomImages.gardenSuite;
 };
 
 // Rooms CRUD Operations

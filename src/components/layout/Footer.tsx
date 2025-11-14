@@ -7,10 +7,13 @@ import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true); // Start as visible to prevent layout shift
 
   useEffect(() => {
     if (footerRef.current) {
+      // Mark footer as visible immediately
+      footerRef.current.classList.add('footer-visible');
+      
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -20,7 +23,7 @@ export default function Footer() {
             }
           });
         },
-        { threshold: 0.1 }
+        { threshold: 0.1, rootMargin: '0px' }
       );
       observer.observe(footerRef.current);
       return () => observer.disconnect();
@@ -28,8 +31,8 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer ref={footerRef} className="w-full footer-section">
-      <div className="relative" style={{backgroundImage: 'url(/footer.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}>
+    <footer ref={footerRef} className="w-full footer-section" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="relative" style={{backgroundImage: 'url(/footer.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', minHeight: 'auto'}}>
         {/* contrast overlay for readability */}
         <div className="absolute inset-0 bg-black/60" />
       
@@ -148,9 +151,9 @@ export default function Footer() {
 
       <style jsx global>{`
         .footer-section {
-          opacity: 0;
-          transform: translateY(50px);
-          transition: all 1s ease-out;
+          opacity: 1;
+          transform: translateY(0);
+          will-change: auto;
         }
         .footer-section.footer-visible,
         .footer-visible .footer-section {

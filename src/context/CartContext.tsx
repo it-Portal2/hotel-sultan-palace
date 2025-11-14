@@ -1,19 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-
-interface Room {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  description: string;
-  features: string[];
-  amenities: string[];
-  size: string;
-  view: string;
-  beds: string;
-}
+import { Room } from '@/lib/firestoreService';
 
 interface AddOn {
   id: string;
@@ -41,7 +29,7 @@ type CartAddOn = AddOn;
 
 interface CartContextProps {
   rooms: CartRoom[];
-  addRoom: (room: CartRoom) => void;
+  addRoom: (room: CartRoom, quantity?: number) => void;
   removeRoom: (roomId: string) => void;
 
   addOns: CartAddOn[];
@@ -79,9 +67,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   // Room handlers
-  const addRoom = (room: CartRoom) => {
+  const addRoom = (room: CartRoom, quantity: number = 1) => {
     setRooms((prevRooms) => {
-      // Avoid duplicates, if needed, or allow multiples (customize as per your logic)
+      // If quantity > 1, allow adding the same room multiple times
+      if (quantity > 1) {
+        const newRooms: CartRoom[] = [];
+        for (let i = 0; i < quantity; i++) {
+          newRooms.push(room);
+        }
+        return [...prevRooms, ...newRooms];
+      }
+      // For quantity = 1, avoid duplicates
       if (prevRooms.find(r => r.id === room.id)) return prevRooms;
       return [...prevRooms, room];
     });

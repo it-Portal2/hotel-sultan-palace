@@ -142,11 +142,14 @@ export default function Header() {
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = "hidden";
+      document.body.classList.add("mobile-menu-open");
     } else {
       document.body.style.overflow = "auto";
+      document.body.classList.remove("mobile-menu-open");
     }
     return () => {
       document.body.style.overflow = "auto";
+      document.body.classList.remove("mobile-menu-open");
     };
   }, [isMenuOpen]);
 
@@ -445,7 +448,7 @@ export default function Header() {
 
       <div
         className={`
-        lg:hidden fixed top-0 left-0 w-full h-screen bg-[#0a1a2b] z-40
+        lg:hidden fixed top-0 left-0 w-full h-screen bg-[#0a1a2b] z-[10002]
         transition-transform duration-300 ease-in-out
         ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}
         flex flex-col

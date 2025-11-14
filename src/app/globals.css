@@ -186,3 +186,49 @@ span[onclick] {
     transform: translateX(0);
   }
 }
+
+/* Hide booking form on mobile when menu is open */
+@media (max-width: 1023px) {
+  body.mobile-menu-open #booking-form {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Prevent footer layout shifts and extra space */
+footer {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+footer::after {
+  content: '';
+  display: none;
+}
+
+/* Ensure no extra space after footer */
+body > footer:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Prevent layout shifts from footer animations */
+.footer-section {
+  contain: layout style paint;
+  will-change: auto;
+}

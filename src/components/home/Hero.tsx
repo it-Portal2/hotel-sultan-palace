@@ -86,7 +86,7 @@ export default function Hero() {
               </div>
               <div 
                 id="booking-form" 
-                className="w-full" 
+                className="w-full lg:block" 
                 style={{ 
                   pointerEvents: 'auto', 
                   position: 'relative', 

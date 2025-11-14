@@ -9,9 +9,10 @@ import { useCart } from '@/context/CartContext';
 interface BookingFormProps {
   onComplete?: () => void;
   navigateOnSubmit?: boolean; // default true
+  borderColorClass?: string;  // optional tailwind border color class for separators
 }
 
-export default function BookingForm({ onComplete, navigateOnSubmit = true }: BookingFormProps) {
+export default function BookingForm({ onComplete, navigateOnSubmit = true, borderColorClass = 'border-black/20' }: BookingFormProps) {
   const router = useRouter();
   const { updateBookingData } = useCart();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -130,7 +131,7 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
   const handleCheckAvailability = () => {
     if (!checkInDate || !checkOutDate) return;
     updateBookingData({ checkIn: checkInDate.toISOString(), checkOut: checkOutDate.toISOString(), guests });
-    if (navigateOnSubmit) router.push('/rooms');
+    if (navigateOnSubmit) router.push('/hotel');
     if (onComplete) onComplete();
   };
 
@@ -139,17 +140,17 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
     <div className="rounded-[10px] overflow-visible w-full max-w-full sm:max-w-[600px] md:max-w-[800px] lg:max-w-[1083px] xl:max-w-[1200px] 2xl:max-w-[1300px] mx-auto relative px-2" style={{ position: 'relative', zIndex: 1001 }}>
       <div className="bg-white p-0.5 md:p-1 m-0">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] items-stretch gap-0 font-opensans">
-          <div ref={checkInButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
+          <div ref={checkInButtonRef} className={`relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r ${borderColorClass}`}>
             <button onClick={handleCheckInClick} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
               {checkInDate ? formatDate(checkInDate) : 'Check-in'}
             </button>
           </div>
-          <div ref={checkOutButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
+          <div ref={checkOutButtonRef} className={`relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r ${borderColorClass}`}>
             <button onClick={handleCheckOutClick} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-opacity cursor-pointer">
               {checkOutDate ? formatDate(checkOutDate) : 'Check-out'}
             </button>
           </div>
-          <div ref={guestButtonRef} className="relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r border-black/20">
+          <div ref={guestButtonRef} className={`relative px-2 sm:px-3 md:px-4 lg:px-5 xl:px-[20px] py-1 md:py-1.5 lg:py-2 xl:py-[10px] border-b md:border-b-0 md:border-r ${borderColorClass}`}>
             <button onClick={() => setIsGuestOpen(true)} className="text-[#3F3F3F] text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] xl:text-[18px] font-normal text-center w-full hover:opacity-80 transition-colors cursor-pointer">
               {guests.adults} Adults . {guests.children} {guests.children === 1 ? 'Child' : 'Children'}
             </button>
@@ -159,7 +160,7 @@ export default function BookingForm({ onComplete, navigateOnSubmit = true }: Boo
               <svg className="w-4 h-4 md:w-[18px] md:h-[18px] lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span className="font-open-sans font-bold text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] text-center">Check Availability</span>
+              <span className="font-open-sans font-bold text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] text-center">Search</span>
             </button>
           </div>
         </div>

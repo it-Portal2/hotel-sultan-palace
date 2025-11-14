@@ -100,8 +100,6 @@ export default function CheckoutPage() {
     allocatedRoomType: ""
   });
 
-  // Removed redirect logic to allow direct URL access
-
   if (!bookingData) {
     return (
       <div className="min-h-screen bg-[#F8F5EF] flex items-center justify-center">
@@ -288,7 +286,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFCF6] overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       <style jsx global>{`
         header {
           background-color: rgba(0, 0, 0, 0.8) !important;
@@ -301,7 +299,7 @@ export default function CheckoutPage() {
       <Header />
 
        {/* Navigation Section */}
-       <div className="w-full px-4 mt-40">
+       <div className="w-full px-4 md:px-[230px] pt-[180px] md:pt-[200px]">
         <div className="max-w-6xl ">
           <button 
             onClick={() => router.push('/add-ons')}
@@ -315,33 +313,33 @@ export default function CheckoutPage() {
       
       {/* Main Content - Two Column Layout */}
       <div className="mt-5 pb-16">
-        <div className="w-full max-w-full px-4 md:px-6 flex flex-col lg:flex-row gap-6 lg:gap-8">
+        <div className="w-full max-w-[1512px] mx-auto px-4 md:px-[63px] flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Left Column - Form */}
-        <div className="w-full lg:basis-[62%] px-0 md:px-2">
-          <div className="bg-[#F8F5EF] p-4 md:p-8 rounded-lg">
+        <div className="w-full lg:w-[850px] px-0">
+          <div className="bg-[#F8F8F8] p-4 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Reservation Overview */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Reservation Overview</h2>
               
-              <div className="border border-[rgba(0,0,0,0.24)]  p-4">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="space-y-2">
+              <div className="border border-[rgba(0,0,0,0.24)] p-[15px]">
+                <div className="flex justify-between items-start mb-[21px]">
+                  <div className="space-y-[10px]">
                     <h3 className="text-[20px] font-semibold text-[#423B2D]">
                       {rooms.length > 0 ? rooms[0].name : 'No room selected'}
                     </h3>
-                    <p className="text-[15px] font-semibold text-[#FF6A00]">
-                      {getNumberOfNights()} night{getNumberOfNights() > 1 ? 's' : ''}
+                    <p className="text-[15px] font-bold text-[#1D69F9]">
+                      Total Stay: {getNumberOfNights()} Night{getNumberOfNights() > 1 ? 's' : ''}
                     </p>
                     <p className="text-[15px] font-bold text-black">
-                      {bookingData ? 
+                      Date: {bookingData ? 
                         `${new Date(bookingData.checkIn).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(bookingData.checkOut).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` 
-                        : 'Thu, Oct 23, 2025 - Fri, Oct 24, 2025'
+                        : 'Thu, Nov 20, 2025 - Fri, Nov 21, 2025'
                       }
                     </p>
                    
                   </div>
-                  <button type="button" className="flex items-center gap-2 text-[15px] font-semibold text-[#FF6A00]">
+                  <button type="button" className="flex items-center gap-[10px] text-[15px] font-semibold text-[#1D69F9]">
                     <PencilIcon className="w-[19px] h-[19px]" />
                     Edit
                   </button>
@@ -357,12 +355,6 @@ export default function CheckoutPage() {
                     <p className="text-[16px] font-semibold text-black">Check-out</p>
                     <p className="text-[16px] font-semibold text-black">before 12:00 pm</p>
                   </div>
-                </div>
-                
-                <div className="text-right">
-                  <button type="button" className="text-[14px] text-[#0C75FF] underline">
-                    View full policy
-                  </button>
                 </div>
               </div>
             </div>
@@ -448,14 +440,12 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 
-                <p className="text-[14px] text-[#FF6A00] text-right">This is the email we will send your confirmation to.</p>
+                <p className="text-[14px] text-[#202C3B] text-right">This is the email we will send your confirmation to.</p>
               </div>
             </div>
 
-            {/* Separator */}
             <div className="w-full h-px bg-[rgba(0,0,0,0.03)]"></div>
 
-            {/* Address */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Address</h2>
               
@@ -589,10 +579,8 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Separator */}
             <div className="w-full h-px bg-[rgba(0,0,0,0.03)]"></div>
 
-            {/* Reservation Details */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Reservation Details</h2>
               
@@ -694,10 +682,8 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Separator */}
             <div className="w-full h-px bg-[rgba(0,0,0,0.03)]"></div>
 
-            {/* Payment */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Payment</h2>
               
@@ -724,30 +710,21 @@ export default function CheckoutPage() {
                     />
                     <button
                       type="button"
-                      className="px-20 py-2 bg-[#FF6A00] text-white rounded text-[18px] font-semibold"
+                      className="px-6 py-[7px] bg-[#1D69F9] text-white text-[18px] font-semibold"
                     >
                       Apply
                     </button>
                   </div>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-[15px]">
                   <p className="text-[16px] font-semibold text-black">${calculateTotal().toFixed(2)} deposit due now.</p>
-                  <p className="text-[14px] text-gray-600">
-                    You will be redirected to our secure payment gateway to complete your payment.
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <CreditCardIcon className="w-5 h-5" />
-                    <span>Secure payment processing by DPO Pay</span>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Separator */}
             <div className="w-full h-px bg-[rgba(0,0,0,0.03)]"></div>
 
-            {/* Policies & Acknowledgements */}
             <div className="space-y-4">
               <h2 className="text-[20px] font-normal text-black">Policies & Acknowledgements</h2>
               
@@ -774,13 +751,12 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Confirm Booking Button */}
             <button
               type="submit"
               disabled={!agreements.privacy || !agreements.booking || isSubmitting}
-              className={`w-full py-3 text-white text-[18px] font-semibold transition-colors flex items-center justify-center ${
+              className={`w-full py-[7px] text-white text-[18px] font-semibold transition-colors flex items-center justify-center ${
                 agreements.privacy && agreements.booking && !isSubmitting
-                  ? 'bg-[#FF6A00] hover:bg-[#E55A00] cursor-pointer'
+                  ? 'bg-[#1D69F9] hover:bg-[#1A5CE6] cursor-pointer'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
             >
@@ -790,16 +766,15 @@ export default function CheckoutPage() {
                   Redirecting to Payment...
                 </>
               ) : (
-                "Proceed to Payment"
+                "Confirm Booking"
               )}
             </button>
           </form>
           </div>
         </div>
         
-        {/* Right Column - Cart Summary (match Rooms/Add-ons card) */}
-        <div className="w-full lg:basis-[38%] px-0 lg:sticky lg:top-28">
-          <div className="rounded-2xl shadow-xl border border-[rgba(101,93,78,0.18)] bg-white/85 backdrop-blur p-5">
+        <div className="w-full lg:w-[534px] px-0 lg:sticky lg:top-28">
+          <div className="border border-[rgba(255,255,255,0.15)] bg-[#F8F8F8] p-[26px]">
             <CartSummary />
           </div>
         </div>
@@ -808,7 +783,6 @@ export default function CheckoutPage() {
       
       <Footer />
       
-      {/* Booking Confirmation Popup */}
       <BookingConfirmationPopup
         isOpen={showConfirmationPopup}
         onClose={handlePopupClose}

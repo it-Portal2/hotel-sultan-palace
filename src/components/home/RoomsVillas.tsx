@@ -47,7 +47,7 @@ export default function RoomsVillas() {
             <span className={`text-[#BE8C53] font-quicksand font-medium text-[16px] md:text-[20px] leading-[1.25] rooms-label ${isVisible ? 'rooms-label-visible' : ''}`}>EXPLORE</span>
             <h2 className={`text-[#202C3B] font-quicksand font-semibold text-[32px] md:text-[40px] lg:text-[44px] xl:text-[48px] leading-[1.25] rooms-heading ${isVisible ? 'rooms-heading-visible' : ''}`}>Rooms & Villas</h2>
           </div>
-          <Link href="/rooms?view=explore" className={`hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 2xl:gap-[124px] text-[#202C3B] hover:opacity-80 flex-shrink-0 rooms-explore ${isVisible ? 'rooms-explore-visible' : ''}`}>
+          <Link href="/hotel?view=explore" className={`hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 2xl:gap-[124px] text-[#202C3B] hover:opacity-80 flex-shrink-0 rooms-explore ${isVisible ? 'rooms-explore-visible' : ''}`}>
             <span className="font-quicksand font-semibold text-[18px] md:text-[20px] lg:text-[22px] xl:text-[24px] leading-[1.25] whitespace-nowrap">Explore</span>
             <Image width={59} height={37} src="/figma/explore-icon.svg" alt="Explore icon" className="w-[45px] h-[28px] md:w-[52px] md:h-[32px] lg:w-[59px] lg:h-[37px]" />
           </Link>

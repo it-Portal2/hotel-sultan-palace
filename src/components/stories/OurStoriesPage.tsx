@@ -504,13 +504,13 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           }}
         />
        
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full pb-8 sm:pb-2 md:pb-4 lg:pb-6">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full ">
           <h1 
             className="relative z-10 text-[#FFFFFF] text-[32px] sm:text-[42px] md:text-[56px] lg:text-[72px] xl:text-[96px] font-moon-dance leading-[1.2] tracking-[0.05em] text-center w-full max-w-full px-2"
             style={{
-              textShadow: '0px 2px 12px rgba(0, 0, 0, 0.9), 0px 4px 24px rgba(0, 0, 0, 0.7), 0px 8px 40px rgba(0, 0, 0, 0.5), 0px 0px 60px rgba(0, 0, 0, 0.3)',
+              textShadow: '0px 2px 8px rgba(0, 0, 0, 0.9), 0px 4px 10px rgba(0, 0, 0, 0.7), 0px 8px 20px rgba(0, 0, 0, 0.5), 0px 0px 30px rgba(0, 0, 0, 0.3)',
               WebkitTextStroke: '2px rgba(0, 0, 0, 0.5)',
-              filter: 'drop-shadow(0 0 20px rgba(0, 0, 0, 0.8))'
+              filter: 'drop-shadow(0 0 3px rgba(0, 0, 0, 0.8))'
             }}
           >
             <span className="flex flex-wrap justify-center gap-x-1 sm:gap-x-2 gap-y-1 w-full">
