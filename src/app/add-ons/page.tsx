@@ -162,7 +162,7 @@ export default function AddOnsPage() {
       `}</style>
       <Header />
       
-      <section className="w-full relative" style={{ paddingTop: '191px', zIndex: 10000, pointerEvents: 'none' }}>
+      <section className="w-full relative pt-[80px] md:pt-[191px]" style={{ zIndex: 10000, pointerEvents: 'none' }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
             <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
@@ -181,7 +181,7 @@ export default function AddOnsPage() {
       </section>
 
       {/* Navigation Section */}
-      <div className="w-full px-4 md:px-[230px] pt-[40px] md:pt-[60px]">
+      <div className="w-full px-4 md:px-[230px] pt-[20px] md:pt-[60px]">
         <div className="max-w-6xl">
           <button 
             onClick={() => {

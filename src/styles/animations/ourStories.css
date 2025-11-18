@@ -1,0 +1,237 @@
+/* Hero Heading Animations - Text Animation */
+.hero-word {
+  opacity: 0;
+}
+
+.hero-word-visible {
+  opacity: 1;
+}
+
+/* Character-by-character animation */
+.char-animate {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(30px) scale(0.5) rotateX(90deg);
+  animation: charReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes charReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.5) rotateX(90deg);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.1) rotateX(0deg);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+/* Continuous text animation effects */
+.text-animate {
+  animation: textGlow 3s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))
+      drop-shadow(0 0 40px rgba(255, 255, 255, 0.4));
+  }
+}
+
+/* Word container animation */
+.hero-word-visible .text-animate {
+  animation: wordFloat 4s ease-in-out infinite;
+}
+
+@keyframes wordFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Testimonials Section Animations */
+.stories-testimonials-section {
+  opacity: 0 !important;
+  transform: translateY(80px) !important;
+  transition: all 1.2s ease-out 0.2s !important;
+}
+
+.stories-testimonials-section.stories-testimonials-section-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.stories-testimonial-card {
+  opacity: 0 !important;
+  transform: translateY(60px) scale(0.95) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-card {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.stories-testimonial-content {
+  opacity: 0 !important;
+  transform: translateX(-80px) !important;
+  transition: all 0.8s.ease-out 0.6s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-content {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.stories-testimonial-title {
+  opacity: 0 !important;
+  transform: translateY(-30px) scale(0.9) !important;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-title {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.stories-testimonial-text {
+  opacity: 0 !important;
+  transform: translateY(30px) !important;
+  transition: all 0.8s ease-out 1s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-text {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.stories-testimonial-author {
+  opacity: 0 !important;
+  transform: translateX(-30px) !important;
+  transition: all 0.6s ease-out 1.2s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-author {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.stories-testimonial-pagination {
+  opacity: 0 !important;
+  transform: translateY(30px) scale(0.9) !important;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-pagination {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.stories-testimonial-image {
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.9) rotateY(-10deg) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s !important;
+}
+
+.stories-testimonials-section-visible .stories-testimonial-image {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) rotateY(0deg) !important;
+}
+
+/* Media Section Animations */
+.stories-media-section {
+  opacity: 0 !important;
+  transform: translateY(80px) !important;
+  transition: all 1.2s ease-out 0.2s !important;
+}
+
+.stories-media-section.stories-media-section-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.stories-media-left {
+  opacity: 0 !important;
+  transform: translateX(-150px) rotateY(-15deg) scale(0.9) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s !important;
+}
+
+.stories-media-section-visible .stories-media-left {
+  opacity: 1 !important;
+  transform: translateX(0) rotateY(0deg) scale(1) !important;
+}
+
+.stories-media-right {
+  opacity: 0 !important;
+  transform: translateX(150px) !important;
+  transition: all 0.8s.ease-out 0.5s !important;
+}
+
+.stories-media-section-visible .stories-media-right {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.stories-media-item-1,
+.stories-media-item-2 {
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.9) !important;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s !important;
+}
+
+.stories-media-section-visible .stories-media-item-1,
+.stories-media-section-visible .stories-media-item-2 {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+/* Legacy Card Animations */
+.card-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Legacy Media Animations */
+.media-visible {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+@media (max-width: 768px) {
+  .media-visible {
+    transform: translateY(0) !important;
+  }
+
+  .media-item {
+    transform: translateY(30px) !important;
+  }
+
+  .stories-media-left,
+  .stories-media-item-1,
+  .stories-media-item-2 {
+    transform: translateY(50px) scale(0.9) !important;
+  }
+
+  .stories-media-section-visible .stories-media-left,
+  .stories-media-section-visible .stories-media-item-1,
+  .stories-media-section-visible .stories-media-item-2 {
+    transform: translateY(0) scale(1) !important;
+  }
+}
+

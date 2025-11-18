@@ -1,7 +1,7 @@
 'use client';
 
 import { AiOutlineCheck } from 'react-icons/ai';
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { IconType } from 'react-icons';
 import {
   popularFacilities,
@@ -51,12 +51,50 @@ RichList.displayName = 'RichList';
 Chip.displayName = 'Chip';
 
 export const FacilitiesDrawer = ({ open, onClose }: FacilitiesDrawerProps) => {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    if (open) {
+      // Save current scroll position
+      const currentScrollY = window.scrollY;
+      setScrollY(currentScrollY);
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Prevent body scroll but maintain scroll position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${currentScrollY}px`;
+      document.body.style.width = '100%';
+      if (scrollBarWidth > 0) {
+        document.body.style.paddingRight = `${scrollBarWidth}px`;
+      }
+    } else {
+      // Restore scroll position
+      const scrollYToRestore = scrollY;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.paddingRight = '';
+      window.scrollTo(0, scrollYToRestore);
+    }
+
+    return () => {
+      if (!open) {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.paddingRight = '';
+      }
+    };
+  }, [open, scrollY]);
+
   if (!open) return null;
 
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-[1000]" onClick={onClose} />
-      <aside className="fixed top-12 right-0 h-[90vh] w-[360px] sm:w-[620px] md:w-[720px] bg-white shadow-2xl z-[1001] p-5 overflow-y-auto">
+      <aside className="fixed top-0 right-0 h-screen w-[360px] sm:w-[620px] md:w-[720px] bg-white shadow-2xl z-[1001] p-5 overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h4 className="text-[18px] font-semibold">Facilities of SULTAN PALACE</h4>

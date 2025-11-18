@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { FiArrowRight } from "react-icons/fi";
 import { useEffect, useRef, useState } from "react";
+import "@/styles/animations/aquaAdventure.css";
 
 export default function AquaAdventurePage() {
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -413,7 +414,7 @@ export default function AquaAdventurePage() {
             </div>
           
         {/* Dhow Excursions Full Width Section */}
-        <section ref={(el) => { if (el) sectionRefs.current['dhow'] = el; }} className={`relative w-full h-[500px] md:h-[650px] lg:h-[830px] overflow-hidden mt-0 mb-16 md:mb-20 lg:mb-24 aqua-dhow ${isVisible['dhow'] ? 'aqua-dhow-visible' : ''}`}>
+        <section ref={(el) => { if (el) sectionRefs.current['dhow'] = el; }} className={`relative w-full h-[500px] md:h-[650px] lg:h-[830px] overflow-hidden mt-0 mb-0 md:mb-20 lg:mb-24 aqua-dhow ${isVisible['dhow'] ? 'aqua-dhow-visible' : ''}`}>
           <div className="absolute inset-0 w-full h-full">
             <div 
               className="absolute inset-0 pointer-events-none z-10"
@@ -456,7 +457,7 @@ export default function AquaAdventurePage() {
             </section>
 
         {/* Second Section: Kayaking & Snorkelling - Exact Figma Structure */}
-        <div className="relative w-full -mt-12 md:-mt-20 lg:-mt-25 bg-[#FFFCF6]">
+        <div className="relative w-full -mt-0 md:-mt-20 lg:-mt-25 bg-[#FFFCF6]">
           {/* Background Image */}
           <div className="absolute inset-0 w-full h-full">
                 <Image
@@ -473,8 +474,8 @@ export default function AquaAdventurePage() {
           {/* Content Container - Reduced padding for edge-to-edge */}
           <div className="relative z-10 w-full overflow-x-hidden">
             {/* Activities Section - Mobile: Stack, Desktop: Absolute Positioned */}
-            <div className="relative px-4 md:px-6 py-16 md:py-20">
-              <div className="space-y-12 md:space-y-16">
+            <div className="relative px-4 md:px-6 pt-16 md:pt-20 pb-0 md:pb-20">
+              <div className="space-y-12 md:space-y-16 pb-0 mobile-no-gap">
                 {/* Beach Walking - Grid row (image first) */}
                 <div ref={(el) => { if (el) sectionRefs.current['beach'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-beach ${isVisible['beach'] ? 'aqua-beach-visible' : ''}`}>
                   <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
@@ -544,81 +545,6 @@ export default function AquaAdventurePage() {
         {/* Spacer before footer removed to eliminate gap */}
       </main>
       <Footer />
-
-      <style jsx global>{`
-        .aqua-title {
-          opacity: 0 !important;
-          transform: translateY(-50px) !important;
-          transition: all 1s ease-out 0.2s !important;
-        }
-        .aqua-title.aqua-title-visible {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
-        .aqua-coral {
-          opacity: 0 !important;
-          transform: translateX(-100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.3s !important;
-        }
-        .aqua-coral.aqua-coral-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-        .aqua-kite {
-          opacity: 0 !important;
-          transform: translateX(100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.5s !important;
-        }
-        .aqua-kite.aqua-kite-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-        .aqua-sailing {
-          opacity: 0 !important;
-          transform: translateX(-100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.7s !important;
-        }
-        .aqua-sailing.aqua-sailing-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-        .aqua-dhow {
-          opacity: 0 !important;
-          transform: translateY(50px) scale(0.95) !important;
-          transition: all 1s ease-out 0.3s !important;
-        }
-        .aqua-dhow.aqua-dhow-visible {
-          opacity: 1 !important;
-          transform: translateY(0) scale(1) !important;
-        }
-        .aqua-beach {
-          opacity: 0 !important;
-          transform: translateX(-100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.4s !important;
-        }
-        .aqua-beach.aqua-beach-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-        .aqua-kayak {
-          opacity: 0 !important;
-          transform: translateX(100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.6s !important;
-        }
-        .aqua-kayak.aqua-kayak-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-        .aqua-snorkel {
-          opacity: 0 !important;
-          transform: translateX(-100px) scale(0.9) !important;
-          transition: all 1s ease-out 0.8s !important;
-        }
-        .aqua-snorkel.aqua-snorkel-visible {
-          opacity: 1 !important;
-          transform: translateX(0) scale(1) !important;
-        }
-      `}</style>
     </>
   );
 }

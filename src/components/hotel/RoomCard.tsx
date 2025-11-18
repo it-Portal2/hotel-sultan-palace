@@ -76,20 +76,17 @@ export default function RoomCard({
   availableRoomCount
 }: RoomCardProps) {
   const router = useRouter();
-  // Local state for room count (each card has its own)
   const [localRoomCount, setLocalRoomCount] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const nights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 1;
   const nightsText = nights > 1 ? `${nights} nights` : '1 night';
   
-  // Calculate price: room.price * nights * number of rooms (using local room count)
   const basePrice = room.price * nights * localRoomCount;
   const originalPrice = Math.round(basePrice);
   const discountPercent = 10;
   const discountedPrice = Math.round(originalPrice * 0.9);
 
-  // Get cancellation 
   const getCancellationText = (): string => {
     const daysBefore = room.cancellationFreeDays ?? 2;
     

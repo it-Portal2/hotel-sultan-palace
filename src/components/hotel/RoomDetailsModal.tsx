@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Room } from '@/lib/firestoreService';
+import { Room, getGalleryImages } from '@/lib/firestoreService';
 import { 
   MdClose as CloseIcon,
   MdOutlineBed as BedIcon,
@@ -53,12 +53,49 @@ const facilities = [
   'Clothes rack'
 ];
 
+// Static gallery images - replace these with actual gallery image paths
+const defaultGalleryImages = [
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+  '/figma/placeholder.jpg',
+];
+
 export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Fetch gallery images and combine with room image
+    const loadImages = async () => {
+      try {
+        const galleryData = await getGalleryImages();
+        const galleryUrls = galleryData.map(img => img.imageUrl).slice(0, 8);
+        
+        // Use room image as first/main image, then add 8 gallery images
+        const allImages = [
+          room.image || '/figma/placeholder.jpg',
+          ...(galleryUrls.length > 0 ? galleryUrls : defaultGalleryImages)
+        ];
+        
+        setGalleryImages(allImages);
+      } catch (error) {
+        console.error('Error loading gallery images:', error);
+        // Fallback to default images
+        const images = [room.image || '/figma/placeholder.jpg', ...defaultGalleryImages];
+        setGalleryImages(images);
+      }
+    };
+    
+    loadImages();
+  }, [room]);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,20 +149,56 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
           <CloseIcon className="text-2xl text-gray-700" />
         </button>
 
-        <div className="relative w-full md:w-1/2 h-[300px] md:h-full bg-gray-200 flex-shrink-0 overflow-hidden">
-          {room.image ? (
-            <img
-              src={room.image}
-              alt={room.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                console.error('Image failed to load:', room.image);
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              No image available
+        <div className="relative w-full md:w-1/2 flex flex-col bg-gray-200 flex-shrink-0 overflow-hidden">
+          {/* Main Image */}
+          <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] bg-gray-200 overflow-hidden">
+            {galleryImages[selectedImageIndex] ? (
+              <Image
+                src={galleryImages[selectedImageIndex]}
+                alt={room.name}
+                fill
+                className="object-cover"
+                priority
+                onError={(e) => {
+                  console.error('Image failed to load:', galleryImages[selectedImageIndex]);
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                No image available
+              </div>
+            )}
+          </div>
+
+          {/* Thumbnail Grid - 8 images below main image */}
+          {galleryImages.length > 1 && (
+            <div className="w-full p-2 bg-white border-t border-gray-200">
+              <div className="grid grid-cols-4 gap-2">
+                {galleryImages.slice(1, 9).map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index + 1)}
+                    className={`relative aspect-square overflow-hidden rounded border-2 transition-all ${
+                      selectedImageIndex === index + 1
+                        ? 'border-[#1D69F9] ring-2 ring-[#1D69F9] ring-offset-1'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                    aria-label={`View image ${index + 2}`}
+                  >
+                    <Image
+                      src={imageUrl}
+                      alt={`${room.name} view ${index + 2}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 25vw, 12.5vw"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

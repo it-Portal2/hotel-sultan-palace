@@ -22,6 +22,7 @@ import {
   MdFitnessCenter,
   MdSportsTennis,
   MdKingBed,
+  
   MdLocalBar,
   MdFamilyRestroom
 } from 'react-icons/md';
@@ -152,28 +153,6 @@ function HotelContent() {
     fetchAvailableCounts();
   }, [tempCheckIn, tempCheckOut, rooms]);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-
-    const previousOverflow = document.body.style.overflow;
-    const previousPaddingRight = document.body.style.paddingRight;
-
-    if (showFacilities) {
-      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-      if (scrollBarWidth > 0) {
-        document.body.style.paddingRight = `${scrollBarWidth}px`;
-      }
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = previousOverflow || '';
-      document.body.style.paddingRight = previousPaddingRight || '';
-    }
-
-    return () => {
-      document.body.style.overflow = previousOverflow || '';
-      document.body.style.paddingRight = previousPaddingRight || '';
-    };
-  }, [showFacilities]);
 
   useEffect(() => {
     if (!bookingData) {
@@ -446,7 +425,7 @@ function HotelContent() {
       `}</style>
       <Header />
 
-      <section className="w-full relative" style={{ paddingTop: '191px', zIndex: 10000, pointerEvents: 'none' }}>
+      <section className="w-full relative pt-[80px] md:pt-[191px]" style={{ zIndex: 10000, pointerEvents: 'none' }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
             <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
@@ -465,7 +444,7 @@ function HotelContent() {
         </div>
       </section>
 
-      <section className="w-full px-[24px] md:px-[32px] py-[46px] pt-[109px] bg-[#F7F7F7]">
+      <section className="w-full px-[24px] md:px-[32px] py-[46px] pt-[30px] md:pt-[109px] bg-[#F7F7F7]">
         <div className="max-w-[1600px] mx-auto">
           <div className="bg-white rounded-[2px] p-[20px]">
             <div className="grid grid-cols-1 lg:grid-cols-[674px_minmax(0,1fr)] gap-[40px] lg:gap-[72px] xl:gap-[90px] items-start">
@@ -640,7 +619,17 @@ function HotelContent() {
                         <span className="text-[14px]">{label}</span>
                       </div>
                     ))}
-                    <button onClick={() => setShowFacilities(true)} className="text-[#007FEE] text-[16px] font-medium hover:underline text-left">View all</button>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowFacilities(true);
+                      }} 
+                      className="text-[#007FEE] text-[16px] font-medium hover:underline text-left"
+                      type="button"
+                    >
+                      View all
+                    </button>
                   </div>
                 </div>
 
@@ -688,12 +677,21 @@ function HotelContent() {
                 ].map((tab) => (
                   <button 
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (tab.id === 'facilities') {
+                        setShowFacilities(true);
+                      } else {
+                        setActiveTab(tab.id);
+                      }
+                    }}
                     className={`pb-2 font-medium text-[14px] md:text-[16px] relative whitespace-nowrap flex-shrink-0 ${
                       activeTab === tab.id 
                         ? 'text-[#1D69F9] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#1D69F9]' 
                         : 'text-[#242424]'
                     }`}
+                    type="button"
                   >
                     {tab.label}
                   </button>

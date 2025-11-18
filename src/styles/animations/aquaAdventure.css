@@ -1,0 +1,171 @@
+@media (max-width: 768px) {
+  /* Remove all gaps in mobile view */
+  .mobile-no-gap > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .space-y-12 > *:last-child,
+  .space-y-12 > div:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Remove padding from last section container */
+  .relative.px-4.pb-0 {
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove margin from snorkel section */
+  .aqua-snorkel {
+    margin-bottom: 0 !important;
+  }
+
+  /* Remove any bottom spacing from main content */
+  main.bg-\[\#FFFCF6\] {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Ensure second section has no bottom margin/padding */
+  .relative.w-full.bg-\[\#FFFCF6\] {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .relative.w-full.bg-\[\#FFFCF6\] > div:last-child,
+  .relative.w-full.bg-\[\#FFFCF6\] > div > div:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove gap between sections */
+  section.aqua-dhow {
+    margin-bottom: 0 !important;
+  }
+
+  /* Target the specific container with activities */
+  .relative.px-4.pb-0 > div.space-y-12 {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .relative.px-4.pb-0 > div.space-y-12 > div:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Remove gap between main and footer */
+  main + footer {
+    margin-top: 0 !important;
+  }
+
+  /* Ensure no gap from the last div in main */
+  main > div:last-child,
+  main > div > div:last-child,
+  main > div > div > div:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove background color from sections after videos in mobile */
+  main.bg-\[\#FFFCF6\] {
+    background: transparent !important;
+  }
+
+  /* Remove background from content section containers */
+  div.relative.w-full.bg-\[\#FFFCF6\] {
+    background-color: transparent !important;
+  }
+
+  /* Ensure background images still show but no color overlay */
+  div.relative.w-full.bg-\[\#FFFCF6\] > div.absolute.inset-0 {
+    background-color: transparent !important;
+  }
+}
+
+.aqua-title {
+  opacity: 0 !important;
+  transform: translateY(-50px) !important;
+  transition: all 1s ease-out 0.2s !important;
+}
+
+.aqua-title.aqua-title-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.aqua-coral {
+  opacity: 0 !important;
+  transform: translateX(-100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.3s !important;
+}
+
+.aqua-coral.aqua-coral-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.aqua-kite {
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.5s !important;
+}
+
+.aqua-kite.aqua-kite-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.aqua-sailing {
+  opacity: 0 !important;
+  transform: translateX(-100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.7s !important;
+}
+
+.aqua-sailing.aqua-sailing-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.aqua-dhow {
+  opacity: 0 !important;
+  transform: translateY(50px) scale(0.95) !important;
+  transition: all 1s ease-out 0.3s !important;
+}
+
+.aqua-dhow.aqua-dhow-visible {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.aqua-beach {
+  opacity: 0 !important;
+  transform: translateX(-100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.4s !important;
+}
+
+.aqua-beach.aqua-beach-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.aqua-kayak {
+  opacity: 0 !important;
+  transform: translateX(100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.6s !important;
+}
+
+.aqua-kayak.aqua-kayak-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.aqua-snorkel {
+  opacity: 0 !important;
+  transform: translateX(-100px) scale(0.9) !important;
+  transition: all 1s ease-out 0.8s !important;
+}
+
+.aqua-snorkel.aqua-snorkel-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
