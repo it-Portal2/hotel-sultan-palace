@@ -1,0 +1,55 @@
+.wellness-title {
+  opacity: 0 !important;
+  transform: translateY(-50px) !important;
+  transition: all 1s ease-out 0.2s !important;
+}
+
+.wellness-title.wellness-title-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.wellness-cards {
+  opacity: 0 !important;
+  transform: translateY(50px) !important;
+  transition: all 1s ease-out 0.3s !important;
+}
+
+.wellness-cards.wellness-cards-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.wellness-card-item {
+  opacity: 0 !important;
+  transform: translateY(60px) scale(0.9) !important;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.wellness-card-item.wellness-card-item-visible {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.wellness-portrait {
+  opacity: 0 !important;
+  transform: translateX(-100px) scale(0.95) !important;
+  transition: all 1s ease-out 0.4s !important;
+}
+
+.wellness-portrait.wellness-portrait-visible {
+  opacity: 1 !important;
+  transform: translateX(0) scale(1) !important;
+}
+
+.wellness-video {
+  opacity: 0 !important;
+  transform: translateY(30px) !important;
+  transition: opacity 800ms ease-out, transform 800ms ease-out !important;
+}
+
+.wellness-video.wellness-video-visible {
+  opacity: 1 !important;
+  transform: none !important;
+}
+

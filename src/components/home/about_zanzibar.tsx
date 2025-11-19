@@ -75,7 +75,11 @@ const faqItems: FaqItem[] = [
   },
 ];
 
-export default function AboutZanzibar() {
+type AboutZanzibarProps = {
+  compact?: boolean;
+};
+
+export default function AboutZanzibar({ compact = false }: AboutZanzibarProps) {
   const [openItems, setOpenItems] = useState<number[]>([]);
   const [showAll, setShowAll] = useState<boolean>(false);
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -107,8 +111,17 @@ export default function AboutZanzibar() {
     );
   };
 
+  const paddingClasses = compact
+    ? "pt-4 md:pt-6 lg:pt-8 pb-2 md:pb-6 lg:pb-10"
+    : "pt-12 md:pt-16 lg:pt-20 pb-12 md:pb-16 lg:pb-20";
+
   return (
-    <section id="about-zanzibar" ref={sectionRef} className="w-full relative py-12 md:py-16 lg:py-24 about-zanzibar-section">
+    <section
+      id="about-zanzibar"
+      ref={sectionRef}
+      className={`w-full relative about-zanzibar-section ${paddingClasses}`}
+      style={{ marginTop: 0, marginBottom: 0, position: 'relative', zIndex: 10 }}
+    >
       {/* Background Pattern */}
       <div className={`absolute inset-0 z-0 about-zanzibar-bg ${isVisible ? 'about-zanzibar-bg-visible' : ''}`}>
         <Image
@@ -180,55 +193,6 @@ export default function AboutZanzibar() {
           )}
         </div>
       </div>
-
-      <style jsx global>{`
-        .about-zanzibar-section {
-          opacity: 0;
-          transform: translateY(50px);
-          transition: all 1s ease-out;
-        }
-        .about-zanzibar-section.about-zanzibar-visible,
-        .about-zanzibar-visible .about-zanzibar-section {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .about-zanzibar-bg {
-          opacity: 0;
-          transform: scale(1.1);
-          transition: all 1.5s ease-out;
-        }
-        .about-zanzibar-bg-visible {
-          opacity: 1;
-          transform: scale(1);
-        }
-        .about-zanzibar-title {
-          opacity: 0;
-          transform: translateY(-30px);
-          transition: all 0.8s ease-out 0.3s;
-        }
-        .about-zanzibar-title-visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .about-zanzibar-item {
-          opacity: 0;
-          transform: translateX(-50px);
-          transition: all 0.6s ease-out;
-        }
-        .about-zanzibar-item-visible {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        .about-zanzibar-button {
-          opacity: 0;
-          transform: translateY(30px) scale(0.9);
-          transition: all 0.8s ease-out 0.8s;
-        }
-        .about-zanzibar-button-visible {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      `}</style>
     </section>
   );
 }

@@ -8,8 +8,7 @@ import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-// Payment imports commented out - booking can be confirmed without payment
-// import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
+import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
 import { 
   PencilIcon,
   TrashIcon,
@@ -171,6 +170,12 @@ export default function CheckoutPage() {
       const bookingId = `#BKG${Date.now()}`;
       const totalAmount = calculateTotal();
       
+      if (totalAmount <= 0) {
+        showToast('Invalid booking amount. Please review your selections.', 'error');
+        setIsSubmitting(false);
+        return;
+      }
+
       const bookingDetails = {
         // Essential booking dates and guest count
         checkIn: bookingData.checkIn,
@@ -220,7 +225,8 @@ export default function CheckoutPage() {
         // Financial details
         totalAmount: totalAmount,
         bookingId: bookingId,
-        status: "confirmed" as const, // Confirmed directly without payment
+        status: "pending" as const,
+        paymentStatus: "pending" as const,
         
         // Booking metadata
         createdAt: new Date(),
@@ -228,7 +234,7 @@ export default function CheckoutPage() {
       };
       
       // Check availability before proceeding
-      const { checkRoomAvailability, createBookingService } = await import('@/lib/bookingService');
+      const { checkRoomAvailability } = await import('@/lib/bookingService');
       const availability = await checkRoomAvailability(bookingDetails);
       
       if (!availability.available) {
@@ -237,27 +243,17 @@ export default function CheckoutPage() {
         return;
       }
       
-      // Create booking directly without payment
-      const createdBookingId = await createBookingService(bookingDetails);
-      
-      if (!createdBookingId) {
-        throw new Error('Failed to create booking');
+      if (typeof window === 'undefined') {
+        throw new Error('Payment processing is only available in the browser.');
       }
-      
-      // Show success message and redirect to confirmation
-      showToast('Booking confirmed successfully!', 'success');
-      router.push('/confirmation');
-      
-      /* PAYMENT CODE COMMENTED OUT - User can confirm booking without payment
-      // Store booking details temporarily (will be saved after payment verification)
+
+      // Store booking details until payment verification succeeds
       localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
-      
-      // Get base URL for redirect URLs
-      const baseURL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+
+      const baseURL = window.location.origin;
       const successURL = `${baseURL}/payment/success`;
       const failureURL = `${baseURL}/payment/failure`;
-      
-      // Create DPO payment token
+
       const paymentRequest = {
         amount: totalAmount,
         currency: 'USD',
@@ -274,17 +270,21 @@ export default function CheckoutPage() {
         customerZip: address.zipCode,
         serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`
       };
-      
+
       const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
-      
+
       if (!paymentTokenResponse.TransToken) {
         throw new Error(paymentTokenResponse.ResultExplanation || 'Failed to create payment token');
       }
-      
-      // Redirect to DPO payment page
+
       const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
+
+      if (!paymentURL) {
+        throw new Error('Unable to generate payment URL. Please try again later.');
+      }
+
+      showToast('Redirecting to secure payment page...', 'success');
       window.location.href = paymentURL;
-      */
     } catch (err) {
       console.error("Error creating booking:", err);
       alert(`Booking processing error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);

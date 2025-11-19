@@ -171,37 +171,6 @@ export default function StoryInPictures() {
           ))}
         </div>
       </div>
-
-      <style jsx global>{`
-        .story-section {
-          opacity: 0;
-          transform: translateY(50px);
-          transition: all 1s ease-out;
-        }
-        .story-section.story-visible,
-        .story-visible .story-section {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .story-heading {
-          opacity: 0;
-          transform: translateY(-30px);
-          transition: all 1s ease-out 0.2s;
-        }
-        .story-heading-visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .story-image {
-          opacity: 0;
-          transform: translateY(80px) scale(0.9) rotateX(15deg);
-          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .story-image-visible {
-          opacity: 1;
-          transform: translateY(0) scale(1) rotateX(0deg);
-        }
-      `}</style>
     </section>
   );
 }

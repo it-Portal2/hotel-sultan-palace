@@ -1,0 +1,204 @@
+/* Hero Heading Animations */
+.hero-word {
+  opacity: 0;
+  transform: translateY(30px) rotateX(90deg);
+  animation: wordReveal 0.8s ease-out forwards;
+}
+
+.hero-word-visible {
+  animation: wordReveal 0.8s ease-out forwards;
+}
+
+@keyframes wordReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) rotateX(90deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(15px) rotateX(45deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+}
+
+.shimmer-text {
+  display: inline-block;
+  background: linear-gradient(90deg, #ffffff 0%, #ff6a00 50%, #ffffff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+.shimmer-overlay {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+/* Section Animations */
+.offers-cards-section {
+  opacity: 0 !important;
+  transform: translateY(80px) scale(0.98) !important;
+  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+.offers-cards-section.offers-cards-section-visible {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.offers-carousel-section {
+  opacity: 0 !important;
+  transform: translateX(100px) !important;
+  transition: all 1s ease-out 0.3s !important;
+}
+
+.offers-carousel-section.offers-carousel-section-visible {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.offers-transfers-section {
+  opacity: 0 !important;
+  transition: opacity 1s ease-out 0.4s !important;
+}
+
+.offers-transfers-section.offers-transfers-section-visible {
+  opacity: 1 !important;
+}
+
+/* Card Animations - Different for each card */
+.offer-card {
+  opacity: 0 !important;
+  will-change: transform, opacity;
+}
+
+.offer-card.card-animation-0 {
+  transform: translateX(-150px) rotateY(-15deg) scale(0.9) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.offer-card.card-animation-0.card-visible {
+  opacity: 1 !important;
+  transform: translateX(0) rotateY(0deg) scale(1) !important;
+}
+
+.offer-card.card-animation-1 {
+  transform: translateX(150px) rotateY(15deg) scale(0.9) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s !important;
+}
+
+.offer-card.card-animation-1.card-visible {
+  opacity: 1 !important;
+  transform: translateX(0) rotateY(0deg) scale(1) !important;
+}
+
+.offer-card.card-animation-2 {
+  transform: translateY(120px) rotateX(10deg) scale(0.85) !important;
+  transition: all 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s !important;
+}
+
+.offer-card.card-animation-2.card-visible {
+  opacity: 1 !important;
+  transform: translateY(0) rotateX(0deg) scale(1) !important;
+}
+
+.offer-card.card-animation-3 {
+  transform: scale(0.7) rotateZ(-5deg) !important;
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s !important;
+}
+
+.offer-card.card-animation-3.card-visible {
+  opacity: 1 !important;
+  transform: scale(1) rotateZ(0deg) !important;
+}
+
+.offer-card-image {
+  opacity: 0 !important;
+  transform: scale(1.1) !important;
+  transition: all 0.8s ease-out 0.4s !important;
+}
+
+.offer-card.card-visible .offer-card-image {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+.offer-card-content {
+  opacity: 0 !important;
+  transform: translateY(30px) !important;
+  transition: all 0.8s ease-out 0.6s !important;
+}
+
+.offer-card.card-visible .offer-card-content {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.offer-desc-item {
+  opacity: 0 !important;
+  transform: translateX(-20px) !important;
+  transition: all 0.6s ease-out !important;
+}
+
+.offer-card.card-visible .offer-desc-item {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.offer-card-button {
+  opacity: 0 !important;
+  transform: scale(0.8) translateY(20px) !important;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s !important;
+}
+
+.offer-card.card-visible .offer-card-button {
+  opacity: 1 !important;
+  transform: scale(1) translateY(0) !important;
+}
+
+.offer-card:hover .group {
+  transform: translateY(-5px);
+}
+
+.offer-card .group {
+  transition: transform 0.3s ease-out;
+}
+
+@keyframes buttonPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 106, 0, 0);
+  }
+}
+
+.group\/btn:hover {
+  animation: buttonPulse 2s infinite;
+}
+
+.offer-card.card-visible:hover {
+  transform: translateY(-8px) !important;
+}
+
+.offer-card.card-visible:hover .offer-card-image {
+  transform: scale(1.05) !important;
+}
+

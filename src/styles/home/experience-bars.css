@@ -1,0 +1,188 @@
+.experience-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1.2s ease-out;
+}
+
+.experience-section.experience-visible,
+.experience-visible .experience-section {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.experience-heading {
+  opacity: 0;
+  transform: translateX(-100px) scale(0.9);
+  transition: all 1s ease-out 0.3s;
+}
+
+.experience-heading-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-text-block {
+  opacity: 0;
+  transform: translateY(-50px);
+  transition: all 1s ease-out 0.5s;
+}
+
+.experience-text-block-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.experience-card {
+  opacity: 0;
+  transform: translateX(100px) scale(0.8) rotateY(-15deg);
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s;
+}
+
+.experience-card-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1) rotateY(0deg);
+}
+
+.experience-book-button {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: all 0.8s ease-out 0.6s;
+}
+
+.experience-book-button-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.experience-button {
+  opacity: 0;
+  transform: translateY(50px) scale(0.9);
+  transition: all 0.8s ease-out 0.9s;
+}
+
+.experience-button-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.experience-image-left {
+  opacity: 0;
+  transform: translateX(-100px) scale(0.9);
+  transition: all 1s ease-out 0.4s;
+}
+
+.experience-image-left-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-image-right {
+  opacity: 0;
+  transform: translateX(100px) scale(0.9);
+  transition: all 1s ease-out 0.6s;
+}
+
+.experience-image-right-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-mobile-heading {
+  opacity: 0;
+  transform: translateX(-50px) scale(0.95);
+  transition: all 1s ease-out 0.2s;
+}
+
+.experience-mobile-heading-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-mobile-image-left {
+  opacity: 0;
+  transform: translateX(-100px) scale(0.9);
+  transition: all 1s ease-out 0.4s;
+}
+
+.experience-mobile-image-left-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-mobile-text-block {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out 0.6s;
+}
+
+.experience-mobile-text-block-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.experience-mobile-title {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: all 0.8s ease-out 0.8s;
+}
+
+.experience-mobile-title-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.experience-mobile-text {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease-out 1s;
+}
+
+.experience-mobile-text-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.experience-mobile-button {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.8s ease-out 1.2s;
+}
+
+.experience-mobile-button-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.experience-mobile-image-right {
+  opacity: 0;
+  transform: translateX(100px) scale(0.9);
+  transition: all 1s ease-out 0.5s;
+}
+
+.experience-mobile-image-right-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.experience-mobile-card {
+  opacity: 0;
+  transform: translateX(50px) scale(0.9) rotateY(-10deg);
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s;
+}
+
+.experience-mobile-card-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1) rotateY(0deg);
+}
+
+.experience-mobile-journey-button {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: all 0.8s ease-out 0.9s;
+}
+
+.experience-mobile-journey-button-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+

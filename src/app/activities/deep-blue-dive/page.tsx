@@ -103,7 +103,7 @@ export default function DeepBlueDivePage() {
         </section>
 
       
-        <section ref={titleRef} className="py-12 md:py-16">
+        <section ref={titleRef} className="pt-12 pb-8 md:pt-16 md:pb-12">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <h2 className="text-[#423B2D] text-[32px] md:text-[40px] lg:text-[48px] font-semibold leading-[1.25] text-center font-quicksand mb-6 md:mb-8 title-animate">
               <span className="inline-block wave-text">
@@ -117,14 +117,14 @@ export default function DeepBlueDivePage() {
         </section>
 
       
-        <section className="relative py-8">
+        <section className="relative pt-8 pb-0">
           <div 
-            className="absolute inset-0 top-[30%] pointer-events-none"
+            className="absolute inset-0 top-[30%] pointer-events-none hidden md:block"
             style={{
               background: "linear-gradient(180deg, rgba(255, 252, 246, 1) 3%, rgba(255, 252, 246, 0.89) 8%, rgba(255, 252, 246, 0.38) 20%, rgba(255, 252, 246, 0) 47%, rgba(255, 252, 246, 0) 59%, rgba(255, 252, 246, 0) 63%, rgba(255, 252, 246, 0.22) 73%, rgba(255, 252, 246, 1) 86%)"
             }}
           />
-          <div className="absolute inset-0 top-[30%] pointer-events-none opacity-10">
+          <div className="absolute inset-0 top-[30%] pointer-events-none opacity-10 hidden md:block">
             <Image
               src="/deep-dive/bg-texture.png"
               alt="Background Texture"
@@ -132,8 +132,8 @@ export default function DeepBlueDivePage() {
               className="object-cover"
             />
           </div>
-          <div ref={galleryRef} className="relative z-10 max-w-8xl mx-auto px-2 md:px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 ">
+          <div ref={galleryRef} className="relative z-10 max-w-8xl mx-auto px-2 md:px-4 pb-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {[
                 { src: "deep-1.png", label: "100 Feet of Diving" },
                 { src: "deep-2.png", label: "400 Fish Species" },
@@ -169,7 +169,7 @@ export default function DeepBlueDivePage() {
         </section>
 
        
-        <section ref={videoRef} className="relative w-full h-[600px] md:h-[800px] lg:h-[945px] overflow-hidden bg-transparent">
+        <section ref={videoRef} className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[945px] overflow-hidden bg-transparent">
           {/* Embedded Video - Only video, no background */}
           <video
             src="/deep-dive/deep.mp4"
@@ -181,7 +181,7 @@ export default function DeepBlueDivePage() {
           />
         </section>
 
-        <section ref={contentRef} className="-mt-8 md:-mt-12 lg:-mt-20 relative">
+        <section ref={contentRef} className="relative">
           <div className="flex flex-col md:flex-row h-full">
           
             <div className="relative w-full md:w-1/2 h-[400px] md:h-[600px] lg:h-[900px] group/image overflow-hidden">

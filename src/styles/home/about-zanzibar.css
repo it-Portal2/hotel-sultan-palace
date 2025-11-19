@@ -1,0 +1,54 @@
+.about-zanzibar-section {
+  opacity: 0;
+  transition: opacity 1s ease-out;
+}
+
+.about-zanzibar-section.about-zanzibar-visible,
+.about-zanzibar-visible .about-zanzibar-section {
+  opacity: 1;
+}
+
+.about-zanzibar-bg {
+  opacity: 0;
+  transform: scale(1.1);
+  transition: all 1.5s ease-out;
+}
+
+.about-zanzibar-bg-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.about-zanzibar-title {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: all 0.8s ease-out 0.3s;
+}
+
+.about-zanzibar-title-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.about-zanzibar-item {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 0.6s ease-out;
+}
+
+.about-zanzibar-item-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.about-zanzibar-button {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: all 0.8s ease-out 0.8s;
+}
+
+.about-zanzibar-button-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+

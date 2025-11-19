@@ -1,0 +1,67 @@
+.app-promo-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1s ease-out;
+}
+
+.app-promo-section.app-promo-visible,
+.app-promo-visible .app-promo-section {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-promo-label {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: all 0.8s ease-out 0.2s;
+}
+
+.app-promo-label-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-promo-title {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 1s ease-out 0.4s;
+}
+
+.app-promo-title-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.app-promo-text {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out 0.6s;
+}
+
+.app-promo-text-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-promo-buttons {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: all 0.8s ease-out 0.8s;
+}
+
+.app-promo-buttons-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.app-promo-image {
+  opacity: 0;
+  transform: translateX(100px) scale(0.8) rotate(10deg);
+  transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+}
+
+.app-promo-image-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1) rotate(6deg);
+}
+

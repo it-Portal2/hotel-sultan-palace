@@ -1,0 +1,56 @@
+.rooms-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1s ease-out;
+}
+
+.rooms-section.rooms-visible,
+.rooms-visible .rooms-section {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rooms-label {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.8s ease-out 0.2s;
+}
+
+.rooms-label-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rooms-heading {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 1s ease-out 0.4s;
+}
+
+.rooms-heading-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.rooms-explore {
+  opacity: 0;
+  transform: translateX(50px) scale(0.9);
+  transition: all 0.8s ease-out 0.4s;
+}
+
+.rooms-explore-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.rooms-card {
+  opacity: 0;
+  transform: translateY(80px) scale(0.9) rotateY(10deg);
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rooms-card-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateY(0deg);
+}
+

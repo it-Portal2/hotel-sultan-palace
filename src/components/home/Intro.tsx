@@ -55,55 +55,6 @@ export default function Intro() {
             </p>
           </div>
         </div>
-
-      <style jsx global>{`
-        .intro-section {
-          opacity: 0;
-          transform: translateY(40px);
-          transition: all 1s ease-out;
-        }
-        .intro-section.intro-visible,
-        .intro-visible .intro-section {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .intro-badge {
-          opacity: 0;
-          transform: translateY(-20px) scale(0.9);
-          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .intro-badge-visible {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-        .intro-title {
-          opacity: 0;
-          transform: translateX(-50px);
-          transition: all 1s ease-out 0.2s;
-        }
-        .intro-title-visible {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        .intro-subtitle {
-          opacity: 0;
-          transform: translateX(50px);
-          transition: all 1s ease-out 0.4s;
-        }
-        .intro-subtitle-visible {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        .intro-text {
-          opacity: 0;
-          transform: translateY(30px);
-          transition: all 0.8s ease-out;
-        }
-        .intro-text-visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      `}</style>
     </section>
   );
 }

@@ -1,0 +1,262 @@
+/* Hero Section Animations */
+.hero-label {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.9);
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hero-label-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.hero-title {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: all 1s ease-out 0.2s;
+}
+
+.hero-title-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 30px rgba(255, 255, 255, 0.4);
+  }
+}
+
+.hero-text {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 1s ease-out 0.4s;
+}
+
+.hero-text-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Video Container Animation */
+.video-container {
+  opacity: 0;
+  transform: translateY(50px) scale(0.95);
+  transition: all 1s ease-out;
+}
+
+.section-visible .video-container,
+.video-container.section-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Content Section Animations */
+.content-heading {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 1s ease-out;
+}
+
+.section-visible .content-heading,
+.content-heading.section-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.content-image-left {
+  opacity: 0;
+  transform: translateX(-100px) scale(0.9);
+  transition: all 1s ease-out 0.2s;
+}
+
+.section-visible .content-image-left,
+.content-image-left.section-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.content-image-left:hover {
+  transform: scale(1.05);
+  transition: transform 0.7s ease-out;
+}
+
+.content-image-right {
+  opacity: 0;
+  transform: translateX(100px) scale(0.9);
+  transition: all 1s ease-out 0.2s;
+}
+
+.section-visible .content-image-right,
+.content-image-right.section-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.content-image-right:hover {
+  transform: scale(1.05);
+  transition: transform 0.7s ease-out;
+}
+
+.content-text-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: all 1s ease-out 0.4s;
+}
+
+.section-visible .content-text-right,
+.content-text-right.section-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.content-text-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 1s ease-out 0.4s;
+}
+
+.section-visible .content-text-left,
+.content-text-left.section-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Happy Moments Section Animations */
+.happy-moments-title {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.9);
+  transition: all 1s ease-out;
+}
+
+.section-visible .happy-moments-title,
+.happy-moments-title.section-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.02);
+  }
+}
+
+.gallery-image-card {
+  opacity: 0;
+  transform: translateY(60px) rotateX(15deg) scale(0.85);
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.section-visible .gallery-image-card,
+.gallery-image-card.section-visible {
+  opacity: 1;
+  transform: translateY(0) rotateX(0deg) scale(1);
+}
+
+/* Shimmer Sweep Effect */
+.shimmer-sweep {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  animation: shimmerMove 2s ease-in-out infinite;
+}
+
+@keyframes shimmerMove {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+/* Navigation Buttons Animation */
+.gallery-image-card + button,
+button + .gallery-image-card {
+  transition: transform 0.3s ease-out;
+}
+
+button:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0px 6px 20px rgba(255, 106, 0, 0.4) !important;
+}
+
+/* Commitment Section Animation */
+.commitment-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1.2s ease-out;
+}
+
+.section-visible .commitment-section,
+.commitment-section.section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* CTA Section Animation */
+.cta-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1.2s ease-out;
+}
+
+.section-visible .cta-section,
+.cta-section.section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cta-title {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: all 1s ease-out;
+}
+
+.section-visible .cta-title,
+.cta-title.section-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.cta-text {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out;
+}
+
+.section-visible .cta-text:nth-of-type(1),
+.cta-text.section-visible:nth-of-type(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.3s;
+}
+
+.section-visible .cta-text:nth-of-type(2),
+.cta-text.section-visible:nth-of-type(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.5s;
+}
+
+.cta-button-wrapper {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: all 0.8s ease-out;
+}
+
+.section-visible .cta-button-wrapper,
+.cta-button-wrapper.section-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.7s;
+}
+

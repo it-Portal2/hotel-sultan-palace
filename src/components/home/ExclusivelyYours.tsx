@@ -85,37 +85,6 @@ export default function ExclusivelyYours() {
         </div>
         
       </div>
-
-      <style jsx global>{`
-        .exclusive-section {
-          opacity: 0;
-          transform: translateY(50px);
-          transition: all 1s ease-out;
-        }
-        .exclusive-section.exclusive-visible,
-        .exclusive-visible .exclusive-section {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .exclusive-heading {
-          opacity: 0;
-          transform: translateY(-30px);
-          transition: all 0.8s ease-out 0.2s;
-        }
-        .exclusive-heading-visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .exclusive-card {
-          opacity: 0;
-          transform: translateY(60px) scale(0.9);
-          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .exclusive-card-visible {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      `}</style>
     </section>
   );
 }

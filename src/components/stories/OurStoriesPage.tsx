@@ -375,7 +375,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           }}
         />
         
-        <div className="relative z-10 pt-16 md:pt-20 pb-0 w-full">
+        <div className="relative z-10 pt-16 md:pt-20 pb-8 md:pb-12 w-full">
           <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
             <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-start justify-center w-full">
               
@@ -526,11 +526,10 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             </div>
           </div>
         </div>
+      </div>
 
-       
-            <AboutZanzibar />
-        
-        
+      <div style={{ marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 20 }}>
+        <AboutZanzibar compact />
       </div>
     </div>
   );

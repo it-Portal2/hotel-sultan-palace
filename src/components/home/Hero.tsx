@@ -104,9 +104,9 @@ export default function Hero() {
         <div className="h-16 md:h-20 lg:h-24 xl:h-28"></div>
 
         {/* Audio */}
-        <audio autoPlay loop className="hidden">
+        {/* <audio autoPlay loop className="hidden">
           <source src="/gentle-ocean-waves-birdsong-and-gull-7109.mp3" type="audio/mpeg" />
-        </audio>
+        </audio> */}
       </section>
 
       <style jsx global>{`

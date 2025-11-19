@@ -16,6 +16,7 @@ import Testimonials from "@/components/home/Testimonials";
 import AboutZanzibar from "@/components/home/about_zanzibar";
 import ContactUs from "@/components/home/ContactUs";
 import Footer from "@/components/layout/Footer";
+import "@/styles/home/index.css";
 
 
 export default function Home() {
