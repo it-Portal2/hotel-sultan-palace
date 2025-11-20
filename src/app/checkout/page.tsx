@@ -312,15 +312,17 @@ export default function CheckoutPage() {
       <Header />
 
        {/* Navigation Section */}
-       <div className="w-full px-4 md:px-[230px] pt-[180px] md:pt-[200px]">
-        <div className="max-w-6xl ">
-          <button 
-            onClick={() => router.push('/add-ons')}
-            className="flex items-center gap-5 text-black"
-          >
-            <ArrowLeftIcon className="w-6 h-6" />
-            <span className="text-xl font-semibold">Check out</span>
-          </button>
+       <div className="w-full px-4 md:px-[230px] pt-[80px] md:pt-[100px]">
+        <div className="max-w-[1512px] mx-auto">
+          <div className="w-full lg:w-[850px]">
+            <button 
+              onClick={() => router.push('/add-ons')}
+              className="flex items-center gap-5 text-black"
+            >
+              <ArrowLeftIcon className="w-6 h-6" />
+              <span className="text-xl font-semibold">Check out</span>
+            </button>
+          </div>
         </div>
       </div>
       

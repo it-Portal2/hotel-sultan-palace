@@ -3,7 +3,7 @@
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import { useCart } from "@/context/CartContext";
 import { useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface MobileCartIndicatorProps {
   targetId?: string;
@@ -18,6 +18,7 @@ export default function MobileCartIndicator({
 }: MobileCartIndicatorProps) {
   const { rooms, addOns } = useCart();
   const pathname = usePathname();
+  const router = useRouter();
   const itemCount = rooms.length + addOns.length;
 
   const resolvedTarget = useMemo(() => {
@@ -32,8 +33,17 @@ export default function MobileCartIndicator({
 
   const handleClick = () => {
     const target = document.getElementById(resolvedTarget);
+    
+    // If cart summary exists on current page, scroll to it
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    
+    // If cart summary doesn't exist on current page, redirect to checkout
+    // This handles cases where user navigated to a different page after adding items
+    if (itemCount > 0) {
+      router.push("/checkout");
     }
   };
 

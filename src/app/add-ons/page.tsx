@@ -144,22 +144,24 @@ export default function AddOnsPage() {
 
       {/* Navigation Section */}
       <div className="w-full px-4 md:px-[230px] pt-[20px] md:pt-[60px]">
-        <div className="max-w-6xl">
-          <button 
-            onClick={() => {
-              router.push('/hotel#rooms-section');
-              setTimeout(() => {
-                const roomsSection = document.getElementById('rooms-section');
-                if (roomsSection) {
-                  roomsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }, 300);
-            }}
-            className="flex items-center gap-5 text-black"
-          >
-            <ArrowLeftIcon className="w-6 h-6" />
-            <span className="text-xl font-semibold">Add to room</span>
-          </button>
+        <div className="max-w-[1512px] mx-auto">
+          <div className="w-full lg:w-[844px] lg:pl-[63px]">
+            <button 
+              onClick={() => {
+                router.push('/hotel#rooms-section');
+                setTimeout(() => {
+                  const roomsSection = document.getElementById('rooms-section');
+                  if (roomsSection) {
+                    roomsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 300);
+              }}
+              className="flex items-center gap-5 text-black"
+            >
+              <ArrowLeftIcon className="w-6 h-6" />
+              <span className="text-xl font-semibold">Add to room</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -209,33 +211,36 @@ export default function AddOnsPage() {
                         {addOn.description}
                       </p>
 
-                      {/* Quantity Selector for applicable items */}
-                      {(addOn.type === 'per_day' || addOn.type === 'per_guest') && (
-                        <div className="mb-4">
+                      {/* Quantity Selector for applicable items - Only show when addon is in cart */}
+                      {(() => {
+                        const isInCart = cartAddOns.find(item => item.id === addOn.id);
+                        return (addOn.type === 'per_day' || addOn.type === 'per_guest') && isInCart && (
+                          <div className="mb-4">
                             <div className="flex flex-col gap-2">
                               <span className="text-[15px] font-normal text-[#423B2D]">
-                              {addOn.type === 'per_day' ? 'Number of Days' : 'Number of guests'}
-                            </span>
-                              <div className="flex items-center border border-[#110D0A] rounded-[4px] w-full max-w-[310px] h-[37px]">
-                              <button
-                                onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) - 1)}
-                                  className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
-                              >
-                                  <span className="text-lg">-</span>
-                              </button>
-                                <span className="flex-1 text-center text-[#000000] font-semibold text-[15px]">
-                                {cartAddOns.find(item => item.id === addOn.id)?.quantity || 1}
+                                {addOn.type === 'per_day' ? 'Number of Days' : 'Number of guests'}
                               </span>
-                              <button
-                                onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) + 1)}
+                              <div className="flex items-center border border-[#110D0A] rounded-[4px] w-full max-w-[310px] h-[37px]">
+                                <button
+                                  onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) - 1)}
                                   className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
-                              >
+                                >
+                                  <span className="text-lg">-</span>
+                                </button>
+                                <span className="flex-1 text-center text-[#000000] font-semibold text-[15px]">
+                                  {cartAddOns.find(item => item.id === addOn.id)?.quantity || 1}
+                                </span>
+                                <button
+                                  onClick={() => updateQuantity(addOn.id, (cartAddOns.find(item => item.id === addOn.id)?.quantity || 1) + 1)}
+                                  className="flex items-center justify-center w-8 h-8 text-[#423B2D] hover:bg-gray-100"
+                                >
                                   <span className="text-lg">+</span>
-                              </button>
+                                </button>
                               </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                         {(() => {
                           const isInCart = cartAddOns.find(item => item.id === addOn.id);
