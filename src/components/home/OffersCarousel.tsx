@@ -41,7 +41,7 @@ export default function OffersCarousel() {
     <section className="w-full overflow-hidden" style={{ padding: 0, margin: 0 }}>
       <div className="w-full max-w-full mx-auto" style={{ padding: 0 }}>
         
-        <div className="text-center mb-3 md:mb-6 lg:mb-8 xl:mb-12 2xl:mb-16 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
+        <div className="text-center mt-0 mb-2 md:mb-4 lg:mb-6 xl:mb-8 2xl:mb-10 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
           <h2 className="text-[26px] md:text-[30px] lg:text-[36px] xl:text-[40px] font-normal text-[#323232] font-['Oooh_Baby'] leading-[1.225] tracking-[8%] mb-2 md:mb-3 lg:mb-4 xl:mb-6">
             Best Offers for you
           </h2>
@@ -64,7 +64,7 @@ export default function OffersCarousel() {
                   className="flex-shrink-0 w-full block"
                   style={{ padding: 0, margin: 0 }}
                 >
-                  <div className="relative w-full h-[280px] md:h-[380px] lg:h-[480px] xl:h-[580px] 2xl:h-[680px] cursor-pointer" style={{ position: 'relative', isolation: 'isolate', padding: 0, margin: 0 }}>
+                  <div className="relative w-full h-[280px] md:h-[380px] lg:h-[480px] xl:h-[580px] 2xl:h-[680px] cursor-pointer bg-[#FFFCF6]" style={{ position: 'relative', isolation: 'isolate', padding: 0, margin: 0 }}>
                     <Image
                       src={offer.imageUrl}
                       alt={`Offer ${i + 1}`}
@@ -85,7 +85,7 @@ export default function OffersCarousel() {
           </div>
         </div>
 
-        <div className="mt-3  flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
+        <div className="mt-1 md:mt-2 flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
           {offers.map((_, i) => (
             <button
               key={i}

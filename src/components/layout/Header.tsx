@@ -20,6 +20,7 @@ import BookNowButton from "../ui/BookNowButton";
 import SimpleGoogleTranslate from "../ui/SimpleGoogleTranslate";
 import SimpleGoogleTranslateMobile from "../ui/SimpleGoogleTranslateMobile";
 import Image from "next/image";
+import MobileCartIndicator from "../cart/MobileCartIndicator";
 
 function TimeAndTemperature() {
   const [now, setNow] = useState<string>("");
@@ -433,10 +434,12 @@ export default function Header() {
               <div className="hidden md:block">
                 <BookNowButton size="sm" className="px-4 md:px-6 lg:px-8 xl:px-[40px] 2xl:px-[53px] py-2 md:py-2.5 lg:py-3 xl:py-[14px] rounded-[9px] text-[12px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-auto md:h-[45px] lg:h-[49px] w-fit whitespace-nowrap" />
               </div>
-              <div className="lg:hidden z-50">
+              <div className="lg:hidden z-50 flex items-center gap-3">
+                <MobileCartIndicator variant="header" />
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className="text-white"
+                  aria-label="Toggle menu"
                 >
                   <Menu size={28} />
                 </button>

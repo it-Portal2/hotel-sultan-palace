@@ -15,17 +15,6 @@ export default function AquaAdventurePage() {
     const observers: IntersectionObserver[] = [];
     const observedElements = new Set<HTMLElement>();
 
-    // Function to check if element is in viewport
-    const isInViewport = (element: HTMLElement) => {
-      const rect = element.getBoundingClientRect();
-      return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-      );
-    };
-
     // Function to set up observers
     const setupObservers = () => {
       const keys = ['title', 'coral', 'kite', 'sailing', 'dhow', 'beach', 'kayak', 'snorkel'];
@@ -235,19 +224,19 @@ export default function AquaAdventurePage() {
               {/* Mobile Layout */}
               <div className="block space-y-12 md:space-y-16">
                {/* Coral Reef Exploration - Responsive grid row */}
-               <div ref={(el) => { if (el) sectionRefs.current['coral'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-coral ${isVisible['coral'] ? 'aqua-coral-visible' : ''}`}>
+               <div ref={(el) => { if (el) sectionRefs.current['coral'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-coral ${isVisible['coral'] ? 'aqua-coral-visible' : ''}`}>
                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
                    <Image src="/aqua-adventure/kite-surfing.png" alt="Coral Reef Exploration" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
                    <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
-                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Coral Reef Exploration</h3>
-                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Coral Reef Exploration</h3>
+                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                          Join our guided reef walks and witness the colorful life thriving beneath the surface. Led by marine experts, this gentle ocean safari reveals intricate coral formations, rare shells, and dazzling tropical fish — a serene and educational encounter with Zanzibar&apos;s marine treasure
                        </p>
                      </div>
-                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
@@ -255,41 +244,41 @@ export default function AquaAdventurePage() {
                  </div>
                </div>
 
-               {/* Kite Surfing - Responsive grid row (text left, image right) */}
-               <div ref={(el) => { if (el) sectionRefs.current['kite'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-kite ${isVisible['kite'] ? 'aqua-kite-visible' : ''}`}>
-                 <div className="order-2 lg:order-1">
+               {/* Kite Surfing - Responsive grid row (image first on mobile, text left on desktop) */}
+               <div ref={(el) => { if (el) sectionRefs.current['kite'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-kite ${isVisible['kite'] ? 'aqua-kite-visible' : ''}`}>
+                 <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 md:order-2">
+                   <Image src="/aqua-adventure/sailing-1.png" alt="Kite Surfing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                 </div>
+                 <div className="order-2 md:order-1">
                    <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
-                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Kite Surfing</h3>
-                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Kite Surfing</h3>
+                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                          Harness the ocean breeze and ride the sparkling waves across Zanzibar&apos;s turquoise lagoon. Our professional instructors provide lessons for beginners and pros alike, ensuring safety, fun, and pure exhilaration as you glide beneath the African sun.
                        </p>
                      </div>
-                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
                    </div>
-                 </div>
-                 <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 lg:order-2">
-                   <Image src="/aqua-adventure/sailing-1.png" alt="Kite Surfing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                </div>
 
                {/* Sailing - Responsive grid row */}
-               <div ref={(el) => { if (el) sectionRefs.current['sailing'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-sailing ${isVisible['sailing'] ? 'aqua-sailing-visible' : ''}`}>
+               <div ref={(el) => { if (el) sectionRefs.current['sailing'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center pt-4 pb-4 aqua-sailing ${isVisible['sailing'] ? 'aqua-sailing-visible' : ''}`}>
                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
                    <Image src="/aqua-adventure/sailing-2.png" alt="Sailing" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                  </div>
                  <div className="order-2">
                    <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                      <div className="flex flex-col gap-[31px]">
-                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Sailing</h3>
-                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                       <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Sailing</h3>
+                       <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                          Experience the timeless joy of sailing over calm, azure waters. Whether joining a guided expedition or steering a Hobie Cat yourself, each journey offers freedom, adventure, and breathtaking views of Zanzibar&apos;s endless blue horizon.
                        </p>
                      </div>
-                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                     <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                        <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                        <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                      </Link>
@@ -477,64 +466,64 @@ export default function AquaAdventurePage() {
             <div className="relative px-4 md:px-6 pt-16 md:pt-20 pb-0 md:pb-20">
               <div className="space-y-12 md:space-y-16 pb-0 mobile-no-gap">
                 {/* Beach Walking - Grid row (image first) */}
-                <div ref={(el) => { if (el) sectionRefs.current['beach'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-beach ${isVisible['beach'] ? 'aqua-beach-visible' : ''}`}>
+                <div ref={(el) => { if (el) sectionRefs.current['beach'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center aqua-beach ${isVisible['beach'] ? 'aqua-beach-visible' : ''}`}>
                   <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
                     <Image src="/aqua-adventure/kayaking.png" alt="Beach Walking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                   <div className="order-2">
                       <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
-                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Beach Walking</h3>
-                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Beach Walking</h3>
+                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                           Discover the beauty of Bwejuu Beach on foot. Stroll along powder-soft sands, watch seabirds dance over gentle tides, or join a friendly game by the shore. A simple walk here becomes an unforgettable communion with Zanzibar&apos;s peaceful nature.
                         </p>
                       </div>
-                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                         <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>
                   </div>
                 </div>
-                {/* Kayaking - Grid row */}
-                <div ref={(el) => { if (el) sectionRefs.current['kayak'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-kayak ${isVisible['kayak'] ? 'aqua-kayak-visible' : ''}`}>
-                  <div className="order-1">
+                {/* Kayaking - Grid row (image first on mobile, text left on desktop) */}
+                <div ref={(el) => { if (el) sectionRefs.current['kayak'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center aqua-kayak ${isVisible['kayak'] ? 'aqua-kayak-visible' : ''}`}>
+                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 md:order-2">
+                    <Image src="/aqua-adventure/snorkelling-1.png" alt="Kayaking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                  </div>
+                  <div className="order-2 md:order-1">
                     <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
-                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Kayaking</h3>
-                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Kayaking</h3>
+                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                           Glide across calm waters in our sleek sea kayaks and uncover hidden corners of the coastline. Paddle past swaying palms, listen to the rhythm of the waves, and enjoy a tranquil yet invigorating way to explore the island&apos;s coastal charm.
                         </p>
                       </div>
-                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                         <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>
-                  </div>
-                  <div className="relative w-full h-[220px] sm:h-[260px] md:h-[400px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-2">
-                    <Image src="/aqua-adventure/snorkelling-1.png" alt="Kayaking" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                 </div>
 
                 {/* Snorkelling - Grid row (image first) */}
-                <div ref={(el) => { if (el) sectionRefs.current['snorkel'] = el; }} className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-center aqua-snorkel ${isVisible['snorkel'] ? 'aqua-snorkel-visible' : ''}`}>
-                  <div className="order-2 lg:order-2">
+                <div ref={(el) => { if (el) sectionRefs.current['snorkel'] = el; }} className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center aqua-snorkel ${isVisible['snorkel'] ? 'aqua-snorkel-visible' : ''}`}>
+                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1">
+                    <Image src="/aqua-adventure/snorkelling-2.png" alt="Snorkelling" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
+                  </div>
+                  <div className="order-2">
                     <div className="flex flex-col gap-[25px] max-w-[646px] mx-auto justify-center">
                       <div className="flex flex-col gap-[31px]">
-                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand">Snorkelling</h3>
-                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand" style={{ letterSpacing: '0.01em' }}>
+                        <h3 className="text-[#2D2922] text-[22px] md:text-[26px] font-semibold leading-[1.25] font-quicksand text-center">Snorkelling</h3>
+                        <p className="text-[#1A1711] text-[18px] md:text-[20px] font-medium leading-[1.85] font-quicksand text-center" style={{ letterSpacing: '0.01em' }}>
                           Dive into crystal-clear waters and discover a vibrant underwater world. Explore colorful coral reefs, swim alongside tropical fish, and witness the breathtaking marine life that thrives beneath Zanzibar&apos;s turquoise surface — an unforgettable aquatic adventure awaits.
                         </p>
                       </div>
-                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit">
+                      <Link href="/rooms" className="flex items-center gap-[15px] w-fit mx-auto">
                         <span className="text-[#FF6A00] text-[14px] md:text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                         <FiArrowRight size={23} className="text-[#FF6A00]" strokeWidth={1.4} />
                       </Link>
                     </div>
-                  </div>
-                  <div className="relative w-full h-[220px] sm:h-[280px] md:h-[420px] xl:h-[520px] 2xl:h-[560px] rounded-[14px] overflow-hidden group/image order-1 lg:order-1">
-                    <Image src="/aqua-adventure/snorkelling-2.png" alt="Snorkelling" fill quality={85} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover/image:scale-110" />
                   </div>
                 </div>
               </div>

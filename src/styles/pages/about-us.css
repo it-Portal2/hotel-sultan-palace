@@ -81,10 +81,6 @@
   transform: translateX(0) scale(1);
 }
 
-.content-image-left:hover {
-  transform: scale(1.05);
-  transition: transform 0.7s ease-out;
-}
 
 .content-image-right {
   opacity: 0;
@@ -98,10 +94,6 @@
   transform: translateX(0) scale(1);
 }
 
-.content-image-right:hover {
-  transform: scale(1.05);
-  transition: transform 0.7s ease-out;
-}
 
 .content-text-right {
   opacity: 0;
@@ -184,10 +176,6 @@ button + .gallery-image-card {
   transition: transform 0.3s ease-out;
 }
 
-button:hover {
-  transform: scale(1.15) !important;
-  box-shadow: 0px 6px 20px rgba(255, 106, 0, 0.4) !important;
-}
 
 /* Commitment Section Animation */
 .commitment-section {

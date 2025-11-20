@@ -77,11 +77,11 @@ export default function VillasPage() {
  
         {/* Villas Section */}
         <section className="py-8 sm:py-12 md:py-16 lg:py-24 bg-[#FFFCF6]">
-          <div className="w-full mx-auto px-0">
+          <div className="w-full mx-auto px-0 max-w-[1920px]">
             <div className="flex flex-col gap-8 sm:gap-12 md:gap-16 lg:gap-[68px]">
               
               {/* Garden View Villas */}
-              <div ref={(el) => { sectionRefs.current[0] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8">
+              <div ref={(el) => { sectionRefs.current[0] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8 xl:mx-auto xl:max-w-[1620px]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-3 sm:gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[0] = el; }}
@@ -97,7 +97,7 @@ export default function VillasPage() {
                 
                 <div className="flex flex-row items-start gap-2 sm:gap-3 md:gap-3 lg:gap-4 w-full h-auto md:h-[659px]">
                   <div ref={(el) => { imageRefs.current[0] = el; }} className="relative flex-[1.6] h-auto md:h-[520px] lg:h-[659px] flex-shrink-0 villa-main-image flex flex-col">
-                    <div className="relative w-full h-[140px] sm:h-[180px] md:h-[300px] lg:h-[384px] overflow-hidden flex-shrink-0">
+                    <div className="relative w-full h-[140px] sm:h-[180px] md:h-[300px] lg:h-[384px] xl:h-[384px] overflow-hidden flex-shrink-0">
                       <Image
                         src="/villas/garden-villa-main.png"
                         alt="Garden View Villa"
@@ -109,12 +109,12 @@ export default function VillasPage() {
                     </div>
                     <div 
                       ref={(el) => { textRefs.current[0] = el; }}
-                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-white md:bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0"
+                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0 flex flex-col items-center justify-center mx-auto"
                     >
-                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4 group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
+                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4 text-center group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
                          Serenity and greenery just steps from your private villa.
                        </p>
-                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4">
+                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4 text-center">
                          Relax in beautifully designed two-bedroom villas overlooking lush tropical gardens. Perfect for families or friends seeking tranquility.
                        </p>
                       <Link href="/rooms" className="bg-[#FF6A00] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-4 md:py-2 rounded-[4px] sm:rounded-[6px] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.944444] w-full sm:w-auto md:w-[208px] h-[32px] sm:h-[36px] md:h-[36px] lg:h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book relative overflow-hidden">
@@ -183,7 +183,7 @@ export default function VillasPage() {
               </div>
 
               {/* Sultan Place Hotel Villa */}
-              <div ref={(el) => { sectionRefs.current[2] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8">
+              <div ref={(el) => { sectionRefs.current[2] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8 xl:mx-auto xl:max-w-[1620px]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[2] = el; }}
@@ -220,12 +220,12 @@ export default function VillasPage() {
                     </div>
                     <div 
                       ref={(el) => { textRefs.current[1] = el; }}
-                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-white md:bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0"
+                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0 flex flex-col items-center justify-center mx-auto"
                     >
-                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-4 lg:mb-6 group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
+                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-center group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
                          Indulge in luxury with exclusive beachside elegance
                        </p>
-                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4">
+                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4 text-center">
                          Experience ultimate luxury in our two-bedroom Beach Villa, featuring exclusive amenities and direct beach access.
                        </p>
                         <Link href="/rooms" className="bg-[#FF6A00] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-4 md:py-2 rounded-[4px] sm:rounded-[6px] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.944444] w-full sm:w-auto md:w-[208px] h-[32px] sm:h-[36px] md:h-[36px] lg:h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book relative overflow-hidden">
@@ -284,7 +284,7 @@ export default function VillasPage() {
               </div>
 
               {/* One-Bedroom Retreats */}
-              <div ref={(el) => { sectionRefs.current[4] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8">
+              <div ref={(el) => { sectionRefs.current[4] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8 xl:mx-auto xl:max-w-[1620px]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-3 sm:gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[4] = el; }}
@@ -312,12 +312,12 @@ export default function VillasPage() {
                     </div>
                     <div 
                       ref={(el) => { textRefs.current[2] = el; }}
-                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-white md:bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0"
+                      className="relative md:absolute md:bottom-0 md:left-[62px] w-full md:w-[489px] h-auto text-center villa-text bg-transparent px-3 sm:px-4 md:px-0 py-3 sm:py-4 md:pt-4 md:pb-0 flex-shrink-0 flex flex-col items-center justify-center mx-auto"
                     >
-                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-4 lg:mb-6 group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
+                      <p className="text-[#242424] text-[12px] sm:text-[14px] md:text-[18px] lg:text-[22px] font-semibold leading-[1.3] sm:leading-[1.4] md:leading-[1.5] lg:leading-[1.363636] font-quicksand mb-2 sm:mb-3 md:mb-4 lg:mb-6 text-center group-hover/image-main:text-[#FF6A00] transition-colors duration-500">
                         Intimate spaces crafted for privacy and relaxation.
                       </p>
-                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4">
+                      <p className="text-[#655D4E] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.4] sm:leading-[1.6] md:leading-[1.8] lg:leading-[1.944444] font-quicksand mb-2 sm:mb-3 md:mb-3 lg:mb-4 text-center">
                         Charming one-bedroom villas designed for intimate stays, blending modern comfort with traditional Zanzibar architecture.
                       </p>
                         <Link href="#" className="bg-[#FF6A00] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-4 md:py-2 rounded-[4px] sm:rounded-[6px] text-[11px] sm:text-[13px] md:text-[16px] lg:text-[18px] font-medium leading-[1.944444] w-full sm:w-auto md:w-[208px] h-[32px] sm:h-[36px] md:h-[36px] lg:h-[40px] flex items-center justify-center font-quicksand mx-auto villa-book-btn group/book relative overflow-hidden">

@@ -23,14 +23,14 @@ interface BookingData {
 }
 
 // Define cart item types for union of Rooms and AddOns if needed
-type CartRoom = Room;
+type CartRoom = Room & { cartItemId: string };
 
 type CartAddOn = AddOn;
 
 interface CartContextProps {
   rooms: CartRoom[];
-  addRoom: (room: CartRoom, quantity?: number) => void;
-  removeRoom: (roomId: string) => void;
+  addRoom: (room: Room, quantity?: number) => void;
+  removeRoom: (cartItemId: string) => void;
 
   addOns: CartAddOn[];
   addAddOn: (addOn: CartAddOn) => void;
@@ -67,24 +67,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   // Room handlers
-  const addRoom = (room: CartRoom, quantity: number = 1) => {
+  const generateCartItemId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random()}`;
+  };
+
+  const addRoom = (room: Room, quantity: number = 1) => {
     setRooms((prevRooms) => {
-      // If quantity > 1, allow adding the same room multiple times
-      if (quantity > 1) {
-        const newRooms: CartRoom[] = [];
-        for (let i = 0; i < quantity; i++) {
-          newRooms.push(room);
-        }
-        return [...prevRooms, ...newRooms];
+      const newRooms: CartRoom[] = [];
+      for (let i = 0; i < quantity; i++) {
+        newRooms.push({
+          ...room,
+          cartItemId: generateCartItemId(),
+        });
       }
-      // For quantity = 1, avoid duplicates
-      if (prevRooms.find(r => r.id === room.id)) return prevRooms;
-      return [...prevRooms, room];
+      return [...prevRooms, ...newRooms];
     });
   };
 
-  const removeRoom = (roomId: string) => {
-    setRooms((prev) => prev.filter((room) => room.id !== roomId));
+  const removeRoom = (cartItemId: string) => {
+    setRooms((prev) => {
+      const index = prev.findIndex((room) => room.cartItemId === cartItemId);
+      if (index === -1) return prev;
+      const newRooms = [...prev];
+      newRooms.splice(index, 1);
+      return newRooms;
+    });
   };
 
   // AddOn handlers

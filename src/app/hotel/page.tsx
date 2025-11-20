@@ -363,8 +363,14 @@ function HotelContent() {
         }
       }
 
-      // Add the room to cart with the specified quantity
-      addRoom(room, roomCount);
+      // Apply the same discount used in the UI pricing (10% OFF)
+      const discountedRoom = {
+        ...room,
+        price: Number((room.price * 0.9).toFixed(2)),
+      };
+
+      // Add the room to cart with the specified quantity using discounted price
+      addRoom(discountedRoom, roomCount);
     } catch (error) {
       console.error('Error checking availability:', error);
     }

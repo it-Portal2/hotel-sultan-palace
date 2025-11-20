@@ -5,14 +5,10 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import CartSummary from '@/components/CartSummary';
 import { useCart } from '@/context/CartContext';
 import { getAddOns, AddOn } from '@/lib/firestoreService';
-import { 
-  Edit, 
-  Trash2, 
-  Tag, 
-  CheckCircle
-} from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import BookingForm from '@/components/booking/BookingForm';
 
@@ -20,26 +16,10 @@ import BookingForm from '@/components/booking/BookingForm';
 
 export default function AddOnsPage() {
   const router = useRouter();
-  const { bookingData, rooms, addOns: cartAddOns, addAddOn, removeAddOn, removeRoom, updateAddOnQuantity, calculateTotal } = useCart();
-  const [roomData, setRoomData] = useState<{ name: string; price: number; description?: string } | null>(null);
+  const { bookingData, addOns: cartAddOns, addAddOn, removeAddOn, updateAddOnQuantity } = useCart();
   const [buttonStates, setButtonStates] = useState<{[key: string]: 'add' | 'cancel' | 'update' | 'success' | 'removed'}>({});
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [loading, setLoading] = useState(true);
-
-
-
-  useEffect(() => {
-    if (rooms.length > 0) {
-      const selectedRoom = rooms[0];
-      setRoomData({
-        name: selectedRoom.name,
-        price: selectedRoom.price,
-        description: selectedRoom.description
-      });
-    } else {
-      setRoomData(null);
-    }
-  }, [rooms]);
 
   useEffect(() => {
     const fetchAddOns = async () => {
@@ -84,27 +64,9 @@ export default function AddOnsPage() {
     }
   };
 
-  const removeFromCart = (addOnId: string) => {
-    removeAddOn(addOnId);
-    setButtonStates(prev => ({ ...prev, [addOnId]: 'removed' }));
-    // Reset to 'add' after 2 seconds
-    setTimeout(() => {
-      setButtonStates(prev => ({ ...prev, [addOnId]: 'add' }));
-    }, 2000);
-  };
-
   const updateQuantity = (addOnId: string, quantity: number) => {
     const newQuantity = Math.max(1, quantity);
     updateAddOnQuantity(addOnId, newQuantity);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
   };
 
   if (!bookingData) {
@@ -326,172 +288,12 @@ export default function AddOnsPage() {
           </div>
 
           
-            <div className="w-full lg:w-[534px] flex-shrink-0 mt-6 lg:mt-0 px-4 lg:px-0">
-              <div className={" bg-[#F8F8F8] p-5 lg:p-[26px] lg:sticky lg:top-28"}>
-                  <h2 className="text-[22px] font-bold text-[#3A3326] mb-2">
-                    Your Cart (Item - {cartAddOns.length + (roomData ? 1 : 0)})
-                  </h2>
-                  
-                  {/* Divider Line */}
-                  <div className="h-[1px] w-full rounded bg-[rgba(66,59,45,0.13)] mb-5"></div>
-                
-                  {/* Cart Content */}
-                  <div className="bg-white p-6 rounded-lg">
-                    {/* Room Item */}
-                    {roomData && (
-                      <div className="mb-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <h3 className="text-[22px] font-semibold text-[#423B2D] mb-2">
-                              {roomData.name}
-                            </h3>
-                            <p className="text-[14px] text-[#423B2D] leading-[1.714] mb-2">
-                              {roomData.description || "This suite's standout feature is the pool with a view. Boasting a private entrance, this air..."}
-                            </p>
-                            <p className="text-[15px] text-[#1D69F9] font-bold mb-2">
-                              {bookingData?.checkIn && bookingData?.checkOut 
-                                ? `${formatDate(bookingData.checkIn)} - ${formatDate(bookingData.checkOut)}`
-                                : 'Thu, Nov 20, 2025 - Fri, Nov 21, 2025'
-                              }
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Room Price and Details */}
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="text-[#1D69F9] px-3 py-1 rounded text-[15px] font-bold">
-                              {bookingData ? 
-                                (() => {
-                                  const checkIn = new Date(bookingData.checkIn);
-                                  const checkOut = new Date(bookingData.checkOut);
-                                  const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-                                  return `${nights} Night Stay`;
-                                })() 
-                                : '1 Night Stay'
-                              }
-                            </div>
-                            <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[18px] font-semibold text-[#1D2A3A]">${roomData.price.toFixed(2)}</div>
-                          </div>
-                        </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-4">
-                          <button 
-                            onClick={() => {
-                              router.push('/hotel#rooms-section');
-                              // Scroll to rooms section after navigation
-                              setTimeout(() => {
-                                const roomsSection = document.getElementById('rooms-section');
-                                if (roomsSection) {
-                                  roomsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }
-                              }, 300);
-                            }}
-                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
-                          >
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Edit size={12} color="#3F3F3F" />
-                            </div>
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (rooms.length > 0) {
-                                removeRoom(rooms[0].id);
-                                setRoomData(null);
-                              }
-                            }}
-                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
-                          >
-                            <div className="w-5 h-5 flex items-center justify-center">
-                              <Trash2 size={12} color="#3F3F3F" />
-                            </div>
-                            Remove
-                          </button>
-                          <button className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold">
-                            <div className="w-5 h-5  flex items-center justify-center">
-                              <Tag size={12} color="#3F3F3F" />
-                            </div>
-                            Apply Offer
-                          </button>
-                        </div>
-                        
-                        {/* Divider Line */}
-                        <div className="w-full h-px bg-[rgba(0,0,0,0.02)] my-4"></div>
-                      </div>
-                    )}
-
-                    {/* Add-on Items */}
-                    {cartAddOns.map((item, index) => (
-                      <div key={`${item.id}-${index}`} className="mb-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h3 className="text-[20px] font-semibold text-[#423B2D] mb-2">
-                              {item.name}
-                            </h3>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[18px] font-semibold text-[#1D2A3A]">${(item.price * (item.quantity || 1)).toFixed(2)}</div>
-                          </div>
-                        </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold"
-                          >
-                            <div className="w-5 h-5 flex items-center justify-center">
-                                <Trash2 size={12} color="#3F3F3F" />
-                            </div>
-                            Remove
-                          </button>
-                          <button className="flex items-center gap-1 text-[#3F3F3F] text-[16px] font-bold">
-                            <div className="w-5 h-5  flex items-center justify-center">
-                              <Tag size={12} color="#3F3F3F" />
-                            </div>
-                            Apply Offer
-                          </button>
-                        </div>
-                        
-                        <div className="w-full h-px bg-[rgba(0,0,0,0.06)] my-4"></div>
-                      </div>
-                    ))}
-
-                    {/* Total Section */}
-                    <div className="mt-6 pt-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-[18px] font-semibold text-[#000000]">Total</h3>
-                          <p className="text-[10px] text-[#655D4E]">including general taxes and fees</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[18px] font-semibold text-[#1D2A3A]">
-                            ${calculateTotal().toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-px bg-[#AFAFAF] my-6" style={{borderStyle: 'dashed'}}></div>
-
-                  <button
-                    onClick={() => router.push('/checkout')}
-                    className="w-full bg-[#1D69F9] text-white py-3 px-6 font-semibold hover:bg-[#1D69F9]/80 transition-colors text-[20px]"
-                  >
-                    Checkout
-                  </button>
+            <div className="w-full lg:w-[534px] flex-shrink-0 mt-6 lg:mt-0 px-4 lg:px-0" id="addons-cart-summary">
+              <div className="lg:sticky lg:top-28">
+                <CartSummary
+                  className="shadow-[0px_20px_60px_rgba(0,0,0,0.06)]"
+                  onCheckout={() => router.push('/checkout')}
+                />
               </div>
             </div>
           </div>

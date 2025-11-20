@@ -64,12 +64,12 @@ export default function AppDownloadPromo() {
             </div>
           </div>
 
-          <div className={`relative order-1 lg:order-2 lg:col-span-7 h-[300px] md:h-[400px] lg:h-[500px] xl:h-[600px] 2xl:h-[700px] app-promo-image ${isVisible ? 'app-promo-image-visible' : ''}`}>
+          <div className={`relative order-1 lg:order-2 lg:col-span-7 h-[320px] md:h-[420px] lg:h-[500px] xl:h-[600px] 2xl:h-[700px] app-promo-image flex items-center justify-center ${isVisible ? 'app-promo-image-visible' : ''}`}>
             <Image
               src="/story/phone.png"
               alt="Mobile app preview"
               fill
-              className="object-contain transform rotate-6 scale-125 md:scale-110 lg:scale-105 xl:scale-100"
+              className="object-contain transform rotate-0 scale-100 md:rotate-3 md:scale-100 lg:rotate-6 lg:scale-95 xl:scale-90"
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
               priority
             />

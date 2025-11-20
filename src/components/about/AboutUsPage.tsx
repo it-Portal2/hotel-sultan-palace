@@ -90,7 +90,7 @@ export default function AboutUsPage() {
         
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
-          <div className="text-center max-w-4xl mt-100 pb-16 md:pb-0">
+          <div className="text-center max-w-4xl mx-auto">
             <div className={`mb-3 md:mb-6 hero-label ${isVisible ? 'hero-label-visible' : ''}`}>
               <h1 className="text-[#FFEAD3] text-[18px] sm:text-[20px] md:text-[25px] font-bold uppercase tracking-[2px] md:tracking-[3.25px] mb-2 md:mb-4">
                 about us
@@ -99,7 +99,7 @@ export default function AboutUsPage() {
             <h2 className={`text-white text-[24px] sm:text-[32px] md:text-[40px] font-bold uppercase leading-[1.3] md:leading-[1.475] tracking-[0.5px] md:tracking-[0.8px] mb-3 md:mb-8 px-2 hero-title ${isVisible ? 'hero-title-visible' : ''}`}>
               About Sultan Palace Hotel
             </h2>
-            <p className={`text-white text-[14px] sm:text-[16px] md:text-[18px] font-normal leading-[1.6] tracking-[0.5px] md:tracking-[0.72px] max-w-[879px] px-2 hero-text ${isVisible ? 'hero-text-visible' : ''}`}>
+            <p className={`text-white text-[14px] sm:text-[16px] md:text-[18px] font-normal leading-[1.6] tracking-[0.5px] md:tracking-[0.72px] max-w-[879px] mx-auto px-2 hero-text ${isVisible ? 'hero-text-visible' : ''}`}>
               Welcome to Sultan Palace Hotel, a hidden sanctuary on the breathtaking south-east coast of Zanzibar. 
               Nestled between white sandy beaches and turquoise waters, our resort is a blend of timeless elegance, 
               Swahili charm, and modern luxury — designed for travelers who seek peace, beauty, and personalized comfort.
@@ -136,20 +136,20 @@ export default function AboutUsPage() {
      
       <div ref={contentRef} className="relative bg-[#FFFCF6] pt-4 md:pt-8 pb-10 md:pb-16 lg:pt-16 lg:pb-24 -mt-4 md:-mt-8 relative z-30">
         <div className="w-full overflow-hidden">
-          <div className="relative w-full md:h-[982px] grid md:block">
-            {/* Container with max-width matching Figma */}
-            <div className="relative mx-auto max-w-[1623px] w-full">
+          {/* Mobile Layout - Stacked - Matching Desktop Structure */}
+          <div className="md:hidden w-full px-4 space-y-8">
+            {/* Heading - Welcome to Sultan Palace Hotel */}
+            <div className="w-full content-heading mb-4">
+              <h3 className="text-[#242424] text-[22px] sm:text-[24px] font-semibold leading-[1.25] font-['Quicksand']">
+                Welcome to Sultan Palace Hotel
+              </h3>
+            </div>
             
-              {/* Heading - Welcome to Sultan Palace Hotel */}
-              <div className="md:absolute left-[50px] top-0 w-full md:w-[630px] h-[50px] flex items-start px-4 md:px-0 z-20 mb-4 md:mb-0 content-heading">
-                <h3 className="text-[#242424] text-[22px] sm:text-[28px] md:text-[40px] font-semibold leading-[1.25] font-['Quicksand']">
-                  Welcome to Sultan Palace Hotel
-                </h3>
-              </div>
-              
+            {/* First Section: Image on top, Text below - Matching desktop order */}
+            <div className="w-full space-y-6">
               {/* Left Image - Rectangle 52 */}
               <div 
-                className="md:absolute left-0 md:top-[92px] w-[350px] sm:w-[450px]   md:w-[700px] h-[280px] sm:h-[380px] md:h-[568px] rounded-none md:rounded-[14px] overflow-hidden mt-12 md:mt-0 content-image-left group/image-left"
+                className="w-full h-[280px] sm:h-[380px] rounded-none overflow-hidden content-image-left"
                 style={{
                   backgroundImage: 'url(/about-content-left-bg.png)',
                   backgroundSize: 'cover',
@@ -157,26 +157,29 @@ export default function AboutUsPage() {
                 }}
               />
               
-              {/* Right Text Frame - Frame 820 */}
-              <div className="md:absolute left-[838px] md:top-[92px] w-full md:w-[500px] h-auto px-2 md:px-3 lg:px-4 content-text-right">
+              {/* Text below image - Same width as image, proper spacing */}
+              <div className="w-full h-auto mt-4 content-text-right">
                 <div className="flex flex-col gap-[31px]">
-                  <h3 className="text-[#2D2922] text-[22px] sm:text-[24px] md:text-[26px] font-semibold leading-[1.25] font-['Quicksand'] group-hover:text-[#F96406] transition-colors duration-300">
+                  <h3 className="text-[#2D2922] text-[22px] sm:text-[24px] font-semibold leading-[1.25] font-['Quicksand']">
                     Where Timeless Elegance Meets the Ocean Breeze
                   </h3>
                   <div className="space-y-4">
-                    <p className="text-[#353026] text-[15px] sm:text-[16px] md:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                    <p className="text-[#353026] text-[15px] sm:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
                       More than a destination, Sultan Palace Hotel is a feeling — a sanctuary where every sunrise brings a sense of renewal and every sunset whispers stories of the sea. Nestled along Zanzibar&apos;s unspoiled coastline, our resort embodies the island&apos;s royal heritage, blending traditional Swahili architecture with modern luxury.
                     </p>
-                    <p className="text-[#353026] text-[15px] sm:text-[16px] md:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                    <p className="text-[#353026] text-[15px] sm:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
                       Here, time slows down. You&apos;ll wake to the sound of waves, walk barefoot on soft white sands, and rediscover what it means to truly unwind. Every detail, from handcrafted interiors to personalized service, is designed to offer you freedom, warmth, and connection — with yourself and with the beauty that surrounds you.
                     </p>
                   </div>
                 </div>
               </div>
-              
+            </div>
+            
+            {/* Second Section: Image on top, Text below - Matching desktop order */}
+            <div className="w-full space-y-6 mt-8">
               {/* Right Image - Rectangle 53 */}
               <div 
-                className="md:absolute left-[838px] md:top-[501px] w-full md:w-[785px] h-[280px] sm:h-[380px] md:h-[481px] rounded-none md:rounded-[14px] overflow-hidden mt-8 md:mt-20 content-image-right group/image-right"
+                className="w-full h-[280px] sm:h-[380px] rounded-none overflow-hidden content-image-right"
                 style={{
                   backgroundImage: 'url(/about-content-right-bg.png)',
                   backgroundSize: 'cover',
@@ -184,17 +187,85 @@ export default function AboutUsPage() {
                 }}
               />
               
-              {/* Left Text Frame - Frame 821 */}
-              <div className="md:absolute left-[107px] md:top-[702px] w-full md:w-[571px] h-auto px-4 md:px-0 mt-8 md:mt-0 content-text-left">
+              {/* Text below image - Same width as image, proper spacing */}
+              <div className="w-full h-auto mt-4 content-text-left">
                 <div className="flex flex-col gap-[31px]">
-                  <h3 className="text-[#2D2922] text-[22px] sm:text-[24px] md:text-[26px] font-semibold leading-[1.25] font-['Quicksand'] group-hover:text-[#F96406] transition-colors duration-300">
+                  <h3 className="text-[#2D2922] text-[22px] sm:text-[24px] font-semibold leading-[1.25] font-['Quicksand']">
                     Our Philosophy
                   </h3>
                   <div className="space-y-4">
-                    <p className="text-[#353026] text-[15px] sm:text-[16px] md:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                    <p className="text-[#353026] text-[15px] sm:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
                       At Sultan Palace Hotel, we believe that true luxury is about experience, not excess. We invite our guests to embrace spontaneity — to follow the rhythm of their own hearts. Whether that means a sunrise yoga session overlooking the ocean, an afternoon of adventure exploring coral reefs, or a moonlit dinner by the shore — the choice is always yours.
                     </p>
-                    <p className="text-[#353026] text-[15px] sm:text-[16px] md:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                    <p className="text-[#353026] text-[15px] sm:text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                      Our mission is to create moments that stay with you long after you&apos;ve left our shores — moments of joy, discovery, and belonging.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout - Absolute Positioning - Matching Figma Design */}
+          <div className="hidden md:block relative w-full h-[982px]">
+            {/* Container with max-width matching Figma - 1623x982 */}
+            <div className="relative mx-auto max-w-[1623px] w-full h-full">
+            
+              {/* Heading - Welcome to Sultan Palace Hotel - Figma: (107, 0), 587x50 */}
+              <div className="absolute left-[107px] top-0 w-[587px] h-[50px] flex items-start z-20 content-heading">
+                <h3 className="text-[#242424] text-[40px] font-semibold leading-[1.25] font-['Quicksand'] whitespace-nowrap">
+                  Welcome to Sultan Palace Hotel
+                </h3>
+              </div>
+              
+              {/* Rectangle 52 - Left Image - Figma: (0, 92), 785x568 */}
+              <div 
+                className="absolute left-0 top-[92px] w-[785px] h-[568px] rounded-[14px] overflow-hidden content-image-left"
+                style={{
+                  backgroundImage: 'url(/about-content-left-bg.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
+              
+              {/* Frame 820 - Right Text - Figma: (838, 92), width 571 */}
+              <div className="absolute left-[838px] top-[92px] w-[571px] h-auto content-text-right">
+                <div className="flex flex-col gap-[31px]">
+                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-['Quicksand']">
+                    Where Timeless Elegance Meets the Ocean Breeze
+                  </h3>
+                  <div className="space-y-4">
+                    <p className="text-[#353026] text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                      More than a destination, Sultan Palace Hotel is a feeling — a sanctuary where every sunrise brings a sense of renewal and every sunset whispers stories of the sea. Nestled along Zanzibar&apos;s unspoiled coastline, our resort embodies the island&apos;s royal heritage, blending traditional Swahili architecture with modern luxury.
+                    </p>
+                    <p className="text-[#353026] text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                      Here, time slows down. You&apos;ll wake to the sound of waves, walk barefoot on soft white sands, and rediscover what it means to truly unwind. Every detail, from handcrafted interiors to personalized service, is designed to offer you freedom, warmth, and connection — with yourself and with the beauty that surrounds you.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Rectangle 53 - Right Image - Figma: (838, 501), 785x481 */}
+              <div 
+                className="absolute left-[838px] top-[501px] w-[785px] h-[481px] rounded-[14px] overflow-hidden content-image-right"
+                style={{
+                  backgroundImage: 'url(/about-content-right-bg.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
+              
+              {/* Frame 821 - Left Text - Figma: (107, 702), width 571 */}
+              <div className="absolute left-[107px] top-[702px] w-[571px] h-auto content-text-left">
+                <div className="flex flex-col gap-[31px]">
+                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-['Quicksand']">
+                    Our Philosophy
+                  </h3>
+                  <div className="space-y-4">
+                    <p className="text-[#353026] text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+                      At Sultan Palace Hotel, we believe that true luxury is about experience, not excess. We invite our guests to embrace spontaneity — to follow the rhythm of their own hearts. Whether that means a sunrise yoga session overlooking the ocean, an afternoon of adventure exploring coral reefs, or a moonlit dinner by the shore — the choice is always yours.
+                    </p>
+                    <p className="text-[#353026] text-[16px] font-normal leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
                       Our mission is to create moments that stay with you long after you&apos;ve left our shores — moments of joy, discovery, and belonging.
                     </p>
                   </div>
@@ -217,16 +288,14 @@ export default function AboutUsPage() {
           }}
         />
         
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-white/30" />
+        <div className="absolute inset-0 bg-white/30 z-0" />
         
-        {/* Content */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen px-4 ">
+        <div className="relative z-20 flex items-center justify-center min-h-screen px-4">
           <div className="container mt-0 md:-mt-90 mx-auto max-w-[915px] text-center flex flex-col gap-[30px]">
-            <h3 className="text-[#212121] text-[26px] sm:text-[32px] md:text-[40px] font-semibold leading-[1.2] tracking-[0.01em] font-['Quicksand']">
+            <h3 className="text-[#212121] text-[26px] sm:text-[32px] md:text-[40px] font-semibold leading-[1.2] tracking-[0.01em] font-['Quicksand'] relative z-10">
               Our Commitment to Zanzibar
             </h3>
-            <div className="text-[#272218] text-[16px] font-medium leading-[1.6875] tracking-[0.01em] font-['Quicksand']">
+            <div className="text-[#272218] text-[16px] font-medium leading-[1.6875] tracking-[0.01em] font-['Quicksand'] relative z-10">
               <p className="mb-2">
                 Proudly rooted in local culture, we are dedicated to uplifting the Zanzibari community through training, employment, and sustainability programs. From sourcing fresh island produce to supporting traditional artisans, we celebrate the spirit of Zanzibar in everything we do.
               </p>
@@ -262,7 +331,7 @@ export default function AboutUsPage() {
               {/* Previous Button */}
               <button
                 onClick={prevImage}
-                className="w-[42px] h-[42px] md:w-[49px] md:h-[49px] bg-white rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0 z-10"
+                className="w-[42px] h-[42px] md:w-[49px] md:h-[49px] bg-white rounded-full flex items-center justify-center flex-shrink-0 z-10"
                 style={{ boxShadow: '0px 4px 11.1px 0px rgba(0, 0, 0, 0.25)' }}
               >
                 <FaChevronLeft className="text-[#FF6A00] text-base md:text-lg" />
@@ -276,22 +345,18 @@ export default function AboutUsPage() {
                   return (
                     <div
                       key={index}
-                      className={`flex-shrink-0 w-[90vw] max-w-[356px] h-[368px] rounded-lg overflow-hidden gallery-image-card ${visibility}`}
+                      className={`flex-shrink-0 w-[90vw] max-w-[356px] h-[368px]  overflow-hidden gallery-image-card ${visibility}`}
                       style={{ 
                         boxShadow: '0px 4px 11.1px 0px rgba(0, 0, 0, 0.25)',
                         animationDelay: `${index * 0.15}s`
                       }}
                     >
-                      <div className="relative w-full h-full group/card">
+                      <div className="relative w-full h-full">
                         <img
                           src={image}
                           alt={`Happy Moment ${currentImageSet + index + 1}`}
-                          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-110"
+                          className="w-full h-full object-cover object-center"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"></div>
-                        <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-700">
-                          <div className="absolute inset-0 shimmer-sweep"></div>
-                        </div>
                       </div>
                     </div>
                   );
@@ -301,7 +366,7 @@ export default function AboutUsPage() {
               {/* Next Button */}
               <button
                 onClick={nextImage}
-                className="w-[42px] h-[42px] md:w-[49px] md:h-[49px] bg-white rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0 z-10"
+                className="w-[42px] h-[42px] md:w-[49px] md:h-[49px] bg-white rounded-full flex items-center justify-center flex-shrink-0 z-10"
                 style={{ boxShadow: '0px 4px 11.1px 0px rgba(0, 0, 0, 0.25)' }}
               >
                 <FaChevronRight className="text-[#FF6A00] text-base md:text-lg" />
@@ -312,7 +377,7 @@ export default function AboutUsPage() {
       </div>
 
       {/* Call to Action Section */}
-      <div ref={ctaRef} className="relative  min-h-screen cta-section">
+      <div ref={ctaRef} className="relative h-[500px] sm:h-[600px] md:h-[700px] lg:h-[800px] cta-section flex items-center justify-center">
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -327,16 +392,16 @@ export default function AboutUsPage() {
         <div className="absolute inset-0 bg-black/30" />
         
         {/* Content */}
-        <div className="relative z-10 px-4 py-16 lg:py-24">
-          <div className="container mx-auto max-w-[915px] text-center mt-50">
+        <div className="relative z-10 px-4 py-8 sm:py-12 md:py-16 lg:py-20 w-full">
+          <div className="container mx-auto max-w-[915px] text-center">
             <div className="flex flex-col items-center gap-[33px] w-full">
-              <h3 className="text-[#212121] text-[40px] font-semibold leading-[0.675] tracking-[0.01em] w-full cta-title">
+              <h3 className="text-[#212121] text-[28px] sm:text-[32px] md:text-[40px] font-semibold leading-[0.675] tracking-[0.01em] w-full cta-title">
                 A Place to Belong
               </h3>
-              <p className="text-[#423B2D] text-[20px] font-bold leading-[1.35] tracking-[0.01em] max-w-[691px] cta-text">
+              <p className="text-[#423B2D] text-[16px] sm:text-[18px] md:text-[20px] font-bold leading-[1.35] tracking-[0.01em] max-w-[691px] mx-auto cta-text">
                 Sultan Palace Hotel isn&apos;t just a place to stay — it&apos;s a place to connect. To breathe, to feel, to be.
               </p>
-              <p className="text-[#0B0A07] text-[18px] font-medium leading-[1.833] tracking-[0.02em] max-w-[637px] mb-[33px] cta-text">
+              <p className="text-[#0B0A07] text-[15px] sm:text-[16px] md:text-[18px] font-medium leading-[1.833] tracking-[0.02em] max-w-[637px] mx-auto mb-[33px] cta-text">
                 To begin your story, or perhaps, continue it — in a setting that inspires you to live more fully, love more deeply, and dream endlessly.
               </p>
               <div className="flex justify-center cta-button-wrapper">

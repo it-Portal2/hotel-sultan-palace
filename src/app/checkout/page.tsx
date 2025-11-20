@@ -786,9 +786,13 @@ export default function CheckoutPage() {
           </div>
         </div>
         
-        <div className="w-full lg:w-[534px] px-0 lg:sticky lg:top-28">
-          <div className="border border-[rgba(255,255,255,0.15)] bg-[#F8F8F8] p-[26px]">
-            <CartSummary />
+        <div className="w-full lg:w-[534px] px-0" id="checkout-cart-summary">
+          <div className="lg:sticky lg:top-28">
+            <CartSummary
+              variant="checkout"
+              showCheckoutButton={false}
+              className="shadow-[0px_20px_60px_rgba(0,0,0,0.06)]"
+            />
           </div>
         </div>
         </div>

@@ -528,7 +528,17 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
         </div>
       </div>
 
-      <div style={{ marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 20 }}>
+      <div
+        className="relative z-20 -mt-12 md:-mt-6 lg:mt-0"
+        style={{
+          marginTop: 0,
+          marginBottom: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          position: 'relative',
+          zIndex: 20,
+        }}
+      >
         <AboutZanzibar compact />
       </div>
     </div>

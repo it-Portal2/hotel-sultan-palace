@@ -128,7 +128,7 @@ export default function SpiritOfSwahiliPage() {
             <Image src="/spirit/spirit-hero-2.png" alt="bg" fill className="object-cover" style={{ objectPosition: "70% 28%" }} />
           </div>
           <div className="relative z-10 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
               <div className="relative rounded-r-[14px] overflow-hidden so-animate">
                 <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
                   <Image src="/spirit/spirit-card1-left-2a13ac.png" alt="Red Colobus Monkeys" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
@@ -136,13 +136,13 @@ export default function SpiritOfSwahiliPage() {
               </div>
               <div className="flex items-center so-animate so-delay-1">
                 <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
-                  <h3 className="text-[#2D2922] text-[30px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Spice Island Adventures</h3>
-                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
-                    Zanzibar’s world-famous spice plantations offer a sensory journey through cloves, cinnamon, nutmeg, and
+                  <h3 className="text-[#2D2922] text-[30px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Spice Island Adventures</h3>
+                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
+                    Zanzibar&rsquo;s world-famous spice plantations offer a sensory journey through cloves, cinnamon, nutmeg, and
                     cardamom. Guests can stroll fragrant gardens, learn traditional cultivation, and taste freshly harvested
-                    spices — a living tribute to the island’s centuries-old trade and culinary heritage.
+                    spices — a living tribute to the island&rsquo;s centuries-old trade and culinary heritage.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
@@ -150,22 +150,22 @@ export default function SpiritOfSwahiliPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
-              <div className="flex items-center order-2 lg:order-1 so-animate so-delay-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
+              <div className="flex items-center order-2 md:order-1 so-animate so-delay-1">
                 <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
-                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Red Colobus Monkeys & Forest Trails</h3>
-                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
+                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Red Colobus Monkeys & Forest Trails</h3>
+                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
                     Explore lush Jozani Forest, home to the rare Red Colobus monkeys. Walk guided trails shaded by giant
                     mangroves and tropical trees, discovering native flora and fauna while witnessing the playful, vibrant
-                    life of Zanzibar’s endemic primates in their natural jungle habitat.
+                    life of Zanzibar&rsquo;s endemic primates in their natural jungle habitat.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
               </div>
-              <div className="relative rounded-l-[14px] overflow-hidden order-1 lg:order-2 lg:-mt-[120px] so-animate">
+              <div className="relative rounded-l-[14px] overflow-hidden order-1 md:order-2 md:-mt-[120px] so-animate">
                 <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
                   <Image src="/spirit/spirit-card1-right.png" alt="Traditional Art" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
@@ -180,22 +180,22 @@ export default function SpiritOfSwahiliPage() {
             <Image src="/spirit/spirit-hero-1.png" alt="bg" fill className="object-cover" />
           </div>
           <div className="relative z-10 w-full ">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-15 lg:mb-20">
-              <div className="relative rounded-r-[14px] overflow-hidden lg:-mt-[60px] so-animate">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-15 md:mb-20">
+              <div className="relative rounded-r-[14px] overflow-hidden md:-mt-[60px] so-animate">
                 <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
                   <Image src="/spirit/spirit-card2-left-c71919.png" alt="Spice Island Adventures" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
               </div>
               <div className="flex items-center so-animate so-delay-1">
-              <div className="flex items-center order-2 lg:order-1">
+              <div className="flex items-center order-2 md:order-1">
                 <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
-                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Swahili Culinary Heritage</h3>
-                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
+                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Swahili Culinary Heritage</h3>
+                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
                     Immerse in the flavors of Swahili cuisine — rich curries, tropical fruits, and freshly caught seafood
                     infused with exotic spices. Cooking workshops and chef-led tastings allow guests to experience the
-                    authentic culinary traditions that define Zanzibar’s island lifestyle.
+                    authentic culinary traditions that define Zanzibar&rsquo;s island lifestyle.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
@@ -206,22 +206,22 @@ export default function SpiritOfSwahiliPage() {
 
           
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
-              <div className="flex items-center order-2 lg:order-1 so-animate so-delay-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
+              <div className="flex items-center order-2 md:order-1 so-animate so-delay-1">
                 <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
-                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5">Traditional Handicrafts & Art</h3>
-                    <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px]">
-                    Discover Zanzibar’s artistry through visits to local workshops. From intricately carved wooden doors and
+                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Traditional Handicrafts & Art</h3>
+                    <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
+                    Discover Zanzibar&rsquo;s artistry through visits to local workshops. From intricately carved wooden doors and
                     woven mats to colorful pottery and jewelry, guests engage with artisans preserving generations-old
                     crafts, connecting deeply with the culture and creative spirit of the island.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4">
+                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
                 </div>
               </div>
-              <div className="relative rounded-l-[14px] overflow-hidden order-1 lg:order-2 lg:-mt-[120px] so-animate">
+              <div className="relative rounded-l-[14px] overflow-hidden order-1 md:order-2 md:-mt-[120px] so-animate">
                 <div className="relative w-full h-[400px] md:h-[500px] lg:h-[524px]">
                   <Image src="/spirit/spirit-card2-right.png" alt="Traditional Handicrafts & Art" fill className="object-cover transition-transform duration-700 ease-out hover:scale-105" />
                 </div>
