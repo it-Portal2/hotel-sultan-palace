@@ -254,21 +254,23 @@ export default function CheckoutPage() {
       const successURL = `${baseURL}/payment/success`;
       const failureURL = `${baseURL}/payment/failure`;
 
+      // Prepare payment request - ensure all fields are properly formatted
+      // CRITICAL: DPO requires exact format - no undefined, no null, no empty strings for required fields
       const paymentRequest = {
         amount: totalAmount,
         currency: 'USD',
         companyRef: bookingId,
         redirectURL: successURL,
         backURL: failureURL,
-        customerFirstName: guests[0].firstName,
-        customerLastName: guests[0].lastName,
-        customerEmail: guests[0].email,
-        customerPhone: guests[0].mobile || '',
-        customerAddress: address.address1,
-        customerCity: address.city,
-        customerCountry: address.country,
-        customerZip: address.zipCode,
-        serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`
+        customerFirstName: (guests[0]?.firstName || '').trim(),
+        customerLastName: (guests[0]?.lastName || '').trim(),
+        customerEmail: (guests[0]?.email || '').trim(),
+        customerPhone: (guests[0]?.mobile || '').trim() || '0000000000',
+        customerAddress: address?.address1 ? address.address1.trim() : undefined,
+        customerCity: address?.city ? address.city.trim() : undefined,
+        customerCountry: address?.country ? address.country.trim() : undefined,
+        customerZip: address?.zipCode ? address.zipCode.trim() : undefined,
+        serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`.trim()
       };
 
       const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
