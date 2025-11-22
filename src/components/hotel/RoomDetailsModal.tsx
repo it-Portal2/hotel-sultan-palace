@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Room, getGalleryImages } from '@/lib/firestoreService';
+import { Room } from '@/lib/firestoreService';
 import { 
   MdClose as CloseIcon,
   MdOutlineBed as BedIcon,
@@ -53,17 +53,53 @@ const facilities = [
   'Clothes rack'
 ];
 
-// Static gallery images - replace these with actual gallery image paths
-const defaultGalleryImages = [
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-  '/figma/placeholder.jpg',
-];
+// Function to get room-specific gallery images from public/rooms
+const getRoomGalleryImages = (roomName: string): string[] => {
+  const roomNameLower = roomName.toLowerCase();
+  
+  // Share images for all rooms (6 images)
+  const shareImages = [
+    '/rooms/share1.jpg',
+    '/rooms/share2.jpg',
+    '/rooms/share3.jpg',
+    '/rooms/share4.jpg',
+    '/rooms/share5.jpg',
+    '/rooms/share6.jpg',
+  ];
+  
+  // Determine suite type and add specific images
+  let suiteSpecificImages: string[] = [];
+  
+  if (roomNameLower.includes('garden')) {
+    // Garden Suite: add gd images
+    suiteSpecificImages = [
+      '/rooms/gd1.jpg',
+      '/rooms/gd2.jpg',
+    ];
+  } else if (roomNameLower.includes('imperial')) {
+    // Imperial Suite: add imp images
+    suiteSpecificImages = [
+      '/rooms/imp1.jpg',
+      '/rooms/imp2.jpg',
+    ];
+  } else if (roomNameLower.includes('ocean')) {
+    // Ocean Suite: add oc images
+    suiteSpecificImages = [
+      '/rooms/oc1.jpg',
+    ];
+  }
+  
+  // Combine share images with suite-specific images
+  const allImages = [...shareImages, ...suiteSpecificImages];
+  
+  // Ensure we have exactly 8 images (pad with last share image if needed)
+  while (allImages.length < 8) {
+    allImages.push(shareImages[shareImages.length - 1]);
+  }
+  
+  // Return first 8 images
+  return allImages.slice(0, 8);
+};
 
 export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -73,28 +109,16 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
   useEffect(() => {
     setMounted(true);
     
-    // Fetch gallery images and combine with room image
-    const loadImages = async () => {
-      try {
-        const galleryData = await getGalleryImages();
-        const galleryUrls = galleryData.map(img => img.imageUrl).slice(0, 8);
-        
-        // Use room image as first/main image, then add 8 gallery images
-        const allImages = [
-          room.image || '/figma/placeholder.jpg',
-          ...(galleryUrls.length > 0 ? galleryUrls : defaultGalleryImages)
-        ];
-        
-        setGalleryImages(allImages);
-      } catch (error) {
-        console.error('Error loading gallery images:', error);
-        // Fallback to default images
-        const images = [room.image || '/figma/placeholder.jpg', ...defaultGalleryImages];
-        setGalleryImages(images);
-      }
-    };
+    // Get room-specific gallery images from public/rooms
+    const roomGalleryImages = getRoomGalleryImages(room.name);
     
-    loadImages();
+    // Use room image as first/main image, then add 8 gallery images from public/rooms
+    const allImages = [
+      room.image || '/figma/placeholder.jpg',
+      ...roomGalleryImages
+    ];
+    
+    setGalleryImages(allImages);
   }, [room]);
 
   useEffect(() => {
@@ -173,15 +197,15 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
 
           {/* Thumbnail Grid - 8 images below main image */}
           {galleryImages.length > 1 && (
-            <div className="w-full p-2 bg-white border-t border-gray-200">
-              <div className="grid grid-cols-4 gap-2">
+            <div className="w-full p-1.5 bg-white border-t border-gray-200">
+              <div className="grid grid-cols-8 gap-1">
                 {galleryImages.slice(1, 9).map((imageUrl, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index + 1)}
                     className={`relative aspect-square overflow-hidden rounded border-2 transition-all ${
                       selectedImageIndex === index + 1
-                        ? 'border-[#1D69F9] ring-2 ring-[#1D69F9] ring-offset-1'
+                        ? 'border-[#1D69F9] ring-1 ring-[#1D69F9] ring-offset-0.5'
                         : 'border-transparent hover:border-gray-300'
                     }`}
                     aria-label={`View image ${index + 2}`}
@@ -191,7 +215,7 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
                       alt={`${room.name} view ${index + 2}`}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 25vw, 12.5vw"
+                      sizes="(max-width: 768px) 12.5vw, 6.25vw"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}

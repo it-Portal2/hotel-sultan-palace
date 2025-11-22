@@ -140,6 +140,14 @@ export interface OfferBanner {
   updatedAt: Date;
 }
 
+export interface DiscountOffer {
+  id: string;
+  discountPercent: number; // Discount percentage for room bookings (0-100)
+  isActive: boolean; // Whether this discount is currently active
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface StoryImage {
   id: string;
   imageUrl: string;
@@ -847,7 +855,7 @@ export const deleteExcursion = async (id: string): Promise<boolean> => {
   }
 };
 
-// Offers CRUD
+// Offers (Banners) CRUD
 export const getOffers = async (): Promise<OfferBanner[]> => {
   if (!db) return [];
   try {
@@ -878,6 +886,125 @@ export const createOffer = async (data: Omit<OfferBanner,'id'|'createdAt'|'updat
   } catch (e) {
     console.error('Error creating offer:', e);
     return null;
+  }
+};
+
+// Discount Offers CRUD
+export const getDiscountOffers = async (): Promise<DiscountOffer[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'discounts');
+    // Try with orderBy first, if it fails (no index), fall back to simple query
+    let snap;
+    try {
+      const qy = query(c, orderBy('createdAt', 'desc'));
+      snap = await getDocs(qy);
+    } catch (orderByError: any) {
+      // If orderBy fails (likely no index or collection doesn't exist), just get all docs
+      try {
+        snap = await getDocs(c);
+      } catch (getDocsError) {
+        // Collection might not exist yet, return empty array
+        console.warn('Could not fetch discounts (collection may not exist):', getDocsError);
+        return [];
+      }
+    }
+    
+    if (!snap || !snap.docs) return [];
+    
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        discountPercent: data.discountPercent ?? 10,
+        isActive: data.isActive ?? false,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as DiscountOffer;
+    });
+  } catch (e) {
+    console.error('Error fetching discount offers:', e);
+    return [];
+  }
+};
+
+// Get the active discount percentage from the active discount offer
+export const getActiveDiscountPercent = async (): Promise<number> => {
+  if (!db) return 10; // Default to 10% if no discounts
+  try {
+    const discounts = await getDiscountOffers();
+    // Get the active discount
+    const activeDiscount = discounts.find(d => d.isActive === true);
+    return activeDiscount?.discountPercent ?? 10; // Default to 10% if no active discount
+  } catch (e) {
+    console.error('Error fetching active discount:', e);
+    return 10; // Default to 10% on error
+  }
+};
+
+export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+  if (!db) return null;
+  try {
+    // If setting this as active, deactivate all other discounts directly
+    if (data.isActive) {
+      try {
+        const existingDiscounts = await getDiscountOffers();
+        const activeDiscounts = existingDiscounts.filter(d => d.isActive);
+        for (const discount of activeDiscounts) {
+          const dref = doc(db, 'discounts', discount.id);
+          await updateDoc(dref, { isActive: false, updatedAt: serverTimestamp() });
+        }
+      } catch (deactivateError) {
+        // If deactivation fails, continue anyway (collection might not exist yet)
+        console.warn('Could not deactivate existing discounts:', deactivateError);
+      }
+    }
+    
+    const c = collection(db, 'discounts');
+    const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return d.id;
+  } catch (e) {
+    console.error('Error creating discount offer:', e);
+    return null;
+  }
+};
+
+export const updateDiscountOffer = async (id: string, data: Partial<Omit<DiscountOffer,'id'|'createdAt'|'updatedAt'>>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // If setting this as active, deactivate all other discounts directly
+    if (data.isActive === true) {
+      try {
+        const existingDiscounts = await getDiscountOffers();
+        const activeDiscounts = existingDiscounts.filter(d => d.isActive && d.id !== id);
+        for (const discount of activeDiscounts) {
+          const dref = doc(db, 'discounts', discount.id);
+          await updateDoc(dref, { isActive: false, updatedAt: serverTimestamp() });
+        }
+      } catch (deactivateError) {
+        // If deactivation fails, continue anyway
+        console.warn('Could not deactivate existing discounts:', deactivateError);
+      }
+    }
+    
+    const dref = doc(db, 'discounts', id);
+    await updateDoc(dref, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating discount offer:', e);
+    return false;
+  }
+};
+
+export const deleteDiscountOffer = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const dref = doc(db, 'discounts', id);
+    await deleteDoc(dref);
+    return true;
+  } catch (e) {
+    console.error('Error deleting discount offer:', e);
+    return false;
   }
 };
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Room } from '@/lib/firestoreService';
+import { Room, getActiveDiscountPercent } from '@/lib/firestoreService';
 import RoomDetailsModal from './RoomDetailsModal';
 import { 
   MdDone as DoneIcon,
@@ -78,14 +78,24 @@ export default function RoomCard({
   const router = useRouter();
   const [localRoomCount, setLocalRoomCount] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState<number>(10);
+  
+  useEffect(() => {
+    // Fetch active discount percentage from offers
+    const fetchDiscount = async () => {
+      const discount = await getActiveDiscountPercent();
+      setDiscountPercent(discount);
+    };
+    fetchDiscount();
+  }, []);
   
   const nights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 1;
   const nightsText = nights > 1 ? `${nights} nights` : '1 night';
   
   const basePrice = room.price * nights * localRoomCount;
   const originalPrice = Math.round(basePrice);
-  const discountPercent = 10;
-  const discountedPrice = Math.round(originalPrice * 0.9);
+  const discountMultiplier = (100 - discountPercent) / 100;
+  const discountedPrice = Math.round(originalPrice * discountMultiplier);
 
   const getCancellationText = (): string => {
     const daysBefore = room.cancellationFreeDays ?? 2;

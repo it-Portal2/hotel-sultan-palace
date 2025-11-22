@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType } from '@/lib/firestoreService';
+import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getActiveDiscountPercent } from '@/lib/firestoreService';
 import { getAvailableRoomCount } from '@/lib/bookingService';
 import { 
   MdLocationOn as LocationIcon,
@@ -50,6 +50,7 @@ function HotelContent() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [discountPercent, setDiscountPercent] = useState<number>(10);
   const [activeTab, setActiveTab] = useState('overview');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
@@ -94,12 +95,14 @@ function HotelContent() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [roomsData, galleryData] = await Promise.all([
+        const [roomsData, galleryData, discount] = await Promise.all([
           getRooms(),
-          getGalleryImages()
+          getGalleryImages(),
+          getActiveDiscountPercent()
         ]);
         setRooms(roomsData);
         setGalleryImages(galleryData);
+        setDiscountPercent(discount);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -363,10 +366,11 @@ function HotelContent() {
         }
       }
 
-      // Apply the same discount used in the UI pricing (10% OFF)
+      // Apply the dynamic discount from offers
+      const discountMultiplier = (100 - discountPercent) / 100;
       const discountedRoom = {
         ...room,
-        price: Number((room.price * 0.9).toFixed(2)),
+        price: Number((room.price * discountMultiplier).toFixed(2)),
       };
 
       // Add the room to cart with the specified quantity using discounted price
