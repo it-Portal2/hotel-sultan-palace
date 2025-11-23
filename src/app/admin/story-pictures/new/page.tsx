@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { createStoryImage } from '@/lib/firestoreService';
@@ -228,11 +229,14 @@ export default function NewStoryPicturePage() {
           {imageUrl && (
             <div className="mt-4">
               <p className="text-xs font-semibold text-gray-600 mb-2">Image Preview:</p>
-              <div className="relative inline-block">
-                <img 
+              <div className="relative inline-block w-full max-w-xl h-64">
+                <Image 
                   src={imageUrl} 
                   alt="preview" 
-                  className="w-full max-w-xl h-64 object-contain rounded-lg border-2 border-gray-300 shadow-sm bg-gray-50"
+                  fill
+                  className="object-contain rounded-lg border-2 border-gray-300 shadow-sm bg-gray-50"
+                  sizes="(max-width: 768px) 100vw, 640px"
+                  unoptimized
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
                     const parent = target.parentElement;

@@ -1,7 +1,6 @@
 "use client";
-import { FaPlay, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import ContactUsButton from "@/components/ui/ContactUsButton";
 
@@ -352,10 +351,13 @@ export default function AboutUsPage() {
                       }}
                     >
                       <div className="relative w-full h-full">
-                        <img
+                        <Image
                           src={image}
                           alt={`Happy Moment ${currentImageSet + index + 1}`}
-                          className="w-full h-full object-cover object-center"
+                          fill
+                          className="object-cover object-center"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          unoptimized
                         />
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getStoryImages, deleteStoryImage, StoryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
@@ -93,7 +94,9 @@ export default function AdminStoryPicturesPage() {
               <li key={i.id}>
                 <div className="px-4 py-4 flex items-center justify-between sm:px-6 gap-4">
                   <div className="flex items-center gap-4">
-                    <img src={i.imageUrl} alt={i.alt || 'image'} className="h-16 w-32 object-cover rounded" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
+                    <div className="relative h-16 w-32">
+                      <Image src={i.imageUrl} alt={i.alt || 'image'} fill className="object-cover rounded" sizes="128px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
+                    </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{i.title || i.alt || 'Untitled story'}</p>
                       {(i.author || i.location) && (

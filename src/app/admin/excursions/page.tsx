@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { SparklesIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { getExcursions, deleteExcursion, Excursion } from '@/lib/firestoreService';
@@ -72,7 +73,9 @@ export default function AdminExcursionsPage() {
               <li key={i.id}>
                 <div className="px-4 py-4 flex items-center justify-between sm:px-6">
                   <div className="flex items-center">
-                    <img src={i.image} alt={i.title} className="h-12 w-20 object-cover rounded" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/excursions/excursions_safari.png'}}/>
+                    <div className="relative h-12 w-20">
+                      <Image src={i.image} alt={i.title} fill className="object-cover rounded" sizes="80px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/excursions/excursions_safari.png'}}/>
+                    </div>
                     <p className="ml-4 text-sm font-medium text-gray-900">{i.title}</p>
                   </div>
                   {isReadOnly ? (

@@ -8,7 +8,7 @@ import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminBookingsPage() {
-  const { isFullAdmin, isReadOnly } = useAdminRole();
+  const { isReadOnly } = useAdminRole();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Booking | null>(null);

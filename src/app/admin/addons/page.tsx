@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { getAddOns, deleteAddOn, AddOn } from '@/lib/firestoreService';
@@ -91,12 +92,15 @@ export default function AdminAddOnsPage() {
               <li key={a.id}>
                 <div className="px-4 py-4 flex items-center justify-between sm:px-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <img
-                        className="h-12 w-12 rounded-lg object-cover"
+                    <div className="flex-shrink-0 relative w-12 h-12">
+                      <Image
+                        className="rounded-lg object-cover"
                         src={a.image}
                         alt={a.name}
-                        onError={(e) => { e.currentTarget.src = '/addons/romantic.png'; }}
+                        fill
+                        sizes="48px"
+                        unoptimized
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/addons/romantic.png'; }}
                       />
                     </div>
                     <div className="ml-4">

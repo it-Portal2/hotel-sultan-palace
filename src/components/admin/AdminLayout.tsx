@@ -9,7 +9,6 @@ import {
   PlusIcon, 
   CalendarDaysIcon,
   SparklesIcon,
-  PhotoIcon,
   Bars3Icon,
   XMarkIcon,
   ChatBubbleLeftRightIcon,

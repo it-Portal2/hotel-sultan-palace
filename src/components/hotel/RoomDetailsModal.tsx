@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { Room } from '@/lib/firestoreService';
 import { 
   MdClose as CloseIcon,
-  MdOutlineBed as BedIcon,
   MdOutlineShower as BathIcon,
   MdOutlineWifi as WifiIcon,
   MdOutlineAcUnit as AcIcon,

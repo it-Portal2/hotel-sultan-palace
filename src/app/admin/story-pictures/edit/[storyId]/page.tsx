@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { getStoryImage, updateStoryImage } from '@/lib/firestoreService';
 import { storage, auth } from '@/lib/firebase';
@@ -134,8 +135,8 @@ export default function EditStoryPicturePage() {
             <button type="button" onClick={()=>{ if (imageUrl) window.open(imageUrl, '_blank'); }} className="px-3 py-2 text-sm rounded border">Open</button>
           </div>
           {imageUrl && (
-            <div className="mt-3">
-              <img src={imageUrl} alt="preview" className="h-40 w-auto rounded border" />
+            <div className="mt-3 relative inline-block" style={{ width: 'auto', height: '160px' }}>
+              <Image src={imageUrl} alt="preview" fill className="object-contain rounded border" sizes="(max-width: 768px) 100vw, 400px" unoptimized style={{ width: 'auto', height: 'auto' }} />
             </div>
           )}
         </div>

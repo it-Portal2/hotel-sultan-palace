@@ -21,26 +21,26 @@ export default function AdminRoomTypesPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedSuite, setSelectedSuite] = useState<SuiteType>('Garden Suite');
   const [formData, setFormData] = useState({ suiteType: 'Garden Suite' as SuiteType, roomName: '', isActive: true });
   const { showToast } = useToast();
-
-  useEffect(() => {
-    loadRoomTypes();
-  }, []);
 
   const loadRoomTypes = async () => {
     try {
       setLoading(true);
       const data = await getRoomTypes();
       setRoomTypes(data);
-    } catch (e) {
-      console.error('Error loading room types:', e);
+    } catch (error) {
+      console.error('Error loading room types:', error);
       showToast('Failed to load room types', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadRoomTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddDefault = async (suiteType: SuiteType) => {
     if (isReadOnly) {
@@ -262,7 +262,6 @@ export default function AdminRoomTypesPage() {
                 ) : (
                   <button
                     onClick={() => {
-                      setSelectedSuite(suite);
                       setFormData({ suiteType: suite, roomName: '', isActive: true });
                       setShowAddForm(true);
                       setEditing(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   PlusIcon, 
@@ -118,11 +119,14 @@ export default function AdminRoomsPage() {
               <li key={room.id}>
                 <div className="px-4 py-4 flex items-center justify-between sm:px-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <img
-                        className="h-12 w-12 rounded-lg object-cover"
+                    <div className="flex-shrink-0 relative w-12 h-12">
+                      <Image
+                        className="rounded-lg object-cover"
                         src={room.image}
                         alt={room.name}
+                        fill
+                        sizes="48px"
+                        unoptimized
                         onError={(e) => {
                           e.currentTarget.src = '/figma/rooms-imperial-suite.png';
                         }}

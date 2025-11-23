@@ -209,7 +209,7 @@ export const outdoorPoolItems = [
   'Sun umbrellas',
 ];
 
-import { IconType as _IconType } from 'react-icons';
+// IconType imported for type definitions but not used directly
 
 export type FacilityItem = string | { label: string; tags?: string[] };
 export type FacilitySection = { title: string; icon: IconType; items: FacilityItem[] };

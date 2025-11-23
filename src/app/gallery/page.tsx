@@ -112,9 +112,10 @@ export default function GalleryPage() {
     };
 
     containerRef.current.addEventListener('wheel', handleWheel, { passive: false });
+    const container = containerRef.current;
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('wheel', handleWheel);
+      if (container) {
+        container.removeEventListener('wheel', handleWheel);
       }
     };
   }, [lightboxOpen, zoom, position]);
@@ -125,7 +126,6 @@ export default function GalleryPage() {
 
     let initialDistance = 0;
     let initialZoom = 1;
-    let initialPosition = { x: 0, y: 0 };
 
     const getDistance = (touch1: Touch, touch2: Touch) => {
       const dx = touch2.clientX - touch1.clientX;
@@ -137,7 +137,6 @@ export default function GalleryPage() {
       if (e.touches.length === 2) {
         initialDistance = getDistance(e.touches[0], e.touches[1]);
         initialZoom = zoom;
-        initialPosition = { ...position };
       } else if (e.touches.length === 1 && zoom > 1) {
         setIsDragging(true);
         setDragStart({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
@@ -432,6 +431,7 @@ export default function GalleryPage() {
               transition: isDragging ? 'none' : 'transform 0.1s ease-out'
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               ref={imageRef}
               src={lightboxSrc} 

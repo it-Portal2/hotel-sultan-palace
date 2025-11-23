@@ -2,13 +2,11 @@
 
 import { AiOutlineCheck } from 'react-icons/ai';
 import { memo, useEffect, useState } from 'react';
-import { IconType } from 'react-icons';
 import {
   popularFacilities,
   leftSections,
   rightSections,
   FacilitySection,
-  FacilityItem,
 } from './facilitiesData';
 
 type FacilitiesDrawerProps = {

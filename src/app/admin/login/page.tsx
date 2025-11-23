@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       if (!auth) throw new Error('Auth unavailable');
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/admin');
-    } catch (err: unknown) {
+    } catch {
       setError('Login failed. Please check your credentials.');
       setShake(true);
       setTimeout(() => setShake(false), 500);

@@ -19,7 +19,6 @@ export default function BookingConfirmationPopup({
   bookingId,
   checkIn,
   checkOut,
-  email,
   allocatedRoomType
 }: BookingConfirmationPopupProps) {
   if (!isOpen) return null;

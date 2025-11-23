@@ -22,7 +22,7 @@ export default function OurStoriesPage() {
   const [v2Playing, setV2Playing] = useState(false);
   const [v3Playing, setV3Playing] = useState(false);
   const v2ContainerRef = useRef<HTMLDivElement | null>(null);
-  const [v2Height, setV2Height] = useState<number | null>(null);
+  const [, setV2Height] = useState<number | null>(null);
   const v4Ref = useRef<HTMLVideoElement | null>(null);
   const [v4Playing, setV4Playing] = useState(false);
 
@@ -62,9 +62,10 @@ export default function OurStoriesPage() {
     const videoElements = document.querySelectorAll('.media-item');
     videoElements.forEach((el) => videoObserver.observe(el));
 
+    const testimonialCard = testimonialCardRef.current;
     return () => {
-      if (testimonialCardRef.current) {
-        testimonialObserver.unobserve(testimonialCardRef.current);
+      if (testimonialCard) {
+        testimonialObserver.unobserve(testimonialCard);
       }
       videoElements.forEach((el) => videoObserver.unobserve(el));
     };

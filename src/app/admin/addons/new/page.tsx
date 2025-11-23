@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { createAddOn } from '@/lib/firestoreService';
@@ -169,13 +170,16 @@ export default function NewAddOnPage() {
             {form.image && (
               <div className="mt-3">
                 <p className="text-xs font-semibold text-gray-600 mb-2">Preview:</p>
-                <div className="relative inline-block">
-                  <img 
+                <div className="relative inline-block w-64 h-40">
+                  <Image 
                     src={form.image} 
                     alt="Add-on preview" 
-                    className="w-64 h-40 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                    fill
+                    className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                    sizes="256px"
+                    unoptimized
                     onError={(e) => {
-                      const target = e.currentTarget;
+                      const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement;
                       if (parent) {

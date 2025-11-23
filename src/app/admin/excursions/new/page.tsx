@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { PhotoIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { createExcursion } from '@/lib/firestoreService';
@@ -102,11 +103,14 @@ export default function NewExcursionPage() {
             <button type="button" disabled={uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"><CloudArrowUpIcon className="h-4 w-4" /> {uploading?'Uploading...':'Upload & Use'}</button>
           </div>
           {form.image && (
-            <div className="mt-3 relative inline-block">
-              <img 
+            <div className="mt-3 relative inline-block w-64 h-40">
+              <Image 
                 src={form.image} 
                 alt="preview" 
-                className="w-64 h-40 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                fill
+                className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                sizes="256px"
+                unoptimized
                 onError={(e) => {
                   const target = e.currentTarget as HTMLImageElement;
                   target.style.display = 'none';

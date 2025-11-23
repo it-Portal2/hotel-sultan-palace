@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, Suspense, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getActiveDiscountPercent } from '@/lib/firestoreService';
+import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getActiveDiscountPercent, getAllGuestReviews } from '@/lib/firestoreService';
 import { getAvailableRoomCount } from '@/lib/bookingService';
 import { 
   MdLocationOn as LocationIcon,
@@ -16,17 +16,12 @@ import {
   MdPool,
   MdSpa,
   MdAirportShuttle,
-  MdRestaurant,
   MdFreeBreakfast,
   MdLandscape,
-  MdFitnessCenter,
   MdSportsTennis,
-  MdKingBed,
-  
-  MdLocalBar,
-  MdFamilyRestroom
+  MdLocalBar
 } from 'react-icons/md';
-import { FaRegShareSquare, FaStar, FaWifi } from 'react-icons/fa';
+import { FaRegShareSquare, FaStar } from 'react-icons/fa';
 
 import CalendarWidget from '@/components/calendar/Calendar';
 import { createPortal } from 'react-dom';
@@ -45,8 +40,7 @@ import GuestReviewsSection from '@/components/hotel/GuestReviewsSection'
 import FAQSection from '@/components/hotel/FAQSection'
 function HotelContent() {
   const router = useRouter();
-  const { bookingData, addRoom, bookingSetThisSession, updateBookingData } = useCart();
-  const search = useSearchParams();
+  const { bookingData, addRoom, updateBookingData } = useCart();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,33 +70,43 @@ function HotelContent() {
   const [tempCheckIn, setTempCheckIn] = useState<Date | null>(initialDates.checkIn);
   const [tempCheckOut, setTempCheckOut] = useState<Date | null>(initialDates.checkOut);
   const [tempGuests, setTempGuests] = useState(bookingData ? bookingData.guests : { adults: 2, children: 0, rooms: 1 });
-  const checkInButtonRef = useRef<HTMLButtonElement>(null);
-  const checkOutButtonRef = useRef<HTMLButtonElement>(null);
-  const guestButtonRef = useRef<HTMLButtonElement>(null);
-  const [datePopupPosition, setDatePopupPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [guestPopupPosition, setGuestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [datePopupPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [guestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isMounted, setIsMounted] = useState(false);
   const roomsRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
-  const [showMap, setShowMap] = useState(false);
   const [showFacilities, setShowFacilities] = useState(false);
   const isInitialMount = useRef(true);
   const prevBookingDataRef = useRef<string | null>(null);
   const prevTempValuesRef = useRef<string | null>(null);
   const [availableRoomCounts, setAvailableRoomCounts] = useState<Record<string, number>>({});
+  const [overallRating, setOverallRating] = useState<number>(8.7);
+  const [totalReviews, setTotalReviews] = useState<number>(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [roomsData, galleryData, discount] = await Promise.all([
+        const [roomsData, galleryData, discount, reviews] = await Promise.all([
           getRooms(),
           getGalleryImages(),
-          getActiveDiscountPercent()
+          getActiveDiscountPercent(),
+          getAllGuestReviews(true) // Get only approved reviews
         ]);
         setRooms(roomsData);
         setGalleryImages(galleryData);
         setDiscountPercent(discount);
+        
+        // Calculate overall rating from reviews
+        if (reviews.length > 0) {
+          const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+          // Convert 5-star rating to 10-point scale (e.g., 4.5 stars = 9.0)
+          setOverallRating((avgRating / 5) * 10);
+          setTotalReviews(reviews.length);
+        } else {
+          setOverallRating(8.7); // Default rating
+          setTotalReviews(0);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -232,46 +236,12 @@ function HotelContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tempCheckIn, tempCheckOut, tempGuests]);
 
-  const ignoreBooking = search?.get('view') === 'explore';
-  const hasBooking = Boolean(bookingData) && bookingSetThisSession && !ignoreBooking;
-
   const heroGalleryImages = galleryImages.slice(0, 5);
   const remainingImagesCount = Math.max(0, galleryImages.length - 5);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric'
-    });
-  };
 
   const formatDateObj = (d: Date | null) => {
     if (!d) return '';
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-
-  const openCalendar = (mode: 'checkin' | 'checkout') => {
-    const activeRef = mode === 'checkin' ? checkInButtonRef.current : checkOutButtonRef.current;
-    if (activeRef) {
-      const rect = activeRef.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      let top = rect.bottom + 8;
-      if (spaceBelow < 400 && spaceAbove > spaceBelow) top = rect.top - 400;
-      setDatePopupPosition({ top, left: rect.left, width: rect.width });
-    }
-    setCalendarMode(mode);
-    setIsCalendarOpen(true);
-  };
-
-  const openGuests = () => {
-    if (guestButtonRef.current) {
-      const rect = guestButtonRef.current.getBoundingClientRect();
-      setGuestPopupPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
-    }
-    setIsGuestOpen(true);
   };
 
   const handleDateSelect = (checkIn: Date | null, checkOut: Date | null) => {
@@ -591,14 +561,24 @@ function HotelContent() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-[14px]">
+                <div className="flex items-center gap-[14px] flex-wrap">
                   <div className="flex items-center gap-[5px]">
                     {[...Array(5)].map((_, i) => (
                       <FaStar key={i} className="text-[#FEB902] text-[23px]" />
                     ))}
                   </div>
-                  <span className="text-[16px] font-medium text-[#1A1A1A] ml-[3px]">(8.7)</span>
-                  <span className="text-[16px] font-medium text-[#0088FF] ml-0 cursor-pointer hover:underline">View all review</span>
+                  <span className="text-[16px] font-medium text-[#1A1A1A] ml-[3px]">({overallRating.toFixed(1)})</span>
+                  {totalReviews > 0 && (
+                    <span className="text-[16px] font-medium text-[#1A1A1A]">
+                      {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+                    </span>
+                  )}
+                  <span 
+                    onClick={() => router.push('/reviews/submit')}
+                    className="text-[16px] font-medium text-[#0088FF] ml-0 cursor-pointer hover:underline"
+                  >
+                    Write a review
+                  </span>
                 </div>
 
                 <div className="flex items-end gap-[14px]">
@@ -657,20 +637,6 @@ function HotelContent() {
             </div>
           </div>
 
-          <div ref={mapRef} className="mt-8">
-            {showMap && (
-              <div className="w-full h-[360px] rounded-[8px] overflow-hidden border border-[#E5E7EB]">
-                <iframe
-                  title="Sultan Palace on Map"
-                  width="100%"
-                  height="100%"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src="https://www.google.com/maps?q=Michamvi+Pingwe+Zanzibar&hl=en&z=13&output=embed"
-                />
-              </div>
-            )}
-          </div>
           
           <div className="bg-white rounded-[2px] mt-0">
             <div className="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">

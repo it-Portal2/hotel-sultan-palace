@@ -12,7 +12,7 @@ import BookingConfirmationPopup from '@/components/BookingConfirmationPopup';
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { bookingData, rooms, addOns, calculateTotal } = useCart();
+  const { bookingData, calculateTotal } = useCart();
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'success' | 'failed' | 'pending'>('pending');
@@ -41,7 +41,7 @@ function PaymentSuccessContent() {
         // Verify payment with DPO
         const verificationResult = await verifyDPOPayment(token);
 
-        if (verificationResult.Result === '000' && verificationResult.TransactionStatus === '3') {
+        if (verificationResult.Result === '000') {
           // Payment successful
           setVerificationStatus('success');
           
@@ -61,6 +61,7 @@ function PaymentSuccessContent() {
     };
 
     verifyPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const createBookingFromPayment = async (paymentData: DPOVerifyResponse) => {

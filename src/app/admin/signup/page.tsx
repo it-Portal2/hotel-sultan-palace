@@ -36,7 +36,7 @@ export default function AdminSignupPage() {
       await createUserWithEmailAndPassword(auth, email, password);
       try { if (auth.currentUser) { await signOut(auth); } } catch {}
       router.push('/admin/login');
-    } catch (err: unknown) {
+    } catch {
       setError('Signup failed. Please try again.');
     } finally {
       setLoading(false);

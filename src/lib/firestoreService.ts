@@ -125,6 +125,63 @@ export interface BookingEnquiry {
   updatedAt: Date;
 }
 
+export interface GuestExperienceForm {
+  id: string;
+  name: string;
+  email?: string;
+  suiteNo: string;
+  arrivalDate: string;
+  departureDate: string;
+  // Reservation ratings (1-4, where 1=N/A, 2=Below Expectation, 3=Met Expectation, 4=Excellent)
+  reservationInformative?: number;
+  reservationPrompt?: number;
+  // Check In ratings
+  checkInEfficient?: number;
+  checkInWelcoming?: number;
+  // Service ratings
+  barService?: number;
+  waiterService?: number;
+  // Meal Experience ratings
+  breakfastExperience?: number;
+  lunchExperience?: number;
+  dinnerExperience?: number;
+  // Main Area rating
+  loungeArea?: number;
+  // Room Experience ratings
+  roomExperience?: number;
+  roomCleanliness?: number;
+  // General Comments
+  memorableMoment?: string;
+  otherComments?: string;
+  // Recommendation
+  wouldRecommend?: boolean;
+  status: 'new' | 'read' | 'replied';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GuestReview {
+  id: string;
+  name: string;
+  country?: string;
+  avatarUrl?: string;
+  flagUrl?: string;
+  type?: string; // e.g., "Solo traveller", "Family", "Couple"
+  rating: number; // 1-5 stars
+  review: string;
+  // Optional detailed ratings
+  staffRating?: number;
+  facilitiesRating?: number;
+  cleanlinessRating?: number;
+  comfortRating?: number;
+  valueRating?: number;
+  locationRating?: number;
+  wifiRating?: number;
+  isApproved: boolean; // Admin approval before showing publicly
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Excursion {
   id: string;
   title: string;
@@ -899,7 +956,7 @@ export const getDiscountOffers = async (): Promise<DiscountOffer[]> => {
     try {
       const qy = query(c, orderBy('createdAt', 'desc'));
       snap = await getDocs(qy);
-    } catch (orderByError: any) {
+    } catch {
       // If orderBy fails (likely no index or collection doesn't exist), just get all docs
       try {
         snap = await getDocs(c);
@@ -1314,5 +1371,153 @@ export const getRoomType = async (id: string): Promise<RoomType | null> => {
   } catch (e) {
     console.error('Error getting room type:', e);
     return null;
+  }
+};
+
+// Guest Experience Form Operations
+export const createGuestExperienceForm = async (
+  formData: Omit<GuestExperienceForm, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+): Promise<string | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create guest experience form');
+    return null;
+  }
+
+  try {
+    const formsRef = collection(db, 'guestExperienceForms');
+    const docRef = await addDoc(formsRef, {
+      ...formData,
+      status: 'new',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating guest experience form:', error);
+    return null;
+  }
+};
+
+export const getAllGuestExperienceForms = async (): Promise<GuestExperienceForm[]> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot get guest experience forms');
+    return [];
+  }
+
+  try {
+    const formsRef = collection(db, 'guestExperienceForms');
+    const q = query(formsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as GuestExperienceForm;
+    });
+  } catch (error) {
+    console.error('Error fetching guest experience forms:', error);
+    return [];
+  }
+};
+
+export const updateGuestExperienceFormStatus = async (
+  id: string,
+  status: GuestExperienceForm['status']
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'guestExperienceForms', id);
+    await updateDoc(r, { status, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating guest experience form status:', e);
+    return false;
+  }
+};
+
+// Guest Review Operations
+export const createGuestReview = async (
+  reviewData: Omit<GuestReview, 'id' | 'createdAt' | 'updatedAt' | 'isApproved'>
+): Promise<string | null> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot create guest review');
+    return null;
+  }
+
+  try {
+    const reviewsRef = collection(db, 'guestReviews');
+    const docRef = await addDoc(reviewsRef, {
+      ...reviewData,
+      isApproved: true, 
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating guest review:', error);
+    return null;
+  }
+};
+
+export const getAllGuestReviews = async (approvedOnly: boolean = false): Promise<GuestReview[]> => {
+  if (!db) {
+    console.warn('Firestore not available, cannot get guest reviews');
+    return [];
+  }
+
+  try {
+    const reviewsRef = collection(db, 'guestReviews');
+    const q = query(reviewsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    let reviews = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as GuestReview;
+    });
+
+    if (approvedOnly) {
+      reviews = reviews.filter(review => review.isApproved);
+    }
+
+    return reviews;
+  } catch (error) {
+    console.error('Error fetching guest reviews:', error);
+    return [];
+  }
+};
+
+export const updateGuestReviewApproval = async (
+  id: string,
+  isApproved: boolean
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'guestReviews', id);
+    await updateDoc(r, { isApproved, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating guest review approval:', e);
+    return false;
+  }
+};
+
+export const deleteGuestReview = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'guestReviews', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting guest review:', e);
+    return false;
   }
 };

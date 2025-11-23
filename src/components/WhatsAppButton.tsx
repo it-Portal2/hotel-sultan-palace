@@ -1,14 +1,14 @@
 
 "use client";
 import { FaWhatsapp } from 'react-icons/fa';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 const WhatsAppButton = () => {
   // Both WhatsApp numbers - format: country code + number without + or spaces
-  const numbers = [
+  const numbers = useMemo(() => [
     { num: '255684888111', label: '+255 684 888 111', full: '+255684888111' },
     { num: '255777085630', label: '+255 777 085 630', full: '+255777085630' }
-  ];
+  ], []);
   
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -16,7 +16,7 @@ const WhatsAppButton = () => {
   // Verify numbers on mount
   useEffect(() => {
     console.log('WhatsApp Numbers:', numbers.map(n => n.label));
-  }, []);
+  }, [numbers]);
 
   // Close menu when clicking outside
   useEffect(() => {

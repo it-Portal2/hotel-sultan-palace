@@ -1,18 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useCart } from '../../context/CartContext';
+import React, { useEffect, useRef } from 'react';
 import BookingForm from '@/components/booking/BookingForm';
 
 export default function Hero() {
-  const router = useRouter();
-  const { updateBookingData } = useCart();
   const heroRef = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
     if (heroRef.current) {
       const observer = new IntersectionObserver(
         (entries) => {

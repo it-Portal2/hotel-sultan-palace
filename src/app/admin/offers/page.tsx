@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { PlusIcon, TrashIcon, PhotoIcon, TagIcon } from '@heroicons/react/24/outline';
 import { getOffers, deleteOffer, OfferBanner, getDiscountOffers, deleteDiscountOffer, DiscountOffer, updateDiscountOffer } from '@/lib/firestoreService';
@@ -102,7 +103,9 @@ export default function AdminOffersPage() {
               {banners.map((i)=> (
                 <li key={i.id}>
                   <div className="px-4 py-4 flex items-center justify-between sm:px-6">
-                    <img src={i.imageUrl} alt="offer" className="h-16 w-64 object-cover rounded" onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/offer-image.jpg'}} />
+                    <div className="relative h-16 w-64">
+                      <Image src={i.imageUrl} alt="offer" fill className="object-cover rounded" sizes="256px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/offer-image.jpg'}} />
+                    </div>
                     {isReadOnly ? (
                       <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
                         <TrashIcon className="h-5 w-5"/>

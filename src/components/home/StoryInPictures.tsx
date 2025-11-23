@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { getStoryImages } from "@/lib/firestoreService";
 
 export default function StoryInPictures() {
-  const staticImages = [
+  const staticImages = useMemo(() => [
     { src: "/story/story1.png", alt: "Wedding couple at the balcony" },
     { src: "/story/story2.png", alt: "Couple sitting on the beach" },
     { src: "/story/story3.png", alt: "Child at the pool stairs" },
-  ];
+  ], []);
 
   const [extra, setExtra] = useState<{src:string; alt:string}[]>([]);
   const [index, setIndex] = useState(0);
@@ -59,10 +59,10 @@ export default function StoryInPictures() {
       }
       setExtra(imgs);
     })();
-  }, []);
+  }, [staticImages]);
 
   // Use computed images (padded to 3 when needed)
-  const allImages = useMemo(() => (extra.length > 0 ? extra : staticImages), [extra]);
+  const allImages = useMemo(() => (extra.length > 0 ? extra : staticImages), [extra, staticImages]);
   const visible = useMemo(() => {
     // On mobile, show only 1 image at a time. On desktop, show 3.
     if (isMobile) {
