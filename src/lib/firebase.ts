@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-api-key",
@@ -17,6 +18,7 @@ let app: ReturnType<typeof initializeApp> | null = null;
 let db: ReturnType<typeof getFirestore> | null = null;
 let auth: ReturnType<typeof getAuth> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
+let messaging: Messaging | null = null;
 
 if (typeof window !== 'undefined') {
   try {
@@ -24,12 +26,20 @@ if (typeof window !== 'undefined') {
     db = getFirestore(app);
     auth = getAuth(app);
     storage = getStorage(app);
+    // Initialize messaging only if service worker is supported
+    if ('serviceWorker' in navigator) {
+      try {
+        messaging = getMessaging(app);
+      } catch (error) {
+        console.warn('Firebase Messaging initialization failed:', error);
+      }
+    }
   } catch (error) {
     console.warn('Firebase initialization failed:', error);
   }
 }
 
-export { db, auth, storage };
+export { db, auth, storage, messaging };
 
 // Suppress Firebase connection timeout errors and warnings
 if (typeof window !== 'undefined') {

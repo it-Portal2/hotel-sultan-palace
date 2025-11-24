@@ -201,6 +201,29 @@ export interface DiscountOffer {
   id: string;
   discountPercent: number; // Discount percentage for room bookings (0-100)
   isActive: boolean; // Whether this discount is currently active
+  couponCode?: string; // Optional coupon code
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SpecialOffer {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  sendNotification: boolean;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  minPersons: number | null;
+  maxPersons: number | null;
+  applyToAllPersons: boolean;
+  roomTypes: string[];
+  applyToAllRooms: boolean;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  couponCode: string | null;
+  lastNotificationSentAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -939,6 +962,28 @@ export const createOffer = async (data: Omit<OfferBanner,'id'|'createdAt'|'updat
   try {
     const c = collection(db, 'offers');
     const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    
+    // Send notification to all users (only for banner offers, not for every banner)
+    // Note: Banner offers are usually for carousel, so we skip notification
+    // Special offers will send notifications separately
+    // Uncomment below if you want notifications for banner offers too
+    /*
+    try {
+      await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🎉 New Offer Available!',
+          body: 'Check out our latest exclusive offer',
+          imageUrl: data.imageUrl,
+          url: '/offers',
+        }),
+      });
+    } catch (notifError) {
+      console.warn('Failed to send notification:', notifError);
+    }
+    */
+    
     return d.id;
   } catch (e) {
     console.error('Error creating offer:', e);
@@ -1019,6 +1064,32 @@ export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'created
     
     const c = collection(db, 'discounts');
     const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    
+    // Send notification to all users if discount is active
+    if (data.isActive) {
+      try {
+        const bookLink = `/hotel?discountId=${d.id}`;
+        const notificationBody = data.couponCode
+          ? `Get ${data.discountPercent}% off on room bookings.\n\n🎫 Use Coupon Code: ${data.couponCode}`
+          : `Get ${data.discountPercent}% off on room bookings. Book now!`;
+        
+        await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `🎁 ${data.discountPercent}% Discount Available!`,
+            body: notificationBody,
+            url: '/offers',
+            bookUrl: bookLink,
+            couponCode: data.couponCode || undefined,
+          }),
+        });
+      } catch (notifError) {
+        console.warn('Failed to send notification:', notifError);
+        // Don't fail discount creation if notification fails
+      }
+    }
+    
     return d.id;
   } catch (e) {
     console.error('Error creating discount offer:', e);
@@ -1061,6 +1132,101 @@ export const deleteDiscountOffer = async (id: string): Promise<boolean> => {
     return true;
   } catch (e) {
     console.error('Error deleting discount offer:', e);
+    return false;
+  }
+};
+
+// Special Offers CRUD
+export const getSpecialOffers = async (): Promise<SpecialOffer[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'specialOffers');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    const items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title || '',
+        description: data.description || '',
+        imageUrl: data.imageUrl || '',
+        sendNotification: data.sendNotification || false,
+        isActive: data.isActive || false,
+        startDate: data.startDate || null,
+        endDate: data.endDate || null,
+        minPersons: data.minPersons || null,
+        maxPersons: data.maxPersons || null,
+        applyToAllPersons: data.applyToAllPersons || false,
+        roomTypes: data.roomTypes || [],
+        applyToAllRooms: data.applyToAllRooms || false,
+        discountType: data.discountType || 'percentage',
+        discountValue: data.discountValue || 0,
+        couponCode: data.couponCode || null,
+        lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as SpecialOffer;
+    });
+    return items;
+  } catch (e) {
+    console.error('Error fetching special offers:', e);
+    return [];
+  }
+};
+
+export const getSpecialOffer = async (id: string): Promise<SpecialOffer | null> => {
+  if (!db) return null;
+  try {
+    const dref = doc(db, 'specialOffers', id);
+    const snap = await getDoc(dref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return {
+      id: snap.id,
+      title: data.title || '',
+      description: data.description || '',
+      imageUrl: data.imageUrl || '',
+      sendNotification: data.sendNotification || false,
+      isActive: data.isActive || false,
+      startDate: data.startDate || null,
+      endDate: data.endDate || null,
+      minPersons: data.minPersons || null,
+      maxPersons: data.maxPersons || null,
+      applyToAllPersons: data.applyToAllPersons || false,
+      roomTypes: data.roomTypes || [],
+      applyToAllRooms: data.applyToAllRooms || false,
+      discountType: data.discountType || 'percentage',
+      discountValue: data.discountValue || 0,
+      couponCode: data.couponCode || null,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as SpecialOffer;
+  } catch (e) {
+    console.error('Error fetching special offer:', e);
+    return null;
+  }
+};
+
+export const updateSpecialOffer = async (id: string, data: Partial<Omit<SpecialOffer, 'id' | 'createdAt' | 'updatedAt'>>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const dref = doc(db, 'specialOffers', id);
+    await updateDoc(dref, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating special offer:', e);
+    return false;
+  }
+};
+
+export const deleteSpecialOffer = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const dref = doc(db, 'specialOffers', id);
+    await deleteDoc(dref);
+    return true;
+  } catch (e) {
+    console.error('Error deleting special offer:', e);
     return false;
   }
 };

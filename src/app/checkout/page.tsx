@@ -314,7 +314,7 @@ export default function CheckoutPage() {
       <Header />
 
        {/* Navigation Section */}
-       <div className="w-full px-4 md:px-[230px] pt-[80px] md:pt-[100px]">
+       <div className="w-full px-4 md:px-[230px] pt-[120px] md:pt-[140px] lg:pt-[165px]">
         <div className="max-w-[1512px] mx-auto">
           <div className="w-full lg:w-[850px]">
             <button 
@@ -329,8 +329,8 @@ export default function CheckoutPage() {
       </div>
       
       {/* Main Content - Two Column Layout */}
-      <div className="mt-5 pb-16">
-        <div className="w-full max-w-[1512px] mx-auto px-4 md:px-[63px] flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="mt-8 pb-16">
+        <div className="w-full max-w-[1512px] mx-auto px-4 md:px-[63px] lg:px-[120px] flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Left Column - Form */}
         <div className="w-full lg:w-[850px] px-0">
           <div className="bg-[#F8F8F8] p-4 md:p-8">

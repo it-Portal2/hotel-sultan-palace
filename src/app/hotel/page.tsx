@@ -6,7 +6,8 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getActiveDiscountPercent, getAllGuestReviews } from '@/lib/firestoreService';
+import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getAllGuestReviews, getSpecialOffers, SpecialOffer } from '@/lib/firestoreService';
+import { AppliedOfferInfo, buildAppliedOfferInfo, calculateDiscountAmount, isSpecialOfferValid } from '@/lib/offers';
 import { getAvailableRoomCount } from '@/lib/bookingService';
 import { 
   MdLocationOn as LocationIcon,
@@ -43,8 +44,9 @@ function HotelContent() {
   const { bookingData, addRoom, updateBookingData } = useCart();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
+  const [activeOffersByRoom, setActiveOffersByRoom] = useState<Record<string, AppliedOfferInfo | null>>({});
   const [loading, setLoading] = useState(true);
-  const [discountPercent, setDiscountPercent] = useState<number>(10);
   const [activeTab, setActiveTab] = useState('overview');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
@@ -87,15 +89,15 @@ function HotelContent() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [roomsData, galleryData, discount, reviews] = await Promise.all([
+        const [roomsData, galleryData, offers, reviews] = await Promise.all([
           getRooms(),
           getGalleryImages(),
-          getActiveDiscountPercent(),
+          getSpecialOffers(),
           getAllGuestReviews(true) // Get only approved reviews
         ]);
         setRooms(roomsData);
         setGalleryImages(galleryData);
-        setDiscountPercent(discount);
+        setSpecialOffers(offers);
         
         // Calculate overall rating from reviews
         if (reviews.length > 0) {
@@ -236,7 +238,46 @@ function HotelContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tempCheckIn, tempCheckOut, tempGuests]);
 
+  const getStayNights = () => {
+    if (!tempCheckIn || !tempCheckOut) return 1;
+    const diff = Math.ceil((tempCheckOut.getTime() - tempCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(1, diff);
+  };
+
   const heroGalleryImages = galleryImages.slice(0, 5);
+  useEffect(() => {
+    if (!rooms.length) return;
+    const guestCount = tempGuests.adults + tempGuests.children;
+    const nightsCount = getStayNights();
+    const now = new Date();
+
+    const map: Record<string, AppliedOfferInfo | null> = {};
+
+    rooms.forEach((room) => {
+      const baseAmount = room.price * nightsCount;
+      let bestOffer: SpecialOffer | null = null;
+      let bestAmount = 0;
+
+      specialOffers.forEach((offer) => {
+        if (!isSpecialOfferValid(offer, { roomName: room.name, guestCount, now })) return;
+        const amount = calculateDiscountAmount(baseAmount, offer);
+        if (amount <= 0) return;
+        if (!bestOffer || amount > bestAmount) {
+          bestOffer = offer;
+          bestAmount = amount;
+        }
+      });
+
+      if (bestOffer) {
+        map[room.id] = buildAppliedOfferInfo(bestOffer);
+      } else {
+        map[room.id] = null;
+      }
+    });
+
+    setActiveOffersByRoom(map);
+  }, [rooms, specialOffers, tempGuests, tempCheckIn, tempCheckOut]);
+
   const remainingImagesCount = Math.max(0, galleryImages.length - 5);
 
   const formatDateObj = (d: Date | null) => {
@@ -336,15 +377,8 @@ function HotelContent() {
         }
       }
 
-      // Apply the dynamic discount from offers
-      const discountMultiplier = (100 - discountPercent) / 100;
-      const discountedRoom = {
-        ...room,
-        price: Number((room.price * discountMultiplier).toFixed(2)),
-      };
-
-      // Add the room to cart with the specified quantity using discounted price
-      addRoom(discountedRoom, roomCount);
+      // Add the room to cart with the specified quantity (base price)
+      addRoom(room, roomCount);
     } catch (error) {
       console.error('Error checking availability:', error);
     }
@@ -745,6 +779,8 @@ function HotelContent() {
                     onReserve={addToCart}
                     formatDate={formatDateObj}
                     availableRoomCount={availableRoomCounts[room.id]}
+                    activeOffer={activeOffersByRoom[room.id] || undefined}
+                    nights={getStayNights()}
                   />
                 </div>
               ))}

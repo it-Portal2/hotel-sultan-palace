@@ -6,6 +6,8 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { BookingEnquiryProvider } from "@/context/BookingEnquiryContext";
+import NotificationPermission from "@/components/notifications/NotificationPermission";
+import NotificationListener from "@/components/notifications/NotificationListener";
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -41,6 +43,8 @@ export default function RootLayout({
           <ToastProvider>
             <BookingEnquiryProvider>
               {children}
+              <NotificationListener />
+              <NotificationPermission />
             </BookingEnquiryProvider>
           </ToastProvider>
         </CartProvider>

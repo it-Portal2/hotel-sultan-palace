@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Room, getActiveDiscountPercent } from '@/lib/firestoreService';
+import { Room } from '@/lib/firestoreService';
 import RoomDetailsModal from './RoomDetailsModal';
+import { AppliedOfferInfo, calculateDiscountAmount } from '@/lib/offers';
 import { 
   MdDone as DoneIcon,
   MdCreditCardOff as NoCreditCardIcon,
@@ -21,6 +22,7 @@ import {
 import { TbRulerMeasure as SizeIcon } from 'react-icons/tb';
 import { IoMdFlower as GardenIcon } from 'react-icons/io';
 import { MdPool as PoolIcon, MdChildCare as CotIcon } from 'react-icons/md';
+import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { IconType } from 'react-icons';
 
 interface RoomCardProps {
@@ -32,6 +34,8 @@ interface RoomCardProps {
   onReserve: (room: Room, roomCount: number) => void;
   formatDate: (date: Date | null) => string;
   availableRoomCount?: number;
+  activeOffer?: AppliedOfferInfo | null;
+  nights: number;
 }
 
 const GuestControl = ({ label, value, onIncrease, onDecrease, min }: {
@@ -73,29 +77,27 @@ export default function RoomCard({
   onGuestChange,
   onReserve,
   formatDate,
-  availableRoomCount
+  availableRoomCount,
+  activeOffer,
+  nights,
 }: RoomCardProps) {
   const router = useRouter();
   const [localRoomCount, setLocalRoomCount] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [discountPercent, setDiscountPercent] = useState<number>(10);
-  
-  useEffect(() => {
-    // Fetch active discount percentage from offers
-    const fetchDiscount = async () => {
-      const discount = await getActiveDiscountPercent();
-      setDiscountPercent(discount);
-    };
-    fetchDiscount();
-  }, []);
-  
-  const nights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 1;
+  const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
   const nightsText = nights > 1 ? `${nights} nights` : '1 night';
   
   const basePrice = room.price * nights * localRoomCount;
   const originalPrice = Math.round(basePrice);
-  const discountMultiplier = (100 - discountPercent) / 100;
-  const discountedPrice = Math.round(originalPrice * discountMultiplier);
+  const discountAmount = activeOffer
+    ? Math.round(
+        calculateDiscountAmount(basePrice, {
+          discountType: activeOffer.discountType,
+          discountValue: activeOffer.discountValue,
+        })
+      )
+    : 0;
+  const discountedPrice = Math.max(0, originalPrice - discountAmount);
 
   const getCancellationText = (): string => {
     const daysBefore = room.cancellationFreeDays ?? 2;
@@ -134,6 +136,18 @@ export default function RoomCard({
     icon: getAmenityIcon(amenity),
     label: amenity
   })) || [];
+
+  const getValidityText = () => {
+    if (!activeOffer) return null;
+    const start = activeOffer.startDate ? new Date(activeOffer.startDate) : null;
+    const end = activeOffer.endDate ? new Date(activeOffer.endDate) : null;
+    if (start && end) {
+      return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+    }
+    if (start) return `Valid from ${start.toLocaleDateString()}`;
+    if (end) return `Valid until ${end.toLocaleDateString()}`;
+    return null;
+  };
 
   return (
     <>
@@ -193,16 +207,28 @@ export default function RoomCard({
           </div>
         </div>
 
-        <div className="relative flex flex-col justify-center bg-[#EBFDED] border-[1.5px] border-[#88B988] p-3 md:p-[14px] w-full lg:w-[376px] min-h-[300px] lg:h-[350px]">
+        <div className={`relative flex flex-col justify-center border-[1.5px] p-3 md:p-[14px] w-full lg:w-[376px] min-h-[300px] lg:h-[350px] ${
+          activeOffer ? 'bg-[#EBFDED] border-[#88B988]' : 'bg-[#FFF5F5] border-[#F3B1B1]'
+        }`}>
           
           <div className="absolute top-2 right-2 md:top-[8px] md:right-[14px]">
-            <span className="text-[11px] md:text-[13px] font-light text-[rgba(0,0,0,0.83)]">Discount</span>
+            <span className="text-[11px] md:text-[13px] font-light text-[rgba(0,0,0,0.83)]">
+              {activeOffer ? 'Discount' : 'No discount available'}
+            </span>
           </div>
 
           <div className="absolute top-7 right-2 md:top-[35px] md:right-[14px]">
-            <div className="bg-[#3F8406] text-white rounded-[4px] text-[10px] md:text-[12px] font-semibold whitespace-nowrap px-2 py-1 md:px-3 md:py-[10px] flex items-center justify-center">
-              {discountPercent}% OFF
-            </div>
+            {activeOffer ? (
+              <div className="bg-[#3F8406] text-white rounded-[4px] text-[10px] md:text-[12px] font-semibold whitespace-nowrap px-2 py-1 md:px-3 md:py-[10px] flex items-center justify-center">
+                {activeOffer.discountType === 'percentage'
+                  ? `${activeOffer.discountValue}% OFF`
+                  : `Save $${activeOffer.discountValue}`}
+              </div>
+            ) : (
+              <div className="bg-[#F87171] text-white rounded-[4px] text-[10px] md:text-[12px] font-semibold whitespace-nowrap px-2 py-1 md:px-3 md:py-[10px] flex items-center justify-center">
+                No Discount
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col">
@@ -211,9 +237,56 @@ export default function RoomCard({
               {localRoomCount > 1 && `, ${localRoomCount} rooms`}
             </p>
             <div className="flex items-baseline gap-[5px] mb-[10px] relative">
-              <span className="text-[12px] md:text-[14px] text-[#FF0000] line-through font-medium">${originalPrice}</span>
-              <span className="text-[18px] md:text-[20px] font-bold text-[#232323]">${discountedPrice}</span>
+              {activeOffer ? (
+                <>
+                  <span className="text-[12px] md:text-[14px] text-[#FF0000] line-through font-medium">
+                    ${originalPrice}
+                  </span>
+                  <span className="text-[18px] md:text-[20px] font-bold text-[#232323]">
+                    ${discountedPrice}
+                  </span>
+                </>
+              ) : (
+                <span className="text-[20px] font-bold text-[#232323]">
+                  ${originalPrice}
+                </span>
+              )}
             </div>
+            {activeOffer ? (
+              <>
+                {activeOffer.couponCode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && navigator?.clipboard) {
+                        navigator.clipboard
+                          .writeText(activeOffer.couponCode || '')
+                          .then(() => {
+                            setCopiedCouponId(activeOffer.id);
+                            setTimeout(() => setCopiedCouponId(null), 2000);
+                          })
+                          .catch(() => {});
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-[#1D69F9] px-3 py-1.5 rounded cursor-pointer"
+                    title={`Copy coupon code ${activeOffer.couponCode}`}
+                  >
+                    <ClipboardDocumentIcon className="w-4 h-4" />
+                    {copiedCouponId === activeOffer.id ? 'Copied!' : 'Copy coupon code'}
+                  </button>
+                )}
+                <p className="text-[12px] md:text-[13px] font-semibold text-[#14532D] uppercase tracking-wide">
+                  {activeOffer.title || 'Special Offer'}
+                </p>
+                {getValidityText() && (
+                  <p className="text-[11px] text-[#065F46]">{getValidityText()}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-[13px] font-semibold text-[#DC2626]">
+                No discount available right now
+              </p>
+            )}
           </div>
           
           <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[10px] mt-[10px]">+ $50 taxes and charge</span>

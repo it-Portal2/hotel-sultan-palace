@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Room } from '@/lib/firestoreService';
+import { Room, SpecialOffer } from '@/lib/firestoreService';
+import { isSpecialOfferValid } from '@/lib/offers';
 
 interface AddOn {
   id: string;
@@ -27,6 +28,16 @@ type CartRoom = Room & { cartItemId: string };
 
 type CartAddOn = AddOn;
 
+interface AppliedCoupon {
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  offerId?: string;
+  source: 'special' | 'discount';
+  expiresAt?: string | null;
+  title?: string;
+}
+
 interface CartContextProps {
   rooms: CartRoom[];
   addRoom: (room: Room, quantity?: number) => void;
@@ -44,6 +55,12 @@ interface CartContextProps {
   setBookingData: React.Dispatch<React.SetStateAction<BookingData | null>>;
   updateBookingData: (data: BookingData) => void;
   bookingSetThisSession: boolean;
+
+  // Coupon functionality
+  appliedCoupon: AppliedCoupon | null;
+  applyCoupon: (code: string) => Promise<{ success: boolean; message?: string }>;
+  removeCoupon: () => void;
+  getDiscountAmount: () => number;
 }
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
@@ -53,11 +70,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [addOns, setAddOns] = useState<CartAddOn[]>([]);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [bookingSetThisSession, setBookingSetThisSession] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
   // Always clear any legacy localStorage booking data to avoid stale UI
   useEffect(() => {
     try { localStorage.removeItem('bookingData'); } catch {}
   }, []);
+
+  // Remove expired coupons automatically
+  useEffect(() => {
+    if (!appliedCoupon?.expiresAt) return;
+    const expiry = new Date(appliedCoupon.expiresAt);
+    if (isNaN(expiry.getTime())) return;
+    if (expiry < new Date()) {
+      setAppliedCoupon(null);
+    }
+  }, [appliedCoupon]);
 
   // Function to update booking data from any form (Hero or Rooms).
   // Do not clear existing cart items; totals will recompute based on new dates.
@@ -139,8 +167,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Calculate total price (rooms + addOns)
-  const calculateTotal = () => {
+  // Calculate base total price (rooms + addOns) before discount
+  const calculateBaseTotal = () => {
     const nights = getNumberOfNights();
 
     // Room total = room price * number of nights
@@ -161,6 +189,130 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return roomTotal + addOnTotal;
   };
 
+  // Get discount amount
+  const getDiscountAmount = () => {
+    if (!appliedCoupon) return 0;
+    const baseTotal = calculateBaseTotal();
+    if (appliedCoupon.discountType === 'percentage') {
+      return (baseTotal * appliedCoupon.discountValue) / 100;
+    } else {
+      return Math.min(appliedCoupon.discountValue, baseTotal);
+    }
+  };
+
+  // Calculate total price (rooms + addOns - discount)
+  const calculateTotal = () => {
+    const baseTotal = calculateBaseTotal();
+    const discount = getDiscountAmount();
+    return Math.max(0, baseTotal - discount);
+  };
+
+  // Apply coupon code
+  const applyCoupon = async (code: string): Promise<{ success: boolean; message?: string }> => {
+    const normalizedCode = code.toUpperCase().trim();
+    if (!normalizedCode) {
+      return { success: false, message: 'Please enter a coupon code.' };
+    }
+
+    try {
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        return { success: false, message: 'Service unavailable. Please try again.' };
+      }
+
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const now = new Date();
+      const guestCount = bookingData ? bookingData.guests.adults + bookingData.guests.children : 0;
+
+      // Check special offers first
+      const specialOffersRef = collection(db, 'specialOffers');
+      const specialQuery = query(specialOffersRef, where('couponCode', '==', normalizedCode));
+      const specialSnapshot = await getDocs(specialQuery);
+
+      if (!specialSnapshot.empty) {
+        const docSnap = specialSnapshot.docs[0];
+        const data = docSnap.data();
+        const offer: SpecialOffer = {
+          id: docSnap.id,
+          title: data.title || '',
+          description: data.description || '',
+          imageUrl: data.imageUrl || '',
+          sendNotification: data.sendNotification || false,
+          isActive: data.isActive || false,
+          startDate: data.startDate || null,
+          endDate: data.endDate || null,
+          minPersons: data.minPersons || null,
+          maxPersons: data.maxPersons || null,
+          applyToAllPersons: data.applyToAllPersons || false,
+          roomTypes: data.roomTypes || [],
+          applyToAllRooms: data.applyToAllRooms || false,
+          discountType: data.discountType || 'percentage',
+          discountValue: data.discountValue || 0,
+          couponCode: data.couponCode || null,
+          lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        };
+
+        const isValid = isSpecialOfferValid(offer, {
+          now,
+          guestCount,
+        });
+
+        if (!isValid) {
+          const end = offer.endDate ? new Date(offer.endDate) : null;
+          const expiryMsg = end
+            ? `This offer expired on ${end.toLocaleDateString()}.`
+            : 'This offer is no longer valid.';
+          return { success: false, message: expiryMsg };
+        }
+
+        setAppliedCoupon({
+          code: normalizedCode,
+          discountType: offer.discountType,
+          discountValue: offer.discountValue,
+          offerId: offer.id,
+          source: 'special',
+          expiresAt: offer.endDate || null,
+          title: offer.title,
+        });
+
+        return { success: true };
+      }
+
+      // Fallback to general discount offers
+      const discountsRef = collection(db, 'discounts');
+      const discountQuery = query(discountsRef, where('couponCode', '==', normalizedCode));
+      const discountSnapshot = await getDocs(discountQuery);
+
+      if (!discountSnapshot.empty) {
+        const discountData = discountSnapshot.docs[0].data();
+        if (!discountData.isActive) {
+          return { success: false, message: 'This discount is not active.' };
+        }
+
+        setAppliedCoupon({
+          code: normalizedCode,
+          discountType: 'percentage',
+          discountValue: discountData.discountPercent || 0,
+          offerId: discountSnapshot.docs[0].id,
+          source: 'discount',
+        });
+        return { success: true };
+      }
+
+      return { success: false, message: 'Invalid coupon code.' };
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      return { success: false, message: 'Failed to apply coupon. Please try again.' };
+    }
+  };
+
+  // Remove coupon
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -176,7 +328,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         bookingData,
         setBookingData,
         updateBookingData,
-        bookingSetThisSession
+        bookingSetThisSession,
+        appliedCoupon,
+        applyCoupon,
+        removeCoupon,
+        getDiscountAmount,
       }}
     >
       {children}
