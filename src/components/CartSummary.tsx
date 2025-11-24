@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { PencilIcon, TrashIcon, TagIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -137,6 +137,17 @@ export default function CartSummary({
     setCouponError('');
   };
 
+  useEffect(() => {
+    if (showCouponField && !appliedCoupon) {
+      setTimeout(() => {
+        const input = document.getElementById('cart-coupon-input');
+        if (input instanceof HTMLInputElement) {
+          input.focus();
+        }
+      }, 50);
+    }
+  }, [showCouponField, appliedCoupon]);
+
   if (variant === "checkout") {
     return (
       <div
@@ -272,6 +283,18 @@ export default function CartSummary({
 
           {/* Coupon Code Section */}
           <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Have a coupon code?</span>
+              {!appliedCoupon && (
+                <button
+                  onClick={handleApplyOfferToggle}
+                  className="flex items-center gap-1 text-[#1D69F9] text-sm font-semibold"
+                >
+                  <TagIcon className="w-4 h-4" />
+                  {showCouponField ? 'Hide Offer' : 'Apply Offer'}
+                </button>
+              )}
+            </div>
             {appliedCoupon ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -295,13 +318,11 @@ export default function CartSummary({
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-            ) : (
+            ) : showCouponField ? (
               <div className="border border-gray-300 rounded-lg p-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Have a coupon code?
-                </label>
                 <div className="flex gap-2">
                   <input
+                    id="cart-coupon-input"
                     type="text"
                     value={couponCode}
                     onChange={(e) => {
@@ -323,7 +344,7 @@ export default function CartSummary({
                   <p className="mt-2 text-xs text-red-600">{couponError}</p>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Price Breakdown */}
@@ -523,6 +544,7 @@ export default function CartSummary({
               </label>
               <div className="flex gap-2">
                 <input
+                  id="cart-coupon-input"
                   type="text"
                   value={couponCode}
                   onChange={(e) => {

@@ -82,7 +82,7 @@ export default function BookingConfirmationPopup({
           {/* View Details Button */}
           <button
             onClick={onClose}
-            className="mt-2 w-[140px] md:w-[160px] h-[34px] md:h-[36px] bg-[#FF6A00] rounded-[34px] flex items-center justify-center text-white text-[13px] md:text-[14px] font-semibold font-['Poppins'] leading-[1.5] tracking-[-0.03em] hover:bg-[#E55A00] transition-colors"
+            className="mt-2 w-[140px] md:w-[160px] h-[34px] md:h-[36px] bg-[#1D69F9] rounded-[34px] flex items-center justify-center text-white text-[13px] md:text-[14px] font-semibold font-['Poppins'] leading-[1.5] tracking-[-0.03em] hover:bg-[#E55A00] transition-colors"
           >
             View Details
           </button>

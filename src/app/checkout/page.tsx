@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -8,14 +8,15 @@ import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
+// import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService"; // TEMP: payment integration disabled for email testing
 import { 
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
   PlusIcon,
   ArrowUpTrayIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  TagIcon
 } from "@heroicons/react/24/outline";
 
 interface Guest {
@@ -45,11 +46,42 @@ interface Address {
 
 interface PaymentData {
   couponCode: string;
+  cardHolderName: string;
+  cardNumber: string;
+  expiryDate: string;
+  cvv: string;
 }
+
+const fallbackRoomLabels = {
+  garden: ["DESERT ROSE", "EUCALYPTUS", "BOUGAINVILLEA", "HIBISCUS"],
+  imperial: ["IMPERIAL STAR", "ROYAL PALM", "SULTAN PEARL", "EMPEROR SUITE"],
+  ocean: ["OCEAN BREEZE", "SEA FOAM", "CORAL REEF", "TIDAL WAVE"],
+};
+
+const resolveFallbackRoomLabel = (roomName?: string) => {
+  const source = roomName?.toLowerCase() || "";
+  let bucket: keyof typeof fallbackRoomLabels | null = null;
+  if (source.includes("garden")) bucket = "garden";
+  else if (source.includes("imperial") || source.includes("deluxe")) bucket = "imperial";
+  else if (source.includes("ocean") || source.includes("sea")) bucket = "ocean";
+
+  if (!bucket) return null;
+  const labels = fallbackRoomLabels[bucket];
+  return labels[Math.floor(Math.random() * labels.length)];
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { bookingData, rooms, addOns, calculateTotal, getNumberOfNights } = useCart();
+  const {
+    bookingData,
+    rooms,
+    addOns,
+    calculateTotal,
+    getNumberOfNights,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon
+  } = useCart();
   const { showToast } = useToast();
 
   const [guests, setGuests] = useState<Guest[]>([
@@ -82,7 +114,214 @@ export default function CheckoutPage() {
 
   const [payment, setPayment] = useState<PaymentData>({
     couponCode: "",
+    cardHolderName: "",
+    cardNumber: "",
+    expiryDate: "",
+    cvv: "",
   });
+
+  const [cardErrors, setCardErrors] = useState<Partial<Record<keyof Omit<PaymentData, 'couponCode'>, string>>>({});
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showPaymentCouponField, setShowPaymentCouponField] = useState(false);
+
+  const formatCardNumber = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 16);
+    return digitsOnly.replace(/(.{4})/g, "$1 ").trim();
+  };
+
+  const luhnCheck = (value: string) => {
+    const digits = value.replace(/\s/g, "");
+    let sum = 0;
+    let shouldDouble = false;
+
+    for (let i = digits.length - 1; i >= 0; i -= 1) {
+      let digit = parseInt(digits.charAt(i), 10);
+      if (shouldDouble) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+
+    return sum % 10 === 0;
+  };
+
+  const formatExpiryDate = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "";
+    if (digits.length <= 2) return digits;
+    const month = digits.slice(0, 2);
+    let yearSegment = digits.slice(2);
+    if (yearSegment.length > 2) {
+      yearSegment = yearSegment.slice(-2);
+    }
+    return `${month}/${yearSegment}`;
+  };
+
+  const isFutureExpiry = (value: string) => {
+    const [monthStr, yearStr] = value.split("/");
+    if (!monthStr || !yearStr || monthStr.length !== 2 || yearStr.length !== 2) return false;
+
+    const month = parseInt(monthStr, 10);
+    const twoDigitYear = parseInt(yearStr, 10);
+
+    if (Number.isNaN(month) || Number.isNaN(twoDigitYear)) return false;
+    if (month < 1 || month > 12) return false;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const expiryYear = 2000 + twoDigitYear;
+
+    if (expiryYear < currentYear) {
+      return false;
+    }
+
+    if (expiryYear === currentYear) {
+      return month >= currentMonth;
+    }
+
+    // Optional upper bound to avoid accidental 2100+ entries
+    if (expiryYear > currentYear + 20) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const validatePaymentInputs = () => {
+    const errors: typeof cardErrors = {};
+    const trimmedName = payment.cardHolderName.trim();
+    const normalizedNumber = payment.cardNumber.replace(/\s/g, "");
+    const expiry = payment.expiryDate.trim();
+    const cvv = payment.cvv.trim();
+
+    if (!trimmedName) {
+      errors.cardHolderName = "Cardholder name is required.";
+    } else if (!/^[A-Za-z][A-Za-z\s'.-]*$/.test(trimmedName)) {
+      errors.cardHolderName = "Use letters, spaces, apostrophes, or hyphens only.";
+    }
+
+    if (normalizedNumber.length < 13 || !luhnCheck(payment.cardNumber)) {
+      errors.cardNumber = "Enter a valid card number.";
+    }
+
+    if (!/^\d{2}\/\d{2}$/.test(expiry) || !isFutureExpiry(expiry)) {
+      errors.expiryDate = "Enter a valid future date (MM/YY).";
+    }
+
+    if (!/^\d{3,4}$/.test(cvv)) {
+      errors.cvv = "CVV must be 3 or 4 digits.";
+    }
+
+    return errors;
+  };
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      setPayment(prev => ({ ...prev, couponCode: appliedCoupon.code }));
+      setCouponFeedback({
+        type: 'success',
+        message: `Coupon "${appliedCoupon.code}" applied successfully.`,
+      });
+    } else if (!appliedCoupon && couponFeedback?.type === 'success') {
+      setCouponFeedback(null);
+    }
+  }, [appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleApplyCoupon = async () => {
+    if (!payment.couponCode.trim()) {
+      setCouponFeedback({ type: 'error', message: 'Please enter a coupon code.' });
+      return;
+    }
+
+    try {
+      setIsApplyingCoupon(true);
+      const result = await applyCoupon(payment.couponCode.toUpperCase());
+      if (result.success) {
+        setCouponFeedback({
+          type: 'success',
+          message: `Coupon "${payment.couponCode.toUpperCase()}" applied successfully.`,
+        });
+        setShowPaymentCouponField(false);
+      } else {
+        setCouponFeedback({
+          type: 'error',
+          message: result.message || 'Unable to apply coupon.',
+        });
+      }
+    } catch (error) {
+      console.error('Coupon apply error:', error);
+      setCouponFeedback({
+        type: 'error',
+        message: 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponFeedback(null);
+    setPayment(prev => ({ ...prev, couponCode: "" }));
+    setShowPaymentCouponField(true);
+  };
+
+  const handleCouponInputChange = (value: string) => {
+    setPayment(prev => ({ ...prev, couponCode: value.toUpperCase() }));
+    if (couponFeedback?.type === 'error') {
+      setCouponFeedback(null);
+    }
+  };
+
+  const handleTogglePaymentCouponField = () => {
+    setShowPaymentCouponField((prev) => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => {
+          const input = document.getElementById('checkout-coupon-input');
+          if (input instanceof HTMLInputElement) {
+            input.focus();
+          }
+        }, 50);
+      }
+      return next;
+    });
+  };
+
+  const handleCardHolderChange = (value: string) => {
+    const sanitized = value.replace(/[^A-Za-z\s'.-]/g, "");
+    setPayment(prev => ({ ...prev, cardHolderName: sanitized }));
+    if (cardErrors.cardHolderName) {
+      setCardErrors(prev => ({ ...prev, cardHolderName: undefined }));
+    }
+  };
+
+  const handleCardNumberChange = (value: string) => {
+    setPayment(prev => ({ ...prev, cardNumber: formatCardNumber(value) }));
+    if (cardErrors.cardNumber) {
+      setCardErrors(prev => ({ ...prev, cardNumber: undefined }));
+    }
+  };
+
+  const handleExpiryChange = (value: string) => {
+    setPayment(prev => ({ ...prev, expiryDate: formatExpiryDate(value) }));
+    if (cardErrors.expiryDate) {
+      setCardErrors(prev => ({ ...prev, expiryDate: undefined }));
+    }
+  };
+
+  const handleCvvChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    setPayment(prev => ({ ...prev, cvv: digits }));
+    if (cardErrors.cvv) {
+      setCardErrors(prev => ({ ...prev, cvv: undefined }));
+    }
+  };
 
   const [agreements, setAgreements] = useState({
     privacy: false,
@@ -91,7 +330,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
-  const [popupBookingData] = useState({
+  const [popupBookingData, setPopupBookingData] = useState({
     bookingId: "",
     checkIn: "",
     checkOut: "",
@@ -165,6 +404,13 @@ export default function CheckoutPage() {
       return;
     }
 
+    const paymentValidation = validatePaymentInputs();
+    if (Object.keys(paymentValidation).length > 0) {
+      setCardErrors(paymentValidation);
+      return;
+    }
+    setCardErrors({});
+
     setIsSubmitting(true);
     try {
       const bookingId = `#BKG${Date.now()}`;
@@ -234,7 +480,7 @@ export default function CheckoutPage() {
       };
       
       // Check availability before proceeding
-      const { checkRoomAvailability } = await import('@/lib/bookingService');
+      const { checkRoomAvailability, createBookingService, getBookingById } = await import('@/lib/bookingService');
       const availability = await checkRoomAvailability(bookingDetails);
       
       if (!availability.available) {
@@ -242,51 +488,122 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
         return;
       }
-      
-      if (typeof window === 'undefined') {
-        throw new Error('Payment processing is only available in the browser.');
-      }
 
-      // Store booking details until payment verification succeeds
-      localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+      /*
+        TEMPORARILY DISABLED PAYMENT FLOW (DPO):
+        Once the payment endpoint is fixed, remove this block comment to reinstate the redirect.
 
-      const baseURL = window.location.origin;
-      const successURL = `${baseURL}/payment/success`;
-      const failureURL = `${baseURL}/payment/failure`;
+        if (typeof window === 'undefined') {
+          throw new Error('Payment processing is only available in the browser.');
+        }
 
-      // Prepare payment request - ensure all fields are properly formatted
-      // CRITICAL: DPO requires exact format - no undefined, no null, no empty strings for required fields
-      const paymentRequest = {
-        amount: totalAmount,
-        currency: 'USD',
-        companyRef: bookingId,
-        redirectURL: successURL,
-        backURL: failureURL,
-        customerFirstName: (guests[0]?.firstName || '').trim(),
-        customerLastName: (guests[0]?.lastName || '').trim(),
-        customerEmail: (guests[0]?.email || '').trim(),
-        customerPhone: (guests[0]?.mobile || '').trim() || '0000000000',
-        customerAddress: address?.address1 ? address.address1.trim() : undefined,
-        customerCity: address?.city ? address.city.trim() : undefined,
-        customerCountry: address?.country ? address.country.trim() : undefined,
-        customerZip: address?.zipCode ? address.zipCode.trim() : undefined,
-        serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`.trim()
+        localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+
+        const baseURL = window.location.origin;
+        const successURL = `${baseURL}/payment/success`;
+        const failureURL = `${baseURL}/payment/failure`;
+
+        const paymentRequest = {
+          amount: totalAmount,
+          currency: 'USD',
+          companyRef: bookingId,
+          redirectURL: successURL,
+          backURL: failureURL,
+          customerFirstName: (guests[0]?.firstName || '').trim(),
+          customerLastName: (guests[0]?.lastName || '').trim(),
+          customerEmail: (guests[0]?.email || '').trim(),
+          customerPhone: (guests[0]?.mobile || '').trim() || '0000000000',
+          customerAddress: address?.address1 ? address.address1.trim() : undefined,
+          customerCity: address?.city ? address.city.trim() : undefined,
+          customerCountry: address?.country ? address.country.trim() : undefined,
+          customerZip: address?.zipCode ? address.zipCode.trim() : undefined,
+          serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`.trim()
+        };
+
+        const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
+
+        if (!paymentTokenResponse.TransToken) {
+          throw new Error(paymentTokenResponse.ResultExplanation || 'Failed to create payment token');
+        }
+
+        const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
+
+        if (!paymentURL) {
+          throw new Error('Unable to generate payment URL. Please try again later.');
+        }
+
+        showToast('Redirecting to secure payment page...', 'success');
+        window.location.href = paymentURL;
+      */
+
+      const confirmedBookingPayload = {
+        ...bookingDetails,
+        status: 'confirmed' as const,
+        paymentStatus: 'bypassed' as const
       };
 
-      const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
+      const bookingRecordId = await createBookingService(confirmedBookingPayload);
+      const createdBooking = await getBookingById(bookingRecordId);
 
-      if (!paymentTokenResponse.TransToken) {
-        throw new Error(paymentTokenResponse.ResultExplanation || 'Failed to create payment token');
-      }
+      const primaryBookingRoom: { type: string; price: number; suiteType?: string } =
+        confirmedBookingPayload.rooms[0] || { type: 'Standard Room', price: 0 };
 
-      const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
+      const confirmationRoomName =
+        rooms.length > 0
+          ? (rooms[0].name || rooms[0].type || primaryBookingRoom.type)
+          : primaryBookingRoom.type;
 
-      if (!paymentURL) {
-        throw new Error('Unable to generate payment URL. Please try again later.');
-      }
+      const fallbackRoomName = resolveFallbackRoomLabel(confirmationRoomName || primaryBookingRoom.type);
+      const finalAllocatedRoomType =
+        createdBooking?.rooms?.[0]?.allocatedRoomType ||
+        fallbackRoomName ||
+        '';
 
-      showToast('Redirecting to secure payment page...', 'success');
-      window.location.href = paymentURL;
+      const finalSuiteType =
+        createdBooking?.rooms?.[0]?.suiteType ||
+        primaryBookingRoom.suiteType ||
+        (confirmationRoomName?.toLowerCase().includes('garden')
+          ? 'Garden Suite'
+          : confirmationRoomName?.toLowerCase().includes('ocean') || confirmationRoomName?.toLowerCase().includes('sea')
+            ? 'Ocean Suite'
+            : confirmationRoomName?.toLowerCase().includes('imperial') || confirmationRoomName?.toLowerCase().includes('deluxe')
+              ? 'Imperial Suite'
+              : undefined);
+
+      const confirmationData = {
+        ...confirmedBookingPayload,
+        id: bookingRecordId,
+        room: {
+          ...primaryBookingRoom,
+          name: confirmationRoomName || 'Standard Room',
+          price: primaryBookingRoom.price || rooms[0]?.price || 0,
+          allocatedRoomType: finalAllocatedRoomType,
+          suiteType: finalSuiteType
+        },
+        total: confirmedBookingPayload.totalAmount,
+        guestDetails: [
+          {
+            prefix: guests[0].prefix,
+            firstName: guests[0].firstName,
+            lastName: guests[0].lastName,
+            mobile: guests[0].mobile,
+            email: guests[0].email
+          }
+        ]
+      };
+
+      localStorage.setItem('bookingDetails', JSON.stringify(confirmationData));
+
+      setPopupBookingData({
+        bookingId: confirmedBookingPayload.bookingId,
+        checkIn: confirmedBookingPayload.checkIn,
+        checkOut: confirmedBookingPayload.checkOut,
+        email: guests[0].email,
+        allocatedRoomType: finalAllocatedRoomType
+      });
+
+      setShowConfirmationPopup(true);
+      showToast('Booking confirmed without payment for testing.', 'success');
     } catch (err) {
       console.error("Error creating booking:", err);
       alert(`Booking processing error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
@@ -299,6 +616,8 @@ export default function CheckoutPage() {
     setShowConfirmationPopup(false);
     router.push("/confirmation");
   };
+
+  const couponAlreadyApplied = Boolean(appliedCoupon && appliedCoupon.code === payment.couponCode);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -708,29 +1027,143 @@ export default function CheckoutPage() {
                 <p className="text-[12px] text-[#FF1414]">Your booking will not be confirmed until payment is processed</p>
                 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-[14px] text-black">Use of card & Coupon Code</p>
-                    <ChevronDownIcon className="w-4 h-4 text-[#313131]" />
+                    <button
+                      type="button"
+                      onClick={handleTogglePaymentCouponField}
+                      className="flex items-center gap-2 text-[#1D69F9] text-[14px] font-semibold"
+                    >
+                      <TagIcon className="w-4 h-4" />
+                      {showPaymentCouponField ? 'Hide Offer' : 'Apply Offer'}
+                    </button>
                   </div>
                   <div className="w-full h-px bg-[rgba(0,0,0,0.34)]"></div>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="block text-[14px] text-[#202C3B]">Coupon Code</label>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={payment.couponCode}
-                      onChange={(e) => updatePayment("couponCode", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-[rgba(0,0,0,0.25)] text-[14px] text-[#313131]"
-                      placeholder=""
-                    />
+                {showPaymentCouponField && !appliedCoupon && (
+                  <div className="space-y-2">
+                    <label className="block text-[14px] text-[#202C3B]">Coupon Code</label>
+                    <div className="flex gap-3">
+                      <input
+                        id="checkout-coupon-input"
+                        type="text"
+                        value={payment.couponCode}
+                        onChange={(e) => handleCouponInputChange(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-[rgba(0,0,0,0.25)] text-[14px] text-[#313131] uppercase tracking-[0.15em]"
+                        placeholder="ENTER CODE"
+                        autoComplete="off"
+                        maxLength={16}
+                        disabled={couponAlreadyApplied}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        className={`px-6 py-[7px] text-white text-[18px] font-semibold ${couponAlreadyApplied ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1D69F9] hover:bg-[#1750c2] transition-colors'}`}
+                        disabled={couponAlreadyApplied || isApplyingCoupon}
+                      >
+                        {couponAlreadyApplied ? 'Applied' : isApplyingCoupon ? 'Applying...' : 'Apply'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {showPaymentCouponField && couponFeedback && (
+                  <p className={`text-sm ${couponFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                    {couponFeedback.message}
+                  </p>
+                )}
+
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between border border-green-500 bg-green-50 px-3 py-2 text-sm text-green-700 rounded">
+                    <span>
+                      Coupon <strong>{appliedCoupon.code}</strong> active
+                      {appliedCoupon.discountType === 'percentage' && ` (${appliedCoupon.discountValue}% off)`}
+                    </span>
                     <button
                       type="button"
-                      className="px-6 py-[7px] bg-[#1D69F9] text-white text-[18px] font-semibold"
+                      onClick={handleRemoveCoupon}
+                      className="text-xs text-red-500 hover:text-red-700 font-semibold"
                     >
-                      Apply
+                      Remove
                     </button>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[14px] text-[#202C3B] mb-1">
+                      Cardholder Name
+                    </label>
+                    <input
+                      type="text"
+                      value={payment.cardHolderName}
+                      onChange={(e) => handleCardHolderChange(e.target.value)}
+                      className={`w-full px-3 py-2 border ${cardErrors.cardHolderName ? 'border-red-500' : 'border-[rgba(0,0,0,0.25)]'} text-[14px] text-[#313131]`}
+                      placeholder="Name on card"
+                      autoComplete="cc-name"
+                    />
+                    {cardErrors.cardHolderName && (
+                      <p className="text-xs text-red-600 mt-1">{cardErrors.cardHolderName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] text-[#202C3B] mb-1">
+                      Card Number
+                    </label>
+                    <input
+                      type="text"
+                      value={payment.cardNumber}
+                      onChange={(e) => handleCardNumberChange(e.target.value)}
+                      className={`w-full px-3 py-2 border ${cardErrors.cardNumber ? 'border-red-500' : 'border-[rgba(0,0,0,0.25)]'} text-[14px] text-[#313131] tracking-[0.25em]`}
+                      placeholder="0000 0000 0000 0000"
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                      maxLength={19}
+                    />
+                    {cardErrors.cardNumber && (
+                      <p className="text-xs text-red-600 mt-1">{cardErrors.cardNumber}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[14px] text-[#202C3B] mb-1">
+                        Expiration Date
+                      </label>
+                      <input
+                        type="text"
+                        value={payment.expiryDate}
+                        onChange={(e) => handleExpiryChange(e.target.value)}
+                        className={`w-full px-3 py-2 border ${cardErrors.expiryDate ? 'border-red-500' : 'border-[rgba(0,0,0,0.25)]'} text-[14px] text-[#313131]`}
+                        placeholder="MM/YY"
+                        inputMode="numeric"
+                        autoComplete="cc-exp"
+                        maxLength={5}
+                      />
+                      {cardErrors.expiryDate && (
+                        <p className="text-xs text-red-600 mt-1">{cardErrors.expiryDate}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[14px] text-[#202C3B] mb-1">
+                        CVV
+                      </label>
+                      <input
+                        type="password"
+                        value={payment.cvv}
+                        onChange={(e) => handleCvvChange(e.target.value)}
+                        className={`w-full px-3 py-2 border ${cardErrors.cvv ? 'border-red-500' : 'border-[rgba(0,0,0,0.25)]'} text-[14px] text-[#313131]`}
+                        placeholder="123"
+                        maxLength={4}
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                      />
+                      {cardErrors.cvv && (
+                        <p className="text-xs text-red-600 mt-1">{cardErrors.cvv}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
