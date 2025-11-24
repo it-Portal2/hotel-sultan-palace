@@ -121,19 +121,6 @@ const GuestReviewsSection: React.FC = () => {
 
   // Calculate average ratings from reviews
   const calculateAverageRatings = () => {
-    if (reviews.length === 0) {
-      return {
-        staff: 9.2,
-        facilities: 9.2,
-        cleanliness: 8.9,
-        comfort: 9.3,
-        value: 9.2,
-        location: 8.8,
-        wifi: 9.0,
-        overall: 8.7,
-      };
-    }
-
     const staffRatings = reviews.filter(r => r.staffRating).map(r => r.staffRating!);
     const facilitiesRatings = reviews.filter(r => r.facilitiesRating).map(r => r.facilitiesRating!);
     const cleanlinessRatings = reviews.filter(r => r.cleanlinessRating).map(r => r.cleanlinessRating!);
@@ -143,18 +130,19 @@ const GuestReviewsSection: React.FC = () => {
     const wifiRatings = reviews.filter(r => r.wifiRating).map(r => r.wifiRating!);
     const overallRatings = reviews.map(r => r.rating);
 
-    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-    const scaleTo10 = (val: number) => (val / 5) * 10;
+    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const scaleTo10 = (val: number | null) => (val !== null ? (val / 5) * 10 : null);
+    const normalize = (val: number | null) => (val !== null ? Number(val.toFixed(1)) : null);
 
     return {
-      staff: staffRatings.length > 0 ? scaleTo10(avg(staffRatings)) : 9.2,
-      facilities: facilitiesRatings.length > 0 ? scaleTo10(avg(facilitiesRatings)) : 9.2,
-      cleanliness: cleanlinessRatings.length > 0 ? scaleTo10(avg(cleanlinessRatings)) : 8.9,
-      comfort: comfortRatings.length > 0 ? scaleTo10(avg(comfortRatings)) : 9.3,
-      value: valueRatings.length > 0 ? scaleTo10(avg(valueRatings)) : 9.2,
-      location: locationRatings.length > 0 ? scaleTo10(avg(locationRatings)) : 8.8,
-      wifi: wifiRatings.length > 0 ? scaleTo10(avg(wifiRatings)) : 9.0,
-      overall: overallRatings.length > 0 ? scaleTo10(avg(overallRatings)) : 8.7,
+      staff: normalize(scaleTo10(avg(staffRatings))),
+      facilities: normalize(scaleTo10(avg(facilitiesRatings))),
+      cleanliness: normalize(scaleTo10(avg(cleanlinessRatings))),
+      comfort: normalize(scaleTo10(avg(comfortRatings))),
+      value: normalize(scaleTo10(avg(valueRatings))),
+      location: normalize(scaleTo10(avg(locationRatings))),
+      wifi: normalize(scaleTo10(avg(wifiRatings))),
+      overall: normalize(scaleTo10(avg(overallRatings))),
     };
   };
 
@@ -190,7 +178,17 @@ const GuestReviewsSection: React.FC = () => {
     { label: 'Value for money', score: averageRatings.value },
     { label: 'Location', score: averageRatings.location },
     { label: 'Free WiFi', score: averageRatings.wifi },
-  ];
+  ].filter(
+    (category): category is { label: string; score: number } =>
+      typeof category.score === 'number' && !Number.isNaN(category.score)
+  );
+
+  const formattedOverallScore =
+    typeof averageRatings.overall === 'number' && !Number.isNaN(averageRatings.overall)
+      ? averageRatings.overall.toFixed(1)
+      : '0.0';
+
+  const hasCategoryRatings = ratingCategories.length > 0;
 
   if (loading) {
     return (
@@ -209,7 +207,7 @@ const GuestReviewsSection: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 pb-6 sm:pb-8 border-b border-[#EBEBEB]">
         <div className="w-full sm:w-auto">
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-2">
-            <h2 className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A]">({averageRatings.overall.toFixed(1)})</h2>
+            <h2 className="text-[28px] sm:text-[32px] font-bold text-[#1A1A1A]">({formattedOverallScore})</h2>
             <span className="text-[14px] sm:text-[15px] text-[#333333] font-medium">
               {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
             </span>
@@ -237,20 +235,24 @@ const GuestReviewsSection: React.FC = () => {
       {/* Categories Section */}
       <div className="space-y-4 sm:space-y-6 md:space-y-8">
         <h3 className="text-[20px] sm:text-[22px] md:text-[24px] font-semibold text-[#3F3F3F]">Categories:</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 md:gap-x-12 gap-y-4 sm:gap-y-6">
-          {ratingCategories.map((category) => (
-            <div key={category.label} className="space-y-1">
-              <span className="text-[13px] sm:text-[14px] text-[#1A1A1A]">{category.label}</span>
-              <div className="w-full bg-[#EBEBEB] h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-[#3F8406] h-full rounded-full" 
-                  style={{ width: `${Math.min(100, (category.score / 10) * 100)}%` }}
-                ></div>
+        {hasCategoryRatings ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 md:gap-x-12 gap-y-4 sm:gap-y-6">
+            {ratingCategories.map((category) => (
+              <div key={category.label} className="space-y-1">
+                <span className="text-[13px] sm:text-[14px] text-[#1A1A1A]">{category.label}</span>
+                <div className="w-full bg-[#EBEBEB] h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-[#3F8406] h-full rounded-full" 
+                    style={{ width: `${Math.min(100, (category.score / 10) * 100)}%` }}
+                  ></div>
+                </div>
+                <span className="text-[11px] sm:text-[12px] text-[#636363] font-medium">{category.score.toFixed(1)}</span>
               </div>
-              <span className="text-[11px] sm:text-[12px] text-[#636363] font-medium">{category.score}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">Category ratings will appear once guests start rating specific aspects of their stay.</p>
+        )}
       </div>
 
       {/* Guest Reviews Section */}

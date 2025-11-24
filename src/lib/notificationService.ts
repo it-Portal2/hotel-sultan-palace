@@ -80,6 +80,15 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
 
     // Save token to Firestore
     await saveTokenToFirestore(token);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('fcmPermissionGranted', 'true');
+      } catch (err) {
+        console.warn('Unable to persist notification permission flag:', err);
+      }
+    }
+
     return token;
   } catch (error) {
     console.error('Error getting notification token:', error);

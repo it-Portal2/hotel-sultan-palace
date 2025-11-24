@@ -8,6 +8,7 @@ import { ToastProvider } from "@/context/ToastContext";
 import { BookingEnquiryProvider } from "@/context/BookingEnquiryContext";
 import NotificationPermission from "@/components/notifications/NotificationPermission";
 import NotificationListener from "@/components/notifications/NotificationListener";
+import OfferNotificationManager from "@/components/notifications/OfferNotificationManager";
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -45,6 +46,7 @@ export default function RootLayout({
               {children}
               <NotificationListener />
               <NotificationPermission />
+              <OfferNotificationManager />
             </BookingEnquiryProvider>
           </ToastProvider>
         </CartProvider>

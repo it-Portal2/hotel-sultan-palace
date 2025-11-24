@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { setupForegroundMessageListener, isNotificationPermissionGranted } from '@/lib/notificationService';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 interface ActiveOfferNotification {
@@ -15,9 +15,14 @@ interface ActiveOfferNotification {
 
 export default function NotificationListener() {
   const router = useRouter();
+  const pathname = usePathname();
   const [activeNotification, setActiveNotification] = useState<ActiveOfferNotification | null>(null);
 
   useEffect(() => {
+    if (pathname?.startsWith('/admin')) {
+      return;
+    }
+
     if (!isNotificationPermissionGranted()) {
       return;
     }
@@ -36,7 +41,7 @@ export default function NotificationListener() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [pathname]);
 
   const handleClose = () => setActiveNotification(null);
 

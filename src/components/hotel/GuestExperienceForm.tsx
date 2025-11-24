@@ -188,7 +188,7 @@ const GuestExperienceForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 sm:mt-10 md:mt-12 lg:mt-16">
       <div className="bg-white rounded-lg shadow-lg p-6 md:p-10">
         {/* Header with Logo */}
         <div className="text-center mb-8">
