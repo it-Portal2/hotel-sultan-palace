@@ -8,7 +8,7 @@ import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-// import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService"; // TEMP: payment integration disabled for email testing
+import { createDPOPaymentToken, getDPOPaymentURL } from "@/lib/dpoPaymentService";
 import { 
   PencilIcon,
   TrashIcon,
@@ -489,121 +489,48 @@ export default function CheckoutPage() {
         return;
       }
 
-      /*
-        TEMPORARILY DISABLED PAYMENT FLOW (DPO):
-        Once the payment endpoint is fixed, remove this block comment to reinstate the redirect.
+      // Payment flow - redirect to DPO payment gateway
+      if (typeof window === 'undefined') {
+        throw new Error('Payment processing is only available in the browser.');
+      }
 
-        if (typeof window === 'undefined') {
-          throw new Error('Payment processing is only available in the browser.');
-        }
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
 
-        localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+      const baseURL = window.location.origin;
+      const successURL = `${baseURL}/payment/success`;
+      const failureURL = `${baseURL}/payment/failure`;
 
-        const baseURL = window.location.origin;
-        const successURL = `${baseURL}/payment/success`;
-        const failureURL = `${baseURL}/payment/failure`;
-
-        const paymentRequest = {
-          amount: totalAmount,
-          currency: 'USD',
-          companyRef: bookingId,
-          redirectURL: successURL,
-          backURL: failureURL,
-          customerFirstName: (guests[0]?.firstName || '').trim(),
-          customerLastName: (guests[0]?.lastName || '').trim(),
-          customerEmail: (guests[0]?.email || '').trim(),
-          customerPhone: (guests[0]?.mobile || '').trim() || '0000000000',
-          customerAddress: address?.address1 ? address.address1.trim() : undefined,
-          customerCity: address?.city ? address.city.trim() : undefined,
-          customerCountry: address?.country ? address.country.trim() : undefined,
-          customerZip: address?.zipCode ? address.zipCode.trim() : undefined,
-          serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`.trim()
-        };
-
-        const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
-
-        if (!paymentTokenResponse.TransToken) {
-          throw new Error(paymentTokenResponse.ResultExplanation || 'Failed to create payment token');
-        }
-
-        const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
-
-        if (!paymentURL) {
-          throw new Error('Unable to generate payment URL. Please try again later.');
-        }
-
-        showToast('Redirecting to secure payment page...', 'success');
-        window.location.href = paymentURL;
-      */
-
-      const confirmedBookingPayload = {
-        ...bookingDetails,
-        status: 'confirmed' as const,
-        paymentStatus: 'bypassed' as const
+      const paymentRequest = {
+        amount: totalAmount,
+        currency: 'USD',
+        companyRef: bookingId,
+        redirectURL: successURL,
+        backURL: failureURL,
+        customerFirstName: (guests[0]?.firstName || '').trim(),
+        customerLastName: (guests[0]?.lastName || '').trim(),
+        customerEmail: (guests[0]?.email || '').trim(),
+        customerPhone: (guests[0]?.mobile || '').trim() || '0000000000',
+        customerAddress: address?.address1 ? address.address1.trim() : undefined,
+        customerCity: address?.city ? address.city.trim() : undefined,
+        customerCountry: address?.country ? address.country.trim() : undefined,
+        customerZip: address?.zipCode ? address.zipCode.trim() : undefined,
+        serviceDescription: `Hotel Booking - ${rooms.length > 0 ? rooms[0].name : 'Room'} - ${getNumberOfNights()} night(s)`.trim()
       };
 
-      const bookingRecordId = await createBookingService(confirmedBookingPayload);
-      const createdBooking = await getBookingById(bookingRecordId);
+      const paymentTokenResponse = await createDPOPaymentToken(paymentRequest);
 
-      const primaryBookingRoom: { type: string; price: number; suiteType?: string } =
-        confirmedBookingPayload.rooms[0] || { type: 'Standard Room', price: 0 };
+      if (!paymentTokenResponse.TransToken) {
+        throw new Error(paymentTokenResponse.ResultExplanation || 'Failed to create payment token');
+      }
 
-      const confirmationRoomName =
-        rooms.length > 0
-          ? (rooms[0].name || rooms[0].type || primaryBookingRoom.type)
-          : primaryBookingRoom.type;
+      const paymentURL = getDPOPaymentURL(paymentTokenResponse.TransToken);
 
-      const fallbackRoomName = resolveFallbackRoomLabel(confirmationRoomName || primaryBookingRoom.type);
-      const finalAllocatedRoomType =
-        createdBooking?.rooms?.[0]?.allocatedRoomType ||
-        fallbackRoomName ||
-        '';
+      if (!paymentURL) {
+        throw new Error('Unable to generate payment URL. Please try again later.');
+      }
 
-      const finalSuiteType =
-        createdBooking?.rooms?.[0]?.suiteType ||
-        primaryBookingRoom.suiteType ||
-        (confirmationRoomName?.toLowerCase().includes('garden')
-          ? 'Garden Suite'
-          : confirmationRoomName?.toLowerCase().includes('ocean') || confirmationRoomName?.toLowerCase().includes('sea')
-            ? 'Ocean Suite'
-            : confirmationRoomName?.toLowerCase().includes('imperial') || confirmationRoomName?.toLowerCase().includes('deluxe')
-              ? 'Imperial Suite'
-              : undefined);
-
-      const confirmationData = {
-        ...confirmedBookingPayload,
-        id: bookingRecordId,
-        room: {
-          ...primaryBookingRoom,
-          name: confirmationRoomName || 'Standard Room',
-          price: primaryBookingRoom.price || rooms[0]?.price || 0,
-          allocatedRoomType: finalAllocatedRoomType,
-          suiteType: finalSuiteType
-        },
-        total: confirmedBookingPayload.totalAmount,
-        guestDetails: [
-          {
-            prefix: guests[0].prefix,
-            firstName: guests[0].firstName,
-            lastName: guests[0].lastName,
-            mobile: guests[0].mobile,
-            email: guests[0].email
-          }
-        ]
-      };
-
-      localStorage.setItem('bookingDetails', JSON.stringify(confirmationData));
-
-      setPopupBookingData({
-        bookingId: confirmedBookingPayload.bookingId,
-        checkIn: confirmedBookingPayload.checkIn,
-        checkOut: confirmedBookingPayload.checkOut,
-        email: guests[0].email,
-        allocatedRoomType: finalAllocatedRoomType
-      });
-
-      setShowConfirmationPopup(true);
-      showToast('Booking confirmed without payment for testing.', 'success');
+      showToast('Redirecting to secure payment page...', 'success');
+      window.location.href = paymentURL;
     } catch (err) {
       console.error("Error creating booking:", err);
       alert(`Booking processing error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
