@@ -42,7 +42,13 @@ export async function createPaymentToken(data: {
       hasServiceType: !!process.env.NEXT_PUBLIC_DPO_SERVICE_TYPE,
     });
 
-    const xmlRequest = buildDPOXML(data);
+    // HARDCODED AMOUNT FOR TESTING (DPO Test Account Limit)
+    const testAmount = 10;
+    console.log(
+      `⚠️ OVERRIDING AMOUNT: ${data.amount} -> ${testAmount} for testing`
+    );
+
+    const xmlRequest = buildDPOXML({ ...data, amount: testAmount });
 
     console.log("XML Request length:", xmlRequest.length);
 
