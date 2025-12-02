@@ -61,7 +61,15 @@ export function buildDPOXML(data: {
 </API3G>`;
 }
 
-export function parseDPOResponse(xmlText: string) {
+interface DPOResponse {
+  Result: string | null;
+  ResultExplanation: string | null;
+  TransToken: string | null;
+  TransRef: string | null;
+  rawResponse: string;
+}
+
+export function parseDPOResponse(xmlText: string): DPOResponse {
   const getTag = (xml: string, tag: string): string | null => {
     const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
     const match = xml.match(regex);
@@ -77,7 +85,7 @@ export function parseDPOResponse(xmlText: string) {
   };
 }
 
-export async function createDPOToken(xmlRequest: string): Promise<any> {
+export async function createDPOToken(xmlRequest: string): Promise<DPOResponse> {
   const DPO_API = "https://secure.3gdirectpay.com/API/v6/";
 
   try {
