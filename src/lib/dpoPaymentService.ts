@@ -27,7 +27,6 @@ export interface DPOVerifyResponse {
   ResultExplanation: string;
   TransToken?: string;
   TransRef?: string;
-  // Fields received if Result is 000
   CustomerName?: string;
   TransactionAmount?: string;
   TransactionCurrency?: string;
@@ -36,59 +35,74 @@ export interface DPOVerifyResponse {
 // Create payment token
 export async function createDPOPaymentToken(request: DPOPaymentRequest): Promise<DPOTokenResponse> {
   try {
-      const response = await fetch('/api/payment/create-token', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-      });
+    const response = await fetch('/api/payment/create-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
 
-      // If response is not OK
-      if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ 
-              Result: '001', 
-              ResultExplanation: `HTTP ${response.status}: ${response.statusText}` 
-          }));
-          throw new Error(errorData.ResultExplanation || `Payment request failed with status ${response.status}`);
-      }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ 
+        Result: '001', 
+        ResultExplanation: `HTTP ${response.status}: ${response.statusText}` 
+      }));
+      throw new Error(errorData.ResultExplanation || `Payment request failed with status ${response.status}`);
+    }
 
-      const data = await response.json();
+    const data = await response.json();
 
-      // If response is OK, but DPO returned an error inside JSON
-      if (data.Result !== '000') {
-          const errorMessage = data.ResultExplanation || 'Failed to create payment token';
-          throw new Error(errorMessage);
-      }
+    if (data.Result !== '000') {
+      const errorMessage = data.ResultExplanation || 'Failed to create payment token';
+      throw new Error(errorMessage);
+    }
 
-      return data;
+    return data;
   } catch (error) {
-      if (error instanceof Error) {
-          throw error;
-      }
-      throw new Error('Failed to create payment token: Unknown error');
+    console.error('DPO Payment Token Error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to create payment token: Unknown error');
   }
 }
 
 // Verify payment token
 export async function verifyDPOPayment(token: string): Promise<DPOVerifyResponse> {
-  const response = await fetch('/api/payment/verify', {
+  try {
+    const response = await fetch('/api/payment/verify', {
       method: 'POST',
       headers: {
-          'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ token }),
-  });
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
       throw new Error(`Payment verification failed: ${response.statusText}`);
-  }
+    }
 
-  return response.json();
+    return response.json();
+  } catch (error) {
+    console.error('DPO Payment Verification Error:', error);
+    throw error;
+  }
 }
 
 // Get payment URL for redirect
 export function getDPOPaymentURL(token: string): string {
-  const baseURL = process.env.NEXT_PUBLIC_DPO_PAYMENT_URL ?? '';
+  const baseURL = process.env.NEXT_PUBLIC_DPO_PAYMENT_URL;
+  
+  if (!baseURL) {
+    throw new Error(
+      'DPO Payment URL is not configured. Please set NEXT_PUBLIC_DPO_PAYMENT_URL in your environment variables.'
+    );
+  }
+
+  if (!token) {
+    throw new Error('Payment token is required to generate payment URL.');
+  }
+
   return `${baseURL}?ID=${token}`;
 }
