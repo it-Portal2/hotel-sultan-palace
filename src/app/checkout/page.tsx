@@ -8,11 +8,7 @@ import CartSummary from "@/components/CartSummary";
 import BookingConfirmationPopup from "@/components/BookingConfirmationPopup";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-// import {
-//   createDPOPaymentToken,
-//   getDPOPaymentURL,
-// } from "@/lib/dpoPaymentService";
-
+import { createPaymentToken } from "@/app/actions/payment";
 import {
   PencilIcon,
   TrashIcon,
@@ -22,7 +18,6 @@ import {
   ArrowLeftIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
-import { createPaymentToken } from "../actions/payment";
 
 interface Guest {
   id: string;
