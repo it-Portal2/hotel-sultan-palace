@@ -12,7 +12,7 @@ import { useToast } from "@/context/ToastContext";
 //   createDPOPaymentToken,
 //   getDPOPaymentURL,
 // } from "@/lib/dpoPaymentService";
-import { createPaymentToken } from "@/app/actions/payment";
+
 import {
   PencilIcon,
   TrashIcon,
@@ -22,6 +22,7 @@ import {
   ArrowLeftIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
+import { createPaymentToken } from "../actions/payment";
 
 interface Guest {
   id: string;
