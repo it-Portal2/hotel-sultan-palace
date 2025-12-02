@@ -25,9 +25,15 @@ export function buildDPOXML(data: {
   };
 
   const today = new Date();
-  const serviceDate = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+  const serviceDate = `${today.getFullYear()}/${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}/${String(today.getDate()).padStart(2, "0")} ${String(
+    today.getHours()
+  ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
 
-  const companyToken = process.env.NEXT_PUBLIC_DPO_COMPANY_TOKEN || "B3F59BE7-0756-420E-BB88-1D98E7A6B040";
+  const companyToken =
+    process.env.NEXT_PUBLIC_DPO_COMPANY_TOKEN ||
+    "B3F59BE7-0756-420E-BB88-1D98E7A6B040";
   const serviceType = process.env.NEXT_PUBLIC_DPO_SERVICE_TYPE || "54841";
 
   return `<?xml version="1.0" encoding="utf-8"?>
@@ -44,17 +50,39 @@ export function buildDPOXML(data: {
     <PTL>5</PTL>
     <CustomerFirstName>${escapeXML(data.customerFirstName)}</CustomerFirstName>
     <CustomerLastName>${escapeXML(data.customerLastName)}</CustomerLastName>
-    ustomerEmail>${escapeXML(data.customerEmail)}</customerEmail>
-    ustomerPhone>${escapeXML(data.customerPhone)}</customerPhone>
-    ${data.customerAddress ? `ustomerAddress>${escapeXML(data.customerAddress)}</customerAddress>` : ''}
-    ${data.customerCity ? `ustomerCity>${escapeXML(data.customerCity)}</customerCity>` : ''}
-    ${data.customerCountry ? `ustomerCountry>${escapeXML(data.customerCountry)}</customerCountry>` : ''}
-    ${data.customerZip ? `ustomerZip>${escapeXML(data.customerZip)}</customerZip>` : ''}
+    <CustomerEmail>${escapeXML(data.customerEmail)}</CustomerEmail>
+    <CustomerPhone>${escapeXML(data.customerPhone)}</CustomerPhone>
+    ${
+      data.customerAddress
+        ? `<CustomerAddress>${escapeXML(
+            data.customerAddress
+          )}</CustomerAddress>`
+        : ""
+    }
+    ${
+      data.customerCity
+        ? `<CustomerCity>${escapeXML(data.customerCity)}</CustomerCity>`
+        : ""
+    }
+    ${
+      data.customerCountry
+        ? `<CustomerCountry>${escapeXML(
+            data.customerCountry
+          )}</CustomerCountry>`
+        : ""
+    }
+    ${
+      data.customerZip
+        ? `<CustomerZip>${escapeXML(data.customerZip)}</CustomerZip>`
+        : ""
+    }
   </Transaction>
   <Services>
     <Service>
       <ServiceType>${serviceType}</ServiceType>
-      <ServiceDescription>${escapeXML(data.serviceDescription)}</ServiceDescription>
+      <ServiceDescription>${escapeXML(
+        data.serviceDescription
+      )}</ServiceDescription>
       <ServiceDate>${serviceDate}</ServiceDate>
     </Service>
   </Services>
@@ -71,16 +99,16 @@ interface DPOResponse {
 
 export function parseDPOResponse(xmlText: string): DPOResponse {
   const getTag = (xml: string, tag: string): string | null => {
-    const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
+    const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, "s");
     const match = xml.match(regex);
     return match ? match[1].trim() : null;
   };
 
   return {
-    Result: getTag(xmlText, 'Result'),
-    ResultExplanation: getTag(xmlText, 'ResultExplanation'),
-    TransToken: getTag(xmlText, 'TransToken'),
-    TransRef: getTag(xmlText, 'TransRef'),
+    Result: getTag(xmlText, "Result"),
+    ResultExplanation: getTag(xmlText, "ResultExplanation"),
+    TransToken: getTag(xmlText, "TransToken"),
+    TransRef: getTag(xmlText, "TransRef"),
     rawResponse: xmlText,
   };
 }
@@ -89,30 +117,39 @@ export async function createDPOToken(xmlRequest: string): Promise<DPOResponse> {
   const DPO_API = "https://secure.3gdirectpay.com/API/v6/";
 
   try {
-    console.log('Calling DPO API:', DPO_API);
-    
+    console.log("Calling DPO API:", DPO_API);
+
     const response = await fetch(DPO_API, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/xml',
-        'Accept': 'application/xml',
+        "Content-Type": "application/xml",
+        Accept: "application/xml",
       },
       body: xmlRequest,
     });
 
-    console.log('Response Status:', response.status);
+    console.log("Response Status:", response.status);
 
     const xmlResponse = await response.text();
-    
-    console.log('Raw Response (first 500 chars):', xmlResponse.substring(0, 500));
-    
-    if (response.status === 403 || xmlResponse.includes('CloudFront') || xmlResponse.includes('403 ERROR')) {
-      throw new Error('DPO API blocked the request (CloudFront 403). Please contact DPO support to whitelist your account.');
+
+    console.log(
+      "Raw Response (first 500 chars):",
+      xmlResponse.substring(0, 500)
+    );
+
+    if (
+      response.status === 403 ||
+      xmlResponse.includes("CloudFront") ||
+      xmlResponse.includes("403 ERROR")
+    ) {
+      throw new Error(
+        "DPO API blocked the request (CloudFront 403). Please contact DPO support to whitelist your account."
+      );
     }
 
     return parseDPOResponse(xmlResponse);
   } catch (error) {
-    console.error('DPO API Error:', error);
+    console.error("DPO API Error:", error);
     throw error;
   }
 }
