@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { getSpecialOffers, SpecialOffer } from "@/lib/firestoreService";
+import { isSpecialOfferValid } from "@/lib/offers";
 
 interface OfferToastData {
   id: string;
@@ -12,6 +13,58 @@ interface OfferToastData {
   imageUrl?: string;
   couponCode?: string | null;
 }
+
+// Helper function to check if offer is expired
+const isOfferExpired = (offer: SpecialOffer): boolean => {
+  if (!offer.endDate) return false; // No end date means it doesn't expire
+  
+  const now = new Date();
+  const endDate = new Date(offer.endDate);
+  endDate.setHours(23, 59, 59, 999); // End of the day
+  
+  return now > endDate;
+};
+
+// Helper function to check if offer has been shown to user
+const hasOfferBeenShown = (offerId: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const shownOffers = JSON.parse(localStorage.getItem('shownOffers') || '[]');
+    return shownOffers.includes(offerId);
+  } catch {
+    return false;
+  }
+};
+
+// Mark offer as shown
+const markOfferAsShown = (offerId: string): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const shownOffers = JSON.parse(localStorage.getItem('shownOffers') || '[]');
+    if (!shownOffers.includes(offerId)) {
+      shownOffers.push(offerId);
+      localStorage.setItem('shownOffers', JSON.stringify(shownOffers));
+    }
+  } catch (error) {
+    console.error('Error marking offer as shown:', error);
+  }
+};
+
+// Clean up expired offers from localStorage (keep only active offer IDs)
+const cleanupExpiredOffers = (activeOfferIds: string[]): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const shownOffers = JSON.parse(localStorage.getItem('shownOffers') || '[]');
+    // Keep only offers that are still active
+    const cleanedOffers = shownOffers.filter((id: string) => activeOfferIds.includes(id));
+    localStorage.setItem('shownOffers', JSON.stringify(cleanedOffers));
+  } catch (error) {
+    console.error('Error cleaning up expired offers:', error);
+  }
+};
 
 export default function OfferNotificationManager() {
   const pathname = usePathname();
@@ -22,33 +75,78 @@ export default function OfferNotificationManager() {
   useEffect(() => {
     if (pathname?.startsWith("/admin")) return;
 
-    const fetchOffer = async () => {
+    let timer: NodeJS.Timeout | null = null;
+
+    const fetchAndShowOffer = async () => {
       try {
         const offers = await getSpecialOffers();
-        const activeOffer = offers.find((o) => o.isActive) ?? offers[0];
-        if (!activeOffer) {
+        
+        // Filter offers: must be active, not expired, and valid
+        const now = new Date();
+        const validOffers = offers.filter((o) => {
+          if (!o.isActive) return false;
+          if (isOfferExpired(o)) return false;
+          if (!isSpecialOfferValid(o, { now })) return false;
+          return true;
+        });
+
+        if (validOffers.length === 0) {
+          setOffer(null);
+          setVisible(false);
+          // Clean up expired offers from localStorage
+          cleanupExpiredOffers([]);
+          return;
+        }
+
+        // Clean up expired offers from localStorage (keep only active offer IDs)
+        const activeOfferIds = validOffers.map(o => o.id);
+        cleanupExpiredOffers(activeOfferIds);
+
+        // Find the first offer that hasn't been shown yet
+        const offerToShow = validOffers.find((o) => !hasOfferBeenShown(o.id));
+
+        // If all offers have been shown, don't show anything
+        if (!offerToShow) {
           setOffer(null);
           setVisible(false);
           return;
         }
 
         setOffer({
-          id: activeOffer.id,
-          title: activeOffer.title || "Special Offer",
-          description: activeOffer.description || "",
-          imageUrl: activeOffer.imageUrl || undefined,
-          couponCode: activeOffer.couponCode,
+          id: offerToShow.id,
+          title: offerToShow.title || "Special Offer",
+          description: offerToShow.description || "",
+          imageUrl: offerToShow.imageUrl || undefined,
+          couponCode: offerToShow.couponCode,
         });
-        setVisible(true);
+
+        // Show popup after 10 seconds delay
+        timer = setTimeout(() => {
+          setVisible(true);
+          markOfferAsShown(offerToShow.id);
+        }, 10000); // 10 seconds
       } catch (error) {
         console.error("[OfferNotificationManager] Unable to fetch offers:", error);
       }
     };
 
-    fetchOffer();
+    fetchAndShowOffer();
+
+    // Cleanup function
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [pathname]);
 
-  const handleClose = () => setVisible(false);
+  const handleClose = () => {
+    setVisible(false);
+    // Mark as shown when user closes it
+    if (offer) {
+      markOfferAsShown(offer.id);
+    }
+  };
 
   const handleBookNow = () => {
     setVisible(false);

@@ -7,6 +7,40 @@ import { PlusIcon, TrashIcon, PhotoIcon, TagIcon, PencilIcon } from '@heroicons/
 import { getOffers, deleteOffer, OfferBanner, getSpecialOffers, deleteSpecialOffer, SpecialOffer } from '@/lib/firestoreService';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
+import { isSpecialOfferValid } from '@/lib/offers';
+
+// Helper function to check if offer is expired
+const isOfferExpired = (offer: SpecialOffer): boolean => {
+  if (!offer.endDate) return false; // No end date means it doesn't expire
+  
+  const now = new Date();
+  const endDate = new Date(offer.endDate);
+  endDate.setHours(23, 59, 59, 999); // End of the day
+  
+  return now > endDate;
+};
+
+// Get offer status considering expiration
+const getOfferStatus = (offer: SpecialOffer): { label: string; className: string } => {
+  if (isOfferExpired(offer)) {
+    return {
+      label: 'Expired',
+      className: 'bg-red-100 text-red-800'
+    };
+  }
+  
+  if (offer.isActive) {
+    return {
+      label: 'Active',
+      className: 'bg-green-100 text-green-800'
+    };
+  }
+  
+  return {
+    label: 'Inactive',
+    className: 'bg-gray-100 text-gray-800'
+  };
+};
 
 export default function AdminOffersPage() {
   const { isReadOnly } = useAdminRole();
@@ -168,13 +202,14 @@ export default function AdminOffersPage() {
                             <h3 className="text-lg font-semibold text-gray-900">{offer.title}</h3>
                             <p className="mt-1 text-sm text-gray-600 line-clamp-2">{offer.description}</p>
                             <div className="mt-2 flex flex-wrap items-center gap-3">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                offer.isActive 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {offer.isActive ? 'Active' : 'Inactive'}
-                              </span>
+                              {(() => {
+                                const status = getOfferStatus(offer);
+                                return (
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${status.className}`}>
+                                    {status.label}
+                                  </span>
+                                );
+                              })()}
                               {offer.couponCode && (
                                 <span className="px-2 py-1 rounded text-xs font-mono font-medium bg-orange-100 text-orange-800">
                                   Code: {offer.couponCode}
@@ -185,6 +220,11 @@ export default function AdminOffersPage() {
                                   ? `${offer.discountValue}% off`
                                   : `$${offer.discountValue} off`}
                               </span>
+                              {offer.endDate && (
+                                <span className="text-xs text-gray-500">
+                                  Expires: {new Date(offer.endDate).toLocaleDateString()}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
