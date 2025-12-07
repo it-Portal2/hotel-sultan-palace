@@ -95,9 +95,31 @@ function PaymentSuccessContent() {
         throw new Error('Failed to create booking');
       }
 
+      // Confirm booking (update status to confirmed)
+      const { confirmBooking } = await import('@/lib/bookingService');
+      await confirmBooking(bookingId);
+
       // Fetch the created booking to get allocated room types
       const { getBookingById } = await import('@/lib/bookingService');
       const createdBooking = await getBookingById(bookingId);
+
+      // Send confirmation email (non-blocking)
+      try {
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/send-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId }),
+        });
+
+        if (!emailResponse.ok) {
+          console.warn('Failed to send confirmation email:', await emailResponse.text());
+        } else {
+          console.log('Confirmation email sent successfully');
+        }
+      } catch (emailError) {
+        // Don't fail the booking if email fails
+        console.error('Error sending confirmation email:', emailError);
+      }
 
       // Prepare confirmation data
       const confirmationData = {

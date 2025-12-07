@@ -1,6 +1,6 @@
 import { getToken, onMessage, MessagePayload } from 'firebase/messaging';
 import { messaging } from './firebase';
-import { collection, addDoc, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Register service worker with Firebase config

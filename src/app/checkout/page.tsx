@@ -52,24 +52,7 @@ interface PaymentData {
   cvv: string;
 }
 
-const fallbackRoomLabels = {
-  garden: ["DESERT ROSE", "EUCALYPTUS", "BOUGAINVILLEA", "HIBISCUS"],
-  imperial: ["IMPERIAL STAR", "ROYAL PALM", "SULTAN PEARL", "EMPEROR SUITE"],
-  ocean: ["OCEAN BREEZE", "SEA FOAM", "CORAL REEF", "TIDAL WAVE"],
-};
-
-const resolveFallbackRoomLabel = (roomName?: string) => {
-  const source = roomName?.toLowerCase() || "";
-  let bucket: keyof typeof fallbackRoomLabels | null = null;
-  if (source.includes("garden")) bucket = "garden";
-  else if (source.includes("imperial") || source.includes("deluxe"))
-    bucket = "imperial";
-  else if (source.includes("ocean") || source.includes("sea")) bucket = "ocean";
-
-  if (!bucket) return null;
-  const labels = fallbackRoomLabels[bucket];
-  return labels[Math.floor(Math.random() * labels.length)];
-};
+// Removed unused function: resolveFallbackRoomLabel
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -138,6 +121,7 @@ export default function CheckoutPage() {
     return digitsOnly.replace(/(.{4})/g, "$1 ").trim();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const luhnCheck = (value: string) => {
     const digits = value.replace(/\s/g, "");
     let sum = 0;
@@ -168,6 +152,7 @@ export default function CheckoutPage() {
     return `${month}/${yearSegment}`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isFutureExpiry = (value: string) => {
     const [monthStr, yearStr] = value.split("/");
     if (!monthStr || !yearStr || monthStr.length !== 2 || yearStr.length !== 2)
@@ -309,6 +294,7 @@ export default function CheckoutPage() {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCardHolderChange = (value: string) => {
     const sanitized = value.replace(/[^A-Za-z\s'.-]/g, "");
     setPayment((prev) => ({ ...prev, cardHolderName: sanitized }));
@@ -317,6 +303,7 @@ export default function CheckoutPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCardNumberChange = (value: string) => {
     setPayment((prev) => ({ ...prev, cardNumber: formatCardNumber(value) }));
     if (cardErrors.cardNumber) {
@@ -324,6 +311,7 @@ export default function CheckoutPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleExpiryChange = (value: string) => {
     setPayment((prev) => ({ ...prev, expiryDate: formatExpiryDate(value) }));
     if (cardErrors.expiryDate) {
@@ -331,6 +319,7 @@ export default function CheckoutPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCvvChange = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 4);
     setPayment((prev) => ({ ...prev, cvv: digits }));
@@ -346,7 +335,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
-  const [popupBookingData, setPopupBookingData] = useState({
+  const [popupBookingData] = useState({
     bookingId: "",
     checkIn: "",
     checkOut: "",
@@ -411,9 +400,7 @@ export default function CheckoutPage() {
     setAddress((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updatePayment = (field: keyof PaymentData, value: string) => {
-    setPayment((prev) => ({ ...prev, [field]: value }));
-  };
+  // Removed unused function: updatePayment
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

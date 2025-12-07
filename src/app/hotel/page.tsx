@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -76,7 +76,6 @@ function HotelContent() {
   const [guestPopupPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isMounted, setIsMounted] = useState(false);
   const roomsRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
   const [showFacilities, setShowFacilities] = useState(false);
   const isInitialMount = useRef(true);
   const prevBookingDataRef = useRef<string | null>(null);
@@ -238,11 +237,11 @@ function HotelContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tempCheckIn, tempCheckOut, tempGuests]);
 
-  const getStayNights = () => {
+  const getStayNights = useCallback(() => {
     if (!tempCheckIn || !tempCheckOut) return 1;
     const diff = Math.ceil((tempCheckOut.getTime() - tempCheckIn.getTime()) / (1000 * 60 * 60 * 24));
     return Math.max(1, diff);
-  };
+  }, [tempCheckIn, tempCheckOut]);
 
   const heroGalleryImages = galleryImages.slice(0, 5);
   useEffect(() => {
@@ -276,7 +275,7 @@ function HotelContent() {
     });
 
     setActiveOffersByRoom(map);
-  }, [rooms, specialOffers, tempGuests, tempCheckIn, tempCheckOut]);
+  }, [rooms, specialOffers, tempGuests, tempCheckIn, tempCheckOut, getStayNights]);
 
   const remainingImagesCount = Math.max(0, galleryImages.length - 5);
 

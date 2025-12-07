@@ -7,7 +7,6 @@ import { PlusIcon, TrashIcon, PhotoIcon, TagIcon, PencilIcon } from '@heroicons/
 import { getOffers, deleteOffer, OfferBanner, getSpecialOffers, deleteSpecialOffer, SpecialOffer } from '@/lib/firestoreService';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
-import { isSpecialOfferValid } from '@/lib/offers';
 
 // Helper function to check if offer is expired
 const isOfferExpired = (offer: SpecialOffer): boolean => {
