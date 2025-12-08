@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    unoptimized: false, // Enable Next.js image optimization for better performance
-    formats: ["image/avif", "image/webp"], // Use modern image formats
+    unoptimized: false, 
+    formats: ["image/avif", "image/webp"], 
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
@@ -35,8 +35,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Fix for chunk loading issues and stability
-  webpack: (config, { isServer }) => {
+  
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -55,24 +55,17 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Fix for Windows path issues
-    config.watchOptions = {
-      poll: 1000,
-      aggregateTimeout: 300,
-    };
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
 
     return config;
   },
-  // Disable problematic experimental features
-  experimental: {
-    // optimizePackageImports: ['lucide-react', 'react-icons'], // Disabled for stability
-  },
-  // Vercel deployment configuration
-  // output: 'export', // Commented out for Vercel's default Next.js deployment
   trailingSlash: true,
-  // Disable source maps in production for better performance
   productionBrowserSourceMaps: false,
-  // Add compiler options
   compiler: {
     removeConsole: false,
   },
