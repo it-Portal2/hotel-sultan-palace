@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
     ],
   },
   // Fix for chunk loading issues and stability
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
