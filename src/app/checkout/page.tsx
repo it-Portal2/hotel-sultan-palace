@@ -106,9 +106,6 @@ export default function CheckoutPage() {
     cvv: "",
   });
 
-  const [cardErrors, setCardErrors] = useState<
-    Partial<Record<keyof Omit<PaymentData, "couponCode">, string>>
-  >({});
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponFeedback, setCouponFeedback] = useState<{
     type: "success" | "error";
@@ -116,75 +113,7 @@ export default function CheckoutPage() {
   } | null>(null);
   const [showPaymentCouponField, setShowPaymentCouponField] = useState(false);
 
-  const formatCardNumber = (value: string) => {
-    const digitsOnly = value.replace(/\D/g, "").slice(0, 16);
-    return digitsOnly.replace(/(.{4})/g, "$1 ").trim();
-  };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const luhnCheck = (value: string) => {
-    const digits = value.replace(/\s/g, "");
-    let sum = 0;
-    let shouldDouble = false;
-
-    for (let i = digits.length - 1; i >= 0; i -= 1) {
-      let digit = parseInt(digits.charAt(i), 10);
-      if (shouldDouble) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
-      }
-      sum += digit;
-      shouldDouble = !shouldDouble;
-    }
-
-    return sum % 10 === 0;
-  };
-
-  const formatExpiryDate = (value: string) => {
-    const digits = value.replace(/\D/g, "");
-    if (!digits) return "";
-    if (digits.length <= 2) return digits;
-    const month = digits.slice(0, 2);
-    let yearSegment = digits.slice(2);
-    if (yearSegment.length > 2) {
-      yearSegment = yearSegment.slice(-2);
-    }
-    return `${month}/${yearSegment}`;
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const isFutureExpiry = (value: string) => {
-    const [monthStr, yearStr] = value.split("/");
-    if (!monthStr || !yearStr || monthStr.length !== 2 || yearStr.length !== 2)
-      return false;
-
-    const month = parseInt(monthStr, 10);
-    const twoDigitYear = parseInt(yearStr, 10);
-
-    if (Number.isNaN(month) || Number.isNaN(twoDigitYear)) return false;
-    if (month < 1 || month > 12) return false;
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-
-    const expiryYear = 2000 + twoDigitYear;
-
-    if (expiryYear < currentYear) {
-      return false;
-    }
-
-    if (expiryYear === currentYear) {
-      return month >= currentMonth;
-    }
-
-    // Optional upper bound to avoid accidental 2100+ entries
-    if (expiryYear > currentYear + 20) {
-      return false;
-    }
-
-    return true;
-  };
 
   const validatePaymentInputs = () => {
     // Credit card validation disabled for DPO integration
@@ -294,39 +223,6 @@ export default function CheckoutPage() {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleCardHolderChange = (value: string) => {
-    const sanitized = value.replace(/[^A-Za-z\s'.-]/g, "");
-    setPayment((prev) => ({ ...prev, cardHolderName: sanitized }));
-    if (cardErrors.cardHolderName) {
-      setCardErrors((prev) => ({ ...prev, cardHolderName: undefined }));
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleCardNumberChange = (value: string) => {
-    setPayment((prev) => ({ ...prev, cardNumber: formatCardNumber(value) }));
-    if (cardErrors.cardNumber) {
-      setCardErrors((prev) => ({ ...prev, cardNumber: undefined }));
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleExpiryChange = (value: string) => {
-    setPayment((prev) => ({ ...prev, expiryDate: formatExpiryDate(value) }));
-    if (cardErrors.expiryDate) {
-      setCardErrors((prev) => ({ ...prev, expiryDate: undefined }));
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleCvvChange = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 4);
-    setPayment((prev) => ({ ...prev, cvv: digits }));
-    if (cardErrors.cvv) {
-      setCardErrors((prev) => ({ ...prev, cvv: undefined }));
-    }
-  };
 
   const [agreements, setAgreements] = useState({
     privacy: false,
@@ -419,10 +315,8 @@ export default function CheckoutPage() {
 
     const paymentValidation = validatePaymentInputs();
     if (Object.keys(paymentValidation).length > 0) {
-      setCardErrors(paymentValidation);
       return;
     }
-    setCardErrors({});
 
     setIsSubmitting(true);
     console.log("🟢 Starting payment process.....");
