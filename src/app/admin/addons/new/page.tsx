@@ -145,7 +145,7 @@ export default function NewAddOnPage() {
 
           <div className="col-span-6 sm:col-span-3">
             <label className="block text-sm font-medium text-gray-700">Type</label>
-            <select name="type" value={form.type} onChange={handleChange} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500">
+            <select name="type" value={form.type} onChange={handleChange} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:outline-none">
               <option value="per_room">Per room</option>
               <option value="per_guest">Per guest</option>
               <option value="per_day">Per day</option>

@@ -78,14 +78,20 @@ function PaymentSuccessContent() {
 
       const bookingDetails = JSON.parse(storedBooking);
       
+      // Calculate total amount
+      const totalAmount = calculateTotal();
+      
       // Update booking with payment information
       const finalBookingDetails = {
         ...bookingDetails,
         paymentToken: paymentData.TransToken,
         paymentReference: paymentData.TransRef,
-        paymentStatus: 'paid',
+        paymentStatus: 'paid' as const,
+        paidAmount: totalAmount, // Track paid amount
+        paymentMethod: 'online', // Payment method
+        paymentDate: new Date(), // Payment date
         status: 'confirmed',
-        totalAmount: calculateTotal(),
+        totalAmount: totalAmount,
       };
 
       // Create booking in Firestore

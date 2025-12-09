@@ -276,7 +276,7 @@ export default function RoomAvailabilityPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by date, suite, or room type..."
-              className="w-full pl-10 pr-4 py-2 border border-[#be8c53]/20 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] text-[#202c3b]"
+              className="w-full pl-10 pr-4 py-2 border border-[#be8c53]/20 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] focus:outline-none text-[#202c3b]"
             />
           </div>
           <div className="flex items-center gap-3">

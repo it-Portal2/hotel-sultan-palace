@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { getAllBookings, Booking, updateBooking } from '@/lib/firestoreService';
+import { cancelBooking, confirmBooking } from '@/lib/bookingService';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/admin/BackButton';
@@ -156,11 +157,11 @@ export default function AdminBookingsPage() {
       <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 flex flex-col gap-4 md:flex-row md:items-end md:gap-4">
         <div className="flex-1">
           <label className="block text-xs font-semibold text-gray-600 mb-1">Search</label>
-          <input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Booking ID, name, email" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+          <input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Booking ID, name, email" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
-          <select value={status} onChange={e => { setStatus(e.target.value as 'all' | 'pending' | 'confirmed' | 'cancelled'); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
+          <select value={status} onChange={e => { setStatus(e.target.value as 'all' | 'pending' | 'confirmed' | 'cancelled'); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent">
             <option value="all">All</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
@@ -169,15 +170,15 @@ export default function AdminBookingsPage() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-          <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm" />
+          <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-          <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm" />
+          <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">Sort</label>
-          <select value={sort} onChange={e => setSort(e.target.value as 'newest' | 'oldest' | 'amount_desc' | 'amount_asc')} className="border border-gray-300 rounded px-2 py-1.5 text-sm">
+          <select value={sort} onChange={e => setSort(e.target.value as 'newest' | 'oldest' | 'amount_desc' | 'amount_asc')} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent">
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
             <option value="amount_desc">Amount: High to Low</option>
@@ -460,10 +461,15 @@ export default function AdminBookingsPage() {
                       {selected.status !== 'confirmed' && (
                         <button 
                           onClick={async () => {
-                            await updateBooking(selected.id, { status: 'confirmed' });
-                            setSelected({ ...selected, status: 'confirmed' });
-                            const updated = await getAllBookings();
-                            setBookings(updated);
+                            try {
+                              await confirmBooking(selected.id);
+                              setSelected({ ...selected, status: 'confirmed' });
+                              const updated = await getAllBookings();
+                              setBookings(updated);
+                            } catch (error) {
+                              console.error('Error confirming booking:', error);
+                              alert('Failed to confirm booking. Please try again.');
+                            }
                           }}
                           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
                         >
@@ -473,14 +479,22 @@ export default function AdminBookingsPage() {
                       {selected.status !== 'cancelled' && (
                         <button 
                           onClick={async () => {
-                            await updateBooking(selected.id, { status: 'cancelled' });
-                            setSelected({ ...selected, status: 'cancelled' });
-                            const updated = await getAllBookings();
-                            setBookings(updated);
+                            if (confirm('Are you sure you want to cancel this booking? The room will be freed up automatically.')) {
+                              try {
+                                await cancelBooking(selected.id);
+                                setSelected({ ...selected, status: 'cancelled' });
+                                const updated = await getAllBookings();
+                                setBookings(updated);
+                                alert('Booking cancelled successfully. Room has been freed up.');
+                              } catch (error) {
+                                console.error('Error cancelling booking:', error);
+                                alert('Failed to cancel booking. Please try again.');
+                              }
+                            }
                           }}
                           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                         >
-                          Mark as Cancelled
+                          Cancel Booking
                         </button>
                       )}
                       {selected.status === 'confirmed' && (

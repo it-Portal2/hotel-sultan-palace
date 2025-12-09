@@ -222,6 +222,39 @@ export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'cr
     if (!bookingId) {
       throw new Error('Failed to create booking');
     }
+
+    // Update room status to "reserved" for allocated rooms
+    if (bookingWithAllocatedRooms.rooms && bookingWithAllocatedRooms.rooms.length > 0) {
+      const { getRoomStatus, updateRoomStatus, createRoomStatus } = await import('./firestoreService');
+      
+      for (const room of bookingWithAllocatedRooms.rooms) {
+        if (room.allocatedRoomType && room.suiteType) {
+          try {
+            const roomStatus = await getRoomStatus(room.allocatedRoomType);
+            if (roomStatus) {
+              // Update room status to reserved
+              await updateRoomStatus(roomStatus.id, {
+                status: 'reserved',
+                currentBookingId: bookingId,
+              });
+            } else {
+              // Create room status if doesn't exist
+              await createRoomStatus({
+                roomName: room.allocatedRoomType,
+                suiteType: room.suiteType,
+                status: 'reserved',
+                currentBookingId: bookingId,
+                housekeepingStatus: 'clean',
+              });
+            }
+          } catch (roomError) {
+            console.error(`Error updating room status for ${room.allocatedRoomType}:`, roomError);
+            // Don't throw - booking is created, room status update can be done manually
+          }
+        }
+      }
+    }
+
     return bookingId;
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -266,7 +299,67 @@ export const updateBooking = async (id: string, updates: Partial<Booking>): Prom
 
 export const cancelBooking = async (id: string): Promise<void> => {
   try {
+    // Get booking details first
+    const booking = await getBooking(id);
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+
+    // Update booking status to cancelled
     await updateBooking(id, { status: 'cancelled' });
+
+    // If room was allocated, free it up
+    if (booking.rooms && booking.rooms.length > 0) {
+      const { getRoomStatus, updateRoomStatus, createRoomStatus } = await import('./firestoreService');
+      
+      for (const room of booking.rooms) {
+        if (room.allocatedRoomType) {
+          try {
+            const roomStatus = await getRoomStatus(room.allocatedRoomType);
+            if (roomStatus) {
+              // Update room status to available if it was reserved/occupied by this booking
+              if (roomStatus.currentBookingId === id) {
+                await updateRoomStatus(roomStatus.id, {
+                  status: 'available',
+                  currentBookingId: undefined,
+                  housekeepingStatus: 'clean', // Room is clean since it was never used
+                });
+              }
+            } else {
+              // Create room status if doesn't exist (shouldn't happen, but safety check)
+              if (room.suiteType) {
+                await createRoomStatus({
+                  roomName: room.allocatedRoomType,
+                  suiteType: room.suiteType,
+                  status: 'available',
+                  housekeepingStatus: 'clean',
+                });
+              }
+            }
+          } catch (roomError) {
+            console.error(`Error updating room status for ${room.allocatedRoomType}:`, roomError);
+            // Don't throw - continue with cancellation even if room status update fails
+          }
+        }
+      }
+    }
+
+    // If booking was checked in, handle check-out
+    if (booking.status === 'checked_in' && booking.roomNumber) {
+      const { getRoomStatus, updateRoomStatus } = await import('./firestoreService');
+      try {
+        const roomStatus = await getRoomStatus(booking.roomNumber);
+        if (roomStatus && roomStatus.currentBookingId === id) {
+          await updateRoomStatus(roomStatus.id, {
+            status: 'available',
+            currentBookingId: undefined,
+            housekeepingStatus: 'clean',
+          });
+        }
+      } catch (roomError) {
+        console.error(`Error updating room status during cancellation:`, roomError);
+      }
+    }
   } catch (error) {
     console.error('Error cancelling booking:', error);
     throw error;

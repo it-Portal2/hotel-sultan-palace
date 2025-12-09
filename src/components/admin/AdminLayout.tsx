@@ -16,7 +16,14 @@ import {
   PhoneIcon,
   RectangleStackIcon,
   FilmIcon,
-  TagIcon
+  TagIcon,
+  BeakerIcon,
+  ShoppingBagIcon,
+  WrenchScrewdriverIcon,
+  CreditCardIcon,
+  HomeIcon as HomeStatusIcon,
+  UserGroupIcon,
+  SparklesIcon as CleaningIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -42,6 +49,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
     { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50' },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+    // EHMS Section - Front Desk & Room Management
+    { name: 'Room Status', href: '/admin/room-status', icon: HomeStatusIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+    { name: 'Front Desk', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
+    { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+    // EHMS Section - Food & Services
+    { name: 'Menu Management', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50' },
+    { name: 'Kitchen Dashboard', href: '/admin/kitchen', icon: BeakerIcon, color: 'text-orange-600', bgColor: 'bg-orange-50' },
+    { name: 'Food Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50' },
+    { name: 'Guest Services', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50' },
+    { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+    // Other sections
     { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50' },
     { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50' },
     { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50' },

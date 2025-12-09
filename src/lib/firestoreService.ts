@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   collection, 
   doc, 
@@ -8,6 +9,7 @@ import {
   deleteDoc, 
   query, 
   orderBy,
+  where,
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -96,7 +98,22 @@ export interface Booking {
   // Financial details
   totalAmount: number;
   bookingId: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
+  
+  // EHMS Extended Fields
+  roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
+  checkInTime?: Date; // Actual check-in time
+  checkOutTime?: Date; // Actual check-out time
+  foodOrderIds?: string[]; // Array of FoodOrder IDs
+  guestServiceIds?: string[]; // Array of GuestService IDs
+  checkoutBillId?: string; // Link to final checkout bill
+  
+  // Payment Information
+  paymentStatus?: 'pending' | 'partial' | 'paid' | 'refunded';
+  paidAmount?: number; // Amount paid during booking
+  paymentMethod?: string; // e.g., 'card', 'cash', 'online'
+  paymentDate?: Date; // When payment was made
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -261,6 +278,239 @@ export interface GalleryImage {
 }
 
 export type SuiteType = 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite';
+
+// ==================== EHMS Interfaces ====================
+
+// Menu Item Interface
+export interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: 'breakfast' | 'soups' | 'main_course' | 'seafood' | 'indian_dishes' | 'pizza' | 'desserts' | 'beverages' | 'snacks';
+  image?: string;
+  isVegetarian: boolean;
+  isAvailable: boolean;
+  preparationTime: number; // in minutes
+  rating?: number; // 1-5 stars
+  isSpecial?: boolean; // Today's special
+  discountPercent?: number; // e.g., 10% off
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Food Order Interface
+export interface FoodOrder {
+  id: string;
+  orderNumber: string; // Unique order number like "ORD-001"
+  bookingId?: string; // Link to booking if exists
+  guestName: string;
+  guestPhone: string;
+  guestEmail?: string;
+  roomNumber?: string; // Room number for delivery
+  deliveryLocation: 'in_room' | 'restaurant' | 'bar' | 'beach_side' | 'pool_side';
+  items: Array<{
+    menuItemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    specialInstructions?: string;
+  }>;
+  subtotal: number;
+  tax?: number;
+  discount?: number;
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  kitchenStatus: 'received' | 'cooking' | 'ready' | 'delivered';
+  scheduledDeliveryTime?: Date; // When customer wants delivery
+  estimatedPreparationTime: number; // in minutes
+  actualDeliveryTime?: Date;
+  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentMethod?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Guest Service Interface
+export interface GuestService {
+  id: string;
+  bookingId?: string;
+  guestName: string;
+  guestPhone: string;
+  roomNumber?: string;
+  // High-level category to match app design cards
+  serviceCategory: 'laundry' | 'spa' | 'game' | 'other';
+  // Detailed type within category
+  serviceType:
+    | 'laundry'
+    | 'housekeeping'
+    | 'spa'
+    | 'transport'
+    | 'concierge'
+    | 'room_service'
+    | 'game'
+    | 'other';
+  description: string;
+  amount: number; // legacy single amount
+  // Pricing breakdown
+  baseAmount?: number;
+  surchargeAmount?: number;
+  totalAmount?: number;
+  fastService?: boolean; // laundry fast service
+  fastServiceSurcharge?: number;
+  // Laundry schedule & items
+  pickupDate?: Date;
+  pickupTime?: string;
+  deliveryDate?: Date;
+  deliveryTime?: string;
+  items?: Array<{ name: string; qty: number; price: number }>;
+  // Spa booking details
+  spaType?: string;
+  durationMinutes?: number;
+  guestCount?: number;
+  appointmentDate?: Date;
+  appointmentTime?: string;
+  // Tracking
+  status: 'requested' | 'in_progress' | 'completed' | 'cancelled';
+  statusHistory?: Array<{ status: GuestService['status']; at: Date; note?: string }>;
+  requestedAt: Date;
+  completedAt?: Date;
+  notes?: string;
+  requestSource?: 'mobile' | 'web';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Checkout Bill Interface
+export interface CheckoutBill {
+  id: string;
+  bookingId: string;
+  guestName: string;
+  roomNumber?: string;
+  checkInDate: Date;
+  checkOutDate: Date;
+  // Breakdown of charges
+  roomCharges: number;
+  foodCharges: number;
+  serviceCharges: number;
+  facilitiesCharges: number;
+  addOnsCharges: number;
+  taxes: number;
+  discount?: number;
+  totalAmount: number;
+  paidAmount: number;
+  balance: number;
+  paymentMethod?: string;
+  paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded';
+  // Detailed breakdown
+  roomDetails: Array<{
+    roomType: string;
+    nights: number;
+    rate: number;
+    total: number;
+  }>;
+  foodOrders: Array<{
+    orderId: string;
+    orderNumber: string;
+    date: Date;
+    amount: number;
+  }>;
+  services: Array<{
+    serviceId: string;
+    serviceType: string;
+    description: string;
+    amount: number;
+    date: Date;
+  }>;
+  facilities: Array<{
+    name: string;
+    usageCount?: number;
+    amount: number;
+    date: Date;
+  }>;
+  addOns: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Room Status Interface
+export interface RoomStatus {
+  id: string;
+  roomName: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
+  suiteType: SuiteType;
+  status: 'available' | 'occupied' | 'maintenance' | 'cleaning' | 'reserved';
+  currentBookingId?: string; // If occupied or reserved
+  lastCleaned?: Date;
+  nextCleaning?: Date;
+  maintenanceNotes?: string;
+  housekeepingStatus?: 'clean' | 'dirty' | 'inspected' | 'needs_attention';
+  // Cleaning history
+  cleaningHistory?: Array<{
+    date: Date;
+    type: 'checkout_cleaning' | 'stayover_cleaning' | 'deep_cleaning' | 'inspection';
+    staffName?: string;
+    notes?: string;
+  }>;
+  // Check-in/Check-out tracking
+  currentCheckInDate?: Date;
+  currentCheckOutDate?: Date;
+  currentGuestName?: string;
+  // Maintenance tracking
+  maintenanceStartDate?: Date;
+  maintenanceEndDate?: Date;
+  maintenanceReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Housekeeping Task Interface
+export interface HousekeepingTask {
+  id: string;
+  roomName: string;
+  suiteType: SuiteType;
+  taskType: 'checkout_cleaning' | 'stayover_cleaning' | 'deep_cleaning' | 'maintenance' | 'inspection';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  assignedTo?: string; // Staff member name/ID
+  estimatedTime?: number; // in minutes
+  actualTime?: number; // in minutes
+  notes?: string;
+  bookingId?: string; // If related to a booking
+  scheduledTime?: Date;
+  completedTime?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Check-in/Check-out Record Interface
+export interface CheckInOutRecord {
+  id: string;
+  bookingId: string;
+  guestName: string;
+  roomName: string;
+  suiteType: SuiteType;
+  checkInTime?: Date;
+  checkOutTime?: Date;
+  checkInStaff?: string; // Staff who checked in
+  checkOutStaff?: string; // Staff who checked out
+  idVerified: boolean;
+  idDocumentType?: string; // 'passport', 'driving_license', 'id_card'
+  idDocumentNumber?: string;
+  specialRequests?: string;
+  roomKeyIssued: boolean;
+  roomKeyNumber?: string;
+  depositAmount?: number;
+  depositReturned?: boolean;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface RoomType {
   id: string;
@@ -740,9 +990,18 @@ export const updateBooking = async (bookingId: string, bookingData: Partial<Book
   }
 
   try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(bookingData).forEach(key => {
+      const value = (bookingData as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
     const bookingRef = doc(db, 'bookings', bookingId);
     await updateDoc(bookingRef, {
-      ...bookingData,
+      ...cleanData,
       updatedAt: new Date(),
     });
   return true;
@@ -1684,6 +1943,954 @@ export const deleteGuestReview = async (id: string): Promise<boolean> => {
     return true;
   } catch (e) {
     console.error('Error deleting guest review:', e);
+    return false;
+  }
+};
+
+// ==================== EHMS CRUD Operations ====================
+
+// Menu Items CRUD Operations
+export const getMenuItems = async (category?: MenuItem['category']): Promise<MenuItem[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'menuItems');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as MenuItem;
+    });
+    if (category) items = items.filter(i => i.category === category);
+    return items;
+  } catch (e) {
+    console.error('Error fetching menu items:', e);
+    return [];
+  }
+};
+
+export const getMenuItem = async (id: string): Promise<MenuItem | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'menuItems', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      ...data,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as MenuItem;
+  } catch (e) {
+    console.error('Error getting menu item:', e);
+    return null;
+  }
+};
+
+export const createMenuItem = async (data: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'menuItems');
+    const dr = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating menu item:', e);
+    return null;
+  }
+};
+
+export const updateMenuItem = async (id: string, data: Partial<MenuItem>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'menuItems', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating menu item:', e);
+    return false;
+  }
+};
+
+export const deleteMenuItem = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'menuItems', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting menu item:', e);
+    return false;
+  }
+};
+
+// Food Orders CRUD Operations
+export const getFoodOrders = async (status?: FoodOrder['status']): Promise<FoodOrder[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'foodOrders');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let orders = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        scheduledDeliveryTime: data.scheduledDeliveryTime?.toDate(),
+        actualDeliveryTime: data.actualDeliveryTime?.toDate(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as FoodOrder;
+    });
+    if (status) orders = orders.filter(o => o.status === status);
+    return orders;
+  } catch (e) {
+    console.error('Error fetching food orders:', e);
+    return [];
+  }
+};
+
+export const getFoodOrder = async (id: string): Promise<FoodOrder | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'foodOrders', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      ...data,
+      scheduledDeliveryTime: data.scheduledDeliveryTime?.toDate(),
+      actualDeliveryTime: data.actualDeliveryTime?.toDate(),
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as FoodOrder;
+  } catch (e) {
+    console.error('Error getting food order:', e);
+    return null;
+  }
+};
+
+export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    // Generate order number
+    const ordersRef = collection(db, 'foodOrders');
+    const ordersSnap = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')));
+    const orderCount = ordersSnap.size;
+    const orderNumber = `ORD-${String(orderCount + 1).padStart(4, '0')}`;
+    
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = { orderNumber };
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const c = collection(db, 'foodOrders');
+    const dr = await addDoc(c, {
+      ...cleanData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update booking if bookingId exists
+    if (data.bookingId) {
+      const booking = await getBooking(data.bookingId);
+      if (booking) {
+        const foodOrderIds = booking.foodOrderIds || [];
+        if (!foodOrderIds.includes(dr.id)) {
+          await updateBooking(data.bookingId, {
+            foodOrderIds: [...foodOrderIds, dr.id]
+          });
+        }
+      }
+    }
+    
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating food order:', e);
+    return null;
+  }
+};
+
+export const updateFoodOrder = async (id: string, data: Partial<FoodOrder>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const r = doc(db, 'foodOrders', id);
+    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating food order:', e);
+    return false;
+  }
+};
+
+export const deleteFoodOrder = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'foodOrders', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting food order:', e);
+    return false;
+  }
+};
+
+// Get active food orders for kitchen (pending, confirmed, preparing)
+export const getKitchenOrders = async (): Promise<FoodOrder[]> => {
+  if (!db) return [];
+  try {
+    const orders = await getFoodOrders();
+    return orders.filter(o => 
+      o.status === 'pending' || 
+      o.status === 'confirmed' || 
+      o.status === 'preparing' ||
+      o.status === 'ready'
+    );
+  } catch (e) {
+    console.error('Error fetching kitchen orders:', e);
+    return [];
+  }
+};
+
+// Guest Services CRUD Operations
+export const getGuestServices = async (status?: GuestService['status']): Promise<GuestService[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'guestServices');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let services = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        pickupDate: data.pickupDate?.toDate(),
+        deliveryDate: data.deliveryDate?.toDate(),
+        appointmentDate: data.appointmentDate?.toDate(),
+        requestedAt: data.requestedAt?.toDate() || new Date(),
+        completedAt: data.completedAt?.toDate(),
+        statusHistory: (data.statusHistory || []).map((s: any) => ({
+          ...s,
+          at: s.at?.toDate() || new Date(),
+        })),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as GuestService;
+    });
+    if (status) services = services.filter(s => s.status === status);
+    return services;
+  } catch (e) {
+    console.error('Error fetching guest services:', e);
+    return [];
+  }
+};
+
+export const getGuestService = async (id: string): Promise<GuestService | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'guestServices', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      ...data,
+      requestedAt: data.requestedAt?.toDate() || new Date(),
+      completedAt: data.completedAt?.toDate(),
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as GuestService;
+  } catch (e) {
+    console.error('Error getting guest service:', e);
+    return null;
+  }
+};
+
+export const createGuestService = async (data: Omit<GuestService, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const c = collection(db, 'guestServices');
+    const dr = await addDoc(c, {
+      ...cleanData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update booking if bookingId exists
+    if (data.bookingId) {
+      const booking = await getBooking(data.bookingId);
+      if (booking) {
+        const guestServiceIds = booking.guestServiceIds || [];
+        if (!guestServiceIds.includes(dr.id)) {
+          await updateBooking(data.bookingId, {
+            guestServiceIds: [...guestServiceIds, dr.id]
+          });
+        }
+      }
+    }
+    
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating guest service:', e);
+    return null;
+  }
+};
+
+export const updateGuestService = async (id: string, data: Partial<GuestService>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const r = doc(db, 'guestServices', id);
+    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating guest service:', e);
+    return false;
+  }
+};
+
+export const deleteGuestService = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'guestServices', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting guest service:', e);
+    return false;
+  }
+};
+
+// Checkout Bills CRUD Operations
+export const getCheckoutBills = async (): Promise<CheckoutBill[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'checkoutBills');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        checkInDate: data.checkInDate?.toDate() || new Date(),
+        checkOutDate: data.checkOutDate?.toDate() || new Date(),
+        foodOrders: (data.foodOrders || []).map((fo: any) => ({
+          ...fo,
+          date: fo.date?.toDate() || new Date(),
+        })),
+        services: (data.services || []).map((s: any) => ({
+          ...s,
+          date: s.date?.toDate() || new Date(),
+        })),
+        facilities: (data.facilities || []).map((f: any) => ({
+          ...f,
+          date: f.date?.toDate() || new Date(),
+        })),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as CheckoutBill;
+    });
+  } catch (e) {
+    console.error('Error fetching checkout bills:', e);
+    return [];
+  }
+};
+
+export const getCheckoutBill = async (id: string): Promise<CheckoutBill | null> => {
+  if (!db) return null;
+  try {
+    const r = doc(db, 'checkoutBills', id);
+    const s = await getDoc(r);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      ...data,
+      checkInDate: data.checkInDate?.toDate() || new Date(),
+      checkOutDate: data.checkOutDate?.toDate() || new Date(),
+      foodOrders: (data.foodOrders || []).map((fo: any) => ({
+        ...fo,
+        date: fo.date?.toDate() || new Date(),
+      })),
+      services: (data.services || []).map((s: any) => ({
+        ...s,
+        date: s.date?.toDate() || new Date(),
+      })),
+      facilities: (data.facilities || []).map((f: any) => ({
+        ...f,
+        date: f.date?.toDate() || new Date(),
+      })),
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as CheckoutBill;
+  } catch (e) {
+    console.error('Error getting checkout bill:', e);
+    return null;
+  }
+};
+
+// Generate checkout bill from booking
+export const generateCheckoutBill = async (bookingId: string): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const booking = await getBooking(bookingId);
+    if (!booking) return null;
+    
+    // Calculate room charges
+    const checkIn = new Date(booking.checkIn);
+    const checkOut = new Date(booking.checkOut);
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const roomCharges = booking.rooms.reduce((sum, room) => sum + (room.price * nights), 0);
+    
+    // Get food orders
+    const foodOrders = booking.foodOrderIds ? await Promise.all(
+      booking.foodOrderIds.map(id => getFoodOrder(id))
+    ) : [];
+    const validFoodOrders = foodOrders.filter(o => o !== null) as FoodOrder[];
+    const foodCharges = validFoodOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    
+    // Get guest services
+    const services = booking.guestServiceIds ? await Promise.all(
+      booking.guestServiceIds.map(id => getGuestService(id))
+    ) : [];
+    const validServices = services.filter(s => s !== null) as GuestService[];
+    const serviceCharges = validServices.reduce((sum, service) => sum + (service.amount || 0), 0);
+    
+    // Add-ons charges
+    const addOnsCharges = booking.addOns.reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
+    
+    // Calculate taxes (assume 10% tax)
+    const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges;
+    const taxes = subtotal * 0.1;
+    const totalAmount = subtotal + taxes;
+    
+    // Get already paid amount from booking (payment made during booking)
+    const alreadyPaid = booking.paidAmount || 0;
+    const balance = totalAmount - alreadyPaid;
+    const paymentStatus: CheckoutBill['paymentStatus'] = 
+      balance <= 0 ? 'paid' : (alreadyPaid > 0 ? 'partial' : 'pending');
+    
+    const bill: Omit<CheckoutBill, 'id' | 'createdAt' | 'updatedAt'> = {
+      bookingId,
+      guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+      roomNumber: booking.roomNumber,
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+      roomCharges,
+      foodCharges,
+      serviceCharges,
+      facilitiesCharges: 0, // Can be extended
+      addOnsCharges,
+      taxes,
+      totalAmount,
+      paidAmount: alreadyPaid,
+      balance: balance,
+      paymentStatus: paymentStatus,
+      roomDetails: booking.rooms.map(room => ({
+        roomType: room.type,
+        nights,
+        rate: room.price,
+        total: room.price * nights,
+      })),
+      foodOrders: validFoodOrders.map(order => ({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        date: order.createdAt,
+        amount: order.totalAmount,
+      })),
+      services: validServices.map(service => ({
+        serviceId: service.id,
+        serviceType: service.serviceType,
+        description: service.description,
+        amount: service.amount,
+        date: service.requestedAt,
+      })),
+      facilities: [], // Can be extended
+      addOns: booking.addOns.map(addon => ({
+        name: addon.name,
+        quantity: addon.quantity,
+        price: addon.price,
+        total: addon.price * addon.quantity,
+      })),
+    };
+    
+    const c = collection(db, 'checkoutBills');
+    const dr = await addDoc(c, {
+      ...bill,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update booking with checkout bill ID
+    await updateBooking(bookingId, { checkoutBillId: dr.id });
+    
+    return dr.id;
+  } catch (e) {
+    console.error('Error generating checkout bill:', e);
+    return null;
+  }
+};
+
+export const updateCheckoutBill = async (id: string, data: Partial<CheckoutBill>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'checkoutBills', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating checkout bill:', e);
+    return false;
+  }
+};
+
+// ==================== Room Status Management ====================
+
+export const getRoomStatuses = async (suiteType?: SuiteType): Promise<RoomStatus[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'roomStatuses');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let statuses = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        lastCleaned: data.lastCleaned?.toDate(),
+        nextCleaning: data.nextCleaning?.toDate(),
+        currentCheckInDate: data.currentCheckInDate?.toDate(),
+        currentCheckOutDate: data.currentCheckOutDate?.toDate(),
+        maintenanceStartDate: data.maintenanceStartDate?.toDate(),
+        maintenanceEndDate: data.maintenanceEndDate?.toDate(),
+        cleaningHistory: (data.cleaningHistory || []).map((ch: any) => ({
+          ...ch,
+          date: ch.date?.toDate() || new Date(),
+        })),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as RoomStatus;
+    });
+    if (suiteType) statuses = statuses.filter(s => s.suiteType === suiteType);
+    return statuses;
+  } catch (e) {
+    console.error('Error fetching room statuses:', e);
+    return [];
+  }
+};
+
+export const getRoomStatus = async (roomName: string): Promise<RoomStatus | null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'roomStatuses');
+    const qy = query(c, where('roomName', '==', roomName));
+    const snap = await getDocs(qy);
+    if (snap.empty) return null;
+    const data = snap.docs[0].data();
+    return {
+      id: snap.docs[0].id,
+      ...data,
+      lastCleaned: data.lastCleaned?.toDate(),
+      nextCleaning: data.nextCleaning?.toDate(),
+      currentCheckInDate: data.currentCheckInDate?.toDate(),
+      currentCheckOutDate: data.currentCheckOutDate?.toDate(),
+      maintenanceStartDate: data.maintenanceStartDate?.toDate(),
+      maintenanceEndDate: data.maintenanceEndDate?.toDate(),
+      cleaningHistory: (data.cleaningHistory || []).map((ch: any) => ({
+        ...ch,
+        date: ch.date?.toDate() || new Date(),
+      })),
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as RoomStatus;
+  } catch (e) {
+    console.error('Error getting room status:', e);
+    return null;
+  }
+};
+
+export const updateRoomStatus = async (id: string, data: Partial<RoomStatus>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const r = doc(db, 'roomStatuses', id);
+    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating room status:', e);
+    return false;
+  }
+};
+
+export const createRoomStatus = async (data: Omit<RoomStatus, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const c = collection(db, 'roomStatuses');
+    const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating room status:', e);
+    return null;
+  }
+};
+
+// ==================== Housekeeping Management ====================
+
+export const getHousekeepingTasks = async (status?: HousekeepingTask['status']): Promise<HousekeepingTask[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'housekeepingTasks');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let tasks = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        scheduledTime: data.scheduledTime?.toDate(),
+        completedTime: data.completedTime?.toDate(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as HousekeepingTask;
+    });
+    if (status) tasks = tasks.filter(t => t.status === status);
+    return tasks;
+  } catch (e) {
+    console.error('Error fetching housekeeping tasks:', e);
+    return [];
+  }
+};
+
+export const createHousekeepingTask = async (data: Omit<HousekeepingTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const c = collection(db, 'housekeepingTasks');
+    const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating housekeeping task:', e);
+    return null;
+  }
+};
+
+export const updateHousekeepingTask = async (id: string, data: Partial<HousekeepingTask>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    // Add completedTime if status is completed
+    if (cleanData.status === 'completed' && !cleanData.completedTime) {
+      cleanData.completedTime = new Date();
+    }
+    
+    const r = doc(db, 'housekeepingTasks', id);
+    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating housekeeping task:', e);
+    return false;
+  }
+};
+
+export const deleteHousekeepingTask = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'housekeepingTasks', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting housekeeping task:', e);
+    return false;
+  }
+};
+
+// ==================== Check-in/Check-out Management ====================
+
+export const getCheckInOutRecords = async (bookingId?: string): Promise<CheckInOutRecord[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'checkInOutRecords');
+    let snap;
+    if (bookingId) {
+      // Filter by bookingId first, then sort in memory to avoid index requirement
+      const qy = query(c, where('bookingId', '==', bookingId));
+      snap = await getDocs(qy);
+    } else {
+      const qy = query(c, orderBy('createdAt', 'desc'));
+      snap = await getDocs(qy);
+    }
+    
+    const records = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        checkInTime: data.checkInTime?.toDate(),
+        checkOutTime: data.checkOutTime?.toDate(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as CheckInOutRecord;
+    });
+    
+    // Sort in memory if filtered by bookingId
+    if (bookingId) {
+      records.sort((a, b) => {
+        const aTime = a.createdAt.getTime();
+        const bTime = b.createdAt.getTime();
+        return bTime - aTime; // Descending
+      });
+    }
+    
+    return records;
+  } catch (e) {
+    console.error('Error fetching check-in/out records:', e);
+    return [];
+  }
+};
+
+export const createCheckInOutRecord = async (data: Omit<CheckInOutRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    // Remove undefined values - Firestore doesn't accept undefined
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const value = (data as any)[key];
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    });
+    
+    const c = collection(db, 'checkInOutRecords');
+    const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating check-in/out record:', e);
+    return null;
+  }
+};
+
+export const updateCheckInOutRecord = async (id: string, data: Partial<CheckInOutRecord>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'checkInOutRecords', id);
+    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating check-in/out record:', e);
+    return false;
+  }
+};
+
+// Helper function to check-in a guest
+export const checkInGuest = async (
+  bookingId: string,
+  staffName: string,
+  idDocumentType?: string,
+  idDocumentNumber?: string,
+  roomKeyNumber?: string,
+  depositAmount?: number,
+  notes?: string
+): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const booking = await getBooking(bookingId);
+    if (!booking) return null;
+
+    // Get room name from allocated room
+    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
+    const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+
+    // Create check-in record - only include defined values
+    const recordData: Omit<CheckInOutRecord, 'id' | 'createdAt' | 'updatedAt'> = {
+      bookingId,
+      guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+      roomName,
+      suiteType: suiteType as SuiteType,
+      checkInTime: new Date(),
+      checkInStaff: staffName,
+      idVerified: !!idDocumentNumber,
+      roomKeyIssued: !!roomKeyNumber,
+      depositReturned: false,
+    };
+    
+    // Add optional fields only if they have values
+    if (idDocumentType) recordData.idDocumentType = idDocumentType;
+    if (idDocumentNumber) recordData.idDocumentNumber = idDocumentNumber;
+    if (roomKeyNumber) recordData.roomKeyNumber = roomKeyNumber;
+    if (depositAmount !== undefined && depositAmount !== null) recordData.depositAmount = depositAmount;
+    if (notes) recordData.notes = notes;
+    
+    const record = await createCheckInOutRecord(recordData);
+
+    // Update booking status
+    await updateBooking(bookingId, {
+      status: 'checked_in',
+      checkInTime: new Date(),
+      roomNumber: roomName,
+    });
+
+    // Update room status
+    const roomStatus = await getRoomStatus(roomName);
+    if (roomStatus) {
+      await updateRoomStatus(roomStatus.id, {
+        status: 'occupied',
+        currentBookingId: bookingId,
+        currentCheckInDate: new Date(),
+        currentGuestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+        housekeepingStatus: 'dirty', // Room becomes dirty when occupied
+      });
+    } else {
+      // Create room status if doesn't exist
+      await createRoomStatus({
+        roomName,
+        suiteType: suiteType as SuiteType,
+        status: 'occupied',
+        currentBookingId: bookingId,
+        currentCheckInDate: new Date(),
+        currentGuestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+        housekeepingStatus: 'dirty',
+      });
+    }
+
+    return record;
+  } catch (e) {
+    console.error('Error checking in guest:', e);
+    return null;
+  }
+};
+
+// Helper function to check-out a guest
+export const checkOutGuest = async (
+  bookingId: string,
+  staffName: string,
+  depositReturned: boolean = false,
+  notes?: string
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const booking = await getBooking(bookingId);
+    if (!booking) return false;
+
+    // Get check-in record
+    const records = await getCheckInOutRecords(bookingId);
+    const checkInRecord = records[0];
+    if (!checkInRecord) return false;
+
+    // Update check-out record - only include defined values
+    const updateData: Partial<CheckInOutRecord> = {
+      checkOutTime: new Date(),
+      checkOutStaff: staffName,
+      depositReturned,
+    };
+    if (notes) updateData.notes = notes;
+    
+    await updateCheckInOutRecord(checkInRecord.id, updateData);
+
+    // Update booking status
+    await updateBooking(bookingId, {
+      status: 'checked_out',
+      checkOutTime: new Date(),
+    });
+
+    // Update room status and create housekeeping task
+    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
+    const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+    
+    const roomStatus = await getRoomStatus(roomName);
+    if (roomStatus) {
+      await updateRoomStatus(roomStatus.id, {
+        status: 'cleaning',
+        currentBookingId: undefined,
+        currentCheckInDate: undefined,
+        currentCheckOutDate: new Date(),
+        currentGuestName: undefined,
+        housekeepingStatus: 'dirty',
+      });
+    }
+
+    // Create housekeeping task for checkout cleaning
+    await createHousekeepingTask({
+      roomName,
+      suiteType: suiteType as SuiteType,
+      taskType: 'checkout_cleaning',
+      priority: 'high',
+      status: 'pending',
+      bookingId,
+      scheduledTime: new Date(),
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Error checking out guest:', e);
     return false;
   }
 };
