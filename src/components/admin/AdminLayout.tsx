@@ -23,12 +23,14 @@ import {
   CreditCardIcon,
   HomeIcon as HomeStatusIcon,
   UserGroupIcon,
-  SparklesIcon as CleaningIcon
+  SparklesIcon as CleaningIcon,
+  ChevronDownIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getAdminRole, AdminRole } from '@/lib/adminRoles';
-import { AdminRoleProvider } from '@/context/AdminRoleContext';
+import { getAdminRoleSync, type AdminRole } from '@/lib/adminRoles';
+import { AdminRoleProvider, useAdminRole } from '@/context/AdminRoleContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -69,6 +71,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50' },
   ];
 
+  interface NavigationItem {
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    bgColor: string;
+    requiresFullAdmin?: boolean;
+  }
+
+  const filteredNavigation = useMemo(() => {
+    return navigation.filter((item: NavigationItem) => {
+      if (item.requiresFullAdmin) {
+        return adminRole === 'full';
+      }
+      return true;
+    });
+  }, [adminRole, navigation]);
+
   useEffect(() => {
     if (!auth) {
       setAuthChecked(true);
@@ -77,7 +97,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       const email = user?.email ?? null;
       setUserEmail(email);
-      setAdminRole(getAdminRole(email));
+      setAdminRole(getAdminRoleSync(email));
       setAuthChecked(true);
     });
     return () => unsubscribe();
@@ -132,6 +152,58 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <AdminRoleProvider>
+      <AdminLayoutContent 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen}
+        pathname={pathname}
+        adminRole={adminRole}
+        userEmail={userEmail}
+        filteredNavigation={filteredNavigation}
+      >
+        {children}
+      </AdminLayoutContent>
+    </AdminRoleProvider>
+  );
+}
+
+function AdminLayoutContent({ 
+  sidebarOpen, 
+  setSidebarOpen, 
+  pathname, 
+  adminRole,
+  userEmail,
+  filteredNavigation,
+  children 
+}: { 
+  sidebarOpen: boolean; 
+  setSidebarOpen: (open: boolean) => void; 
+  pathname: string;
+  adminRole: AdminRole;
+  userEmail: string | null;
+  filteredNavigation: Array<{
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    bgColor: string;
+    requiresFullAdmin?: boolean;
+  }>;
+  children: React.ReactNode;
+}) {
+  const { adminUser, isFullAdmin } = useAdminRole();
+  const router = useRouter();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  const roleLabels: Record<string, string> = {
+    full: 'Full Admin',
+    kitchen: 'Kitchen Staff',
+    housekeeping: 'Housekeeping',
+    front_desk: 'Front Desk',
+    manager: 'Manager',
+    readonly: 'Read Only',
+  };
+
+  return (
     <div className="min-h-screen bg-[#FFFCF6]">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
@@ -147,7 +219,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </button>
           </div>
           <nav className="flex-1 space-y-1 px-3 py-4">
-            {navigation.map((item) => {
+            {filteredNavigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -182,7 +254,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <h1 className="text-xl font-bold text-[#202c3b]">Admin Panel</h1>
           </div>
           <nav className="flex-1 space-y-1 px-3 py-4">
-            {navigation.map((item) => {
+            {filteredNavigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -238,37 +310,125 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   Login
                 </Link>
               ) : (
-                <>
+                <div className="relative">
                   <div className="hidden sm:flex items-center gap-3">
-                    <div className="flex flex-col items-end">
-                      <span className="text-sm font-medium text-[#202c3b]">{userEmail}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {adminRole === 'readonly' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 rounded-md border border-amber-200 shadow-sm">
-                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                            Read-Only Access
+                    {/* Admin User Info with Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                      >
+                        <UserCircleIcon className="h-5 w-5 text-[#202c3b]" />
+                        <div className="flex flex-col items-start text-left">
+                          {adminUser?.name ? (
+                            <span className="text-sm font-semibold text-[#202c3b]">{adminUser.name}</span>
+                          ) : (
+                            <span className="text-sm font-semibold text-[#202c3b]">{userEmail.split('@')[0]}</span>
+                          )}
+                          <span className="text-xs text-gray-500 truncate max-w-[150px]">{userEmail}</span>
+                        </div>
+                        {adminUser && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border ${
+                            adminUser.role === 'full' 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : adminUser.role === 'manager'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : adminUser.role === 'kitchen'
+                              ? 'bg-orange-50 text-orange-700 border-orange-200'
+                              : adminUser.role === 'housekeeping'
+                              ? 'bg-teal-50 text-teal-700 border-teal-200'
+                              : adminUser.role === 'front_desk'
+                              ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {adminUser.role === 'full' && (
+                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {roleLabels[adminUser.role] || 'Read Only'}
                           </span>
                         )}
-                        {adminRole === 'full' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 shadow-sm">
-                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {showUserMenu && (
+                        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50" onClick={(e) => e.stopPropagation()}>
+                          <div className="px-4 py-2 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-900">{adminUser?.name || userEmail.split('@')[0]}</p>
+                            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                            {adminUser && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border mt-2 ${
+                                adminUser.role === 'full' 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : adminUser.role === 'manager'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  : adminUser.role === 'kitchen'
+                                  ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                  : adminUser.role === 'housekeeping'
+                                  ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                  : adminUser.role === 'front_desk'
+                                  ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                                {roleLabels[adminUser.role] || 'Read Only'}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {isFullAdmin && (
+                            <>
+                              <Link
+                                href="/admin/admin-users"
+                                onClick={() => setShowUserMenu(false)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <UserGroupIcon className="h-4 w-4" />
+                                Manage Admin Users
+                              </Link>
+                              <Link
+                                href="/admin/admin-users"
+                                onClick={() => setShowUserMenu(false)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm text-[#FF6A00] hover:bg-orange-50 transition-colors font-medium"
+                              >
+                                <PlusIcon className="h-4 w-4" />
+                                Add New User
+                              </Link>
+                              <div className="border-t border-gray-200 my-1"></div>
+                            </>
+                          )}
+                          
+                          <button
+                            onClick={async () => { 
+                              if (auth) { 
+                                await signOut(auth); 
+                                router.push('/admin/login'); 
+                              } 
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
-                            Full Access
-                          </span>
-                        )}
-                      </div>
+                            Sign out
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <button
-                    onClick={async () => { if (auth) { await signOut(auth); router.push('/admin/login'); } }}
-                    className="text-sm font-medium text-[#202c3b] hover:text-[#FF6A00] transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </>
+                  
+                  {/* Mobile view - simpler button */}
+                  <div className="sm:hidden">
+                    <button
+                      onClick={() => router.push(isFullAdmin ? '/admin/admin-users' : '#')}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <UserCircleIcon className="h-5 w-5 text-[#202c3b]" />
+                      {isFullAdmin && <PlusIcon className="h-4 w-4 text-[#FF6A00]" />}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -327,7 +487,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </main>
       </div>
+      
+      {/* Click outside to close dropdown */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
     </div>
-    </AdminRoleProvider>
   );
 }

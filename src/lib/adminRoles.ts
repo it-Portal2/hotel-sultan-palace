@@ -1,53 +1,50 @@
 /**
- * Admin Role Management
- * 
- * Primary Admin (Full Access): Email from NEXT_PUBLIC_ADMIN_EMAILS env variable
- * - Can add, edit, delete bookings and all admin features
- * 
- * Read-Only Admin (Limited Access): Any other admin email (including info@sultanpalacehotelznz.com)
- * - Can view bookings and data
- * - Cannot add, edit, or delete anything
- * 
- * Security: No hardcoded credentials - all from environment variables
+ * Admin Role Management (Legacy - for backward compatibility)
+ * Now uses Firestore-based adminUsers system
  */
+
+import { getAdminUser, type AdminRoleType } from './adminUsers';
 
 export type AdminRole = 'full' | 'readonly';
 
 /**
- * Get full admin email from environment variable
- * First email in comma-separated list gets full access
- * @returns Full admin email or null if not configured
+ * Get admin role based on email (uses Firestore adminUsers)
+ * @param email - User's email address
+ * @returns 'full' for primary admin, 'readonly' for others
  */
-function getFullAdminEmail(): string | null {
-  const envEmail = process.env.NEXT_PUBLIC_ADMIN_EMAILS;
-  if (!envEmail) return null;
-  // Take first email if comma-separated (first email = full access)
-  const emails = envEmail.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  return emails.length > 0 ? emails[0] : null;
+export async function getAdminRole(email: string | null | undefined): Promise<AdminRole> {
+  if (!email) return 'readonly';
+  
+  try {
+    const adminUser = await getAdminUser(email);
+    if (!adminUser) return 'readonly';
+    
+    // Full admin or manager role = full access
+    if (adminUser.role === 'full' || adminUser.role === 'manager') {
+      return 'full';
+    }
+    
+    return 'readonly';
+  } catch (error) {
+    console.error('Error getting admin role:', error);
+    return 'readonly';
+  }
 }
 
 /**
- * Get admin role based on email
- * @param email - User's email address
- * @returns 'full' for primary admin (from env), 'readonly' for others
+ * Synchronous version for client-side (uses cached value)
+ * Note: This is a fallback - prefer async getAdminRole
  */
-export function getAdminRole(email: string | null | undefined): AdminRole {
+export function getAdminRoleSync(email: string | null | undefined): AdminRole {
   if (!email) return 'readonly';
   
   const normalizedEmail = email.toLowerCase().trim();
-  const fullAdminEmail = getFullAdminEmail();
+  const mainAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',')[0]?.trim().toLowerCase() || 'admin@sultanpalacehotelznz.com';
   
-  // If no full admin email configured, default to readonly for all
-  if (!fullAdminEmail) {
-    return 'readonly';
-  }
-  
-  // Check if email matches full admin email from env
-  if (normalizedEmail === fullAdminEmail) {
+  if (normalizedEmail === mainAdminEmail) {
     return 'full';
   }
   
-  // All other emails (including info@sultanpalacehotelznz.com) are readonly
   return 'readonly';
 }
 
@@ -56,8 +53,9 @@ export function getAdminRole(email: string | null | undefined): AdminRole {
  * @param email - User's email address
  * @returns true if user is primary admin
  */
-export function isFullAdmin(email: string | null | undefined): boolean {
-  return getAdminRole(email) === 'full';
+export async function isFullAdmin(email: string | null | undefined): Promise<boolean> {
+  const role = await getAdminRole(email);
+  return role === 'full';
 }
 
 /**
@@ -65,7 +63,8 @@ export function isFullAdmin(email: string | null | undefined): boolean {
  * @param email - User's email address
  * @returns true if user is read-only admin
  */
-export function isReadOnlyAdmin(email: string | null | undefined): boolean {
-  return getAdminRole(email) === 'readonly';
+export async function isReadOnlyAdmin(email: string | null | undefined): Promise<boolean> {
+  const role = await getAdminRole(email);
+  return role === 'readonly';
 }
 
