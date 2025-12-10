@@ -132,15 +132,6 @@ export default function VillasPage() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <div ref={(el) => { imageRefs.current[2] = el; }} className="relative flex-1 h-[200px] sm:h-[250px] md:h-[260px] lg:h-[659px] flex-shrink-0 villa-side-image">
-                    <Image
-                      src="/villas/garden-villa-2.png"
-                      alt="Garden Villa Exterior"
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover/image-side:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image-side:opacity-100 transition-opacity duration-500"></div>
-                  </div>
                 </div>
               </div>
 
@@ -182,14 +173,14 @@ export default function VillasPage() {
                 </div>
               </div>
 
-              {/* Sultan Place Hotel Villa */}
+              {/* Sultan Palace Hotel Villa */}
               <div ref={(el) => { sectionRefs.current[2] = el; }} className="flex flex-col gap-4 sm:gap-6 md:gap-[24px] lg:gap-[44px] w-full villa-section mx-2 sm:mx-4 md:mx-6 lg:mx-8 xl:mx-auto xl:max-w-[1620px]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
                   <h2 
                     ref={(el) => { headingRefs.current[2] = el; }}
                     className="text-[#423B2D] text-[24px] sm:text-[28px] md:text-[32px] lg:text-[36px] xl:text-[40px] font-semibold leading-[1.2] sm:leading-[0.9] md:leading-[0.625] font-quicksand villa-heading"
                   >
-                    Sultan Place Hotel Villa
+                    Sultan Palace Hotel Villa
                   </h2>
                   <button onClick={openModal} className="bg-[#FF6A00] text-white px-4 py-2 rounded-[6px] text-[14px] sm:text-[16px] md:text-[18px] font-medium leading-[1.944444] w-full sm:w-auto md:w-[208px] h-[38px] sm:h-[42px] flex items-center justify-center font-quicksand villa-button group/btn relative overflow-hidden md:mr-10 lg:mr-16">
                     <span className="relative z-10">Booking Enquiry</span>

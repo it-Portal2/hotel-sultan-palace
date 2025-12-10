@@ -1,10 +1,21 @@
-/* Hero Section Animations */
-.gallery-hero-bg {
-  transition: transform 20s ease-out;
+/* Hero Section Animations - No background image transform, same as other pages */
+/* Lock hero section and main element completely - no movement on scroll */
+main {
+  transform: none !important;
+  will-change: auto !important;
 }
 
-.gallery-hero-title-visible .gallery-hero-bg {
-  transform: scale(1.1);
+main > section:first-child {
+  transform: none !important;
+  will-change: auto !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+main > section:first-child img {
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
 }
 
 .gallery-hero-title {
@@ -89,12 +100,9 @@
 }
 
 .gallery-bg-image {
-  transition: transform 30s ease-out;
-}
-
-.section-visible .gallery-bg-image,
-.gallery-bg-image.section-visible {
-  transform: scale(1.15);
+  /* No transform - background stays fixed */
+  transform: none !important;
+  transition: none !important;
 }
 
 .gallery-image-card {
@@ -153,42 +161,28 @@
   transform: translateY(0) scale(1);
 }
 
-/* Shimmer Effect */
-.gallery-shimmer {
-  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
-  background-size: 200% 200%;
-  animation: galleryShimmer 4s ease-in-out infinite;
-}
+/* Shimmer Effect - Removed for subtle effect */
 
-@keyframes galleryShimmer {
-  0%,
-  100% {
-    background-position: -200% 0;
-  }
-  50% {
-    background-position: 200% 0;
-  }
-}
-
-/* Additional hover effects */
+/* Additional hover effects - Subtle like Story in Pictures */
 .section-visible .gallery-image-card:hover,
 .gallery-image-card.section-visible:hover {
-  transform: translateY(-5px) scale(1.05) rotateY(0deg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  transform: translateY(0) scale(1) rotateY(0deg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .section-visible .gallery-full-image:hover,
 .gallery-full-image.section-visible:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  transform: translateY(0) scale(1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Centered View label animation */
+/* View label animation - Subtle like Story in Pictures */
 .gallery-view-label {
-  transform: translateY(8px) scale(0.98);
+  transform: translateY(10px);
+  transition: all 0.3s ease-out;
 }
 
 .group:hover .gallery-view-label {
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 

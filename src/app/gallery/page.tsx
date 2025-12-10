@@ -13,9 +13,8 @@ const FILTERS: { label: string; value: GalleryType | "all" }[] = [
   { label: "Pool", value: "pool" },
   { label: "Spa", value: "spa" },
   { label: "Beach", value: "beach" },
-  { label: "Water Sports", value: "water_sports" },
   { label: "Restaurant & Bars", value: "restaurant_bars" },
-  { label: "FACILITIES", value: "facilities" },
+  { label: "Facilities", value: "facilities" },
 ];
 
 export default function GalleryPage() {
@@ -238,7 +237,7 @@ export default function GalleryPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden" style={{ transform: 'none', willChange: 'auto' }}>
         {/* Hero Section */}
         <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
           <Image 
@@ -250,7 +249,7 @@ export default function GalleryPage() {
             fetchPriority="high"
             quality={90}
             sizes="100vw"
-            className="object-cover gallery-hero-bg" 
+            className="object-cover"
             style={{ opacity: 1 }}
           />
           <div ref={heroRef} className="absolute inset-0 flex flex-col items-center justify-end pb-90 px-4">
@@ -317,13 +316,12 @@ export default function GalleryPage() {
                       <div key={`grid-${i}`} className="mb-8">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                           {gridChunk.map((src, idx) => (
-                            <button onClick={()=>{setLightboxSrc(src); setLightboxOpen(true); setZoom(1);}} key={`${src}-${i+idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
-                              <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-1.5" />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-300"></div>
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300 underline underline-offset-4 decoration-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">View</span>
+                            <button onClick={()=>{setLightboxSrc(src); setLightboxOpen(true); setZoom(1); setPosition({x:0, y:0});}} key={`${src}-${i+idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
+                              <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-300 ease-out" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
+                              <div className="absolute inset-0 flex items-end justify-center pb-4">
+                                <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300">View →</span>
                               </div>
-                              <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100 pointer-events-none"></div>
                             </button>
                           ))}
                         </div>
@@ -333,13 +331,12 @@ export default function GalleryPage() {
                   if (hero) {
                     sections.push(
                       <div key={`hero-${i}`} className="mb-8 gallery-full-image">
-                        <button onClick={()=>{setLightboxSrc(hero); setLightboxOpen(true); setZoom(1);}} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
-                          <Image src={hero} alt="Gallery Feature" fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-1.5" />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-300"></div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300 underline underline-offset-4 decoration-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">View</span>
+                        <button onClick={()=>{setLightboxSrc(hero); setLightboxOpen(true); setZoom(1); setPosition({x:0, y:0});}} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
+                          <Image src={hero} alt="Gallery Feature" fill className="object-cover transition-transform duration-300 ease-out" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
+                          <div className="absolute inset-0 flex items-end justify-center pb-4">
+                            <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300">View →</span>
                           </div>
-                          <div className="absolute inset-0 gallery-shimmer opacity-0 group-hover:opacity-100 pointer-events-none"></div>
                         </button>
                       </div>
                     );
@@ -358,72 +355,98 @@ export default function GalleryPage() {
       {lightboxOpen && (
         <div 
           ref={containerRef}
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-grab active:cursor-grabbing overflow-hidden" 
-          onClick={()=>{if(zoom === 1) setLightboxOpen(false);}}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-grab active:cursor-grabbing overflow-hidden" 
+          onClick={()=>{if(zoom === 1) {setLightboxOpen(false); setZoom(1); setPosition({x:0, y:0});}}}
           style={{ userSelect: 'none' }}
         >
-          <div className="absolute top-4 right-4 flex gap-2 z-10">
+          {/* Close Button - Top Right Corner */}
+          <button 
+            onClick={(e)=>{
+              e.stopPropagation(); 
+              setLightboxOpen(false);
+              setZoom(1);
+              setPosition({x:0, y:0});
+            }} 
+            className="absolute top-4 right-4 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-[#242424] hover:text-red-600 shadow-xl transition-all duration-200 group"
+            title="Close"
+            aria-label="Close image"
+          >
+            <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Zoom Controls - Top Left */}
+          <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
             <button 
               onClick={(e)=>{
                 e.stopPropagation(); 
-                const newZoom = Math.min(5, zoom + 0.5);
-                if (newZoom > 1 && imageRef.current) {
-                  const rect = imageRef.current.getBoundingClientRect();
-                  const imgWidth = rect.width * newZoom;
-                  const imgHeight = rect.height * newZoom;
-                  const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
-                  const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
-                  setPosition({
-                    x: Math.max(-maxX, Math.min(maxX, position.x)),
-                    y: Math.max(-maxY, Math.min(maxY, position.y))
-                  });
+                const newZoom = Math.min(5, zoom + 0.25);
+                if (newZoom !== zoom) {
+                  setZoom(newZoom);
+                  // Recalculate position boundaries when zooming in
+                  if (newZoom > 1 && imageRef.current) {
+                    setTimeout(() => {
+                      if (imageRef.current) {
+                        const imgRect = imageRef.current.getBoundingClientRect();
+                        const imgWidth = imgRect.width * newZoom;
+                        const imgHeight = imgRect.height * newZoom;
+                        const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
+                        const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
+                        setPosition({
+                          x: Math.max(-maxX, Math.min(maxX, position.x)),
+                          y: Math.max(-maxY, Math.min(maxY, position.y))
+                        });
+                      }
+                    }, 0);
+                  }
                 }
-                setZoom(newZoom);
               }} 
-              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xl md:text-2xl font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Zoom In"
+              aria-label="Zoom in"
             >
               +
             </button>
             <button 
               onClick={(e)=>{
                 e.stopPropagation(); 
-                const newZoom = Math.max(1, zoom - 0.5);
-                if (newZoom === 1) {
-                  setPosition({ x: 0, y: 0 });
-                } else if (imageRef.current) {
-                  const rect = imageRef.current.getBoundingClientRect();
-                  const imgWidth = rect.width * newZoom;
-                  const imgHeight = rect.height * newZoom;
-                  const maxX = Math.max(0, (imgWidth - window.innerWidth) / 2);
-                  const maxY = Math.max(0, (imgHeight - window.innerHeight) / 2);
-                  setPosition({
-                    x: Math.max(-maxX, Math.min(maxX, position.x)),
-                    y: Math.max(-maxY, Math.min(maxY, position.y))
-                  });
+                const newZoom = Math.max(1, zoom - 0.25);
+                if (newZoom !== zoom) {
+                  setZoom(newZoom);
+                  if (newZoom === 1) {
+                    setPosition({ x: 0, y: 0 });
+                  } else {
+                    // Adjust position proportionally when zooming out
+                    const scaleChange = newZoom / zoom;
+                    setPosition({
+                      x: position.x * scaleChange,
+                      y: position.y * scaleChange
+                    });
+                  }
                 }
-                setZoom(newZoom);
               }} 
-              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xl md:text-2xl font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Zoom Out"
+              aria-label="Zoom out"
             >
               −
             </button>
             <button 
-              onClick={(e)=>{e.stopPropagation(); setZoom(1); setPosition({ x: 0, y: 0 });}} 
-              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
+              onClick={(e)=>{
+                e.stopPropagation(); 
+                setZoom(1); 
+                setPosition({ x: 0, y: 0 });
+              }} 
+              className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xs md:text-sm font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Reset Zoom"
+              aria-label="Reset zoom"
             >
-              Reset
-            </button>
-            <button 
-              onClick={(e)=>{e.stopPropagation(); setLightboxOpen(false);}} 
-              className="px-4 py-2 rounded-lg bg-white/90 hover:bg-white text-[#242424] text-base font-semibold shadow-lg transition-colors"
-              title="Close"
-            >
-              ✕
+              ↻
             </button>
           </div>
+
+          {/* Image Container */}
           <div 
             className="absolute inset-0 flex items-center justify-center"
             style={{ 
@@ -435,12 +458,12 @@ export default function GalleryPage() {
             <img 
               ref={imageRef}
               src={lightboxSrc} 
-              alt="zoom" 
+              alt="Gallery image" 
               style={{ 
                 transform: `scale(${zoom})`,
                 transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                maxWidth: '90vw', 
-                maxHeight: '90vh',
+                maxWidth: '95vw', 
+                maxHeight: '95vh',
                 cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
                 touchAction: 'none'
               }} 
@@ -449,13 +472,17 @@ export default function GalleryPage() {
                 e.stopPropagation();
                 if(zoom === 1) {
                   setLightboxOpen(false);
+                  setZoom(1);
+                  setPosition({x:0, y:0});
                 }
               }}
               draggable={false}
             />
           </div>
+
+          {/* Zoom Indicator */}
           {zoom > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm z-10">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm z-20 backdrop-blur-sm">
               Zoom: {Math.round(zoom * 100)}% • Drag to pan • Scroll to zoom
             </div>
           )}

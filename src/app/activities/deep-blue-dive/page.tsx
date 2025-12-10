@@ -117,7 +117,7 @@ export default function DeepBlueDivePage() {
         </section>
 
       
-        <section className="relative pt-8 pb-0">
+        <section className="relative pt-8 pb-12 md:pb-16 lg:pb-20">
           <div 
             className="absolute inset-0 top-[30%] pointer-events-none hidden md:block"
             style={{
@@ -132,13 +132,12 @@ export default function DeepBlueDivePage() {
               className="object-cover"
             />
           </div>
-          <div ref={galleryRef} className="relative z-10 max-w-8xl mx-auto px-2 md:px-4 pb-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div ref={galleryRef} className="relative z-10 max-w-8xl mx-auto px-2 md:px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
               {[
                 { src: "deep-1.png", label: "100 Feet of Diving" },
                 { src: "deep-2.png", label: "400 Fish Species" },
                 { src: "deep-3.png", label: "65,000 Meters of Reef" },
-                { src: "deep-4.png", label: "Luxury Villas" },
               ].map((item, index) => (
                 <div 
                   key={`gallery-${index}`} 
@@ -159,7 +158,7 @@ export default function DeepBlueDivePage() {
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <p className="mt-4 text-center text-[#424242] text-[16px] md:text-[18px] font-semibold leading-[1.5] font-quicksand w-full group-hover:text-[#F96406] transition-colors duration-300">
+                  <p className="mt-6 md:mt-8 text-center text-[#424242] text-[16px] md:text-[18px] font-semibold leading-[1.5] font-quicksand w-full group-hover:text-[#F96406] transition-colors duration-300">
                     {item.label}
                   </p>
                 </div>

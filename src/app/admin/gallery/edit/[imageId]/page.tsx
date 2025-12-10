@@ -15,7 +15,6 @@ const TYPES: {label:string; value: GalleryType}[] = [
   { label: 'Pool', value: 'pool' },
   { label: 'Spa', value: 'spa' },
   { label: 'Beach', value: 'beach' },
-  { label: 'Water Sports', value: 'water_sports' },
   { label: 'Restaurant & Bars', value: 'restaurant_bars' },
   { label: 'Facilities', value: 'facilities' },
 ];
