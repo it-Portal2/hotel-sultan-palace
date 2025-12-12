@@ -3,7 +3,7 @@
  * Now uses Firestore-based adminUsers system
  */
 
-import { getAdminUser, type AdminRoleType } from './adminUsers';
+import { getAdminUser } from './adminUsers';
 
 export type AdminRole = 'full' | 'readonly';
 

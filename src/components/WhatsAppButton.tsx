@@ -2,8 +2,11 @@
 "use client";
 import { FaWhatsapp } from 'react-icons/fa';
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 
 const WhatsAppButton = () => {
+  const pathname = usePathname();
+  
   // Both WhatsApp numbers - format: country code + number without + or spaces
   const numbers = useMemo(() => [
     { num: '255684888111', label: '+255 684 888 111', full: '+255684888111' },
@@ -34,6 +37,11 @@ const WhatsAppButton = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMenu]);
+
+  // Hide WhatsApp button on admin routes
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <>

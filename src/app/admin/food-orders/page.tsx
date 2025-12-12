@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useMemo } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
+import { useToast } from '@/context/ToastContext';
 import { getFoodOrders, updateFoodOrder, FoodOrder } from '@/lib/firestoreService';
-import { MagnifyingGlassIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ClockIcon, FunnelIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 export default function AdminFoodOrdersPage() {
   const { isReadOnly } = useAdminRole();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<FoodOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,6 +18,7 @@ export default function AdminFoodOrdersPage() {
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadOrders = async () => {
@@ -26,6 +28,7 @@ export default function AdminFoodOrdersPage() {
       setOrders(data);
     } catch (error) {
       console.error('Error loading orders:', error);
+      showToast('Failed to load orders', 'error');
     } finally {
       setLoading(false);
     }
@@ -36,40 +39,62 @@ export default function AdminFoodOrdersPage() {
     try {
       await updateFoodOrder(orderId, { status });
       await loadOrders();
+      showToast(`Order ${status} successfully!`, 'success');
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status });
+      }
     } catch (error) {
       console.error('Error updating order status:', error);
-      alert('Failed to update order status');
+      showToast('Failed to update order status', 'error');
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.guestPhone.includes(searchQuery) ||
-      (order.roomNumber && order.roomNumber.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredOrders = useMemo(() => {
+    let filtered = orders;
+    
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(order => order.status === statusFilter);
+    }
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(order => 
+        order.orderNumber.toLowerCase().includes(q) ||
+        order.guestName.toLowerCase().includes(q) ||
+        order.guestPhone.includes(q) ||
+        (order.roomNumber && order.roomNumber.toLowerCase().includes(q))
+      );
+    }
+    
+    return filtered;
+  }, [orders, statusFilter, searchQuery]);
+
+  const stats = useMemo(() => {
+    return {
+      total: orders.length,
+      pending: orders.filter(o => o.status === 'pending').length,
+      delivered: orders.filter(o => o.status === 'delivered').length,
+    };
+  }, [orders]);
 
   const getStatusColor = (status: FoodOrder['status']) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'text-yellow-600 bg-yellow-50';
       case 'confirmed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'text-blue-600 bg-blue-50';
       case 'preparing':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'text-orange-600 bg-orange-50';
       case 'ready':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'text-green-600 bg-green-50';
       case 'out_for_delivery':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'text-purple-600 bg-purple-50';
       case 'delivered':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        return 'text-emerald-600 bg-emerald-50';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'text-red-600 bg-red-50';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'text-gray-600 bg-gray-50';
     }
   };
 
@@ -84,33 +109,50 @@ export default function AdminFoodOrdersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
   }
 
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <BackButton href="/admin" label="Back to Dashboard" />
       
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Food Orders Management</h1>
-        <p className="mt-2 text-[#202c3b]/70 text-lg">Manage all food orders from guests</p>
-        <div className="mt-4 flex gap-4">
-          <div className="px-4 py-2 bg-yellow-100 rounded-lg">
-            <span className="text-sm font-medium text-yellow-800">Pending: {orders.filter(o => o.status === 'pending').length}</span>
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Food Orders</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage all food orders from guests • {currentDate}</p>
+        </div>
+        
+        {/* Inline Stats */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span className="text-gray-600">Total:</span>
+            <span className="font-semibold text-gray-900">{stats.total}</span>
           </div>
-          <div className="px-4 py-2 bg-green-100 rounded-lg">
-            <span className="text-sm font-medium text-green-800">Delivered: {orders.filter(o => o.status === 'delivered').length}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span className="text-gray-600">Pending:</span>
+            <span className="font-semibold text-gray-900">{stats.pending}</span>
           </div>
-          <div className="px-4 py-2 bg-gray-100 rounded-lg">
-            <span className="text-sm font-medium text-gray-800">Total: {orders.length}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-gray-600">Delivered:</span>
+            <span className="font-semibold text-gray-900">{stats.delivered}</span>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 flex flex-col md:flex-row gap-4">
+      {/* Simple Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -118,44 +160,47 @@ export default function AdminFoodOrdersPage() {
             placeholder="Search by order number, guest name, phone, or room..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent focus:outline-none"
+            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="out_for_delivery">Out for Delivery</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none px-3 py-2 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="preparing">Preparing</option>
+            <option value="ready">Ready</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
       </div>
 
-      {/* Orders List */}
+      {/* Clean Table */}
       {filteredOrders.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-100">
+        <div className="text-center py-16">
           <p className="text-lg font-medium text-gray-600">No orders found</p>
           <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order #</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guest</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room / Location</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Items</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order #</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guest</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room / Location</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Items</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -172,15 +217,15 @@ export default function AdminFoodOrdersPage() {
                       <div className="text-xs text-gray-500">{order.guestPhone}</div>
                     </td>
                     <td className="px-6 py-4">
-                      {order.roomNumber ? (
+                      {order.roomNumber && (
                         <div className="text-sm text-gray-900">Room: {order.roomNumber}</div>
-                      ) : null}
+                      )}
                       <div className="text-xs text-gray-500">
                         {deliveryLocationLabels[order.deliveryLocation] || order.deliveryLocation}
                       </div>
                       {order.scheduledDeliveryTime && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          <ClockIcon className="h-3 w-3 inline mr-1" />
+                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <ClockIcon className="h-3 w-3" />
                           {new Date(order.scheduledDeliveryTime).toLocaleTimeString()}
                         </div>
                       )}
@@ -198,14 +243,14 @@ export default function AdminFoodOrdersPage() {
                       <div className="text-sm font-semibold text-gray-900">${order.totalAmount}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                         {order.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="text-[#FF6A00] hover:text-[#FF6A00]/80 font-medium"
+                        className="text-[#FF6A00] hover:text-[#FF6A00]/80 font-medium border-b-2 border-transparent hover:border-[#FF6A00] transition-colors"
                       >
                         View Details
                       </button>
@@ -225,23 +270,21 @@ export default function AdminFoodOrdersPage() {
           onClick={() => setSelectedOrder(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-white to-[#FFFCF6] border-b border-[#be8c53]/20 p-6 flex justify-between items-center">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
               <div>
-                <h3 className="text-2xl font-bold text-[#202c3b]">Order #{selectedOrder.orderNumber}</h3>
-                <p className="text-[#202c3b]/70 text-sm mt-1">
+                <h3 className="text-2xl font-semibold text-gray-900">Order #{selectedOrder.orderNumber}</h3>
+                <p className="text-gray-500 text-sm mt-1">
                   {new Date(selectedOrder.createdAt).toLocaleString()}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="text-[#202c3b]/70 hover:text-[#FF6A00]"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <XCircleIcon className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6">
@@ -254,7 +297,7 @@ export default function AdminFoodOrdersPage() {
                     <p className="text-sm text-gray-700">{selectedOrder.guestEmail}</p>
                   )}
                   {selectedOrder.roomNumber && (
-                    <p className="text-sm text-gray-700 mt-2">Room: {selectedOrder.roomNumber}</p>
+                    <p className="text-sm text-gray-700 mt-1">Room: {selectedOrder.roomNumber}</p>
                   )}
                 </div>
                 <div>
@@ -263,11 +306,11 @@ export default function AdminFoodOrdersPage() {
                     Location: {deliveryLocationLabels[selectedOrder.deliveryLocation] || selectedOrder.deliveryLocation}
                   </p>
                   {selectedOrder.scheduledDeliveryTime && (
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-gray-700 mt-1">
                       Scheduled: {new Date(selectedOrder.scheduledDeliveryTime).toLocaleString()}
                     </p>
                   )}
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 mt-1">
                     Prep Time: {selectedOrder.estimatedPreparationTime} mins
                   </p>
                 </div>
@@ -306,9 +349,8 @@ export default function AdminFoodOrdersPage() {
                         <button
                           onClick={() => {
                             handleStatusUpdate(selectedOrder.id, 'confirmed');
-                            setSelectedOrder({ ...selectedOrder, status: 'confirmed' });
                           }}
-                          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Confirm Order
                         </button>
@@ -317,9 +359,8 @@ export default function AdminFoodOrdersPage() {
                         <button
                           onClick={() => {
                             handleStatusUpdate(selectedOrder.id, 'delivered');
-                            setSelectedOrder({ ...selectedOrder, status: 'delivered' });
                           }}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
                           Mark as Delivered
                         </button>
@@ -327,9 +368,8 @@ export default function AdminFoodOrdersPage() {
                       <button
                         onClick={() => {
                           handleStatusUpdate(selectedOrder.id, 'cancelled');
-                          setSelectedOrder({ ...selectedOrder, status: 'cancelled' });
                         }}
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       >
                         Cancel Order
                       </button>
@@ -344,4 +384,3 @@ export default function AdminFoodOrdersPage() {
     </div>
   );
 }
-

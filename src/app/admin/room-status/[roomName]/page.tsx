@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
+import { useToast } from '@/context/ToastContext';
 import { 
   getRoomStatus, 
   updateRoomStatus, 
@@ -13,18 +14,10 @@ import {
   HousekeepingTask,
   CheckInOutRecord
 } from '@/lib/firestoreService';
-import { 
-  CalendarDaysIcon,
-  ClockIcon,
-  UserIcon,
-  WrenchScrewdriverIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
-
 export default function RoomDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const { isReadOnly } = useAdminRole();
+  const { showToast } = useToast();
   const roomName = params.roomName as string;
   const [roomStatus, setRoomStatus] = useState<RoomStatus | null>(null);
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
@@ -39,6 +32,7 @@ export default function RoomDetailsPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomName]);
 
   const loadData = async () => {
@@ -75,10 +69,10 @@ export default function RoomDetailsPage() {
       setShowMaintenanceModal(false);
       setMaintenanceForm({ reason: '', endDate: '', notes: '' });
       await loadData();
-      alert('Room marked for maintenance');
+      showToast('Room marked for maintenance', 'success');
     } catch (error) {
       console.error('Error updating room status:', error);
-      alert('Failed to update room status');
+      showToast('Failed to update room status', 'error');
     }
   };
 
@@ -94,10 +88,10 @@ export default function RoomDetailsPage() {
         maintenanceReason: undefined,
       });
       await loadData();
-      alert('Room marked as available');
+      showToast('Room marked as available', 'success');
     } catch (error) {
       console.error('Error updating room status:', error);
-      alert('Failed to update room status');
+      showToast('Failed to update room status', 'error');
     }
   };
 
@@ -130,7 +124,7 @@ export default function RoomDetailsPage() {
     return (
       <div className="space-y-6">
         <BackButton href="/admin/room-status" label="Back to Room Status" />
-        <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-100">
+        <div className="text-center py-16 bg-white rounded shadow-lg border border-gray-100">
           <p className="text-lg font-medium text-gray-600">Room not found</p>
         </div>
       </div>
@@ -141,7 +135,7 @@ export default function RoomDetailsPage() {
     <div className="space-y-6">
       <BackButton href="/admin/room-status" label="Back to Room Status" />
       
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
+      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded p-6 border border-[#be8c53]/20 shadow-lg">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">{roomStatus.roomName}</h1>
@@ -185,7 +179,7 @@ export default function RoomDetailsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Current Status */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded shadow-lg p-6 border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Current Status</h2>
           <div className="space-y-3">
             <div>
@@ -220,7 +214,7 @@ export default function RoomDetailsPage() {
         </div>
 
         {/* Cleaning History */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded shadow-lg p-6 border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Cleaning History</h2>
           {roomStatus.lastCleaned && (
             <div className="mb-4">
@@ -259,7 +253,7 @@ export default function RoomDetailsPage() {
         </div>
 
         {/* Recent Housekeeping Tasks */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded shadow-lg p-6 border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Tasks</h2>
           {tasks.length > 0 ? (
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -289,7 +283,7 @@ export default function RoomDetailsPage() {
         </div>
 
         {/* Check-in/Check-out History */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded shadow-lg p-6 border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Check-in/Check-out History</h2>
           {checkInOutRecords.length > 0 ? (
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -320,7 +314,7 @@ export default function RoomDetailsPage() {
       {/* Maintenance Modal */}
       {showMaintenanceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded shadow-2xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Mark Room for Maintenance</h3>
             <div className="space-y-4">
               <div>

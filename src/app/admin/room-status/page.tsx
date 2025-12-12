@@ -1,15 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import BackButton from '@/components/admin/BackButton';
 import { getRoomStatuses, getRoomTypes, RoomStatus, SuiteType, RoomType } from '@/lib/firestoreService';
 import { 
   HomeIcon, 
-  CheckCircleIcon, 
-  XCircleIcon, 
-  WrenchScrewdriverIcon,
-  SparklesIcon
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
@@ -20,15 +16,13 @@ export default function RoomStatusPage() {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSuite, setSelectedSuite] = useState<SuiteType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadData();
-    
-    // Set up real-time listener for room status updates
     const interval = setInterval(() => {
       loadData();
-    }, 30000); // Refresh every 30 seconds
-    
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -48,46 +42,76 @@ export default function RoomStatusPage() {
     }
   };
 
-  const getStatusColor = (status: RoomStatus['status']) => {
+  const filteredRooms = useMemo(() => {
+    let filtered = roomTypes;
+    
+    if (selectedSuite !== 'all') {
+      filtered = filtered.filter(rt => rt.suiteType === selectedSuite);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(rt => 
+        rt.roomName.toLowerCase().includes(query) ||
+        rt.suiteType.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [roomTypes, selectedSuite, searchQuery]);
+
+  const roomsBySuite = useMemo(() => {
+    return filteredRooms.reduce((acc, roomType) => {
+      if (!acc[roomType.suiteType]) {
+        acc[roomType.suiteType] = [];
+      }
+      acc[roomType.suiteType].push(roomType);
+      return acc;
+    }, {} as Record<SuiteType, RoomType[]>);
+  }, [filteredRooms]);
+
+  const getStatusDot = (status: RoomStatus['status']) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-500';
       case 'occupied':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-500';
       case 'maintenance':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-500';
       case 'cleaning':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-500';
       case 'reserved':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-purple-500';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-500';
     }
   };
 
-  const getHousekeepingColor = (status?: RoomStatus['housekeepingStatus']) => {
+  const getHousekeepingDot = (status?: RoomStatus['housekeepingStatus']) => {
     switch (status) {
       case 'clean':
-        return 'text-green-600';
-      case 'dirty':
-        return 'text-red-600';
       case 'inspected':
-        return 'text-blue-600';
+        return 'bg-green-500';
+      case 'dirty':
       case 'needs_attention':
-        return 'text-orange-600';
+        return 'bg-red-500';
       default:
-        return 'text-gray-600';
+        return 'bg-gray-400';
     }
   };
 
-  // Group rooms by suite type
-  const roomsBySuite = roomTypes.reduce((acc, roomType) => {
-    if (!acc[roomType.suiteType]) {
-      acc[roomType.suiteType] = [];
-    }
-    acc[roomType.suiteType].push(roomType);
-    return acc;
-  }, {} as Record<SuiteType, RoomType[]>);
+  const stats = useMemo(() => {
+    const available = roomStatuses.filter(r => r.status === 'available').length;
+    const occupied = roomStatuses.filter(r => r.status === 'occupied').length;
+    const cleaning = roomStatuses.filter(r => r.status === 'cleaning').length;
+    const maintenance = roomStatuses.filter(r => r.status === 'maintenance').length;
+    const reserved = roomStatuses.filter(r => r.status === 'reserved').length;
+    
+    const clean = roomStatuses.filter(r => r.housekeepingStatus === 'clean' || r.housekeepingStatus === 'inspected').length;
+    const dirty = roomStatuses.filter(r => r.housekeepingStatus === 'dirty' || r.housekeepingStatus === 'needs_attention').length;
+    
+    return { available, occupied, cleaning, maintenance, reserved, clean, dirty, total: roomTypes.length };
+  }, [roomStatuses, roomTypes.length]);
 
   const filteredSuites = selectedSuite === 'all' 
     ? SUITE_TYPES 
@@ -96,156 +120,145 @@ export default function RoomStatusPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Room Status Dashboard</h1>
-        <p className="mt-2 text-[#202c3b]/70 text-lg">Real-time room availability and status</p>
-        
-        {/* Filter */}
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={() => setSelectedSuite('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              selectedSuite === 'all'
-                ? 'bg-[#FF6A00] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All Suites
-          </button>
-          {SUITE_TYPES.map(suite => (
-            <button
-              key={suite}
-              onClick={() => setSelectedSuite(suite)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                selectedSuite === suite
-                  ? 'bg-[#FF6A00] text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {suite}
-            </button>
-          ))}
-        </div>
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
 
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-gray-900">
-              {roomStatuses.filter(r => r.status === 'available').length}
-            </div>
-            <div className="text-sm text-gray-600">Available</div>
+  return (
+    <div className="space-y-8">
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Room Status</h1>
+          <p className="text-sm text-gray-500 mt-1">Real-time monitoring • {currentDate}</p>
+        </div>
+        
+        {/* Inline Stats - No boxes */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-gray-600">Clean:</span>
+            <span className="font-semibold text-gray-900">{stats.clean}</span>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-blue-600">
-              {roomStatuses.filter(r => r.status === 'occupied').length}
-            </div>
-            <div className="text-sm text-gray-600">Occupied</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span className="text-gray-600">Dirty:</span>
+            <span className="font-semibold text-gray-900">{stats.dirty}</span>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-yellow-600">
-              {roomStatuses.filter(r => r.status === 'cleaning').length}
-            </div>
-            <div className="text-sm text-gray-600">Cleaning</div>
+          <div className="text-gray-400">|</div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Available:</span>
+            <span className="font-semibold text-gray-900">{stats.available}</span>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-red-600">
-              {roomStatuses.filter(r => r.status === 'maintenance').length}
-            </div>
-            <div className="text-sm text-gray-600">Maintenance</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-purple-600">
-              {roomStatuses.filter(r => r.status === 'reserved').length}
-            </div>
-            <div className="text-sm text-gray-600">Reserved</div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Occupied:</span>
+            <span className="font-semibold text-gray-900">{stats.occupied}</span>
           </div>
         </div>
       </div>
 
-      {/* Rooms Grid */}
-      <div className="space-y-6">
+      {/* Simple Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search rooms..."
+            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
+            <button
+              onClick={() => setSelectedSuite('all')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                selectedSuite === 'all'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All
+            </button>
+            {SUITE_TYPES.map(suite => (
+              <button
+                key={suite}
+                onClick={() => setSelectedSuite(suite)}
+                className={`px-3 py-1 text-sm font-medium transition-colors ${
+                  selectedSuite === suite
+                    ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {suite.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Clean Room Grid - No heavy boxes */}
+      <div className="space-y-8">
         {filteredSuites.map(suiteType => {
           const rooms = roomsBySuite[suiteType] || [];
           const suiteStatuses = roomStatuses.filter(rs => rs.suiteType === suiteType);
           
+          if (rooms.length === 0) return null;
+          
           return (
-            <div key={suiteType} className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <HomeIcon className="h-6 w-6 mr-2 text-[#FF6A00]" />
-                {suiteType}
-              </h2>
+            <div key={suiteType} className="space-y-4">
+              {/* Simple Suite Header */}
+              <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                <HomeIcon className="h-5 w-5 text-[#FF6A00]" />
+                <h2 className="text-lg font-semibold text-gray-900">{suiteType}</h2>
+                <span className="text-sm text-gray-500">({rooms.length})</span>
+              </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {/* Minimal Room Grid */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {rooms.map(room => {
                   const status = suiteStatuses.find(s => s.roomName === room.roomName);
                   const currentStatus = status?.status || 'available';
                   const housekeepingStatus = status?.housekeepingStatus || 'clean';
+                  const isClean = housekeepingStatus === 'clean' || housekeepingStatus === 'inspected';
+                  const isDirty = housekeepingStatus === 'dirty' || housekeepingStatus === 'needs_attention';
                   
                   return (
                     <div
                       key={room.id}
-                      className={`p-4 rounded-lg border-2 cursor-pointer hover:shadow-lg transition-all ${
-                        currentStatus === 'available' ? 'border-green-300 bg-green-50' :
-                        currentStatus === 'occupied' ? 'border-blue-300 bg-blue-50' :
-                        currentStatus === 'cleaning' ? 'border-yellow-300 bg-yellow-50' :
-                        currentStatus === 'maintenance' ? 'border-red-300 bg-red-50' :
-                        'border-purple-300 bg-purple-50'
-                      }`}
+                      className="group relative p-3 rounded-lg border border-gray-200 hover:border-[#FF6A00] hover:shadow-sm cursor-pointer transition-all bg-white"
                       onClick={() => {
                         router.push(`/admin/room-status/${room.roomName}`);
                       }}
                     >
-                      <div className="font-bold text-gray-900 mb-2">{room.roomName}</div>
-                      <div className={`text-xs font-medium mb-2 px-2 py-1 rounded-full border ${getStatusColor(currentStatus)}`}>
-                        {currentStatus.toUpperCase()}
-                      </div>
-                      <div className={`text-xs font-semibold mb-1 ${getHousekeepingColor(housekeepingStatus)}`}>
-                        {housekeepingStatus?.toUpperCase() || 'CLEAN'}
+                      {/* Status Dots - Top Left */}
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className={`w-2 h-2 rounded-full ${getStatusDot(currentStatus)}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${getHousekeepingDot(housekeepingStatus)}`}></div>
                       </div>
                       
-                      {/* Guest Info */}
-                      {status?.currentGuestName && (
-                        <div className="text-xs text-gray-600 mt-1">
-                          Guest: {status.currentGuestName}
-                        </div>
-                      )}
+                      {/* Room Name */}
+                      <div className="font-semibold text-sm text-gray-900 mb-1 truncate">
+                        {room.roomName}
+                      </div>
                       
-                      {/* Check-in Date */}
-                      {status?.currentCheckInDate && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Check-in: {new Date(status.currentCheckInDate).toLocaleDateString()}
-                        </div>
-                      )}
-                      
-                      {/* Booking ID */}
-                      {status?.currentBookingId && (
-                        <div className="text-xs text-gray-500 mt-1 truncate">
-                          Booking: {status.currentBookingId.slice(0, 8)}...
-                        </div>
-                      )}
-                      
-                      {/* Last Cleaned */}
-                      {status?.lastCleaned && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Last Cleaned: {new Date(status.lastCleaned).toLocaleDateString()}
-                        </div>
-                      )}
-                      
-                      {/* Cleaning Count */}
-                      {status?.cleaningHistory && status.cleaningHistory.length > 0 && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          Cleaned {status.cleaningHistory.length} time{status.cleaningHistory.length > 1 ? 's' : ''}
-                        </div>
-                      )}
+                      {/* Status Text - Minimal */}
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-500 capitalize">{currentStatus}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className={`${isClean ? 'text-green-600' : isDirty ? 'text-red-600' : 'text-gray-500'}`}>
+                          {housekeepingStatus === 'clean' || housekeepingStatus === 'inspected' ? 'Clean' : 
+                           housekeepingStatus === 'dirty' ? 'Dirty' : 'Pending'}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -257,4 +270,3 @@ export default function RoomStatusPage() {
     </div>
   );
 }
-

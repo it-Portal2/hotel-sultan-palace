@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { getAllBookingEnquiries, updateBookingEnquiryStatus, BookingEnquiry } from '@/lib/firestoreService';
-import BackButton from '@/components/admin/BackButton';
+import { MagnifyingGlassIcon,  EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function AdminBookingEnquiriesPage() {
   const [items, setItems] = useState<BookingEnquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'read' | 'replied'>('all');
 
   useEffect(() => {
     (async () => {
@@ -25,77 +27,221 @@ export default function AdminBookingEnquiriesPage() {
     setUpdating(null);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin"/></div>;
+  const filteredItems = useMemo(() => {
+    let filtered = items;
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(i => i.status === statusFilter);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(i => 
+        i.name.toLowerCase().includes(q) ||
+        i.email.toLowerCase().includes(q) ||
+        i.phone.toLowerCase().includes(q) ||
+        i.message.toLowerCase().includes(q) ||
+        (i.website && i.website.toLowerCase().includes(q))
+      );
+    }
+
+    return filtered;
+  }, [items, statusFilter, searchQuery]);
+
+  const stats = useMemo(() => {
+    return {
+      total: items.length,
+      new: items.filter(i => i.status === 'new').length,
+      read: items.filter(i => i.status === 'read').length,
+      replied: items.filter(i => i.status === 'replied').length,
+    };
+  }, [items]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
+      </div>
+    );
+  }
+
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
 
   return (
-    <div className="space-y-6">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#202C3B]">Booking Enquiries</h1>
-          <p className="mt-1 text-sm md:text-base text-gray-600">Leads submitted from the booking enquiry form</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Booking Enquiries</h1>
+          <p className="text-sm text-gray-500 mt-1">Leads from booking enquiry form • {currentDate}</p>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white shadow-sm">Total <strong className="ml-1 text-[#202C3B]">{items.length}</strong></span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white shadow-sm">New <strong className="ml-1 text-[#202C3B]">{items.filter(i=>i.status==='new').length}</strong></span>
+        
+        {/* Inline Stats - No boxes */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Total:</span>
+            <span className="font-semibold text-gray-900">{stats.total}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <span className="text-gray-600">New:</span>
+            <span className="font-semibold text-gray-900">{stats.new}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span className="text-gray-600">Read:</span>
+            <span className="font-semibold text-gray-900">{stats.read}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-gray-600">Replied:</span>
+            <span className="font-semibold text-gray-900">{stats.replied}</span>
+          </div>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm">No booking enquiries yet.</div>
+      {/* Simple Filter Bar - Same style */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, email, phone, message..."
+            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'all'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setStatusFilter('new')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'new'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              New
+            </button>
+            <button
+              onClick={() => setStatusFilter('read')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'read'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Read
+            </button>
+            <button
+              onClick={() => setStatusFilter('replied')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'replied'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Replied
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Clean Table - No heavy boxes */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-16">
+          <EnvelopeIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-600">No enquiries found</p>
+          <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-white border-b">
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 w-[120px]">Name</th>
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 w-[180px]">Email</th>
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 w-[130px]">Phone</th>
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 w-[200px]">Website</th>
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 min-w-[300px]">Message</th>
-                <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 w-[120px]">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {items.map((i, idx) => (
-                <tr key={i.id} className={idx % 2 ? 'bg-white' : 'bg-gray-50/40 hover:bg-gray-100/50 transition-colors'}>
-                  <td className="px-4 md:px-6 py-3 text-sm text-[#202C3B] font-medium break-words">{i.name}</td>
-                  <td className="px-4 md:px-6 py-3 text-sm break-words">
-                    <a href={`mailto:${i.email}`} className="text-blue-700 hover:underline break-all">{i.email}</a>
-                  </td>
-                  <td className="px-4 md:px-6 py-3 text-sm text-gray-700 break-words">{i.phone}</td>
-                  <td className="px-4 md:px-6 py-3 text-sm text-gray-700 break-words">
-                    {i.website ? (
-                      <a href={i.website.startsWith('http') ? i.website : `https://${i.website}`} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline break-all text-xs">
-                        {i.website.length > 30 ? `${i.website.substring(0, 30)}...` : i.website}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 md:px-6 py-3 text-sm text-gray-700">
-                    <div className="max-w-full break-words whitespace-normal">{i.message}</div>
-                  </td>
-                  <td className="px-4 md:px-6 py-3 text-sm">
-                    <select 
-                      value={i.status} 
-                      onChange={(e)=>setStatus(i.id, e.target.value as BookingEnquiry['status'])} 
-                      disabled={updating===i.id} 
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
-                    >
-                      <option value="new">New</option>
-                      <option value="read">Read</option>
-                      <option value="replied">Replied</option>
-                    </select>
-                  </td>
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Website</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Message</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredItems.map((i) => (
+                  <tr key={i.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{i.name}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <a 
+                        href={`mailto:${i.email}`} 
+                        className="text-sm text-[#FF6A00] hover:text-[#FF6A00]/80 hover:underline break-all"
+                      >
+                        {i.email}
+                      </a>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700">{i.phone}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {i.website ? (
+                        <a 
+                          href={i.website.startsWith('http') ? i.website : `https://${i.website}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-sm text-[#FF6A00] hover:text-[#FF6A00]/80 hover:underline break-all max-w-xs block truncate"
+                        >
+                          {i.website}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-700 max-w-md break-words">{i.message}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <select 
+                        value={i.status} 
+                        onChange={(e) => setStatus(i.id, e.target.value as BookingEnquiry['status'])} 
+                        disabled={updating === i.id} 
+                        className={`text-sm border-b-2 bg-transparent focus:outline-none focus:border-[#FF6A00] disabled:opacity-50 cursor-pointer ${
+                          i.status === 'new' ? 'border-blue-200 text-blue-700' :
+                          i.status === 'read' ? 'border-yellow-200 text-yellow-700' :
+                          'border-green-200 text-green-700'
+                        }`}
+                      >
+                        <option value="new">New</option>
+                        <option value="read">Read</option>
+                        <option value="replied">Replied</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-

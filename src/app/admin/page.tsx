@@ -2,468 +2,698 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
   BuildingOfficeIcon, 
-  PlusIcon, 
   ChartBarIcon,
-  UsersIcon,
   CurrencyDollarIcon,
   CalendarDaysIcon,
+  ArrowRightIcon,
+  ClipboardDocumentIcon,
+  PhoneIcon,
+  CreditCardIcon,
+  ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
+  CheckBadgeIcon,
   CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon
+  HomeIcon,
+  ArrowPathIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { 
-  BuildingOfficeIcon as BuildingOfficeIconSolid,
-  PlusIcon as PlusIconSolid,
-  ChartBarIcon as ChartBarIconSolid
-} from '@heroicons/react/24/solid';
-import { getRooms, getAddOns, getAllBookings, Booking, getAllContactForms, getAllBookingEnquiries } from '@/lib/firestoreService';
+  getAllBookings, 
+  Booking, 
+  getAllContactForms, 
+  getAllBookingEnquiries,
+  getRoomStatuses,
+  getRooms
+} from '@/lib/firestoreService';
+
+// Circular Progress Chart Component
+const CircularProgressChart = ({ 
+  value, 
+  total, 
+  label, 
+  color, 
+  size = 120 
+}: { 
+  value: number; 
+  total: number; 
+  label: string; 
+  color: string;
+  size?: number;
+}) => {
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+  const radius = (size - 20) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="12"
+            fill="none"
+            className="text-gray-200"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="12"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className={`transition-all duration-500 ${color}`}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{value}</div>
+            <div className="text-xs text-gray-500 mt-1">Total</div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 text-center">
+        <div className="text-sm font-semibold text-gray-700">{label}</div>
+      </div>
+    </div>
+  );
+};
+
+// Donut Chart Component
+const DonutChart = ({ 
+  data, 
+  size = 200 
+}: { 
+  data: Array<{ label: string; value: number; color: string }>;
+  size?: number;
+}) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const radius = (size - 40) / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  let currentOffset = 0;
+  const segments = data.map((item) => {
+    const percentage = total > 0 ? (item.value / total) * 100 : 0;
+    const segmentLength = (percentage / 100) * circumference;
+    const offset = circumference - currentOffset;
+    currentOffset += segmentLength;
+    
+    return {
+      ...item,
+      percentage,
+      offset,
+      segmentLength
+    };
+  });
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90">
+          {segments.map((segment, index) => (
+            <circle
+              key={index}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={segment.color}
+              strokeWidth="30"
+              fill="none"
+              strokeDasharray={circumference}
+              strokeDashoffset={segment.offset}
+              strokeLinecap="round"
+              className="transition-all duration-500"
+            />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-800">{total}</div>
+            <div className="text-sm text-gray-500">Rooms</div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2 w-full">
+        {data.map((item, index) => (
+          <div key={index} className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${item.color.replace('text-', 'bg-')}`}></div>
+              <span className="text-gray-700">{item.label}</span>
+            </div>
+            <span className="font-semibold text-gray-800">({item.value})</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Bar Chart Component
+const BarChart = ({ 
+  data 
+}: { 
+  data: Array<{ label: string; value: number; color: string }>;
+}) => {
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  
+  return (
+    <div className="space-y-4">
+      {data.map((item, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <div className="w-24 text-sm text-gray-700 font-medium">{item.label}</div>
+          <div className="flex-1 relative">
+            <div className="h-8 bg-gray-100 rounded-md overflow-hidden">
+              <div
+                className={`h-full ${item.color} rounded-md transition-all duration-500 flex items-center justify-end pr-2`}
+                style={{ width: `${(item.value / maxValue) * 100}%` }}
+              >
+                {item.value > 0 && (
+                  <span className="text-white text-xs font-semibold">{item.value}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="w-12 text-right text-sm font-semibold text-gray-800">{item.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [stats, setStats] = useState({
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    // Arrival/Departure Metrics
+    arrivals: { pending: 0, arrived: 0 },
+    departures: { pending: 0, checkedOut: 0 },
+    guestsInHouse: { adults: 0, children: 0 },
+    
+    // Room Status
+    roomStatus: {
+      vacant: 0,
+      sold: 0,
+      dayUse: 0,
+      complimentary: 0,
+      blocked: 0
+    },
+    
+    // Housekeeping Status
+    housekeeping: {
+      clean: 0,
+      hkAssign: 0,
+      dirty: 0,
+      block: 0
+    },
+    
+    // Notifications
+    notifications: {
+      workOrder: 0,
+      bookingInquiry: 0,
+      paymentFailed: 0,
+      overbooking: 0,
+      guestPortal: 0,
+      guestMessage: 0,
+      cardVerificationFailed: 0,
+      tasks: 0,
+      review: 0
+    },
+    
+    // Activity Feeds
+    activities: [] as Array<{ type: string; message: string; time: Date }>,
+    
+    // Other Stats
     totalRooms: 0,
-    totalAddOns: 0,
     totalBookings: 0,
-    pendingBookings: 0,
-    confirmedBookings: 0,
-    cancelledBookings: 0,
     revenueThisMonth: 0,
     revenueTotal: 0,
-    totalContacts: 0,
-    totalEnquiries: 0,
-    loading: true
+    recentBookings: [] as Booking[]
   });
-  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
-  const [trend, setTrend] = useState<number[]>([]);
-  const [trendData, setTrendData] = useState<Array<{date: Date, count: number, dayName: string, dayInitial: string, dateStr: string}>>([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const [rooms, addOns, bookings, contacts, enquiries] = await Promise.all([
-          getRooms(),
-          getAddOns(),
+        const [bookings, contacts, enquiries, roomStatuses, rooms] = await Promise.all([
           getAllBookings(),
           getAllContactForms(),
-          getAllBookingEnquiries()
+          getAllBookingEnquiries(),
+          getRoomStatuses(),
+          getRooms()
         ]);
 
-        // Revenue calculations
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Calculate Arrivals
+        const arrivalsPending = bookings.filter(b => {
+          const checkIn = new Date(b.checkIn);
+          checkIn.setHours(0, 0, 0, 0);
+          return checkIn.getTime() === today.getTime() && b.status === 'confirmed';
+        }).length;
+        
+        const arrivalsArrived = bookings.filter(b => {
+          return b.status === 'checked_in';
+        }).length;
+
+        // Calculate Departures
+        const departuresPending = bookings.filter(b => {
+          const checkOut = new Date(b.checkOut);
+          checkOut.setHours(0, 0, 0, 0);
+          return checkOut.getTime() === today.getTime() && (b.status === 'confirmed' || b.status === 'checked_in');
+        }).length;
+        
+        const departuresCheckedOut = bookings.filter(b => {
+          return b.status === 'checked_out';
+        }).length;
+
+        // Calculate Guests In House
+        const checkedInBookings = bookings.filter(b => b.status === 'checked_in');
+        const adultsInHouse = checkedInBookings.reduce((sum, b) => sum + (b.guests?.adults || 0), 0);
+        const childrenInHouse = checkedInBookings.reduce((sum, b) => sum + (b.guests?.children || 0), 0);
+
+        // Calculate Room Status
+        const totalRooms = rooms.length;
+        const occupiedRooms = checkedInBookings.length;
+        const reservedRooms = bookings.filter(b => b.status === 'confirmed' && new Date(b.checkIn) > today).length;
+        const vacantRooms = Math.max(0, totalRooms - occupiedRooms - reservedRooms);
+        
+        const roomStatusData = {
+          vacant: vacantRooms,
+          sold: occupiedRooms,
+          dayUse: 0, // Can be calculated based on bookings
+          complimentary: 0, // Can be calculated based on bookings
+          blocked: roomStatuses.filter(rs => rs.status === 'maintenance').length
+        };
+
+        // Calculate Housekeeping Status
+        const housekeepingData = {
+          clean: roomStatuses.filter(rs => rs.housekeepingStatus === 'clean' || rs.housekeepingStatus === 'inspected').length,
+          hkAssign: roomStatuses.filter(rs => rs.housekeepingStatus === 'needs_attention').length,
+          dirty: roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty').length,
+          block: roomStatuses.filter(rs => rs.status === 'maintenance').length
+        };
+
+        // Calculate Revenue
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const revenueThisMonth = bookings
           .filter(b => {
             const created = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-            return created >= monthStart && b.status === 'confirmed';
+            return created >= monthStart && (b.status === 'confirmed' || b.status === 'checked_in' || b.status === 'checked_out');
           })
           .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
         
         const revenueTotal = bookings
-          .filter(b => b.status === 'confirmed')
+          .filter(b => b.status !== 'cancelled')
           .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
-        // Booking status counts
-        const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-        const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
-        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+        // Generate Activity Feeds
+        const activities = [
+          ...bookings.slice(0, 5).map(b => ({
+            type: 'booking',
+            message: `New booking from ${b.guestDetails?.firstName} ${b.guestDetails?.lastName}`,
+            time: b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+          })),
+          ...contacts.slice(0, 3).map(c => ({
+            type: 'contact',
+            message: `New contact form from ${c.name}`,
+            time: c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt)
+          }))
+        ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 10);
 
-        // Last 7 days trend by booking count with dates
-        const days = Array.from({ length: 7 }).map((_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - (6 - i));
-          d.setHours(0,0,0,0);
-          return d;
-        });
-        const counts = days.map((d) => {
-          const next = new Date(d); 
-          next.setDate(d.getDate() + 1);
-          return bookings.filter(b => {
-            const created = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-            return created >= d && created < next;
-          }).length;
-        });
-
-        setStats({
-          totalRooms: rooms.length,
-          totalAddOns: addOns.length,
+        setDashboardData({
+          arrivals: { pending: arrivalsPending, arrived: arrivalsArrived },
+          departures: { pending: departuresPending, checkedOut: departuresCheckedOut },
+          guestsInHouse: { adults: adultsInHouse, children: childrenInHouse },
+          roomStatus: roomStatusData,
+          housekeeping: housekeepingData,
+          notifications: {
+            workOrder: 0,
+            bookingInquiry: enquiries.filter(e => e.status === 'new').length,
+            paymentFailed: 0,
+            overbooking: 0,
+            guestPortal: 0,
+            guestMessage: contacts.filter(c => c.status === 'new').length,
+            cardVerificationFailed: 0,
+            tasks: 0,
+            review: 0
+          },
+          activities,
+          totalRooms,
           totalBookings: bookings.length,
-          pendingBookings,
-          confirmedBookings,
-          cancelledBookings,
           revenueThisMonth,
           revenueTotal,
-          totalContacts: contacts.length,
-          totalEnquiries: enquiries.length,
-          loading: false
+          recentBookings: bookings.slice(0, 5)
         });
-        setRecentBookings(bookings.slice(0, 5));
-        setTrend(counts);
-        
-        // Store trend data with dates
-        const trendDataWithDates = days.map((day, i) => ({
-          date: day,
-          count: counts[i],
-          dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day.getDay()],
-          dayInitial: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.getDay()],
-          dateStr: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        }));
-        setTrendData(trendDataWithDates);
+
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching stats:', error);
-        setStats(prev => ({ ...prev, loading: false }));
+        console.error('Error fetching dashboard data:', error);
+        setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
-  const quickActions = [
-    {
-      name: 'Manage Rooms',
-      description: 'Add, edit, or delete room listings',
-      href: '/admin/rooms',
-      icon: BuildingOfficeIconSolid,
-      color: 'bg-gradient-to-br from-blue-500 to-blue-600',
-      hoverColor: 'hover:from-blue-600 hover:to-blue-700'
-    },
-    {
-      name: 'Manage Add-ons',
-      description: 'Add, edit, or delete add-on services',
-      href: '/admin/addons',
-      icon: PlusIconSolid,
-      color: 'bg-gradient-to-br from-green-500 to-green-600',
-      hoverColor: 'hover:from-green-600 hover:to-green-700'
-    },
-    {
-      name: 'View Bookings',
-      description: 'Manage all reservations',
-      href: '/admin/bookings',
-      icon: CalendarDaysIcon,
-      color: 'bg-gradient-to-br from-purple-500 to-purple-600',
-      hoverColor: 'hover:from-purple-600 hover:to-purple-700'
-    },
-    {
-      name: 'Analytics',
-      description: 'View detailed reports',
-      href: '/admin/bookings',
-      icon: ChartBarIconSolid,
-      color: 'bg-gradient-to-br from-orange-500 to-orange-600',
-      hoverColor: 'hover:from-orange-600 hover:to-orange-700'
-    }
-  ];
-
-  if (stats.loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
   }
 
+  const notificationItems = [
+    { key: 'workOrder', label: 'Work Order', icon: ClipboardDocumentIcon, count: dashboardData.notifications.workOrder },
+    { key: 'bookingInquiry', label: 'Booking Inquiry', icon: CalendarDaysIcon, count: dashboardData.notifications.bookingInquiry },
+    { key: 'paymentFailed', label: 'Payment Failed', icon: CreditCardIcon, count: dashboardData.notifications.paymentFailed },
+    { key: 'overbooking', label: 'Overbooking', icon: ExclamationTriangleIcon, count: dashboardData.notifications.overbooking },
+    { key: 'guestPortal', label: 'Guest Portal', icon: PhoneIcon, count: dashboardData.notifications.guestPortal },
+    { key: 'guestMessage', label: 'Guest Message', icon: ChatBubbleLeftRightIcon, count: dashboardData.notifications.guestMessage },
+    { key: 'cardVerificationFailed', label: 'Card verification Failed', icon: CreditCardIcon, count: dashboardData.notifications.cardVerificationFailed },
+    { key: 'tasks', label: 'Tasks', icon: CheckBadgeIcon, count: dashboardData.notifications.tasks },
+    { key: 'review', label: 'Review', icon: CheckCircleIcon, count: dashboardData.notifications.review }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 md:p-8 border border-[#be8c53]/20 shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Admin Dashboard</h1>
-        <p className="mt-2 text-[#202c3b]/70 text-lg">Welcome back! Here&apos;s what&apos;s happening today.</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow-lg rounded-xl border-l-4 border-[#FF6A00] hover:shadow-xl transition-all hover:-translate-y-1">
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-[#FF6A00]/10 rounded-lg p-3">
-                  <BuildingOfficeIcon className="h-6 w-6 text-[#FF6A00]" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[#202c3b]/70">Total Rooms</p>
-                  <p className="text-2xl font-bold text-[#202c3b]">{stats.totalRooms}</p>
-                </div>
-              </div>
-            </div>
+      <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-500">Hotel Management System - Central Control</p>
           </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow-lg rounded-xl border-l-4 border-[#be8c53] hover:shadow-xl transition-all hover:-translate-y-1">
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-[#be8c53]/10 rounded-lg p-3">
-                  <PlusIcon className="h-6 w-6 text-[#be8c53]" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[#202c3b]/70">Total Add-ons</p>
-                  <p className="text-2xl font-bold text-[#202c3b]">{stats.totalAddOns}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow-lg rounded-xl border-l-4 border-[#0a1a2b] hover:shadow-xl transition-all hover:-translate-y-1">
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-[#0a1a2b]/10 rounded-lg p-3">
-                  <UsersIcon className="h-6 w-6 text-[#0a1a2b]" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[#202c3b]/70">Total Bookings</p>
-                  <p className="text-2xl font-bold text-[#202c3b]">{stats.totalBookings}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow-lg rounded-xl border-l-4 border-[#FF6A00] hover:shadow-xl transition-all hover:-translate-y-1">
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-[#FF6A00]/10 rounded-lg p-3">
-                  <CurrencyDollarIcon className="h-6 w-6 text-[#FF6A00]" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-[#202c3b]/70">Revenue (Month)</p>
-                  <p className="text-2xl font-bold text-[#202c3b]">${stats.revenueThisMonth.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <InformationCircleIcon className="h-5 w-5 text-gray-400" />
+            <span className="text-sm text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
           </div>
         </div>
       </div>
 
-      {/* Secondary Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="bg-white overflow-hidden shadow rounded-lg p-4 border-t-4 border-[#be8c53] hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <ClockIcon className="h-5 w-5 text-[#be8c53] mr-2" />
-            <div>
-              <p className="text-xs text-[#202c3b]/70">Pending</p>
-              <p className="text-lg font-semibold text-[#202c3b]">{stats.pendingBookings}</p>
+      {/* Top Row - Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Arrival */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+          <div className="text-center mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Arrival</h3>
+            <CircularProgressChart
+              value={dashboardData.arrivals.pending + dashboardData.arrivals.arrived}
+              total={dashboardData.arrivals.pending + dashboardData.arrivals.arrived}
+              label=""
+              color="text-blue-500"
+              size={100}
+            />
+          </div>
+          <div className="space-y-2 mt-4">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span className="text-gray-600">Pending</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.arrivals.pending})</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span className="text-gray-600">Arrived</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.arrivals.arrived})</span>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-4 border-t-4 border-[#FF6A00] hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <CheckCircleIcon className="h-5 w-5 text-[#FF6A00] mr-2" />
-            <div>
-              <p className="text-xs text-[#202c3b]/70">Confirmed</p>
-              <p className="text-lg font-semibold text-[#202c3b]">{stats.confirmedBookings}</p>
+
+        {/* Departure */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+          <div className="text-center mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Departure</h3>
+            <CircularProgressChart
+              value={dashboardData.departures.pending + dashboardData.departures.checkedOut}
+              total={dashboardData.departures.pending + dashboardData.departures.checkedOut}
+              label=""
+              color="text-blue-500"
+              size={100}
+            />
+          </div>
+          <div className="space-y-2 mt-4">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span className="text-gray-600">Pending</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.departures.pending})</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span className="text-gray-600">Checked Out</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.departures.checkedOut})</span>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-4 border-t-4 border-red-500 hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <XCircleIcon className="h-5 w-5 text-red-600 mr-2" />
-            <div>
-              <p className="text-xs text-[#202c3b]/70">Cancelled</p>
-              <p className="text-lg font-semibold text-[#202c3b]">{stats.cancelledBookings}</p>
+
+        {/* Guest In House */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+          <div className="text-center mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Guest In House</h3>
+            <CircularProgressChart
+              value={dashboardData.guestsInHouse.adults + dashboardData.guestsInHouse.children}
+              total={dashboardData.guestsInHouse.adults + dashboardData.guestsInHouse.children}
+              label=""
+              color="text-blue-500"
+              size={100}
+            />
+          </div>
+          <div className="space-y-2 mt-4">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span className="text-gray-600">Adult</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.guestsInHouse.adults})</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span className="text-gray-600">Child</span>
+              </div>
+              <span className="font-semibold text-gray-800">({dashboardData.guestsInHouse.children})</span>
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-4 border-t-4 border-[#0a1a2b] hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <CurrencyDollarIcon className="h-5 w-5 text-[#0a1a2b] mr-2" />
-            <div>
-              <p className="text-xs text-[#202c3b]/70">Total Revenue</p>
-              <p className="text-lg font-semibold text-[#202c3b]">${stats.revenueTotal.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-4 border-t-4 border-[#be8c53] hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <UsersIcon className="h-5 w-5 text-[#be8c53] mr-2" />
-            <div>
-              <p className="text-xs text-[#202c3b]/70">Enquiries</p>
-              <p className="text-lg font-semibold text-[#202c3b]">{stats.totalEnquiries}</p>
-            </div>
+
+        {/* Room Status */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm lg:col-span-2">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Room Status</h3>
+          <div className="flex items-center justify-center">
+            <DonutChart
+              data={[
+                { label: 'Vacant', value: dashboardData.roomStatus.vacant, color: 'text-blue-500' },
+                { label: 'Sold', value: dashboardData.roomStatus.sold, color: 'text-gray-500' },
+                { label: 'Day Use', value: dashboardData.roomStatus.dayUse, color: 'text-green-500' },
+                { label: 'Complimentary', value: dashboardData.roomStatus.complimentary, color: 'text-yellow-500' },
+                { label: 'Blocked', value: dashboardData.roomStatus.blocked, color: 'text-red-500' }
+              ]}
+              size={180}
+            />
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold text-[#202c3b] mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action) => (
-            <Link
-              key={action.name}
-              href={action.href}
-              className="relative group bg-gradient-to-br from-white to-[#FFFCF6] p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#FF6A00] rounded-xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 border border-[#be8c53]/20 hover:border-[#FF6A00]/40"
-            >
-              <div className="flex items-center">
-                <div className="bg-[#FF6A00]/10 rounded-lg p-3 group-hover:bg-[#FF6A00]/20 transition-colors">
-                  <action.icon className="h-6 w-6 text-[#FF6A00]" />
-                </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-base font-semibold text-[#202c3b] group-hover:text-[#FF6A00] transition-colors">
-                    {action.name}
-                  </h3>
-                  <p className="mt-1 text-sm text-[#202c3b]/70">
-                    {action.description}
-                  </p>
-                </div>
-              </div>
-              <span
-                className="absolute top-4 right-4 text-[#FF6A00]/30 group-hover:text-[#FF6A00] transition-colors"
-                aria-hidden="true"
+      {/* Housekeeping Status */}
+      <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Housekeeping Status</h3>
+        <BarChart
+          data={[
+            { label: 'Clean', value: dashboardData.housekeeping.clean, color: 'bg-blue-500' },
+            { label: 'HKAssign', value: dashboardData.housekeeping.hkAssign, color: 'bg-gray-500' },
+            { label: 'Dirty', value: dashboardData.housekeeping.dirty, color: 'bg-orange-500' },
+            { label: 'Block', value: dashboardData.housekeeping.block, color: 'bg-gray-500' }
+          ]}
+        />
+      </div>
+
+      {/* Notifications and Activity Feeds */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Notifications */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Notifications</h3>
+          <div className="grid grid-cols-3 gap-4">
+            {notificationItems.map((item) => (
+              <button
+                key={item.key}
+                className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
-                </svg>
-              </span>
-            </Link>
-          ))}
+                <item.icon className="h-6 w-6 text-gray-400 group-hover:text-blue-500 mb-2" />
+                <div className="text-2xl font-bold text-gray-800 group-hover:text-blue-600">{item.count}</div>
+                <div className="text-xs text-gray-600 text-center mt-1 group-hover:text-blue-600">{item.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Analytics & Recent Bookings */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Bookings trend chart */}
-        <div className="bg-white shadow-lg rounded-xl p-6 lg:col-span-1 border border-[#be8c53]/10">
-          <h3 className="text-lg font-semibold text-[#202c3b] mb-4 flex items-center">
-            <ChartBarIcon className="h-5 w-5 text-[#FF6A00] mr-2" />
-            Bookings (Last 7 Days)
-          </h3>
-          <div className="flex items-end gap-2 h-48">
-            {trendData.length > 0 ? trendData.map((item, i) => {
-              const maxVal = Math.max(...trend, 1);
-              const height = maxVal > 0 ? (item.count / maxVal) * 100 : 0;
-              
-              // Color gradient based on booking count
-              const getBarColor = (count: number, max: number) => {
-                if (max === 0) return 'from-gray-300 to-gray-400';
-                const ratio = count / max;
-                if (ratio >= 0.7) return 'from-[#FF6A00] to-[#FF8C42]'; // High - Orange
-                if (ratio >= 0.4) return 'from-[#be8c53] to-[#d4a574]'; // Medium - Gold
-                if (ratio > 0) return 'from-[#4CAF50] to-[#66BB6A]'; // Low - Green
-                return 'from-gray-200 to-gray-300'; // Zero - Gray
-              };
-              
-              const isToday = item.date.toDateString() === new Date().toDateString();
-              
-              return (
-                <button
-                  key={i}
-                  className="flex-1 flex flex-col items-center focus:outline-none group relative"
-                  onClick={() => {
-                    const day = item.date.toISOString().slice(0,10);
-                    router.push(`/admin/bookings?day=${day}`);
-                  }}
-                  title={`${item.count} booking${item.count !== 1 ? 's' : ''} on ${item.dayName}, ${item.dateStr}`}
-                >
-                  <div className="w-full relative group/bar">
-                    <div 
-                      className={`w-full bg-gradient-to-t ${getBarColor(item.count, maxVal)} rounded-t-md transition-all duration-300 group-hover/bar:shadow-lg group-hover/bar:scale-105 ${isToday ? 'ring-2 ring-[#FF6A00] ring-offset-2' : ''}`}
-                      style={{ height: `${Math.max(8, height)}%`, minHeight: item.count > 0 ? '20px' : '8px' }}
-                    />
-                    {item.count > 0 && (
-                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-[#202c3b] text-white text-xs font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {item.count}
-                      </div>
+        {/* Activity Feeds */}
+        <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700">Activity Feeds</h3>
+            <div className="flex items-center gap-2">
+              <select className="text-xs border border-gray-300 rounded px-2 py-1 text-gray-700">
+                <option>All</option>
+                <option>Bookings</option>
+                <option>Contacts</option>
+                <option>System</option>
+              </select>
+              <button className="p-1 hover:bg-gray-100 rounded">
+                <ArrowPathIcon className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {dashboardData.activities.length > 0 ? (
+              dashboardData.activities.map((activity, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    {activity.type === 'booking' ? (
+                      <CalendarDaysIcon className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <ChatBubbleLeftRightIcon className="h-4 w-4 text-blue-600" />
                     )}
                   </div>
-                  <div className="mt-3 flex flex-col items-center w-full">
-                    <span className={`text-xs font-semibold ${isToday ? 'text-[#FF6A00]' : 'text-[#202c3b]'}`}>
-                      {item.dayInitial}
-                    </span>
-                    <span className="text-[10px] text-[#202c3b]/70 mt-1 font-medium">
-                      {item.dateStr}
-                    </span>
-                    <span className={`text-xs font-bold mt-1 ${item.count > 0 ? 'text-[#FF6A00]' : 'text-[#202c3b]/40'}`}>
-                      {item.count}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800">{activity.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {activity.time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
-                </button>
-              );
-            }) : (
-              <div className="w-full text-center py-8 text-[#202c3b]/60">
-                <ChartBarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Loading booking data...</p>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <HomeIcon className="h-8 w-8" />
+                </div>
+                <p className="text-sm">No Data</p>
               </div>
             )}
           </div>
-          {trendData.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-[#be8c53]/20">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#202c3b]/60">Total: <span className="font-semibold text-[#202c3b]">{trend.reduce((a, b) => a + b, 0)}</span></span>
-                <span className="text-[#202c3b]/60">Avg: <span className="font-semibold text-[#202c3b]">{Math.round(trend.reduce((a, b) => a + b, 0) / 7 * 10) / 10}</span></span>
-              </div>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded p-6 border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-700 font-medium">Total Rooms</p>
+              <p className="text-3xl font-bold text-blue-900 mt-2">{dashboardData.totalRooms}</p>
             </div>
-          )}
+            <BuildingOfficeIcon className="h-12 w-12 text-blue-500 opacity-50" />
+          </div>
         </div>
 
-        {/* Recent bookings table */}
-        <div className="bg-white shadow-lg rounded-xl p-6 lg:col-span-2 overflow-hidden border border-[#be8c53]/10">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#202c3b] flex items-center">
-              <CalendarDaysIcon className="h-5 w-5 text-[#FF6A00] mr-2" />
-              Recent Bookings
-            </h3>
-            <Link href="/admin/bookings" className="text-sm font-medium text-[#FF6A00] hover:text-[#be8c53] flex items-center transition-colors">
-              View all
-              <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded p-6 border border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-700 font-medium">Total Bookings</p>
+              <p className="text-3xl font-bold text-green-900 mt-2">{dashboardData.totalBookings}</p>
+            </div>
+            <CalendarDaysIcon className="h-12 w-12 text-green-500 opacity-50" />
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left text-[#202c3b]/70 border-b border-[#be8c53]/20">
-                  <th className="py-3 pr-4 font-semibold">Booking ID</th>
-                  <th className="py-3 pr-4 font-semibold">Guest</th>
-                  <th className="py-3 pr-4 font-semibold">Dates</th>
-                  <th className="py-3 pr-4 font-semibold">Total</th>
-                  <th className="py-3 pr-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentBookings.map(b => {
-                  const statusColors = {
-                    confirmed: 'bg-[#FF6A00]/10 text-[#FF6A00] border-[#FF6A00]/30',
-                    pending: 'bg-[#be8c53]/10 text-[#be8c53] border-[#be8c53]/30',
-                    cancelled: 'bg-red-100 text-red-800 border-red-200'
-                  };
-                  return (
-                    <tr key={b.id} className="border-b border-[#be8c53]/10 hover:bg-[#FFFCF6] transition-colors">
-                      <td className="py-3 pr-4 font-mono text-xs text-[#202c3b]/70">{b.bookingId || b.id.slice(0,8)}</td>
-                      <td className="py-3 pr-4">
-                        <div className="font-medium text-[#202c3b]">{b.guestDetails?.firstName} {b.guestDetails?.lastName}</div>
-                        <div className="text-xs text-[#202c3b]/60">{b.guestDetails?.email}</div>
-                      </td>
-                      <td className="py-3 pr-4 text-[#202c3b]/70">
-                        <div className="text-xs">{new Date(b.checkIn).toLocaleDateString()}</div>
-                        <div className="text-xs text-[#202c3b]/50">→ {new Date(b.checkOut).toLocaleDateString()}</div>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className="font-semibold text-[#202c3b]">${b.totalAmount?.toLocaleString() || 0}</span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[b.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
-                          {b.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {recentBookings.length===0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-[#202c3b]/60">
-                      <CalendarDaysIcon className="h-12 w-12 text-[#be8c53]/30 mx-auto mb-2" />
-                      <p>No bookings yet</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded p-6 border border-orange-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-700 font-medium">Revenue (Month)</p>
+              <p className="text-3xl font-bold text-orange-900 mt-2">${dashboardData.revenueThisMonth.toLocaleString()}</p>
+            </div>
+            <CurrencyDollarIcon className="h-12 w-12 text-orange-500 opacity-50" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded p-6 border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-purple-700 font-medium">Total Revenue</p>
+              <p className="text-3xl font-bold text-purple-900 mt-2">${dashboardData.revenueTotal.toLocaleString()}</p>
+            </div>
+            <ChartBarIcon className="h-12 w-12 text-purple-500 opacity-50" />
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Bookings */}
+      <div className="bg-white rounded p-6 border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Bookings</h3>
+          <Link 
+            href="/admin/bookings" 
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          >
+            View all
+            <ArrowRightIcon className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-600 border-b border-gray-200">
+                <th className="py-3 pr-4 font-semibold">Booking ID</th>
+                <th className="py-3 pr-4 font-semibold">Guest</th>
+                <th className="py-3 pr-4 font-semibold">Check-in</th>
+                <th className="py-3 pr-4 font-semibold">Check-out</th>
+                <th className="py-3 pr-4 font-semibold">Amount</th>
+                <th className="py-3 pr-4 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dashboardData.recentBookings.map((booking) => {
+                const statusColors = {
+                  confirmed: 'bg-green-100 text-green-800 border-green-200',
+                  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                  cancelled: 'bg-red-100 text-red-800 border-red-200',
+                  checked_in: 'bg-blue-100 text-blue-800 border-blue-200',
+                  checked_out: 'bg-gray-100 text-gray-800 border-gray-200'
+                };
+                return (
+                  <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 pr-4 font-mono text-xs text-gray-600">{booking.bookingId || booking.id.slice(0, 8)}</td>
+                    <td className="py-3 pr-4">
+                      <div className="font-medium text-gray-900">{booking.guestDetails?.firstName} {booking.guestDetails?.lastName}</div>
+                      <div className="text-xs text-gray-500">{booking.guestDetails?.email}</div>
+                    </td>
+                    <td className="py-3 pr-4 text-gray-700">{new Date(booking.checkIn).toLocaleDateString()}</td>
+                    <td className="py-3 pr-4 text-gray-700">{new Date(booking.checkOut).toLocaleDateString()}</td>
+                    <td className="py-3 pr-4 font-semibold text-gray-900">${booking.totalAmount?.toLocaleString() || 0}</td>
+                    <td className="py-3 pr-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[booking.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                        {booking.status}
+                      </span>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+              {dashboardData.recentBookings.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                    <CalendarDaysIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                    <p>No bookings yet</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

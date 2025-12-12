@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getStoryImages, deleteStoryImage, StoryImage } from '@/lib/firestoreService';
-import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
@@ -12,6 +12,7 @@ export default function AdminStoryPicturesPage() {
   const { isReadOnly } = useAdminRole();
   const [items, setItems] = useState<StoryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -23,12 +24,11 @@ export default function AdminStoryPicturesPage() {
       setItems(data);
       setLoading(false);
 
-      // One-time background de-duplication (same imageUrl+title+text)
       if (!dedupeRun.current) {
         dedupeRun.current = true;
         try {
           const keyOf = (i: StoryImage) => `${i.imageUrl}|${i.title || ''}|${(i.text || '').slice(0,64)}`;
-          const seen = new Map<string, string>(); // key -> id to keep
+          const seen = new Map<string, string>();
           const toDelete: string[] = [];
           for (const it of data) {
             const k = keyOf(it);
@@ -39,7 +39,6 @@ export default function AdminStoryPicturesPage() {
             }
           }
           if (toDelete.length) {
-            // delete extras silently and update UI
             await Promise.all(toDelete.map(id => deleteStoryImage(id)));
             const remainingIds = new Set<string>([...seen.values()]);
             setItems(prev => prev.filter(i => remainingIds.has(i.id)));
@@ -51,6 +50,17 @@ export default function AdminStoryPicturesPage() {
     })();
   }, []);
 
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(item => 
+      (item.title || '').toLowerCase().includes(q) ||
+      (item.alt || '').toLowerCase().includes(q) ||
+      (item.author || '').toLowerCase().includes(q) ||
+      (item.location || '').toLowerCase().includes(q)
+    );
+  }, [items, searchQuery]);
+
   const confirmDelete = async () => {
     if (!confirmId) return;
     setDeleting(confirmId);
@@ -60,84 +70,114 @@ export default function AdminStoryPicturesPage() {
     setConfirmId(null);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin"/></div>;
+
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <BackButton href="/admin" label="Back to Dashboard" />
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-3xl font-bold text-gray-900">Story in Pictures</h1>
-          <p className="mt-2 text-gray-600">Add images for the home &apos;Story in Pictures&apos; gallery</p>
+      
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Story in Pictures</h1>
+          <p className="text-sm text-gray-500 mt-1">Add images for the home &apos;Story in Pictures&apos; gallery • {currentDate}</p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-          {isReadOnly ? (
-            <div className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
-              <PlusIcon className="h-4 w-4 mr-2"/>Add Image (Read-Only)
-            </div>
-          ) : (
-            <Link href="/admin/story-pictures/new" className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"><PlusIcon className="h-4 w-4 mr-2"/>Add Image</Link>
-          )}
+        
+        {/* Inline Stats */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span className="text-gray-600">Total:</span>
+            <span className="font-semibold text-gray-900">{items.length}</span>
+          </div>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <div className="text-center py-12">
-          <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No images</h3>
-          <p className="mt-1 text-sm text-gray-500">Add your first story image.</p>
+      {/* Simple Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by title, author, location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+          />
+        </div>
+        {isReadOnly ? (
+          <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
+            <PlusIcon className="h-4 w-4 mr-2"/>Add Image (Read-Only)
+          </div>
+        ) : (
+          <Link href="/admin/story-pictures/new" className="inline-flex items-center rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#FF6A00]/90 transition-colors">
+            <PlusIcon className="h-4 w-4 mr-2"/>Add Image
+          </Link>
+        )}
+      </div>
+
+      {/* Clean List */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-16">
+          <PhotoIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+          <p className="text-lg font-medium text-gray-600">No story images found</p>
+          <p className="text-sm text-gray-500 mt-2">Try adjusting your search or add your first story image</p>
         </div>
       ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {items.map(i => (
-              <li key={i.id}>
-                <div className="px-4 py-4 flex items-center justify-between sm:px-6 gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative h-16 w-32">
-                      <Image src={i.imageUrl} alt={i.alt || 'image'} fill className="object-cover rounded" sizes="128px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{i.title || i.alt || 'Untitled story'}</p>
-                      {(i.author || i.location) && (
-                        <p className="text-xs text-gray-500 truncate">{[i.author, i.location].filter(Boolean).join(', ')}</p>
-                      )}
-                    </div>
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="divide-y divide-gray-200">
+            {filteredItems.map(i => (
+              <div key={i.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="relative h-16 w-32 flex-shrink-0">
+                    <Image src={i.imageUrl} alt={i.alt || 'image'} fill className="object-cover rounded" sizes="128px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
                   </div>
-                  <div className="flex items-center gap-3">
-                    {isReadOnly ? (
-                      <>
-                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Editing disabled">
-                          <PencilSquareIcon className="h-5 w-5" />
-                        </div>
-                        <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
-                          <TrashIcon className="h-5 w-5"/>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <Link href={`/admin/story-pictures/edit/${i.id}`} title="Edit" className="text-blue-600 hover:text-blue-800 inline-flex items-center">
-                          <PencilSquareIcon className="h-5 w-5" />
-                        </Link>
-                        <button onClick={()=>setConfirmId(i.id)} title="Delete" disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50"><TrashIcon className="h-5 w-5"/></button>
-                      </>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{i.title || i.alt || 'Untitled story'}</p>
+                    {(i.author || i.location) && (
+                      <p className="text-xs text-gray-500 truncate mt-1">{[i.author, i.location].filter(Boolean).join(', ')}</p>
                     )}
                   </div>
                 </div>
-              </li>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {isReadOnly ? (
+                    <>
+                      <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Editing disabled">
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </div>
+                      <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
+                        <TrashIcon className="h-5 w-5"/>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Link href={`/admin/story-pictures/edit/${i.id}`} title="Edit" className="text-blue-600 hover:text-blue-800 inline-flex items-center transition-colors">
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </Link>
+                      <button onClick={()=>setConfirmId(i.id)} title="Delete" disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"><TrashIcon className="h-5 w-5"/></button>
+                    </>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
       {confirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-semibold text-gray-900">Delete image?</h3>
             <p className="mt-2 text-sm text-gray-600">This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={()=>setConfirmId(null)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">{deleting===confirmId?'Deleting...':'Delete'}</button>
+              <button onClick={()=>setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting===confirmId?'Deleting...':'Delete'}</button>
             </div>
           </div>
         </div>
@@ -145,5 +185,3 @@ export default function AdminStoryPicturesPage() {
     </div>
   );
 }
-
-

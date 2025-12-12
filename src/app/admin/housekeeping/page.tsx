@@ -1,30 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import BackButton from '@/components/admin/BackButton';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminRole } from '@/context/AdminRoleContext';
+import { useToast } from '@/context/ToastContext';
 import { 
   getHousekeepingTasks, 
   updateHousekeepingTask,
-  createHousekeepingTask,
-  deleteHousekeepingTask,
-  getRoomStatuses,
   updateRoomStatus,
-  HousekeepingTask,
-  SuiteType,
-  RoomStatus
+  HousekeepingTask
 } from '@/lib/firestoreService';
 import { 
-  PlusIcon, 
   MagnifyingGlassIcon,
   ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 
 export default function HousekeepingPage() {
   const { isReadOnly } = useAdminRole();
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,49 +103,61 @@ export default function HousekeepingPage() {
       }
       
       await loadTasks();
+      showToast(`Task ${status} successfully!`, 'success');
     } catch (error) {
       console.error('Error updating task status:', error);
-      alert('Failed to update task status');
+      showToast('Failed to update task status', 'error');
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = 
-      task.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.taskType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesSearch = 
+        task.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.taskType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+      const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [tasks, searchQuery, statusFilter, priorityFilter]);
+
+  const stats = useMemo(() => {
+    return {
+      pending: tasks.filter(t => t.status === 'pending').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+      total: tasks.length,
+    };
+  }, [tasks]);
 
   const getStatusColor = (status: HousekeepingTask['status']) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'text-yellow-600 bg-yellow-50';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'text-blue-600 bg-blue-50';
       case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'text-green-600 bg-green-50';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'text-red-600 bg-red-50';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'text-gray-600 bg-gray-50';
     }
   };
 
   const getPriorityColor = (priority: HousekeepingTask['priority']) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-100 text-red-800';
+        return 'text-red-700';
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'text-orange-700';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'text-yellow-700';
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'text-green-700';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'text-gray-700';
     }
   };
 
@@ -167,33 +172,53 @@ export default function HousekeepingPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
   }
 
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
   return (
-    <div className="space-y-6">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Housekeeping Management</h1>
-        <p className="mt-2 text-[#202c3b]/70 text-lg">Manage housekeeping tasks and room cleaning</p>
-        <div className="mt-4 flex gap-4">
-          <div className="px-4 py-2 bg-yellow-100 rounded-lg">
-            <span className="text-sm font-medium text-yellow-800">Pending: {tasks.filter(t => t.status === 'pending').length}</span>
+    <div className="space-y-8">
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Housekeeping Tasks</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage cleaning and maintenance tasks • {currentDate}</p>
+        </div>
+        
+        {/* Inline Stats */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span className="text-gray-600">Total:</span>
+            <span className="font-semibold text-gray-900">{stats.total}</span>
           </div>
-          <div className="px-4 py-2 bg-blue-100 rounded-lg">
-            <span className="text-sm font-medium text-blue-800">In Progress: {tasks.filter(t => t.status === 'in_progress').length}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span className="text-gray-600">Pending:</span>
+            <span className="font-semibold text-gray-900">{stats.pending}</span>
           </div>
-          <div className="px-4 py-2 bg-green-100 rounded-lg">
-            <span className="text-sm font-medium text-green-800">Completed: {tasks.filter(t => t.status === 'completed').length}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <span className="text-gray-600">In Progress:</span>
+            <span className="font-semibold text-gray-900">{stats.inProgress}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-gray-600">Completed:</span>
+            <span className="font-semibold text-gray-900">{stats.completed}</span>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 flex flex-col md:flex-row gap-4">
+      {/* Simple Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -201,24 +226,58 @@ export default function HousekeepingPage() {
             placeholder="Search by room, task type, or assigned staff..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent focus:outline-none"
+            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'all'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'pending'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setStatusFilter('in_progress')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'in_progress'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              In Progress
+            </button>
+            <button
+              onClick={() => setStatusFilter('completed')}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                statusFilter === 'completed'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Completed
+            </button>
+          </div>
+        </div>
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+          className="border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none px-3 py-2 text-sm"
         >
           <option value="all">All Priorities</option>
           <option value="urgent">Urgent</option>
@@ -228,25 +287,26 @@ export default function HousekeepingPage() {
         </select>
       </div>
 
-      {/* Tasks List */}
+      {/* Clean Table */}
       {filteredTasks.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-100">
+        <div className="text-center py-16">
+          <ClockIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-600">No housekeeping tasks found</p>
           <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task Type</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Priority</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Assigned To</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Priority</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Assigned To</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -260,7 +320,7 @@ export default function HousekeepingPage() {
                       <span className="text-sm text-gray-900">{taskTypeLabels[task.taskType] || task.taskType}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                      <span className={`text-xs font-semibold ${getPriorityColor(task.priority)}`}>
                         {task.priority.toUpperCase()}
                       </span>
                     </td>
@@ -273,29 +333,29 @@ export default function HousekeepingPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {task.estimatedTime && (
-                        <div className="text-sm text-gray-900 flex items-center">
-                          <ClockIcon className="h-4 w-4 mr-1 text-gray-400" />
+                        <div className="text-sm text-gray-900 flex items-center gap-1">
+                          <ClockIcon className="h-4 w-4 text-gray-400" />
                           {task.estimatedTime} mins
                         </div>
                       )}
                       {task.actualTime && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           Actual: {task.actualTime} mins
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(task.status)}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
                         {task.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {!isReadOnly && (
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           {task.status === 'pending' && (
                             <button
                               onClick={() => handleStatusUpdate(task.id, 'in_progress')}
-                              className="text-blue-600 hover:text-blue-800 font-medium"
+                              className="text-blue-600 hover:text-blue-800 font-medium border-b-2 border-transparent hover:border-blue-600 transition-colors"
                             >
                               Start
                             </button>
@@ -303,7 +363,7 @@ export default function HousekeepingPage() {
                           {task.status === 'in_progress' && (
                             <button
                               onClick={() => handleStatusUpdate(task.id, 'completed')}
-                              className="text-green-600 hover:text-green-800 font-medium"
+                              className="text-green-600 hover:text-green-800 font-medium border-b-2 border-transparent hover:border-green-600 transition-colors"
                             >
                               Complete
                             </button>
@@ -311,7 +371,7 @@ export default function HousekeepingPage() {
                           {task.status !== 'completed' && task.status !== 'cancelled' && (
                             <button
                               onClick={() => handleStatusUpdate(task.id, 'cancelled')}
-                              className="text-red-600 hover:text-red-800 font-medium"
+                              className="text-red-600 hover:text-red-800 font-medium border-b-2 border-transparent hover:border-red-600 transition-colors"
                             >
                               Cancel
                             </button>
@@ -329,4 +389,3 @@ export default function HousekeepingPage() {
     </div>
   );
 }
-

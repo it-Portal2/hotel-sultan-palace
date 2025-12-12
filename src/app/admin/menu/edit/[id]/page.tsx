@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import BackButton from '@/components/admin/BackButton';
 import { getMenuItem, updateMenuItem, MenuItem } from '@/lib/firestoreService';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
 export default function EditMenuItemPage() {
@@ -35,6 +35,7 @@ export default function EditMenuItemPage() {
 
   useEffect(() => {
     loadMenuItem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuItemId]);
 
   const loadMenuItem = async () => {

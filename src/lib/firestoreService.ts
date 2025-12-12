@@ -2407,10 +2407,13 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     const paymentStatus: CheckoutBill['paymentStatus'] = 
       balance <= 0 ? 'paid' : (alreadyPaid > 0 ? 'partial' : 'pending');
     
+    // Get room number - use allocated room type as fallback
+    const roomNumber = booking.roomNumber || booking.rooms[0]?.allocatedRoomType || null;
+    
     const bill: Omit<CheckoutBill, 'id' | 'createdAt' | 'updatedAt'> = {
       bookingId,
       guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
-      roomNumber: booking.roomNumber,
+      roomNumber: roomNumber || undefined, // Only include if not null
       checkInDate: checkIn,
       checkOutDate: checkOut,
       roomCharges,
@@ -2451,9 +2454,18 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       })),
     };
     
+    // Remove undefined values before saving to Firestore
+    const billData: any = {};
+    Object.keys(bill).forEach(key => {
+      const value = (bill as any)[key];
+      if (value !== undefined) {
+        billData[key] = value;
+      }
+    });
+    
     const c = collection(db, 'checkoutBills');
     const dr = await addDoc(c, {
-      ...bill,
+      ...billData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -2838,55 +2850,105 @@ export const checkOutGuest = async (
   if (!db) return false;
   try {
     const booking = await getBooking(bookingId);
-    if (!booking) return false;
-
-    // Get check-in record
-    const records = await getCheckInOutRecords(bookingId);
-    const checkInRecord = records[0];
-    if (!checkInRecord) return false;
-
-    // Update check-out record - only include defined values
-    const updateData: Partial<CheckInOutRecord> = {
-      checkOutTime: new Date(),
-      checkOutStaff: staffName,
-      depositReturned,
-    };
-    if (notes) updateData.notes = notes;
-    
-    await updateCheckInOutRecord(checkInRecord.id, updateData);
-
-    // Update booking status
-    await updateBooking(bookingId, {
-      status: 'checked_out',
-      checkOutTime: new Date(),
-    });
-
-    // Update room status and create housekeeping task
-    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
-    const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
-    
-    const roomStatus = await getRoomStatus(roomName);
-    if (roomStatus) {
-      await updateRoomStatus(roomStatus.id, {
-        status: 'cleaning',
-        currentBookingId: undefined,
-        currentCheckInDate: undefined,
-        currentCheckOutDate: new Date(),
-        currentGuestName: undefined,
-        housekeepingStatus: 'dirty',
-      });
+    if (!booking) {
+      console.error('Booking not found:', bookingId);
+      return false;
     }
 
-    // Create housekeeping task for checkout cleaning
-    await createHousekeepingTask({
-      roomName,
-      suiteType: suiteType as SuiteType,
-      taskType: 'checkout_cleaning',
-      priority: 'high',
-      status: 'pending',
-      bookingId,
-      scheduledTime: new Date(),
-    });
+    // Get or create check-in record
+    let records = await getCheckInOutRecords(bookingId);
+    let checkInRecord = records[0];
+    
+    // If no check-in record exists, create one (for backward compatibility)
+    if (!checkInRecord) {
+      console.warn('No check-in record found, creating one...');
+      const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
+      const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+      const checkInRecordId = await createCheckInOutRecord({
+        bookingId,
+        guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+        roomName,
+        suiteType: suiteType as SuiteType,
+        checkInTime: booking.checkInTime || new Date(booking.checkIn), 
+        checkInStaff: 'System',
+        idVerified: false,
+        roomKeyIssued: false,
+        roomKeyNumber: booking.rooms[0]?.allocatedRoomType || booking.roomNumber || undefined,
+      });
+      
+      if (checkInRecordId) {
+        records = await getCheckInOutRecords(bookingId);
+        checkInRecord = records[0];
+      }
+    }
+
+    // Update check-out record if we have a check-in record
+    if (checkInRecord) {
+      const updateData: Partial<CheckInOutRecord> = {
+        checkOutTime: new Date(),
+        checkOutStaff: staffName,
+        depositReturned,
+      };
+      if (notes) updateData.notes = notes;
+      
+      try {
+        await updateCheckInOutRecord(checkInRecord.id, updateData);
+      } catch (e) {
+        console.error('Error updating check-out record:', e);
+        // Continue even if this fails
+      }
+    }
+
+    // Update booking status (this is critical)
+    try {
+      await updateBooking(bookingId, {
+        status: 'checked_out',
+        checkOutTime: new Date(),
+      });
+    } catch (e) {
+      console.error('Error updating booking status:', e);
+      return false; // This is critical, so fail if it doesn't work
+    }
+
+    // Update room status and create housekeeping task (optional steps)
+    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber;
+    if (roomName && roomName !== 'Unknown') {
+      const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+      
+      // Try to update room status
+      try {
+        const roomStatus = await getRoomStatus(roomName);
+        if (roomStatus) {
+          await updateRoomStatus(roomStatus.id, {
+            status: 'cleaning',
+            currentBookingId: undefined,
+            currentCheckInDate: undefined,
+            currentCheckOutDate: new Date(),
+            currentGuestName: undefined,
+            housekeepingStatus: 'dirty',
+          });
+        }
+      } catch (e) {
+        console.error('Error updating room status:', e);
+        // Continue even if this fails
+      }
+
+      // Try to create housekeeping task
+      try {
+        await createHousekeepingTask({
+          roomName,
+          suiteType: suiteType as SuiteType,
+          taskType: 'checkout_cleaning',
+          priority: 'high',
+          status: 'pending',
+          bookingId,
+          scheduledTime: new Date(),
+        });
+      } catch (e) {
+        console.error('Error creating housekeeping task:', e);
+        // Continue even if this fails
+      }
+    }
 
     return true;
   } catch (e) {

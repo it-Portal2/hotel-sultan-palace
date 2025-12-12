@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getAdminUser, type AdminUser, type AdminRoleType } from '@/lib/adminUsers';
+import { getAdminUser, type AdminUser } from '@/lib/adminUsers';
 import { getAdminRoleSync, type AdminRole } from '@/lib/adminRoles';
 
 interface AdminRoleContextType {

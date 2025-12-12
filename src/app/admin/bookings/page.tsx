@@ -4,12 +4,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { getAllBookings, Booking, updateBooking } from '@/lib/firestoreService';
 import { cancelBooking, confirmBooking } from '@/lib/bookingService';
 import { useSearchParams } from 'next/navigation';
-import { CalendarDaysIcon } from '@heroicons/react/24/outline';
-import BackButton from '@/components/admin/BackButton';
+import { CalendarDaysIcon, MagnifyingGlassIcon,  ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useAdminRole } from '@/context/AdminRoleContext';
+import { useToast } from '@/context/ToastContext';
+import RestrictedAction from '@/components/admin/RestrictedAction';
 
 export default function AdminBookingsPage() {
   const { isReadOnly } = useAdminRole();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Booking | null>(null);
@@ -40,7 +42,6 @@ export default function AdminBookingsPage() {
   const filtered = useMemo(() => {
     let list = bookings.slice();
 
-    // optional day filter via query param
     const day = search?.get('day');
     if (day) {
       const start = new Date(day);
@@ -52,7 +53,6 @@ export default function AdminBookingsPage() {
       });
     }
 
-    // date range filter
     if (startDate) {
       const s = new Date(startDate);
       list = list.filter(b => (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) >= s);
@@ -63,12 +63,10 @@ export default function AdminBookingsPage() {
       list = list.filter(b => (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) < e);
     }
 
-    // status filter
     if (status !== 'all') {
       list = list.filter(b => b.status === status);
     }
 
-    // search
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter(b => {
@@ -79,7 +77,6 @@ export default function AdminBookingsPage() {
       });
     }
 
-    // sort
     list.sort((a,b)=>{
       const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
       const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
@@ -98,6 +95,15 @@ export default function AdminBookingsPage() {
     const start = (page - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
   }, [filtered, page]);
+
+  const stats = useMemo(() => {
+    return {
+      total: filtered.length,
+      pending: filtered.filter(b => b.status === 'pending').length,
+      confirmed: filtered.filter(b => b.status === 'confirmed').length,
+      cancelled: filtered.filter(b => b.status === 'cancelled').length,
+    };
+  }, [filtered]);
 
   const exportCsv = () => {
     const headers = ['BookingID','Guest','Email','CheckIn','CheckOut','Adults','Children','Rooms','Total','Status','CreatedAt'];
@@ -127,100 +133,176 @@ export default function AdminBookingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
   }
 
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
   return (
-    <div className="space-y-6">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Bookings Management</h1>
-        <p className="mt-2 text-[#202c3b]/70 text-lg">
-          {search?.get('day') ? `Bookings for ${search?.get('day')}` : 'Manage all reservations and bookings'}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#FF6A00]/10 text-[#202c3b] border border-[#FF6A00]/20">
-            Total: <strong className="ml-1">{filtered.length}</strong>
-          </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#be8c53]/10 text-[#202c3b] border border-[#be8c53]/20">
-            Pending: <strong className="ml-1">{filtered.filter(b => b.status === 'pending').length}</strong>
-          </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#FF6A00]/10 text-[#202c3b] border border-[#FF6A00]/20">
-            Confirmed: <strong className="ml-1">{filtered.filter(b => b.status === 'confirmed').length}</strong>
-          </span>
+    <div className="space-y-8">
+      {/* Simple Header with Inline Stats */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">All Bookings</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {search?.get('day') ? `Bookings for ${search?.get('day')}` : 'Manage all reservations'} • {currentDate}
+          </p>
+        </div>
+        
+        {/* Inline Stats - No boxes */}
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Total:</span>
+            <span className="font-semibold text-gray-900">{stats.total}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span className="text-gray-600">Pending:</span>
+            <span className="font-semibold text-gray-900">{stats.pending}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-gray-600">Confirmed:</span>
+            <span className="font-semibold text-gray-900">{stats.confirmed}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span className="text-gray-600">Cancelled:</span>
+            <span className="font-semibold text-gray-900">{stats.cancelled}</span>
+          </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 flex flex-col gap-4 md:flex-row md:items-end md:gap-4">
-        <div className="flex-1">
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Search</label>
-          <input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Booking ID, name, email" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
-          <select value={status} onChange={e => { setStatus(e.target.value as 'all' | 'pending' | 'confirmed' | 'cancelled'); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent">
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-          <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-          <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Sort</label>
-          <select value={sort} onChange={e => setSort(e.target.value as 'newest' | 'oldest' | 'amount_desc' | 'amount_asc')} className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent">
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="amount_desc">Amount: High to Low</option>
-            <option value="amount_asc">Amount: Low to High</option>
-          </select>
-        </div>
-        <div className="ml-auto flex gap-2">
+      {/* Simple Filter Bar - Same style as room-status */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+              placeholder="Search by booking ID, name, email..."
+              className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+            />
+          </div>
           <button 
             onClick={exportCsv} 
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-gray-700 to-gray-800 text-white hover:from-gray-800 hover:to-gray-900 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00]"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <ArrowDownTrayIcon className="h-5 w-5" />
             Export CSV
           </button>
         </div>
+
+        {/* Filter Tabs - Same style as room-status */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
+            <button
+              onClick={() => { setStatus('all'); setPage(1); }}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                status === 'all'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => { setStatus('pending'); setPage(1); }}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                status === 'pending'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => { setStatus('confirmed'); setPage(1); }}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                status === 'confirmed'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Confirmed
+            </button>
+            <button
+              onClick={() => { setStatus('cancelled'); setPage(1); }}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${
+                status === 'cancelled'
+                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Cancelled
+            </button>
+          </div>
+          
+          {/* Date Filters - Inline */}
+          <div className="flex items-center gap-2 ml-auto">
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={e => { setStartDate(e.target.value); setPage(1); }} 
+              className="px-3 py-1 text-sm border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+              placeholder="From"
+            />
+            <span className="text-gray-400">→</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={e => { setEndDate(e.target.value); setPage(1); }} 
+              className="px-3 py-1 text-sm border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+              placeholder="To"
+            />
+            <select 
+              value={sort} 
+              onChange={e => setSort(e.target.value as 'newest' | 'oldest' | 'amount_desc' | 'amount_asc')} 
+              className="px-3 py-1 text-sm border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="amount_desc">Amount: High to Low</option>
+              <option value="amount_asc">Amount: Low to High</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {(filtered.length === 0) ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-100">
+      {/* Clean Table - No heavy boxes */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16">
           <CalendarDaysIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-600">No bookings found</p>
           <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Booking ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guest</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Check-in / Check-out</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guests</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Booking ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guest</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Check-in / Check-out</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guests</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginated.map((b) => {
+                  const guests = b.guests || { adults: 0, children: 0, rooms: 1 };
+                  const rooms = b.rooms || [];
                   const statusColors = {
                     confirmed: 'bg-green-100 text-green-800 border-green-200',
                     pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -245,13 +327,13 @@ export default function AdminBookingsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
-                          {b.guests.adults} Adults
-                          {b.guests.children > 0 && `, ${b.guests.children} Children`}
+                          {guests.adults} Adults
+                          {guests.children > 0 && `, ${guests.children} Children`}
                         </div>
-                        <div className="text-xs text-gray-500">{b.guests.rooms} Room{b.guests.rooms > 1 ? 's' : ''}</div>
-                        {b.rooms.some(r => r.allocatedRoomType) && (
+                        <div className="text-xs text-gray-500">{guests.rooms} Room{guests.rooms > 1 ? 's' : ''}</div>
+                        {rooms.some(r => r.allocatedRoomType) && (
                           <div className="text-xs text-green-600 mt-1">
-                            {b.rooms.filter(r => r.allocatedRoomType).map(r => r.allocatedRoomType).join(', ')}
+                            {rooms.filter(r => r.allocatedRoomType).map(r => r.allocatedRoomType).join(', ')}
                           </div>
                         )}
                       </td>
@@ -269,7 +351,7 @@ export default function AdminBookingsPage() {
                             e.stopPropagation();
                             setSelected(b);
                           }}
-                          className="text-orange-600 hover:text-orange-800 font-medium"
+                          className="text-[#FF6A00] hover:text-[#FF6A00]/80 font-medium"
                         >
                           View Details
                         </button>
@@ -280,7 +362,8 @@ export default function AdminBookingsPage() {
               </tbody>
             </table>
           </div>
-          {/* Pagination */}
+          
+          {/* Simple Pagination */}
           <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="text-sm text-gray-600">
               Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(page * pageSize, filtered.length)}</span> of <span className="font-medium">{filtered.length}</span> bookings
@@ -289,10 +372,10 @@ export default function AdminBookingsPage() {
               <button 
                 disabled={page<=1} 
                 onClick={()=>setPage(p=>Math.max(1,p-1))} 
-                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   page<=1
-                    ? 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'
-                    : 'text-gray-700 border-gray-300 hover:bg-white hover:border-gray-400 bg-white'
+                    ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                    : 'text-gray-700 border-[#FF6A00] hover:text-[#FF6A00]'
                 }`}
               >
                 Previous
@@ -300,10 +383,10 @@ export default function AdminBookingsPage() {
               <button 
                 disabled={page>=totalPages} 
                 onClick={()=>setPage(p=>Math.min(totalPages,p+1))} 
-                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   page>=totalPages
-                    ? 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'
-                    : 'text-gray-700 border-gray-300 hover:bg-white hover:border-gray-400 bg-white'
+                    ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                    : 'text-gray-700 border-[#FF6A00] hover:text-[#FF6A00]'
                 }`}
               >
                 Next
@@ -313,15 +396,21 @@ export default function AdminBookingsPage() {
         </div>
       )}
 
+      {/* Booking Details Modal - Keep existing */}
       {selected && (
+        (() => {
+          const guests = selected.guests || { adults: 0, children: 0, rooms: 1 };
+          const rooms = selected.rooms || [];
+          const addOns = selected.addOns || [];
+          return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 cursor-pointer" onClick={() => setSelected(null)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-gradient-to-r from-white to-[#FFFCF6] border-b border-[#be8c53]/20 text-[#202c3b] p-6 rounded-t-xl flex justify-between items-center">
+          <div className="bg-white rounded shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
               <div>
-                <h3 className="text-2xl font-bold text-[#202c3b]">Booking Details</h3>
-                <p className="text-[#202c3b]/70 text-sm mt-1">Booking ID: {selected.bookingId || selected.id}</p>
+                <h3 className="text-2xl font-semibold text-gray-900">Booking Details</h3>
+                <p className="text-gray-500 text-sm mt-1">Booking ID: {selected.bookingId || selected.id}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-[#202c3b]/70 hover:text-[#FF6A00] transition-colors">
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -329,14 +418,8 @@ export default function AdminBookingsPage() {
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Guest Information */}
                 <div className="bg-gray-50 rounded-lg p-5">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <svg className="h-5 w-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Guest Information
-                  </h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Guest Information</h4>
                   <div className="space-y-2 text-sm">
                     <div>
                       <p className="text-gray-500">Name</p>
@@ -361,10 +444,9 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
 
-                {/* Stay Details */}
                 <div className="bg-gray-50 rounded-lg p-5">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <CalendarDaysIcon className="h-5 w-5 text-purple-500 mr-2" />
+                    <CalendarDaysIcon className="h-5 w-5 text-[#FF6A00] mr-2" />
                     Stay Details
                   </h4>
                   <div className="space-y-2 text-sm">
@@ -378,16 +460,15 @@ export default function AdminBookingsPage() {
                     </div>
                     <div>
                       <p className="text-gray-500">Guests</p>
-                      <p className="font-medium text-gray-900">{selected.guests.adults} Adults, {selected.guests.children} Children, {selected.guests.rooms} Room{selected.guests.rooms > 1 ? 's' : ''}</p>
+                      <p className="font-medium text-gray-900">{guests.adults} Adults, {guests.children} Children, {guests.rooms} Room{guests.rooms > 1 ? 's' : ''}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Rooms */}
                 <div className="bg-gray-50 rounded-lg p-5">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Rooms</h4>
                   <div className="space-y-2">
-                    {selected.rooms.map((r, i) => (
+                    {rooms.map((r, i) => (
                       <div key={i} className="p-3 bg-white rounded border border-gray-200">
                         <div className="flex justify-between items-start mb-1">
                           <div>
@@ -409,12 +490,11 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
 
-                {/* Add-ons */}
                 <div className="bg-gray-50 rounded-lg p-5">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Add-ons</h4>
-                  {selected.addOns.length > 0 ? (
+                  {addOns.length > 0 ? (
                     <div className="space-y-2">
-                      {selected.addOns.map((a, i) => (
+                      {addOns.map((a, i) => (
                         <div key={i} className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                           <div>
                             <span className="text-sm font-medium text-gray-900">{a.name}</span>
@@ -430,8 +510,7 @@ export default function AdminBookingsPage() {
                 </div>
               </div>
 
-              {/* Total and Status */}
-              <div className="mt-6 bg-gradient-to-r from-[#FF6A00]/5 to-[#be8c53]/5 rounded-lg p-6 border border-[#be8c53]/20">
+              <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Amount</p>
@@ -448,14 +527,13 @@ export default function AdminBookingsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-3 pt-4 border-t border-[#be8c53]/20">
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
                   {isReadOnly ? (
-                    <div className="w-full px-4 py-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
-                      <svg className="h-5 w-5 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      Read-only mode: Status changes are disabled
-                    </div>
+                    <RestrictedAction message="You don't have permission to change booking status">
+                      <div className="w-full px-4 py-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
+                        Status changes are disabled
+                      </div>
+                    </RestrictedAction>
                   ) : (
                     <>
                       {selected.status !== 'confirmed' && (
@@ -466,9 +544,10 @@ export default function AdminBookingsPage() {
                               setSelected({ ...selected, status: 'confirmed' });
                               const updated = await getAllBookings();
                               setBookings(updated);
+                              showToast('Booking confirmed successfully!', 'success');
                             } catch (error) {
                               console.error('Error confirming booking:', error);
-                              alert('Failed to confirm booking. Please try again.');
+                              showToast('Failed to confirm booking. Please try again.', 'error');
                             }
                           }}
                           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
@@ -485,10 +564,10 @@ export default function AdminBookingsPage() {
                                 setSelected({ ...selected, status: 'cancelled' });
                                 const updated = await getAllBookings();
                                 setBookings(updated);
-                                alert('Booking cancelled successfully. Room has been freed up.');
+                                showToast('Booking cancelled successfully. Room has been freed up.', 'success');
                               } catch (error) {
                                 console.error('Error cancelling booking:', error);
-                                alert('Failed to cancel booking. Please try again.');
+                                showToast('Failed to cancel booking. Please try again.', 'error');
                               }
                             }
                           }}
@@ -517,9 +596,9 @@ export default function AdminBookingsPage() {
             </div>
           </div>
         </div>
+          );
+        })()
       )}
     </div>
   );
 }
-
-

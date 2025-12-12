@@ -8,7 +8,6 @@ import {
   BuildingOfficeIcon, 
   PlusIcon, 
   CalendarDaysIcon,
-  SparklesIcon,
   Bars3Icon,
   XMarkIcon,
   ChatBubbleLeftRightIcon,
@@ -25,7 +24,15 @@ import {
   UserGroupIcon,
   SparklesIcon as CleaningIcon,
   ChevronDownIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  Cog6ToothIcon,
+  Squares2X2Icon,
+  ClipboardDocumentListIcon,
+  KeyIcon,
+  BellIcon,
+  PhotoIcon,
+  MapPinIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -36,6 +43,22 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+interface NavigationGroup {
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavigationItem[];
+  defaultOpen?: boolean;
+}
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgColor: string;
+  requiresFullAdmin?: boolean;
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -44,50 +67,114 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50' },
-    { name: 'Rooms Management', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
-    { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'Add-ons Management', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50' },
-    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
-    // EHMS Section - Front Desk & Room Management
-    { name: 'Room Status', href: '/admin/room-status', icon: HomeStatusIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
-    { name: 'Front Desk', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
-    { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50' },
-    // EHMS Section - Food & Services
-    { name: 'Menu Management', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50' },
-    { name: 'Kitchen Dashboard', href: '/admin/kitchen', icon: BeakerIcon, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-    { name: 'Food Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50' },
-    { name: 'Guest Services', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50' },
-    { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
-    // Other sections
-    { name: 'Excursions', href: '/admin/excursions', icon: SparklesIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50' },
-    { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50' },
-    { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50' },
-    { name: 'Contacts', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50' },
-    { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
-    { name: 'Story in Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50' },
-    { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50' },
+  // Organized navigation groups
+  const navigationGroups: NavigationGroup[] = [
+    {
+      name: 'Dashboard',
+      icon: Squares2X2Icon,
+      items: [
+        { name: 'Overview', href: '/admin', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Reservations & Bookings',
+      icon: ClipboardDocumentListIcon,
+      items: [
+        { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+        { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+        { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Rooms & Inventory',
+      icon: BuildingOfficeIcon,
+      items: [
+        { name: 'Rooms Management', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+        { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
+        { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Front Office',
+      icon: KeyIcon,
+      items: [
+        { name: 'Check-in', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
+        { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Housekeeping',
+      icon: CleaningIcon,
+      items: [
+        { name: 'Room Status', href: '/admin/room-status', icon: HomeStatusIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+        { name: 'Housekeeping Tasks', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Food & Beverage',
+      icon: BeakerIcon,
+      items: [
+        { name: 'Menu Management', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50' },
+        { name: 'Kitchen Dashboard', href: '/admin/kitchen', icon: BeakerIcon, color: 'text-orange-600', bgColor: 'bg-orange-50' },
+        { name: 'Food Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Guest Services',
+      icon: WrenchScrewdriverIcon,
+      items: [
+        { name: 'Service Requests', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50' },
+      ],
+      defaultOpen: true
+    },
+    {
+      name: 'Content Management',
+      icon: PhotoIcon,
+      items: [
+        { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50' },
+        { name: 'Story Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50' },
+        { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50' },
+        { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50' },
+        { name: 'Excursions', href: '/admin/excursions', icon: MapPinIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50' },
+      ],
+      defaultOpen: false
+    },
+    {
+      name: 'Communications',
+      icon: EnvelopeIcon,
+      items: [
+        { name: 'Contacts', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50' },
+      ],
+      defaultOpen: false
+    },
+    {
+      name: 'Settings',
+      icon: Cog6ToothIcon,
+      items: [
+        { name: 'Admin Users', href: '/admin/admin-users', icon: UserGroupIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', requiresFullAdmin: true },
+      ],
+      defaultOpen: false
+    },
   ];
 
-  interface NavigationItem {
-    name: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-    color: string;
-    bgColor: string;
-    requiresFullAdmin?: boolean;
-  }
-
-  const filteredNavigation = useMemo(() => {
-    return navigation.filter((item: NavigationItem) => {
-      if (item.requiresFullAdmin) {
-        return adminRole === 'full';
-      }
-      return true;
-    });
-  }, [adminRole, navigation]);
+  const filteredNavigationGroups = useMemo(() => {
+    return navigationGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        if (item.requiresFullAdmin) {
+          return adminRole === 'full';
+        }
+        return true;
+      })
+    })).filter(group => group.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminRole]);
 
   useEffect(() => {
     if (!auth) {
@@ -104,10 +191,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, []);
 
   const isAuthorized = useMemo(() => {
-    // Allowlist admin emails via env: comma-separated
     const allowList = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     if (allowList.length === 0) {
-      // If no allowlist configured, require any signed-in user
       return Boolean(userEmail);
     }
     return userEmail ? allowList.includes(userEmail.toLowerCase()) : false;
@@ -118,7 +203,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup');
   }, [pathname]);
 
-  // For auth routes, render children without admin chrome (no sidebar/topbar)
   if (isPublicAdminAuthRoute) {
     return (
       <div className="min-h-screen">
@@ -158,7 +242,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         pathname={pathname}
         adminRole={adminRole}
         userEmail={userEmail}
-        filteredNavigation={filteredNavigation}
+        navigationGroups={filteredNavigationGroups}
       >
         {children}
       </AdminLayoutContent>
@@ -172,7 +256,7 @@ function AdminLayoutContent({
   pathname, 
   adminRole,
   userEmail,
-  filteredNavigation,
+  navigationGroups,
   children 
 }: { 
   sidebarOpen: boolean; 
@@ -180,150 +264,207 @@ function AdminLayoutContent({
   pathname: string;
   adminRole: AdminRole;
   userEmail: string | null;
-  filteredNavigation: Array<{
-    name: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-    color: string;
-    bgColor: string;
-    requiresFullAdmin?: boolean;
-  }>;
+  navigationGroups: NavigationGroup[];
   children: React.ReactNode;
 }) {
   const { adminUser, isFullAdmin } = useAdminRole();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navigationGroups.forEach(group => {
+      initial[group.name] = group.defaultOpen ?? false;
+    });
+    return initial;
+  });
   
   const roleLabels: Record<string, string> = {
     full: 'Full Admin',
     kitchen: 'Kitchen Staff',
     housekeeping: 'Housekeeping',
-    front_desk: 'Front Desk',
+    front_desk: 'Check-in',
     manager: 'Manager',
     readonly: 'Read Only',
   };
 
+  const toggleGroup = (groupName: string) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
+
+  const isItemActive = (href: string) => {
+    if (href === '/admin') {
+      return pathname === '/admin';
+    }
+    return pathname.startsWith(href);
+  };
+
+  const renderNavigation = (onNavClick?: () => void) => {
+    return (
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        {navigationGroups.map((group) => {
+          const hasActiveItem = group.items.some(item => isItemActive(item.href));
+          const isGroupOpen = openGroups[group.name] ?? false;
+          
+          return (
+            <div key={group.name} className="mb-2">
+              {/* Group Header */}
+              <button
+                onClick={() => toggleGroup(group.name)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  hasActiveItem
+                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <group.icon className="h-4 w-4" />
+                  {sidebarOpen && <span>{group.name}</span>}
+                </div>
+                {sidebarOpen && (
+                  <ChevronDownIcon 
+                    className={`h-4 w-4 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`} 
+                  />
+                )}
+              </button>
+              
+              {/* Group Items */}
+              {isGroupOpen && sidebarOpen && (
+                <div className="mt-1 space-y-1 ml-4 border-l-2 border-gray-200 pl-2">
+                  {group.items.map((item) => {
+                    const isActive = isItemActive(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={onNavClick}
+                        className={`group flex items-center px-3 py-2.5 text-sm font-medium transition-all ${
+                          isActive
+                            ? 'bg-[#FF6A00] text-white shadow-md'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6A00]'
+                        }`}
+                      >
+                        <div className={`mr-3 p-1.5 ${
+                          isActive 
+                            ? 'bg-white/20' 
+                            : `${item.bgColor} ${item.color}`
+                        }`}>
+                          <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : ''}`} />
+                        </div>
+                        <span className="flex-1">{item.name}</span>
+                        {isActive && (
+                          <div className="h-2 w-2 bg-white"></div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+    );
+  };
+
+  // Close sidebar when navigation item is clicked
+  const handleNavClick = () => {
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#FFFCF6]">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 cursor-pointer" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gradient-to-b from-[#0a1a2b] to-[#1a2a3b]">
-          <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
-            <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - Always visible, pushes content */}
+      <div className={`flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'w-72' : 'w-0'
+      } overflow-hidden`}>
+        <div className="flex flex-grow flex-col overflow-y-auto bg-white border-r border-gray-200 shadow-sm w-72">
+          <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gradient-to-r from-[#FF6A00] to-[#be8c53]">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20">
+                <BuildingOfficeIcon className="h-6 w-6 text-white" />
+              </div>
+              {sidebarOpen && (
+                <div>
+                  <h1 className="text-lg font-bold text-white">Hotel Management</h1>
+                  <p className="text-xs text-white/80">Sultan Palace</p>
+                </div>
+              )}
+            </div>
+          </div>
+          {renderNavigation(handleNavClick)}
+        </div>
+      </div>
+
+      {/* Main content - Full width */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar - Full Width Header */}
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center gap-x-4 w-full px-4 sm:px-6 lg:px-8">
             <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-white/80 hover:text-white"
+              type="button"
+              className="p-2 text-gray-700 hover:text-[#FF6A00] hover:bg-gray-100 transition-colors"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <XMarkIcon className="h-6 w-6" />
+              {sidebarOpen ? (
+                <XMarkIcon className="h-6 w-6" />
+              ) : (
+                <Bars3Icon className="h-6 w-6" />
+              )}
             </button>
-          </div>
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {filteredNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all ${
-                    isActive
-                      ? 'bg-[#FF6A00] text-white shadow-md border-l-4 border-[#FF6A00]'
-                      : 'text-[#202c3b]/70 hover:bg-[#FF6A00]/10 hover:text-[#FF6A00] border-l-4 border-transparent'
-                  }`}
-                >
-                  <div className={`mr-3 p-1.5 rounded-md ${isActive ? 'bg-white/20' : 'bg-[#FF6A00]/5 group-hover:bg-[#FF6A00]/10'}`}>
-                    <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#202c3b]/60 group-hover:text-[#FF6A00]'}`} />
-                  </div>
-                  <span className="flex-1">{item.name}</span>
-                  {isActive && (
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-white to-[#FFFCF6] border-r border-[#be8c53]/20 shadow-lg">
-          <div className="flex h-16 items-center px-4 border-b border-[#be8c53]/20 bg-white">
-            <h1 className="text-xl font-bold text-[#202c3b]">Admin Panel</h1>
-          </div>
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {filteredNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all ${
-                    isActive
-                      ? 'bg-[#FF6A00] text-white shadow-md border-l-4 border-[#FF6A00]'
-                      : 'text-[#202c3b]/70 hover:bg-[#FF6A00]/10 hover:text-[#FF6A00] border-l-4 border-transparent'
-                  }`}
-                >
-                  <div className={`mr-3 p-1.5 rounded-md ${isActive ? 'bg-white/20' : 'bg-[#FF6A00]/5 group-hover:bg-[#FF6A00]/10'}`}>
-                    <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-[#202c3b]/60 group-hover:text-[#FF6A00]'}`} />
-                  </div>
-                  <span className="flex-1">{item.name}</span>
-                  {isActive && (
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top bar */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#be8c53]/20 bg-white/95 backdrop-blur-sm px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            className="-m-2.5 p-2.5 text-[#202c3b] hover:text-[#FF6A00] lg:hidden transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
+            {/* Quick Search - Center */}
+            <div className="flex flex-1 justify-center max-w-lg mx-auto">
+              <div className="relative w-full">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Quick Search..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            {/* Right Side Icons and Admin Info */}
+            <div className="flex items-center gap-x-3 lg:gap-x-4 ml-auto">
+              {/* Notifications */}
+              <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <BellIcon className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              {/* Messages */}
+              <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <EnvelopeIcon className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-blue-500 rounded-full"></span>
+              </button>
               <Link
                 href="/"
-                className="text-sm font-medium text-[#202c3b] hover:text-[#FF6A00] transition-colors"
+                className="hidden sm:block text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors"
               >
                 Back to Site
               </Link>
               {!userEmail ? (
                 <Link
                   href="/admin/login"
-                  className="text-sm font-medium text-[#202c3b] hover:text-[#FF6A00] transition-colors"
+                  className="text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors"
                 >
                   Login
                 </Link>
               ) : (
                 <div className="relative">
                   <div className="hidden sm:flex items-center gap-3">
-                    {/* Admin User Info with Dropdown */}
                     <div className="relative">
                       <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
                       >
-                        <UserCircleIcon className="h-5 w-5 text-[#202c3b]" />
+                        <UserCircleIcon className="h-5 w-5 text-gray-600" />
                         <div className="flex flex-col items-start text-left">
                           {adminUser?.name ? (
-                            <span className="text-sm font-semibold text-[#202c3b]">{adminUser.name}</span>
+                            <span className="text-sm font-semibold text-gray-900">{adminUser.name}</span>
                           ) : (
-                            <span className="text-sm font-semibold text-[#202c3b]">{userEmail.split('@')[0]}</span>
+                            <span className="text-sm font-semibold text-gray-900">{userEmail.split('@')[0]}</span>
                           )}
                           <span className="text-xs text-gray-500 truncate max-w-[150px]">{userEmail}</span>
                         </div>
@@ -341,18 +482,12 @@ function AdminLayoutContent({
                               ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
                               : 'bg-amber-50 text-amber-700 border-amber-200'
                           }`}>
-                            {adminUser.role === 'full' && (
-                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            )}
                             {roleLabels[adminUser.role] || 'Read Only'}
                           </span>
                         )}
                         <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                       </button>
                       
-                      {/* Dropdown Menu */}
                       {showUserMenu && (
                         <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50" onClick={(e) => e.stopPropagation()}>
                           <div className="px-4 py-2 border-b border-gray-200">
@@ -387,14 +522,6 @@ function AdminLayoutContent({
                                 <UserGroupIcon className="h-4 w-4" />
                                 Manage Admin Users
                               </Link>
-                              <Link
-                                href="/admin/admin-users"
-                                onClick={() => setShowUserMenu(false)}
-                                className="flex items-center gap-2 px-4 py-2 text-sm text-[#FF6A00] hover:bg-orange-50 transition-colors font-medium"
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                                Add New User
-                              </Link>
                               <div className="border-t border-gray-200 my-1"></div>
                             </>
                           )}
@@ -418,13 +545,12 @@ function AdminLayoutContent({
                     </div>
                   </div>
                   
-                  {/* Mobile view - simpler button */}
                   <div className="sm:hidden">
                     <button
                       onClick={() => router.push(isFullAdmin ? '/admin/admin-users' : '#')}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <UserCircleIcon className="h-5 w-5 text-[#202c3b]" />
+                      <UserCircleIcon className="h-5 w-5 text-gray-600" />
                       {isFullAdmin && <PlusIcon className="h-4 w-4 text-[#FF6A00]" />}
                     </button>
                   </div>
@@ -435,54 +561,8 @@ function AdminLayoutContent({
         </div>
 
         {/* Page content */}
-        <main className="py-6">
-          {adminRole === 'readonly' && (
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
-              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400 rounded-lg shadow-sm p-5">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-amber-100">
-                      <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-sm font-semibold text-amber-900 mb-1">
-                      Read-Only Access Mode
-                    </h3>
-                    <p className="text-sm text-amber-800 leading-relaxed">
-                      You have view-only access to the admin dashboard. You can browse all data, bookings, and content, but <strong>cannot add, edit, or delete</strong> any information. For full administrative privileges, please contact the primary administrator.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {adminRole === 'full' && (
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-l-4 border-emerald-400 rounded-lg shadow-sm p-5">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-emerald-100">
-                      <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-sm font-semibold text-emerald-900 mb-1">
-                      Full Administrative Access
-                    </h3>
-                    <p className="text-sm text-emerald-800 leading-relaxed">
-                      You have complete access to all administrative features. You can <strong>view, add, edit, and delete</strong> bookings, rooms, gallery images, and all other content. Use this access responsibly.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-auto">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
             {children}
           </div>
         </main>
