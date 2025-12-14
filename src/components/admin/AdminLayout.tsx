@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  HomeIcon, 
-  BuildingOfficeIcon, 
-  PlusIcon, 
+import {
+  HomeIcon,
+  BuildingOfficeIcon,
+  PlusIcon,
   CalendarDaysIcon,
   Bars3Icon,
   XMarkIcon,
@@ -236,8 +236,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <AdminRoleProvider>
-      <AdminLayoutContent 
-        sidebarOpen={sidebarOpen} 
+      <AdminLayoutContent
+        sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         pathname={pathname}
         adminRole={adminRole}
@@ -250,17 +250,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   );
 }
 
-function AdminLayoutContent({ 
-  sidebarOpen, 
-  setSidebarOpen, 
-  pathname, 
+function AdminLayoutContent({
+  sidebarOpen,
+  setSidebarOpen,
+  pathname,
   adminRole,
   userEmail,
   navigationGroups,
-  children 
-}: { 
-  sidebarOpen: boolean; 
-  setSidebarOpen: (open: boolean) => void; 
+  children
+}: {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
   pathname: string;
   adminRole: AdminRole;
   userEmail: string | null;
@@ -277,7 +277,7 @@ function AdminLayoutContent({
     });
     return initial;
   });
-  
+
   const roleLabels: Record<string, string> = {
     full: 'Full Admin',
     kitchen: 'Kitchen Staff',
@@ -307,29 +307,28 @@ function AdminLayoutContent({
         {navigationGroups.map((group) => {
           const hasActiveItem = group.items.some(item => isItemActive(item.href));
           const isGroupOpen = openGroups[group.name] ?? false;
-          
+
           return (
             <div key={group.name} className="mb-2">
               {/* Group Header */}
               <button
                 onClick={() => toggleGroup(group.name)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  hasActiveItem
-                    ? 'text-[#FF6A00] bg-[#FF6A00]/10'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${hasActiveItem
+                  ? 'text-[#FF6A00] bg-[#FF6A00]/10'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <group.icon className="h-4 w-4" />
                   {sidebarOpen && <span>{group.name}</span>}
                 </div>
                 {sidebarOpen && (
-                  <ChevronDownIcon 
-                    className={`h-4 w-4 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`} 
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`}
                   />
                 )}
               </button>
-              
+
               {/* Group Items */}
               {isGroupOpen && sidebarOpen && (
                 <div className="mt-1 space-y-1 ml-4 border-l-2 border-gray-200 pl-2">
@@ -340,17 +339,15 @@ function AdminLayoutContent({
                         key={item.name}
                         href={item.href}
                         onClick={onNavClick}
-                        className={`group flex items-center px-3 py-2.5 text-sm font-medium transition-all ${
-                          isActive
-                            ? 'bg-[#FF6A00] text-white shadow-md'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6A00]'
-                        }`}
+                        className={`group flex items-center px-3 py-2.5 text-sm font-medium transition-all ${isActive
+                          ? 'bg-[#FF6A00] text-white shadow-md'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6A00]'
+                          }`}
                       >
-                        <div className={`mr-3 p-1.5 ${
-                          isActive 
-                            ? 'bg-white/20' 
-                            : `${item.bgColor} ${item.color}`
-                        }`}>
+                        <div className={`mr-3 p-1.5 ${isActive
+                          ? 'bg-white/20'
+                          : `${item.bgColor} ${item.color}`
+                          }`}>
                           <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : ''}`} />
                         </div>
                         <span className="flex-1">{item.name}</span>
@@ -376,30 +373,28 @@ function AdminLayoutContent({
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - Always visible, pushes content */}
-      <div className={`flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out ${
-        sidebarOpen ? 'w-72' : 'w-0'
-      } overflow-hidden`}>
-        <div className="flex flex-grow flex-col overflow-y-auto bg-white border-r border-gray-200 shadow-sm w-72">
-          <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gradient-to-r from-[#FF6A00] to-[#be8c53]">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20">
-                <BuildingOfficeIcon className="h-6 w-6 text-white" />
-              </div>
-              {sidebarOpen && (
-                <div>
-                  <h1 className="text-lg font-bold text-white">Hotel Management</h1>
-                  <p className="text-xs text-white/80">Sultan Palace</p>
-                </div>
-              )}
+      {/* Sidebar - Fixed position, always visible when open */}
+      <div className={`fixed left-0 top-0 h-screen flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-sm z-30 ${sidebarOpen ? 'w-72' : 'w-0'
+        } overflow-hidden`}>
+        <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gradient-to-r from-[#FF6A00] to-[#be8c53] flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20">
+              <BuildingOfficeIcon className="h-6 w-6 text-white" />
             </div>
+            {sidebarOpen && (
+              <div>
+                <h1 className="text-lg font-bold text-white">Hotel Management</h1>
+                <p className="text-xs text-white/80">Sultan Palace</p>
+              </div>
+            )}
           </div>
-          {renderNavigation(handleNavClick)}
         </div>
+        {renderNavigation(handleNavClick)}
       </div>
 
-      {/* Main content - Full width */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content - Adjusted for sidebar */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'ml-72' : 'ml-0'
+        }`}>
         {/* Top bar - Full Width Header */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm">
           <div className="flex items-center gap-x-4 w-full px-4 sm:px-6 lg:px-8">
@@ -425,7 +420,7 @@ function AdminLayoutContent({
                 />
               </div>
             </div>
-            
+
             {/* Right Side Icons and Admin Info */}
             <div className="flex items-center gap-x-3 lg:gap-x-4 ml-auto">
               {/* Notifications */}
@@ -469,49 +464,47 @@ function AdminLayoutContent({
                           <span className="text-xs text-gray-500 truncate max-w-[150px]">{userEmail}</span>
                         </div>
                         {adminUser && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border ${
-                            adminUser.role === 'full' 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : adminUser.role === 'manager'
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border ${adminUser.role === 'full'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : adminUser.role === 'manager'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
                               : adminUser.role === 'kitchen'
-                              ? 'bg-orange-50 text-orange-700 border-orange-200'
-                              : adminUser.role === 'housekeeping'
-                              ? 'bg-teal-50 text-teal-700 border-teal-200'
-                              : adminUser.role === 'front_desk'
-                              ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
-                          }`}>
+                                ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                : adminUser.role === 'housekeeping'
+                                  ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                  : adminUser.role === 'front_desk'
+                                    ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
                             {roleLabels[adminUser.role] || 'Read Only'}
                           </span>
                         )}
                         <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {showUserMenu && (
                         <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50" onClick={(e) => e.stopPropagation()}>
                           <div className="px-4 py-2 border-b border-gray-200">
                             <p className="text-sm font-semibold text-gray-900">{adminUser?.name || userEmail.split('@')[0]}</p>
                             <p className="text-xs text-gray-500 truncate">{userEmail}</p>
                             {adminUser && (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border mt-2 ${
-                                adminUser.role === 'full' 
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : adminUser.role === 'manager'
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border mt-2 ${adminUser.role === 'full'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : adminUser.role === 'manager'
                                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                                   : adminUser.role === 'kitchen'
-                                  ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                  : adminUser.role === 'housekeeping'
-                                  ? 'bg-teal-50 text-teal-700 border-teal-200'
-                                  : adminUser.role === 'front_desk'
-                                  ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
-                              }`}>
+                                    ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                    : adminUser.role === 'housekeeping'
+                                      ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                      : adminUser.role === 'front_desk'
+                                        ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
                                 {roleLabels[adminUser.role] || 'Read Only'}
                               </span>
                             )}
                           </div>
-                          
+
                           {isFullAdmin && (
                             <>
                               <Link
@@ -525,13 +518,13 @@ function AdminLayoutContent({
                               <div className="border-t border-gray-200 my-1"></div>
                             </>
                           )}
-                          
+
                           <button
-                            onClick={async () => { 
-                              if (auth) { 
-                                await signOut(auth); 
-                                router.push('/admin/login'); 
-                              } 
+                            onClick={async () => {
+                              if (auth) {
+                                await signOut(auth);
+                                router.push('/admin/login');
+                              }
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
@@ -544,7 +537,7 @@ function AdminLayoutContent({
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="sm:hidden">
                     <button
                       onClick={() => router.push(isFullAdmin ? '/admin/admin-users' : '#')}
@@ -562,16 +555,16 @@ function AdminLayoutContent({
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
             {children}
           </div>
         </main>
       </div>
-      
+
       {/* Click outside to close dropdown */}
       {showUserMenu && (
-        <div 
-          className="fixed inset-0 z-30" 
+        <div
+          className="fixed inset-0 z-30"
           onClick={() => setShowUserMenu(false)}
         ></div>
       )}

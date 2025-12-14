@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
-import { 
-  getHousekeepingTasks, 
+import {
+  getHousekeepingTasks,
   updateHousekeepingTask,
   updateRoomStatus,
   HousekeepingTask
 } from '@/lib/firestoreService';
-import { 
+import {
   MagnifyingGlassIcon,
   ClockIcon,
   FunnelIcon
@@ -48,12 +48,12 @@ export default function HousekeepingPage() {
 
       // Update task status
       await updateHousekeepingTask(taskId, { status });
-      
+
       // If task is completed, update room status automatically
       if (status === 'completed' && task.roomName) {
         const { getRoomStatus } = await import('@/lib/firestoreService');
         const roomStatus = await getRoomStatus(task.roomName);
-        
+
         if (roomStatus) {
           // Add to cleaning history
           const cleaningHistory = roomStatus.cleaningHistory || [];
@@ -101,7 +101,7 @@ export default function HousekeepingPage() {
           }
         }
       }
-      
+
       await loadTasks();
       showToast(`Task ${status} successfully!`, 'success');
     } catch (error) {
@@ -112,7 +112,7 @@ export default function HousekeepingPage() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      const matchesSearch = 
+      const matchesSearch =
         task.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.taskType.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -177,10 +177,10 @@ export default function HousekeepingPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
@@ -191,7 +191,7 @@ export default function HousekeepingPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Housekeeping Tasks</h1>
           <p className="text-sm text-gray-500 mt-1">Manage cleaning and maintenance tasks • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -234,41 +234,37 @@ export default function HousekeepingPage() {
           <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'all'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'all'
+                ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'pending'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'pending'
+                ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               Pending
             </button>
             <button
               onClick={() => setStatusFilter('in_progress')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'in_progress'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'in_progress'
+                ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               In Progress
             </button>
             <button
               onClick={() => setStatusFilter('completed')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'completed'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'completed'
+                ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               Completed
             </button>
@@ -304,7 +300,8 @@ export default function HousekeepingPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task Type</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Priority</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Assigned To</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Scheduled</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -332,15 +329,30 @@ export default function HousekeepingPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {task.estimatedTime && (
-                        <div className="text-sm text-gray-900 flex items-center gap-1">
-                          <ClockIcon className="h-4 w-4 text-gray-400" />
-                          {task.estimatedTime} mins
-                        </div>
+                      <div className="text-sm text-gray-900">
+                        {new Date(task.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(task.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {task.scheduledTime ? (
+                        <>
+                          <div className="text-sm text-gray-900">
+                            {new Date(task.scheduledTime).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(task.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not scheduled</span>
                       )}
-                      {task.actualTime && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Actual: {task.actualTime} mins
+                      {task.status === 'completed' && task.completedTime && (
+                        <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                          <ClockIcon className="h-3 w-3" />
+                          Done: {new Date(task.completedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       )}
                     </td>

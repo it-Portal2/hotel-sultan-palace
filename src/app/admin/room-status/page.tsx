@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getRoomStatuses, getRoomTypes, RoomStatus, SuiteType, RoomType } from '@/lib/firestoreService';
-import { 
-  HomeIcon, 
+import {
+  HomeIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
@@ -44,19 +44,19 @@ export default function RoomStatusPage() {
 
   const filteredRooms = useMemo(() => {
     let filtered = roomTypes;
-    
+
     if (selectedSuite !== 'all') {
       filtered = filtered.filter(rt => rt.suiteType === selectedSuite);
     }
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(rt => 
+      filtered = filtered.filter(rt =>
         rt.roomName.toLowerCase().includes(query) ||
         rt.suiteType.toLowerCase().includes(query)
       );
     }
-    
+
     return filtered;
   }, [roomTypes, selectedSuite, searchQuery]);
 
@@ -106,15 +106,15 @@ export default function RoomStatusPage() {
     const cleaning = roomStatuses.filter(r => r.status === 'cleaning').length;
     const maintenance = roomStatuses.filter(r => r.status === 'maintenance').length;
     const reserved = roomStatuses.filter(r => r.status === 'reserved').length;
-    
+
     const clean = roomStatuses.filter(r => r.housekeepingStatus === 'clean' || r.housekeepingStatus === 'inspected').length;
     const dirty = roomStatuses.filter(r => r.housekeepingStatus === 'dirty' || r.housekeepingStatus === 'needs_attention').length;
-    
+
     return { available, occupied, cleaning, maintenance, reserved, clean, dirty, total: roomTypes.length };
   }, [roomStatuses, roomTypes.length]);
 
-  const filteredSuites = selectedSuite === 'all' 
-    ? SUITE_TYPES 
+  const filteredSuites = selectedSuite === 'all'
+    ? SUITE_TYPES
     : [selectedSuite];
 
   if (loading) {
@@ -125,10 +125,10 @@ export default function RoomStatusPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
@@ -139,7 +139,7 @@ export default function RoomStatusPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Room Status</h1>
           <p className="text-sm text-gray-500 mt-1">Real-time monitoring • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats - No boxes */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -180,11 +180,10 @@ export default function RoomStatusPage() {
           <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
             <button
               onClick={() => setSelectedSuite('all')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                selectedSuite === 'all'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${selectedSuite === 'all'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               All
             </button>
@@ -192,11 +191,10 @@ export default function RoomStatusPage() {
               <button
                 key={suite}
                 onClick={() => setSelectedSuite(suite)}
-                className={`px-3 py-1 text-sm font-medium transition-colors ${
-                  selectedSuite === suite
+                className={`px-3 py-1 text-sm font-medium transition-colors ${selectedSuite === suite
                     ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 {suite.split(' ')[0]}
               </button>
@@ -210,9 +208,9 @@ export default function RoomStatusPage() {
         {filteredSuites.map(suiteType => {
           const rooms = roomsBySuite[suiteType] || [];
           const suiteStatuses = roomStatuses.filter(rs => rs.suiteType === suiteType);
-          
+
           if (rooms.length === 0) return null;
-          
+
           return (
             <div key={suiteType} className="space-y-4">
               {/* Simple Suite Header */}
@@ -221,7 +219,7 @@ export default function RoomStatusPage() {
                 <h2 className="text-lg font-semibold text-gray-900">{suiteType}</h2>
                 <span className="text-sm text-gray-500">({rooms.length})</span>
               </div>
-              
+
               {/* Minimal Room Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {rooms.map(room => {
@@ -230,7 +228,7 @@ export default function RoomStatusPage() {
                   const housekeepingStatus = status?.housekeepingStatus || 'clean';
                   const isClean = housekeepingStatus === 'clean' || housekeepingStatus === 'inspected';
                   const isDirty = housekeepingStatus === 'dirty' || housekeepingStatus === 'needs_attention';
-                  
+
                   return (
                     <div
                       key={room.id}
@@ -244,20 +242,42 @@ export default function RoomStatusPage() {
                         <div className={`w-2 h-2 rounded-full ${getStatusDot(currentStatus)}`}></div>
                         <div className={`w-2 h-2 rounded-full ${getHousekeepingDot(housekeepingStatus)}`}></div>
                       </div>
-                      
+
                       {/* Room Name */}
                       <div className="font-semibold text-sm text-gray-900 mb-1 truncate">
                         {room.roomName}
                       </div>
-                      
+
                       {/* Status Text - Minimal */}
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-gray-500 capitalize">{currentStatus}</span>
                         <span className="text-gray-300">•</span>
                         <span className={`${isClean ? 'text-green-600' : isDirty ? 'text-red-600' : 'text-gray-500'}`}>
-                          {housekeepingStatus === 'clean' || housekeepingStatus === 'inspected' ? 'Clean' : 
-                           housekeepingStatus === 'dirty' ? 'Dirty' : 'Pending'}
+                          {housekeepingStatus === 'clean' || housekeepingStatus === 'inspected' ? 'Clean' :
+                            housekeepingStatus === 'dirty' ? 'Dirty' : 'Pending'}
                         </span>
+                      </div>
+
+                      {/* Date Information */}
+                      <div className="mt-2 space-y-1 text-xs text-gray-500">
+                        {status?.lastCleaned && (
+                          <div className="flex items-center gap-1">
+                            <span>Cleaned:</span>
+                            <span className="font-medium">{new Date(status.lastCleaned).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {currentStatus === 'occupied' && status?.currentCheckInDate && (
+                          <div className="flex items-center gap-1">
+                            <span>In:</span>
+                            <span className="font-medium">{new Date(status.currentCheckInDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {currentStatus === 'maintenance' && status?.maintenanceStartDate && (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <span>Until:</span>
+                            <span className="font-medium">{status.maintenanceEndDate ? new Date(status.maintenanceEndDate).toLocaleDateString() : 'TBD'}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

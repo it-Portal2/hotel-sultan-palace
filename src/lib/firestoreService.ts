@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
   orderBy,
   where,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -54,7 +54,7 @@ export interface Booking {
     children: number;
     rooms: number;
   };
-  
+
   // User contact and personal details
   guestDetails: {
     firstName: string;
@@ -63,7 +63,7 @@ export interface Booking {
     phone: string;
     prefix: string;
   };
-  
+
   // User address details
   address: {
     country: string;
@@ -72,14 +72,14 @@ export interface Booking {
     address1: string;
     address2: string;
   };
-  
+
   // Reservation guest details
   reservationGuests: Array<{
     firstName: string;
     lastName: string;
     specialNeeds: string;
   }>;
-  
+
   // Essential room information only
   rooms: Array<{
     type: string;
@@ -87,19 +87,19 @@ export interface Booking {
     allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
   }>;
-  
+
   // Essential add-ons information
   addOns: Array<{
     name: string;
     price: number;
     quantity: number;
   }>;
-  
+
   // Financial details
   totalAmount: number;
   bookingId: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
-  
+
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
   checkInTime?: Date; // Actual check-in time
@@ -107,13 +107,13 @@ export interface Booking {
   foodOrderIds?: string[]; // Array of FoodOrder IDs
   guestServiceIds?: string[]; // Array of GuestService IDs
   checkoutBillId?: string; // Link to final checkout bill
-  
+
   // Payment Information
   paymentStatus?: 'pending' | 'partial' | 'paid' | 'refunded';
   paidAmount?: number; // Amount paid during booking
   paymentMethod?: string; // e.g., 'card', 'cash', 'online'
   paymentDate?: Date; // When payment was made
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -343,14 +343,14 @@ export interface GuestService {
   serviceCategory: 'laundry' | 'spa' | 'game' | 'other';
   // Detailed type within category
   serviceType:
-    | 'laundry'
-    | 'housekeeping'
-    | 'spa'
-    | 'transport'
-    | 'concierge'
-    | 'room_service'
-    | 'game'
-    | 'other';
+  | 'laundry'
+  | 'housekeeping'
+  | 'spa'
+  | 'transport'
+  | 'concierge'
+  | 'room_service'
+  | 'game'
+  | 'other';
   description: string;
   amount: number; // legacy single amount
   // Pricing breakdown
@@ -625,11 +625,11 @@ const sampleAddOns: AddOn[] = [
 
 // Add-on images - exact mapping for each add-on
 const addOnImages = {
-  romanticDinner: '/addons/romantic.png',     
-  daybedExperience: '/addons/Daybed.png',      
-  couplesMassage: '/addons/cuople.png',         
-  privateAirport: '/addons/private.png',    
-  mnembaSnorkeling: '/addons/mnemba.png'        
+  romanticDinner: '/addons/romantic.png',
+  daybedExperience: '/addons/Daybed.png',
+  couplesMassage: '/addons/cuople.png',
+  privateAirport: '/addons/private.png',
+  mnembaSnorkeling: '/addons/mnemba.png'
 };
 
 // Room images - exact mapping for each room
@@ -663,7 +663,7 @@ export const getRooms = async (): Promise<Room[]> => {
     const roomsRef = collection(db, 'rooms');
     const q = query(roomsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       const resolvedImage = resolveRoomImage(data);
@@ -692,7 +692,7 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   try {
     const roomRef = doc(db, 'rooms', roomId);
     const roomSnap = await getDoc(roomRef);
-    
+
     if (roomSnap.exists()) {
       const data = roomSnap.data();
       // Preserve the original image from Firestore if it exists, otherwise use resolved fallback
@@ -748,7 +748,7 @@ export const updateRoom = async (roomId: string, roomData: Partial<Room>): Promi
       ...roomData,
       updatedAt: serverTimestamp(),
     });
-  return true;
+    return true;
   } catch (error) {
     console.error('Error updating room:', error);
     return false;
@@ -764,7 +764,7 @@ export const deleteRoom = async (roomId: string): Promise<boolean> => {
   try {
     const roomRef = doc(db, 'rooms', roomId);
     await deleteDoc(roomRef);
-  return true;
+    return true;
   } catch (error) {
     console.error('Error deleting room:', error);
     return false;
@@ -782,11 +782,11 @@ export const getAddOns = async (): Promise<AddOn[]> => {
     const addOnsRef = collection(db, 'addOns');
     const q = query(addOnsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       const name = data.name?.toLowerCase() || '';
-      
+
       // Match image based on exact add-on names
       let image = addOnImages.romanticDinner; // default
       if (name.includes('daybed') && name.includes('classic')) {
@@ -800,7 +800,7 @@ export const getAddOns = async (): Promise<AddOn[]> => {
       } else if (name.includes('private') && name.includes('airport')) {
         image = addOnImages.privateAirport;
       }
-      
+
       return {
         id: doc.id,
         ...data,
@@ -825,7 +825,7 @@ export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'u
 
   try {
     const name = addOnData.name?.toLowerCase() || '';
-    
+
     // Match image based on specific add-on names
     let image = addOnImages.romanticDinner; // default
     if (name.includes('daybed') && name.includes('classic')) {
@@ -839,7 +839,7 @@ export const createAddOn = async (addOnData: Omit<AddOn, 'id' | 'createdAt' | 'u
     } else if (name.includes('private') && name.includes('airport')) {
       image = addOnImages.privateAirport;
     }
-    
+
     const addOnsRef = collection(db, 'addOns');
     const docRef = await addDoc(addOnsRef, {
       ...addOnData,
@@ -862,7 +862,7 @@ export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): P
 
   try {
     const name = addOnData.name?.toLowerCase() || '';
-    
+
     // Match image based on specific add-on names
     let image = addOnImages.romanticDinner; // default
     if (name.includes('daybed') && name.includes('classic')) {
@@ -876,7 +876,7 @@ export const updateAddOn = async (addOnId: string, addOnData: Partial<AddOn>): P
     } else if (name.includes('private') && name.includes('airport')) {
       image = addOnImages.privateAirport;
     }
-    
+
     const addOnRef = doc(db, 'addOns', addOnId);
     await updateDoc(addOnRef, {
       ...addOnData,
@@ -915,14 +915,14 @@ export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt
 
   try {
     console.log('Creating booking in Firestore:', bookingData);
-    
+
     const bookingsRef = collection(db, 'bookings');
     const docRef = await addDoc(bookingsRef, {
       ...bookingData,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    
+
     console.log('Booking created successfully with ID:', docRef.id);
     return docRef.id;
   } catch (error) {
@@ -940,7 +940,7 @@ export const getBooking = async (bookingId: string): Promise<Booking | null> => 
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingSnap = await getDoc(bookingRef);
-    
+
     if (bookingSnap.exists()) {
       const data = bookingSnap.data();
       return {
@@ -953,7 +953,7 @@ export const getBooking = async (bookingId: string): Promise<Booking | null> => 
     return null;
   } catch (error) {
     console.error('Error fetching booking:', error);
-  return null;
+    return null;
   }
 };
 
@@ -967,7 +967,7 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     const bookingsRef = collection(db, 'bookings');
     const q = query(bookingsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -979,7 +979,7 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     });
   } catch (error) {
     console.error('Error fetching bookings:', error);
-  return [];
+    return [];
   }
 };
 
@@ -998,13 +998,13 @@ export const updateBooking = async (bookingId: string, bookingData: Partial<Book
         cleanData[key] = value;
       }
     });
-    
+
     const bookingRef = doc(db, 'bookings', bookingId);
     await updateDoc(bookingRef, {
       ...cleanData,
       updatedAt: new Date(),
     });
-  return true;
+    return true;
   } catch (error) {
     console.error('Error updating booking:', error);
     return false;
@@ -1020,7 +1020,7 @@ export const createContactForm = async (contactData: Omit<ContactForm, 'id' | 'c
 
   try {
     console.log('Creating contact form in Firestore:', contactData);
-    
+
     const contactsRef = collection(db, 'contactForms');
     const docRef = await addDoc(contactsRef, {
       ...contactData,
@@ -1028,7 +1028,7 @@ export const createContactForm = async (contactData: Omit<ContactForm, 'id' | 'c
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    
+
     console.log('Contact form created successfully with ID:', docRef.id);
     return docRef.id;
   } catch (error) {
@@ -1047,7 +1047,7 @@ export const getAllContactForms = async (): Promise<ContactForm[]> => {
     const contactsRef = collection(db, 'contactForms');
     const q = query(contactsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -1079,7 +1079,7 @@ export const updateContactFormStatus = async (
 };
 
 // Booking Enquiry Operations (separate from Contact Forms)
-export const createBookingEnquiry = async (data: Omit<BookingEnquiry, 'id'|'createdAt'|'updatedAt'|'status'>): Promise<string|null> => {
+export const createBookingEnquiry = async (data: Omit<BookingEnquiry, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<string | null> => {
   if (!db) {
     console.warn('Firestore not available, cannot create booking enquiry');
     return null;
@@ -1087,11 +1087,11 @@ export const createBookingEnquiry = async (data: Omit<BookingEnquiry, 'id'|'crea
   try {
     console.log('Creating booking enquiry in collection: bookingEnquiries', data);
     const c = collection(db, 'bookingEnquiries');
-    const docData = { 
-      ...data, 
-      status: 'new', 
-      createdAt: serverTimestamp(), 
-      updatedAt: serverTimestamp() 
+    const docData = {
+      ...data,
+      status: 'new',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     console.log('Document data to save:', docData);
     const dr = await addDoc(c, docData);
@@ -1107,7 +1107,7 @@ export const getAllBookingEnquiries = async (): Promise<BookingEnquiry[]> => {
   if (!db) return [];
   try {
     const c = collection(db, 'bookingEnquiries');
-    const qy = query(c, orderBy('createdAt','desc'));
+    const qy = query(c, orderBy('createdAt', 'desc'));
     const snap = await getDocs(qy);
     return snap.docs.map(d => {
       const data = d.data();
@@ -1158,7 +1158,7 @@ export const getExcursions = async (): Promise<Excursion[]> => {
   }
 };
 
-export const createExcursion = async (data: Omit<Excursion, 'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createExcursion = async (data: Omit<Excursion, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     const refCol = collection(db, 'excursions');
@@ -1216,12 +1216,12 @@ export const getOffers = async (): Promise<OfferBanner[]> => {
   }
 };
 
-export const createOffer = async (data: Omit<OfferBanner,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createOffer = async (data: Omit<OfferBanner, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     const c = collection(db, 'offers');
     const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    
+
     // Send notification to all users (only for banner offers, not for every banner)
     // Note: Banner offers are usually for carousel, so we skip notification
     // Special offers will send notifications separately
@@ -1242,7 +1242,7 @@ export const createOffer = async (data: Omit<OfferBanner,'id'|'createdAt'|'updat
       console.warn('Failed to send notification:', notifError);
     }
     */
-    
+
     return d.id;
   } catch (e) {
     console.error('Error creating offer:', e);
@@ -1270,9 +1270,9 @@ export const getDiscountOffers = async (): Promise<DiscountOffer[]> => {
         return [];
       }
     }
-    
+
     if (!snap || !snap.docs) return [];
-    
+
     return snap.docs.map(d => {
       const data = d.data();
       return {
@@ -1303,7 +1303,7 @@ export const getActiveDiscountPercent = async (): Promise<number> => {
   }
 };
 
-export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createDiscountOffer = async (data: Omit<DiscountOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     // If setting this as active, deactivate all other discounts directly
@@ -1320,10 +1320,10 @@ export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'created
         console.warn('Could not deactivate existing discounts:', deactivateError);
       }
     }
-    
+
     const c = collection(db, 'discounts');
     const d = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    
+
     // Send notification to all users if discount is active
     if (data.isActive) {
       try {
@@ -1331,7 +1331,7 @@ export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'created
         const notificationBody = data.couponCode
           ? `Get ${data.discountPercent}% off on room bookings.\n\n🎫 Use Coupon Code: ${data.couponCode}`
           : `Get ${data.discountPercent}% off on room bookings. Book now!`;
-        
+
         await fetch('/api/notifications/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1348,7 +1348,7 @@ export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'created
         // Don't fail discount creation if notification fails
       }
     }
-    
+
     return d.id;
   } catch (e) {
     console.error('Error creating discount offer:', e);
@@ -1356,7 +1356,7 @@ export const createDiscountOffer = async (data: Omit<DiscountOffer,'id'|'created
   }
 };
 
-export const updateDiscountOffer = async (id: string, data: Partial<Omit<DiscountOffer,'id'|'createdAt'|'updatedAt'>>): Promise<boolean> => {
+export const updateDiscountOffer = async (id: string, data: Partial<Omit<DiscountOffer, 'id' | 'createdAt' | 'updatedAt'>>): Promise<boolean> => {
   if (!db) return false;
   try {
     // If setting this as active, deactivate all other discounts directly
@@ -1373,7 +1373,7 @@ export const updateDiscountOffer = async (id: string, data: Partial<Omit<Discoun
         console.warn('Could not deactivate existing discounts:', deactivateError);
       }
     }
-    
+
     const dref = doc(db, 'discounts', id);
     await updateDoc(dref, { ...data, updatedAt: serverTimestamp() });
     return true;
@@ -1530,7 +1530,7 @@ export const getStoryImages = async (): Promise<StoryImage[]> => {
   }
 };
 
-export const createStoryImage = async (data: Omit<StoryImage,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createStoryImage = async (data: Omit<StoryImage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     const c = collection(db, 'storyImages');
@@ -1595,7 +1595,7 @@ export const getGalleryImages = async (type?: GalleryType): Promise<GalleryImage
   if (!db) return [];
   try {
     const c = collection(db, 'gallery');
-    const qy = type ? query(c, orderBy('createdAt','desc')) : query(c, orderBy('createdAt','desc'));
+    const qy = type ? query(c, orderBy('createdAt', 'desc')) : query(c, orderBy('createdAt', 'desc'));
     const snap = await getDocs(qy);
     let items = snap.docs.map(d => {
       const data = d.data();
@@ -1615,7 +1615,7 @@ export const getGalleryImages = async (type?: GalleryType): Promise<GalleryImage
   }
 };
 
-export const createGalleryImage = async (data: Omit<GalleryImage,'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createGalleryImage = async (data: Omit<GalleryImage, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     const c = collection(db, 'gallery');
@@ -1676,7 +1676,7 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
   }
 };
 
-export const createTestimonial = async (data: Omit<Testimonial, 'id'|'createdAt'|'updatedAt'>): Promise<string|null> => {
+export const createTestimonial = async (data: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
   if (!db) return null;
   try {
     const refCol = collection(db, 'testimonials');
@@ -1742,10 +1742,10 @@ export const createRoomType = async (data: Omit<RoomType, 'id' | 'createdAt' | '
   if (!db) return null;
   try {
     const c = collection(db, 'roomTypes');
-    const dr = await addDoc(c, { 
-      ...data, 
-      createdAt: serverTimestamp(), 
-      updatedAt: serverTimestamp() 
+    const dr = await addDoc(c, {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
     return dr.id;
   } catch (e) {
@@ -1833,7 +1833,7 @@ export const getAllGuestExperienceForms = async (): Promise<GuestExperienceForm[
     const formsRef = collection(db, 'guestExperienceForms');
     const q = query(formsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -1877,7 +1877,7 @@ export const createGuestReview = async (
     const reviewsRef = collection(db, 'guestReviews');
     const docRef = await addDoc(reviewsRef, {
       ...reviewData,
-      isApproved: true, 
+      isApproved: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -1898,7 +1898,7 @@ export const getAllGuestReviews = async (approvedOnly: boolean = false): Promise
     const reviewsRef = collection(db, 'guestReviews');
     const q = query(reviewsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     let reviews = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -2083,7 +2083,7 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
     const ordersSnap = await getDocs(query(ordersRef, orderBy('createdAt', 'desc')));
     const orderCount = ordersSnap.size;
     const orderNumber = `ORD-${String(orderCount + 1).padStart(4, '0')}`;
-    
+
     // Remove undefined values - Firestore doesn't accept undefined
     const cleanData: any = { orderNumber };
     Object.keys(data).forEach(key => {
@@ -2092,14 +2092,14 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
         cleanData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'foodOrders');
     const dr = await addDoc(c, {
       ...cleanData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
+
     // Update booking if bookingId exists
     if (data.bookingId) {
       const booking = await getBooking(data.bookingId);
@@ -2112,7 +2112,7 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
         }
       }
     }
-    
+
     return dr.id;
   } catch (e) {
     console.error('Error creating food order:', e);
@@ -2131,7 +2131,7 @@ export const updateFoodOrder = async (id: string, data: Partial<FoodOrder>): Pro
         cleanData[key] = value;
       }
     });
-    
+
     const r = doc(db, 'foodOrders', id);
     await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
@@ -2158,9 +2158,9 @@ export const getKitchenOrders = async (): Promise<FoodOrder[]> => {
   if (!db) return [];
   try {
     const orders = await getFoodOrders();
-    return orders.filter(o => 
-      o.status === 'pending' || 
-      o.status === 'confirmed' || 
+    return orders.filter(o =>
+      o.status === 'pending' ||
+      o.status === 'confirmed' ||
       o.status === 'preparing' ||
       o.status === 'ready'
     );
@@ -2235,14 +2235,14 @@ export const createGuestService = async (data: Omit<GuestService, 'id' | 'create
         cleanData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'guestServices');
     const dr = await addDoc(c, {
       ...cleanData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
+
     // Update booking if bookingId exists
     if (data.bookingId) {
       const booking = await getBooking(data.bookingId);
@@ -2255,7 +2255,7 @@ export const createGuestService = async (data: Omit<GuestService, 'id' | 'create
         }
       }
     }
-    
+
     return dr.id;
   } catch (e) {
     console.error('Error creating guest service:', e);
@@ -2274,7 +2274,7 @@ export const updateGuestService = async (id: string, data: Partial<GuestService>
         cleanData[key] = value;
       }
     });
-    
+
     const r = doc(db, 'guestServices', id);
     await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
@@ -2371,45 +2371,45 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
   try {
     const booking = await getBooking(bookingId);
     if (!booking) return null;
-    
+
     // Calculate room charges
     const checkIn = new Date(booking.checkIn);
     const checkOut = new Date(booking.checkOut);
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     const roomCharges = booking.rooms.reduce((sum, room) => sum + (room.price * nights), 0);
-    
+
     // Get food orders
     const foodOrders = booking.foodOrderIds ? await Promise.all(
       booking.foodOrderIds.map(id => getFoodOrder(id))
     ) : [];
     const validFoodOrders = foodOrders.filter(o => o !== null) as FoodOrder[];
     const foodCharges = validFoodOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-    
+
     // Get guest services
     const services = booking.guestServiceIds ? await Promise.all(
       booking.guestServiceIds.map(id => getGuestService(id))
     ) : [];
     const validServices = services.filter(s => s !== null) as GuestService[];
     const serviceCharges = validServices.reduce((sum, service) => sum + (service.amount || 0), 0);
-    
+
     // Add-ons charges
     const addOnsCharges = booking.addOns.reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
-    
+
     // Calculate taxes (assume 10% tax)
     const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges;
     const taxes = subtotal * 0.1;
     const totalAmount = subtotal + taxes;
-    
+
     // Get already paid amount from booking (payment made during booking)
     const alreadyPaid = booking.paidAmount || 0;
     const balance = totalAmount - alreadyPaid;
-    const paymentStatus: CheckoutBill['paymentStatus'] = 
+    const paymentStatus: CheckoutBill['paymentStatus'] =
       balance <= 0 ? 'paid' : (alreadyPaid > 0 ? 'partial' : 'pending');
-    
+
     // Get room number - use allocated room type as fallback
     const roomNumber = booking.roomNumber || booking.rooms[0]?.allocatedRoomType || null;
-    
+
     const bill: Omit<CheckoutBill, 'id' | 'createdAt' | 'updatedAt'> = {
       bookingId,
       guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
@@ -2453,7 +2453,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         total: addon.price * addon.quantity,
       })),
     };
-    
+
     // Remove undefined values before saving to Firestore
     const billData: any = {};
     Object.keys(bill).forEach(key => {
@@ -2462,17 +2462,17 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         billData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'checkoutBills');
     const dr = await addDoc(c, {
       ...billData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
+
     // Update booking with checkout bill ID
     await updateBooking(bookingId, { checkoutBillId: dr.id });
-    
+
     return dr.id;
   } catch (e) {
     console.error('Error generating checkout bill:', e);
@@ -2568,7 +2568,7 @@ export const updateRoomStatus = async (id: string, data: Partial<RoomStatus>): P
         cleanData[key] = value;
       }
     });
-    
+
     const r = doc(db, 'roomStatuses', id);
     await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
@@ -2589,13 +2589,86 @@ export const createRoomStatus = async (data: Omit<RoomStatus, 'id' | 'createdAt'
         cleanData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'roomStatuses');
     const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return dr.id;
   } catch (e) {
     console.error('Error creating room status:', e);
     return null;
+  }
+};
+
+// Maintenance workflow helpers
+export const markRoomForMaintenance = async (
+  roomName: string,
+  startDate: Date,
+  endDate: Date,
+  reason: string
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const roomStatus = await getRoomStatus(roomName);
+
+    // If room status doesn't exist, create it
+    if (!roomStatus) {
+      console.log(`Creating room status for ${roomName}`);
+      // Get room type info to determine suite type
+      const roomTypes = await getRoomTypes();
+      const roomType = roomTypes.find(rt => rt.roomName === roomName);
+      const suiteType = roomType?.suiteType || 'Garden Suite';
+
+      const newStatusId = await createRoomStatus({
+        roomName,
+        suiteType: suiteType as SuiteType,
+        status: 'maintenance',
+        housekeepingStatus: 'needs_attention',
+        maintenanceStartDate: startDate,
+        maintenanceEndDate: endDate,
+        maintenanceReason: reason,
+      });
+
+      return !!newStatusId;
+    }
+
+    // Update existing room status
+    await updateRoomStatus(roomStatus.id, {
+      status: 'maintenance',
+      maintenanceStartDate: startDate,
+      maintenanceEndDate: endDate,
+      maintenanceReason: reason,
+      housekeepingStatus: 'needs_attention',
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Error marking room for maintenance:', e);
+    return false;
+  }
+};
+
+export const completeRoomMaintenance = async (roomName: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const roomStatus = await getRoomStatus(roomName);
+    if (!roomStatus) {
+      console.error('Room status not found:', roomName);
+      return false;
+    }
+
+    await updateRoomStatus(roomStatus.id, {
+      status: 'available',
+      maintenanceStartDate: null as any,
+      maintenanceEndDate: null as any,
+      maintenanceReason: null as any,
+      housekeepingStatus: 'clean',
+      lastCleaned: new Date(),
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Error completing room maintenance:', e);
+    return false;
   }
 };
 
@@ -2637,7 +2710,7 @@ export const createHousekeepingTask = async (data: Omit<HousekeepingTask, 'id' |
         cleanData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'housekeepingTasks');
     const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return dr.id;
@@ -2658,12 +2731,12 @@ export const updateHousekeepingTask = async (id: string, data: Partial<Housekeep
         cleanData[key] = value;
       }
     });
-    
+
     // Add completedTime if status is completed
     if (cleanData.status === 'completed' && !cleanData.completedTime) {
       cleanData.completedTime = new Date();
     }
-    
+
     const r = doc(db, 'housekeepingTasks', id);
     await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
@@ -2700,7 +2773,7 @@ export const getCheckInOutRecords = async (bookingId?: string): Promise<CheckInO
       const qy = query(c, orderBy('createdAt', 'desc'));
       snap = await getDocs(qy);
     }
-    
+
     const records = snap.docs.map(d => {
       const data = d.data();
       return {
@@ -2712,7 +2785,7 @@ export const getCheckInOutRecords = async (bookingId?: string): Promise<CheckInO
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as CheckInOutRecord;
     });
-    
+
     // Sort in memory if filtered by bookingId
     if (bookingId) {
       records.sort((a, b) => {
@@ -2721,7 +2794,7 @@ export const getCheckInOutRecords = async (bookingId?: string): Promise<CheckInO
         return bTime - aTime; // Descending
       });
     }
-    
+
     return records;
   } catch (e) {
     console.error('Error fetching check-in/out records:', e);
@@ -2740,7 +2813,7 @@ export const createCheckInOutRecord = async (data: Omit<CheckInOutRecord, 'id' |
         cleanData[key] = value;
       }
     });
-    
+
     const c = collection(db, 'checkInOutRecords');
     const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return dr.id;
@@ -2793,14 +2866,14 @@ export const checkInGuest = async (
       roomKeyIssued: !!roomKeyNumber,
       depositReturned: false,
     };
-    
+
     // Add optional fields only if they have values
     if (idDocumentType) recordData.idDocumentType = idDocumentType;
     if (idDocumentNumber) recordData.idDocumentNumber = idDocumentNumber;
     if (roomKeyNumber) recordData.roomKeyNumber = roomKeyNumber;
     if (depositAmount !== undefined && depositAmount !== null) recordData.depositAmount = depositAmount;
     if (notes) recordData.notes = notes;
-    
+
     const record = await createCheckInOutRecord(recordData);
 
     // Update booking status
@@ -2845,7 +2918,12 @@ export const checkOutGuest = async (
   bookingId: string,
   staffName: string,
   depositReturned: boolean = false,
-  notes?: string
+  notes?: string,
+  housekeepingOptions?: {
+    priority?: HousekeepingTask['priority'];
+    assignedTo?: string;
+    scheduledTime?: Date;
+  }
 ): Promise<boolean> => {
   if (!db) return false;
   try {
@@ -2858,7 +2936,7 @@ export const checkOutGuest = async (
     // Get or create check-in record
     let records = await getCheckInOutRecords(bookingId);
     let checkInRecord = records[0];
-    
+
     // If no check-in record exists, create one (for backward compatibility)
     if (!checkInRecord) {
       console.warn('No check-in record found, creating one...');
@@ -2869,13 +2947,13 @@ export const checkOutGuest = async (
         guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
         roomName,
         suiteType: suiteType as SuiteType,
-        checkInTime: booking.checkInTime || new Date(booking.checkIn), 
+        checkInTime: booking.checkInTime || new Date(booking.checkIn),
         checkInStaff: 'System',
         idVerified: false,
         roomKeyIssued: false,
         roomKeyNumber: booking.rooms[0]?.allocatedRoomType || booking.roomNumber || undefined,
       });
-      
+
       if (checkInRecordId) {
         records = await getCheckInOutRecords(bookingId);
         checkInRecord = records[0];
@@ -2890,7 +2968,7 @@ export const checkOutGuest = async (
         depositReturned,
       };
       if (notes) updateData.notes = notes;
-      
+
       try {
         await updateCheckInOutRecord(checkInRecord.id, updateData);
       } catch (e) {
@@ -2914,17 +2992,17 @@ export const checkOutGuest = async (
     const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber;
     if (roomName && roomName !== 'Unknown') {
       const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
-      
+
       // Try to update room status
       try {
         const roomStatus = await getRoomStatus(roomName);
         if (roomStatus) {
           await updateRoomStatus(roomStatus.id, {
             status: 'cleaning',
-            currentBookingId: undefined,
-            currentCheckInDate: undefined,
+            currentBookingId: null as any,
+            currentCheckInDate: null as any,
             currentCheckOutDate: new Date(),
-            currentGuestName: undefined,
+            currentGuestName: null as any,
             housekeepingStatus: 'dirty',
           });
         }
@@ -2939,10 +3017,11 @@ export const checkOutGuest = async (
           roomName,
           suiteType: suiteType as SuiteType,
           taskType: 'checkout_cleaning',
-          priority: 'high',
+          priority: housekeepingOptions?.priority || 'high',
           status: 'pending',
           bookingId,
-          scheduledTime: new Date(),
+          assignedTo: housekeepingOptions?.assignedTo,
+          scheduledTime: housekeepingOptions?.scheduledTime || new Date(),
         });
       } catch (e) {
         console.error('Error creating housekeeping task:', e);

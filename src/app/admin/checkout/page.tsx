@@ -4,17 +4,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import RestrictedAction from '@/components/admin/RestrictedAction';
-import { 
-  getAllBookings, 
-  getBooking, 
-  generateCheckoutBill, 
+import {
+  getAllBookings,
+  getBooking,
+  generateCheckoutBill,
   getCheckoutBill,
   checkOutGuest,
   Booking,
-  CheckoutBill
+  CheckoutBill,
+  HousekeepingTask
 } from '@/lib/firestoreService';
-import { 
-  MagnifyingGlassIcon, 
+import {
+  MagnifyingGlassIcon,
   CreditCardIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -44,14 +45,12 @@ export default function AdminCheckoutPage() {
     staffName: '',
     depositReturned: false,
     notes: '',
+    housekeepingPriority: 'high' as HousekeepingTask['priority'],
+    housekeepingAssignee: '',
   });
 
   useEffect(() => {
     loadBookings();
-    const interval = setInterval(() => {
-      loadBookings();
-    }, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const loadBookings = async () => {
@@ -112,7 +111,7 @@ export default function AdminCheckoutPage() {
 
   const handleCheckOut = async () => {
     if (!selectedBooking || isReadOnly) return;
-    
+
     if (!checkOutForm.staffName) {
       showToast('Please enter staff name', 'warning');
       return;
@@ -129,7 +128,12 @@ export default function AdminCheckoutPage() {
         selectedBooking.id,
         checkOutForm.staffName,
         checkOutForm.depositReturned,
-        checkOutForm.notes || undefined
+        checkOutForm.notes || undefined,
+        {
+          priority: checkOutForm.housekeepingPriority,
+          assignedTo: checkOutForm.housekeepingAssignee || undefined,
+          scheduledTime: new Date(), // Defaults to now
+        }
       );
 
       if (success) {
@@ -139,6 +143,8 @@ export default function AdminCheckoutPage() {
           staffName: '',
           depositReturned: false,
           notes: '',
+          housekeepingPriority: 'high',
+          housekeepingAssignee: '',
         });
         setSelectedBooking(null);
         await loadBookings();
@@ -171,16 +177,25 @@ export default function AdminCheckoutPage() {
 
   const displayedBookings = useMemo(() => {
     const bookingsToShow = viewMode === 'ready' ? checkoutReady : checkedOut;
-    
+
     if (!searchQuery.trim()) return bookingsToShow;
-    
+
     const query = searchQuery.toLowerCase();
-    return bookingsToShow.filter(booking => 
-      booking.bookingId.toLowerCase().includes(query) ||
-      `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`.toLowerCase().includes(query) ||
-      booking.guestDetails.email.toLowerCase().includes(query) ||
-      (booking.rooms[0]?.allocatedRoomType && booking.rooms[0].allocatedRoomType.toLowerCase().includes(query))
-    );
+    return bookingsToShow.filter(booking => {
+      const bookingId = booking.bookingId?.toLowerCase() || ''; // Changed from booking.id to booking.bookingId
+      const guestName = `${booking.guestDetails?.firstName || ''} ${booking.guestDetails?.lastName || ''}`.toLowerCase(); // Adapted to existing guestDetails structure
+      const guestEmail = booking.guestDetails?.email?.toLowerCase() || ''; // Adapted to existing guestDetails structure
+      const roomName = booking.rooms?.[0]?.allocatedRoomType?.toLowerCase() || '';
+      const invoiceId = booking.checkoutBillId?.toLowerCase() || '';
+
+      return (
+        bookingId.includes(query) ||
+        guestName.includes(query) ||
+        guestEmail.includes(query) ||
+        roomName.includes(query) ||
+        invoiceId.includes(query)
+      );
+    });
   }, [viewMode, checkoutReady, checkedOut, searchQuery]);
 
   const stats = useMemo(() => {
@@ -199,10 +214,10 @@ export default function AdminCheckoutPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
@@ -213,7 +228,20 @@ export default function AdminCheckoutPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Checkout</h1>
           <p className="text-sm text-gray-500 mt-1">Process checkout and manage final bills • {currentDate}</p>
         </div>
-        
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={loadBookings}
+            disabled={loading}
+            className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
+            title="Refresh Data"
+          >
+            <svg className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -240,11 +268,10 @@ export default function AdminCheckoutPage() {
       <div className="flex items-center gap-1 border-b-2 border-gray-200 pb-2">
         <button
           onClick={() => setViewMode('ready')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            viewMode === 'ready'
-              ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${viewMode === 'ready'
+            ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+            : 'text-gray-600 hover:text-gray-900'
+            }`}
         >
           <div className="flex items-center gap-2">
             <ClockIcon className="h-4 w-4" />
@@ -253,11 +280,10 @@ export default function AdminCheckoutPage() {
         </button>
         <button
           onClick={() => setViewMode('completed')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            viewMode === 'completed'
-              ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${viewMode === 'completed'
+            ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
+            : 'text-gray-600 hover:text-gray-900'
+            }`}
         >
           <div className="flex items-center gap-2">
             <CheckCircleIcon className="h-4 w-4" />
@@ -271,7 +297,7 @@ export default function AdminCheckoutPage() {
         <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search by booking ID, guest name, email, or room..."
+          placeholder="Search by booking ID, guest name, email, room, or invoice ID..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
@@ -308,7 +334,7 @@ export default function AdminCheckoutPage() {
                 {displayedBookings.map((booking) => {
                   const isCheckedOut = booking.status === 'checked_out';
                   const hasBill = !!booking.checkoutBillId;
-                  
+
                   return (
                     <tr key={booking.id} className={`hover:bg-gray-50 transition-colors ${isCheckedOut ? 'bg-green-50/30' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -493,7 +519,7 @@ export default function AdminCheckoutPage() {
 
               <div className="border-t border-gray-200 pt-4">
                 <h4 className="font-semibold text-gray-900 mb-4 text-base">Charges Breakdown</h4>
-                
+
                 <div className="mb-4 border-b border-gray-100 pb-3">
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm font-semibold text-gray-700">Room Charges</span>
@@ -583,13 +609,12 @@ export default function AdminCheckoutPage() {
                     </span>
                   </div>
                   <div className="mt-3">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-                      checkoutBill.paymentStatus === 'paid'
-                        ? 'bg-green-100 text-green-800 border border-green-200'
-                        : checkoutBill.paymentStatus === 'partial'
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${checkoutBill.paymentStatus === 'paid'
+                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      : checkoutBill.paymentStatus === 'partial'
                         ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
                         : 'bg-red-100 text-red-800 border border-red-200'
-                    }`}>
+                      }`}>
                       Payment Status: {checkoutBill.paymentStatus.toUpperCase()}
                     </span>
                   </div>
@@ -655,6 +680,36 @@ export default function AdminCheckoutPage() {
                   placeholder="Optional notes..."
                 />
               </div>
+
+              {/* Housekeeping Options */}
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-4">Housekeeping Task</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select
+                      value={checkOutForm.housekeepingPriority}
+                      onChange={(e) => setCheckOutForm({ ...checkOutForm, housekeepingPriority: e.target.value as HousekeepingTask['priority'] })}
+                      className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Assign To (Optional)</label>
+                    <input
+                      type="text"
+                      value={checkOutForm.housekeepingAssignee}
+                      onChange={(e) => setCheckOutForm({ ...checkOutForm, housekeepingAssignee: e.target.value })}
+                      className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+                      placeholder="Staff name"
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
@@ -663,6 +718,8 @@ export default function AdminCheckoutPage() {
                       staffName: '',
                       depositReturned: false,
                       notes: '',
+                      housekeepingPriority: 'high',
+                      housekeepingAssignee: '',
                     });
                   }}
                   className="flex-1 px-4 py-2 border-b-2 border-gray-200 text-gray-700 hover:border-gray-300 transition-colors"

@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation';
 import BackButton from '@/components/admin/BackButton';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
-import { 
-  getRoomStatus, 
-  updateRoomStatus, 
+import {
+  getRoomStatus,
+  updateRoomStatus,
   getHousekeepingTasks,
   getCheckInOutRecords,
+  markRoomForMaintenance,
+  completeRoomMaintenance,
   RoomStatus,
   HousekeepingTask,
   CheckInOutRecord
@@ -25,8 +27,9 @@ export default function RoomDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState({
-    reason: '',
+    startDate: '',
     endDate: '',
+    reason: '',
     notes: '',
   });
 
@@ -43,7 +46,7 @@ export default function RoomDetailsPage() {
         getHousekeepingTasks(),
         getCheckInOutRecords(),
       ]);
-      
+
       setRoomStatus(status);
       // Filter tasks for this room
       setTasks(allTasks.filter(t => t.roomName === roomName));
@@ -58,18 +61,28 @@ export default function RoomDetailsPage() {
 
   const handleMarkMaintenance = async () => {
     if (!roomStatus || isReadOnly) return;
-    
+
+    if (!maintenanceForm.reason || !maintenanceForm.startDate || !maintenanceForm.endDate) {
+      showToast('Please fill in all required fields', 'warning');
+      return;
+    }
+
     try {
-      await updateRoomStatus(roomStatus.id, {
-        status: 'maintenance',
-        maintenanceStartDate: new Date(),
-        maintenanceReason: maintenanceForm.reason,
-        maintenanceNotes: maintenanceForm.notes,
-      });
-      setShowMaintenanceModal(false);
-      setMaintenanceForm({ reason: '', endDate: '', notes: '' });
-      await loadData();
-      showToast('Room marked for maintenance', 'success');
+      const success = await markRoomForMaintenance(
+        roomName,
+        new Date(maintenanceForm.startDate),
+        new Date(maintenanceForm.endDate),
+        maintenanceForm.reason + (maintenanceForm.notes ? ` - ${maintenanceForm.notes}` : '')
+      );
+
+      if (success) {
+        setShowMaintenanceModal(false);
+        setMaintenanceForm({ startDate: '', endDate: '', reason: '', notes: '' });
+        await loadData();
+        showToast('Room marked for maintenance', 'success');
+      } else {
+        showToast('Failed to mark room for maintenance', 'error');
+      }
     } catch (error) {
       console.error('Error updating room status:', error);
       showToast('Failed to update room status', 'error');
@@ -78,17 +91,16 @@ export default function RoomDetailsPage() {
 
   const handleMarkAvailable = async () => {
     if (!roomStatus || isReadOnly) return;
-    
+
     try {
-      await updateRoomStatus(roomStatus.id, {
-        status: 'available',
-        housekeepingStatus: 'clean',
-        maintenanceStartDate: undefined,
-        maintenanceEndDate: new Date(),
-        maintenanceReason: undefined,
-      });
-      await loadData();
-      showToast('Room marked as available', 'success');
+      const success = await completeRoomMaintenance(roomName);
+
+      if (success) {
+        await loadData();
+        showToast('Room marked as available', 'success');
+      } else {
+        showToast('Failed to mark room as available', 'error');
+      }
     } catch (error) {
       console.error('Error updating room status:', error);
       showToast('Failed to update room status', 'error');
@@ -134,7 +146,7 @@ export default function RoomDetailsPage() {
   return (
     <div className="space-y-6">
       <BackButton href="/admin/room-status" label="Back to Room Status" />
-      
+
       <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded p-6 border border-[#be8c53]/20 shadow-lg">
         <div className="flex justify-between items-start">
           <div>
@@ -318,24 +330,42 @@ export default function RoomDetailsPage() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">Mark Room for Maintenance</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reason *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
                 <input
-                  type="text"
+                  type="date"
                   required
-                  value={maintenanceForm.reason}
-                  onChange={(e) => setMaintenanceForm({ ...maintenanceForm, reason: e.target.value })}
+                  value={maintenanceForm.startDate}
+                  onChange={(e) => setMaintenanceForm({ ...maintenanceForm, startDate: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                  placeholder="e.g., AC repair, plumbing issue"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Expected End Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
                 <input
                   type="date"
+                  required
                   value={maintenanceForm.endDate}
                   onChange={(e) => setMaintenanceForm({ ...maintenanceForm, endDate: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reason *</label>
+                <select
+                  required
+                  value={maintenanceForm.reason}
+                  onChange={(e) => setMaintenanceForm({ ...maintenanceForm, reason: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                >
+                  <option value="">Select reason...</option>
+                  <option value="AC Repair">AC Repair</option>
+                  <option value="Plumbing Issue">Plumbing Issue</option>
+                  <option value="Electrical Work">Electrical Work</option>
+                  <option value="Furniture Repair">Furniture Repair</option>
+                  <option value="Deep Cleaning">Deep Cleaning</option>
+                  <option value="Renovation">Renovation</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
@@ -357,7 +387,7 @@ export default function RoomDetailsPage() {
               </button>
               <button
                 onClick={handleMarkMaintenance}
-                disabled={!maintenanceForm.reason}
+                disabled={!maintenanceForm.reason || !maintenanceForm.startDate || !maintenanceForm.endDate}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 Mark Maintenance

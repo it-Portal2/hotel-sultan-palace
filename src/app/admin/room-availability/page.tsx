@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { getAllBookings, getRoomTypes, createBooking, getRooms, getRoomStatuses, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
+import { getAllBookings, getRoomTypes, createBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
-import { 
-  CalendarDaysIcon, 
-  ChevronLeftIcon, 
+import {
+  CalendarDaysIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
 
@@ -63,6 +63,10 @@ interface BookingBar {
   suiteType: SuiteType;
 }
 
+const toLocalISOString = (date: Date) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
 export default function RoomAvailabilityPage() {
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -72,7 +76,7 @@ export default function RoomAvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysToShow] = useState(20);
-  
+
   // Calculate suite prices from Rooms collection
   const suitePriceMap = useMemo(() => {
     const map: Record<SuiteType, number> = {
@@ -80,7 +84,7 @@ export default function RoomAvailabilityPage() {
       'Imperial Suite': 370,
       'Ocean Suite': 310
     };
-    
+
     // Update prices from Rooms collection
     rooms.forEach(room => {
       if (room.type.toLowerCase().includes('garden')) {
@@ -91,7 +95,7 @@ export default function RoomAvailabilityPage() {
         map['Ocean Suite'] = room.price;
       }
     });
-    
+
     return map;
   }, [rooms]);
   const [selectedSuite, setSelectedSuite] = useState<SuiteType | 'all'>('all');
@@ -103,9 +107,9 @@ export default function RoomAvailabilityPage() {
   const [hoveredDateIndex, setHoveredDateIndex] = useState<number | null>(null);
   const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
   const [showCellPopup, setShowCellPopup] = useState(false);
-  const [selectedCell, setSelectedCell] = useState<{date: Date; suiteType: SuiteType; roomName: string} | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{ date: Date; suiteType: SuiteType; roomName: string } | null>(null);
   const [showMaintenanceBlock, setShowMaintenanceBlock] = useState(false);
-  const [blockedRooms, setBlockedRooms] = useState<Record<string, {startDate: string; endDate: string; reason: string}[]>>({});
+  const [blockedRooms, setBlockedRooms] = useState<Record<string, { startDate: string; endDate: string; reason: string }[]>>({});
   const [assignRoomForm, setAssignRoomForm] = useState({
     startDate: '',
     endDate: '',
@@ -124,6 +128,7 @@ export default function RoomAvailabilityPage() {
     isWalkIn: false,
     reason: ''
   });
+  const [calendarOffset, setCalendarOffset] = useState(0);
   const [maintenanceBlockForm, setMaintenanceBlockForm] = useState({
     startDate: '',
     endDate: '',
@@ -136,6 +141,51 @@ export default function RoomAvailabilityPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleMarkMaintenance = async () => {
+    if (!selectedCell) return;
+
+    try {
+      const success = await markRoomForMaintenance(
+        selectedCell.roomName,
+        selectedCell.date,
+        new Date(selectedCell.date.getTime() + 24 * 60 * 60 * 1000), // Default to 1 day
+        'Scheduled maintenance'
+      );
+
+      if (success) {
+        showToast('Room marked for maintenance', 'success');
+        setShowCellPopup(false);
+        setSelectedCell(null);
+        await loadData();
+      } else {
+        showToast('Failed to mark room for maintenance', 'error');
+      }
+    } catch (error) {
+      console.error('Error marking room for maintenance:', error);
+      showToast('Failed to mark room for maintenance', 'error');
+    }
+  };
+
+  const handleEndMaintenance = async () => {
+    if (!selectedCell) return;
+
+    try {
+      const success = await completeRoomMaintenance(selectedCell.roomName);
+
+      if (success) {
+        showToast('Maintenance completed', 'success');
+        setShowCellPopup(false);
+        setSelectedCell(null);
+        await loadData();
+      } else {
+        showToast('Failed to complete maintenance', 'error');
+      }
+    } catch (error) {
+      console.error('Error completing maintenance:', error);
+      showToast('Failed to complete maintenance', 'error');
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -209,14 +259,14 @@ export default function RoomAvailabilityPage() {
   // Create price map from Rooms collection (real prices)
   const roomPriceMap = useMemo(() => {
     const map: Record<string, number> = {};
-    
+
     // Assign suite prices to all rooms in that suite
     roomTypes.forEach(rt => {
       if (suitePriceMap[rt.suiteType]) {
         map[rt.roomName] = suitePriceMap[rt.suiteType];
       }
     });
-    
+
     // Fallback: get prices from bookings if not in rooms
     bookings.forEach(b => {
       b.rooms.forEach(r => {
@@ -238,12 +288,12 @@ export default function RoomAvailabilityPage() {
         availability[room.roomName] = {};
         dateRange.dates.forEach(date => {
           const dateStr = date.toISOString().split('T')[0];
-          const booking = bookingBars.find(bar => 
+          const booking = bookingBars.find(bar =>
             bar.roomName === room.roomName &&
             date >= bar.startDate &&
             date < bar.endDate
           );
-          
+
           // Check if room is blocked for this date
           const roomBlocks = blockedRooms[room.roomName] || [];
           const isBlocked = roomBlocks.some(block => {
@@ -251,18 +301,26 @@ export default function RoomAvailabilityPage() {
             const blockEnd = normalizeDate(block.endDate);
             return date >= blockStart && date < blockEnd;
           });
-          
+
+          // Check if room is in maintenance
+          const roomStatus = roomStatuses.find(rs => rs.roomName === room.roomName);
+          const isInMaintenance = roomStatus?.status === 'maintenance' &&
+            roomStatus.maintenanceStartDate &&
+            roomStatus.maintenanceEndDate &&
+            date >= normalizeDate(roomStatus.maintenanceStartDate) &&
+            date < normalizeDate(roomStatus.maintenanceEndDate);
+
           availability[room.roomName][dateStr] = {
-            available: !booking && !isBlocked,
+            available: !booking && !isBlocked && !isInMaintenance,
             booking: booking?.booking,
-            blocked: isBlocked
+            blocked: isBlocked || isInMaintenance
           };
         });
       });
     });
 
     return availability;
-  }, [roomsBySuite, dateRange.dates, bookingBars, blockedRooms]);
+  }, [roomsBySuite, dateRange.dates, bookingBars, blockedRooms, roomStatuses]);
 
   // Get room status by room name
   const getRoomStatus = (roomName: string): RoomStatus | undefined => {
@@ -271,29 +329,16 @@ export default function RoomAvailabilityPage() {
 
   // Calculate summary stats
   const summaryStats = useMemo(() => {
-    const totalRooms = roomTypes.length;
+    // Calculate strict total rooms from the database, not just fallback
+    const totalRoomsCount = roomTypes.length || 15;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     let vacant = 0;
     let occupied = 0;
     let reserved = 0;
     let blocked = 0;
-    let dirty = 0;
-
-    // Count dirty rooms from room statuses
-    dirty = roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty' || rs.housekeepingStatus === 'needs_attention').length;
-    
-    // Count blocked rooms
-    blocked = Object.keys(blockedRooms).reduce((count, roomName) => {
-      const blocks = blockedRooms[roomName] || [];
-      const hasActiveBlock = blocks.some(block => {
-        const blockStart = normalizeDate(block.startDate);
-        const blockEnd = normalizeDate(block.endDate);
-        return today >= blockStart && today < blockEnd;
-      });
-      return hasActiveBlock ? count + 1 : count;
-    }, 0);
+    const dirty = roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty').length;
 
     dateRange.dates.forEach(date => {
       if (date.toDateString() === today.toDateString()) {
@@ -301,13 +346,18 @@ export default function RoomAvailabilityPage() {
           roomsBySuite[suiteType].forEach(room => {
             const dateStr = date.toISOString().split('T')[0];
             const avail = roomAvailability[room.roomName]?.[dateStr];
+
+            // Strict check: Room is occupied ONLY if there is a confirmed/checked_in booking
             if (avail?.booking) {
-              if (avail.booking.status === 'checked_in') {
+              const status = avail.booking.status;
+              if (status === 'checked_in' || status === 'confirmed') {
                 occupied++;
               } else {
                 reserved++;
               }
-            } else if (!avail?.blocked) {
+            } else if (avail?.blocked) {
+              blocked++; // Don't count blocked as occupied for percentage
+            } else {
               vacant++;
             }
           });
@@ -315,13 +365,13 @@ export default function RoomAvailabilityPage() {
       }
     });
 
-    return { totalRooms: totalRooms || 15, vacant, occupied, reserved, blocked, dirty };
+    return { totalRooms: totalRoomsCount, vacant, occupied, reserved, blocked, dirty };
   }, [roomTypes.length, dateRange.dates, roomsBySuite, roomAvailability, roomStatuses, blockedRooms]);
 
   // Filter rooms based on search and suite selection
   const filteredRooms = useMemo(() => {
     let filtered: RoomType[] = [];
-    
+
     const suitesToShow = selectedSuite === 'all' ? SUITE_TYPES : [selectedSuite];
     suitesToShow.forEach(suite => {
       filtered.push(...roomsBySuite[suite]);
@@ -329,14 +379,23 @@ export default function RoomAvailabilityPage() {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(room => 
-        room.roomName.toLowerCase().includes(query) ||
-        room.suiteType.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(room => {
+        // Match room name or suite type
+        if (room.roomName.toLowerCase().includes(query) || room.suiteType.toLowerCase().includes(query)) {
+          return true;
+        }
+
+        // Match guest name in active bookings for this room
+        return bookings.some(b =>
+          (b.status === 'confirmed' || b.status === 'checked_in') &&
+          b.rooms.some(r => (r.allocatedRoomType === room.roomName || r.type === room.roomName)) &&
+          (b.guestDetails.firstName.toLowerCase().includes(query) || b.guestDetails.lastName.toLowerCase().includes(query))
+        );
+      });
     }
 
     return filtered;
-  }, [roomsBySuite, selectedSuite, searchQuery]);
+  }, [roomsBySuite, selectedSuite, searchQuery, bookings]);
 
   // Navigate dates
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -470,11 +529,11 @@ export default function RoomAvailabilityPage() {
   // Get available rooms for a date range
   const getAvailableRooms = (startDate: string, endDate: string, suiteType: SuiteType) => {
     if (!startDate || !endDate) return [];
-    
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     const dates = getDatesInRange(start, end);
-    
+
     return roomsBySuite[suiteType].filter(room => {
       return dates.every(date => {
         const dateStr = date.toISOString().split('T')[0];
@@ -516,7 +575,7 @@ export default function RoomAvailabilityPage() {
           <span className="text-gray-600">Blocked:</span>
           <span className="font-semibold text-red-600">{summaryStats.blocked}</span>
         </div>
-       
+
         <div className="flex items-center gap-2">
           <span className="text-gray-600">Dirty:</span>
           <span className="font-semibold text-gray-600">{summaryStats.dirty}</span>
@@ -557,7 +616,7 @@ export default function RoomAvailabilityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => {
               // Show calendar view of walk-in bookings
               setAssignRoomView('calendar');
@@ -603,9 +662,8 @@ export default function RoomAvailabilityPage() {
                   return (
                     <div
                       key={idx}
-                      className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${
-                        isWeekend ? 'bg-yellow-50' : 'bg-white'
-                      } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHovered ? 'bg-red-50 ring-1 ring-red-300 shadow-inner' : ''}`}
+                      className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50' : 'bg-white'
+                        } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHovered ? 'bg-red-50 ring-1 ring-red-300 shadow-inner' : ''}`}
                     >
                       <div className={`text-[10px] font-semibold leading-tight ${isHovered ? 'text-red-700' : 'text-gray-600'}`}>
                         {date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -653,9 +711,8 @@ export default function RoomAvailabilityPage() {
                           return (
                             <div
                               key={dateIdx}
-                              className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${
-                                isWeekend ? 'bg-yellow-50' : 'bg-white'
-                              } ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}
+                              className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50' : 'bg-white'
+                                } ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}
                             >
                               <div className={`text-xs font-semibold border border-red-300 px-0.5 py-0 inline-block mb-0.5 leading-tight ${isHovered ? 'text-red-700 bg-red-50' : 'text-red-600'}`}>
                                 {availableCount}
@@ -674,25 +731,24 @@ export default function RoomAvailabilityPage() {
                   {suiteRooms.map((room) => {
                     const roomBars = bookingBars.filter(bar => bar.roomName === room.roomName);
                     const isHoveredRoom = hoveredRoomId === room.roomName;
-                    
+
                     return (
                       <div key={room.id} className="border-b border-gray-200">
                         <div className="flex relative" style={{ minHeight: '32px' }}>
                           {/* Room Name Column */}
-                          <div className={`w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1 bg-white flex items-center gap-2 transition-colors ${
-                            isHoveredRoom ? 'bg-red-50' : ''
-                          }`}>
+                          <div className={`w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1 bg-white flex items-center gap-2 transition-colors ${isHoveredRoom ? 'bg-red-50' : ''
+                            }`}>
                             <div className={`font-medium text-xs leading-tight ${isHoveredRoom ? 'text-red-700 font-semibold' : 'text-gray-900'}`}>{room.roomName}</div>
                             <div className="flex items-center gap-2 ml-auto pr-2">
                               {(() => {
                                 const roomStatus = getRoomStatus(room.roomName);
                                 const housekeepingStatus = roomStatus?.housekeepingStatus || 'clean';
                                 const isClean = housekeepingStatus === 'clean' || housekeepingStatus === 'inspected';
-                                const statusText = housekeepingStatus === 'clean' ? 'Clean' : 
-                                                  housekeepingStatus === 'dirty' ? 'Dirty' : 
-                                                  housekeepingStatus === 'inspected' ? 'Inspected' : 
-                                                  'Needs Attention';
-                                
+                                const statusText = housekeepingStatus === 'clean' ? 'Clean' :
+                                  housekeepingStatus === 'dirty' ? 'Dirty' :
+                                    housekeepingStatus === 'inspected' ? 'Inspected' :
+                                      'Needs Attention';
+
                                 return (
                                   <>
                                     <div className="relative group">
@@ -723,9 +779,9 @@ export default function RoomAvailabilityPage() {
                               const avail = roomAvailability[room.roomName]?.[dateStr];
                               const isToday = date.toDateString() === new Date().toDateString();
                               const isHoveredDate = hoveredDateIndex === dateIdx;
-                              
+
                               // Find booking bar for this date
-                              const bookingBar = roomBars.find(bar => 
+                              const bookingBar = roomBars.find(bar =>
                                 date >= bar.startDate && date < bar.endDate
                               );
 
@@ -746,50 +802,74 @@ export default function RoomAvailabilityPage() {
                                     setHoveredDateIndex(null);
                                     setHoveredRoomId(null);
                                   }}
-                                  className={`flex-1 min-w-[80px] border-r border-gray-200 relative transition-colors ${
-                                    avail?.blocked ? 'bg-red-100' : 'bg-white hover:bg-blue-50'
-                                  } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHoveredDate ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
+                                  className={`flex-1 min-w-[80px] border-r border-gray-200 relative transition-colors ${avail?.blocked ? 'bg-red-100' : 'bg-white hover:bg-blue-50'
+                                    } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHoveredDate ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
                                   style={{ minHeight: '32px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default' }}
                                 >
-                                  {bookingBar && dateIdx === dateRange.dates.findIndex(d => 
+                                  {bookingBar && dateIdx === dateRange.dates.findIndex(d =>
                                     d.toDateString() === bookingBar.startDate.toDateString()
                                   ) && (
-                                    <div
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleBookingClick(bookingBar.booking);
-                                      }}
-                                      onMouseEnter={() => {
-                                        setHoveredDateIndex(dateIdx);
-                                        setHoveredRoomId(room.roomName);
-                                      }}
-                                      onMouseLeave={() => {
-                                        setHoveredDateIndex(null);
-                                        setHoveredRoomId(null);
-                                      }}
-                                      className="absolute top-0 left-0.5 right-0.5 bg-green-500 text-white text-[10px] py-1.5 px-1 z-10 cursor-pointer hover:bg-green-600 transition-colors leading-tight"
-                                      style={{
-                                        width: `calc(${Math.max(1, Math.ceil((bookingBar.endDate.getTime() - bookingBar.startDate.getTime()) / (1000 * 60 * 60 * 24)))} * 80px - 4px)`,
-                                        minWidth: '60px',
-                                        minHeight: '32px'
-                                      }}
-                                      title={`Click to view details: ${bookingBar.booking.guestDetails?.firstName} ${bookingBar.booking.guestDetails?.lastName}`}
-                                    >
-                                      <div className="font-semibold truncate leading-tight">
-                                        {bookingBar.booking.guestDetails?.firstName} {bookingBar.booking.guestDetails?.lastName}
-                                      </div>
-                                      {bookingBar.booking.paymentStatus === 'paid' && (
-                                        <div className="text-[8px] mt-0.5 flex items-center gap-0.5">
-                                          <span className="bg-red-500 text-white px-0.5 leading-tight">S</span>
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleBookingClick(bookingBar.booking);
+                                        }}
+                                        onMouseEnter={() => {
+                                          setHoveredDateIndex(dateIdx);
+                                          setHoveredRoomId(room.roomName);
+                                        }}
+                                        onMouseLeave={() => {
+                                          setHoveredDateIndex(null);
+                                          setHoveredRoomId(null);
+                                        }}
+                                        className="absolute top-0 left-0.5 right-0.5 bg-green-500 text-white text-[10px] py-1.5 px-1 z-10 cursor-pointer hover:bg-green-600 transition-colors leading-tight"
+                                        style={{
+                                          width: `calc(${Math.max(1, Math.ceil((bookingBar.endDate.getTime() - bookingBar.startDate.getTime()) / (1000 * 60 * 60 * 24)))} * 80px - 4px)`,
+                                          minWidth: '60px',
+                                          minHeight: '32px'
+                                        }}
+                                        title={`Click to view details: ${bookingBar.booking.guestDetails?.firstName} ${bookingBar.booking.guestDetails?.lastName}`}
+                                      >
+                                        <div className="font-semibold truncate leading-tight">
+                                          {bookingBar.booking.guestDetails?.firstName} {bookingBar.booking.guestDetails?.lastName}
                                         </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {!bookingBar && avail?.blocked && (
-                                    <div className="absolute inset-1 bg-red-200/70 border border-red-300 rounded text-[10px] text-red-800 flex items-center justify-center font-semibold pointer-events-none">
-                                      Blocked
-                                    </div>
-                                  )}
+                                        {bookingBar.booking.paymentStatus === 'paid' && (
+                                          <div className="text-[8px] mt-0.5 flex items-center gap-0.5">
+                                            <span className="bg-red-500 text-white px-0.5 leading-tight">S</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  {!bookingBar && avail?.blocked && (() => {
+                                    const roomStatus = getRoomStatus(room.roomName);
+                                    const isInMaintenance = roomStatus?.status === 'maintenance';
+
+                                    return (
+                                      <div className="absolute inset-1 bg-red-200/70 border border-red-300 rounded text-[10px] text-red-800 flex items-center justify-center font-semibold group">
+                                        <span className="group-hover:hidden">Blocked</span>
+                                        {isInMaintenance && (
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              const success = await completeRoomMaintenance(room.roomName);
+                                              if (success) {
+                                                showToast('Maintenance completed', 'success');
+                                                await loadData();
+                                              } else {
+                                                showToast('Failed to complete maintenance', 'error');
+                                              }
+                                            }}
+                                            className="hidden group-hover:flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                          >
+                                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            End Maintenance
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               );
                             })}
@@ -802,67 +882,69 @@ export default function RoomAvailabilityPage() {
               );
             })}
           </div>
-        {/* Bottom Summary (aligned with grid and scroll) */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200">
-          <div className="flex">
-            <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
-              <div className="text-[10px] font-semibold text-gray-600 leading-tight">Room Availability</div>
+          {/* Bottom Summary (aligned with grid and scroll) */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200">
+            <div className="flex">
+              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
+                <div className="text-[10px] font-semibold text-gray-600 leading-tight">Room Availability</div>
+              </div>
+              <div className="flex-1 flex">
+                {dateRange.dates.map((date, idx) => {
+                  const dateStr = date.toISOString().split('T')[0];
+                  let totalAvailable = 0;
+                  filteredRooms.forEach(room => {
+                    const avail = roomAvailability[room.roomName]?.[dateStr];
+                    if (avail?.available) totalAvailable++;
+                  });
+                  const isHovered = hoveredDateIndex === idx;
+                  return (
+                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
+                      <div className="text-xs font-semibold text-gray-900 leading-tight">{totalAvailable}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex-1 flex">
-              {dateRange.dates.map((date, idx) => {
-                const dateStr = date.toISOString().split('T')[0];
-                let totalAvailable = 0;
-                filteredRooms.forEach(room => {
-                  const avail = roomAvailability[room.roomName]?.[dateStr];
-                  if (avail?.available) totalAvailable++;
-                });
-                const isHovered = hoveredDateIndex === idx;
-                return (
-                  <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
-                    <div className="text-xs font-semibold text-gray-900 leading-tight">{totalAvailable}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex">
-            <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
-              <div className="text-[10px] font-semibold text-gray-600 leading-tight">Occupancy(%)</div>
-            </div>
-            <div className="flex-1 flex">
-              {dateRange.dates.map((date, idx) => {
-                const dateStr = date.toISOString().split('T')[0];
-                let totalAvailable = 0;
-                const totalRooms = filteredRooms.length;
-                filteredRooms.forEach(room => {
-                  const avail = roomAvailability[room.roomName]?.[dateStr];
-                  if (avail?.available) totalAvailable++;
-                });
-                const occupancy = totalRooms > 0 ? Math.round(((totalRooms - totalAvailable) / totalRooms) * 100) : 0;
-                const isHovered = hoveredDateIndex === idx;
-                return (
-                  <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
-                    <div className="text-xs font-semibold text-gray-900 leading-tight">{occupancy}%</div>
-                  </div>
-                );
-              })}
+            <div className="flex">
+              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
+                <div className="text-[10px] font-semibold text-gray-600 leading-tight">Occupancy(%)</div>
+              </div>
+              <div className="flex-1 flex">
+                {dateRange.dates.map((date, idx) => {
+                  const dateStr = date.toISOString().split('T')[0];
+                  let totalAvailable = 0;
+                  const totalRooms = filteredRooms.length;
+                  filteredRooms.forEach(room => {
+                    const avail = roomAvailability[room.roomName]?.[dateStr];
+                    if (avail?.available) totalAvailable++;
+                  });
+                  const occupancy = totalRooms > 0 ? Math.round(((totalRooms - totalAvailable) / totalRooms) * 100) : 0;
+                  // Fix: ensure correct percentage even if totalRooms is small (3 bookings / 15 rooms = 20%)
+                  const realOccupancy = Math.min(100, Math.max(0, occupancy));
+                  const isHovered = hoveredDateIndex === idx;
+                  return (
+                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
+                      <div className="text-xs font-semibold text-gray-900 leading-tight">{occupancy}%</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       {/* Right Side Booking Details Panel - Slide In */}
       {showBookingPanel && selectedBooking && (
         <>
-          <div 
+          <div
             className="fixed inset-0 z-40 bg-black/50"
             onClick={() => {
               setShowBookingPanel(false);
               setSelectedBooking(null);
             }}
           />
-          <div 
+          <div
             className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-xl bg-white shadow-2xl transform transition-transform duration-300 ease-in-out"
             onClick={(e) => e.stopPropagation()}
           >
@@ -895,11 +977,10 @@ export default function RoomAvailabilityPage() {
                           <p className="text-xs text-gray-500">Booking ID</p>
                           <p className="font-semibold text-gray-900">{selectedBooking.bookingId}</p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          selectedBooking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selectedBooking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                           selectedBooking.status === 'checked_in' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {selectedBooking.status.toUpperCase()}
                         </span>
                       </div>
@@ -934,8 +1015,8 @@ export default function RoomAvailabilityPage() {
                             const payment = selectedBooking.paymentStatus || 'pending';
                             const tone =
                               payment === 'paid' ? 'bg-green-100 text-green-800' :
-                              payment === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800';
+                                payment === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800';
                             return (
                               <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${tone}`}>
                                 {payment.toUpperCase()}
@@ -1069,7 +1150,7 @@ export default function RoomAvailabilityPage() {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
@@ -1116,29 +1197,46 @@ export default function RoomAvailabilityPage() {
                   <UserIcon className="h-5 w-5" />
                   Walk In / Reservation
                 </button>
-                
+
                 <button
                   onClick={() => {
                     const startStr = selectedCell.date.toISOString().split('T')[0];
                     const endDate = new Date(selectedCell.date);
                     endDate.setDate(endDate.getDate() + 1);
                     const endStr = endDate.toISOString().split('T')[0];
-                    setMaintenanceBlockForm(prev => ({
-                      ...prev,
+                    setMaintenanceBlockForm({
                       startDate: startStr,
                       endDate: endStr,
                       suiteType: selectedCell.suiteType,
-                      roomName: selectedCell.roomName
-                    }));
+                      roomName: selectedCell.roomName,
+                      reason: '',
+                      customReason: ''
+                    });
                     setShowCellPopup(false);
                     setSelectedCell(null);
                     setShowMaintenanceBlock(true);
                   }}
                   className="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  <XCircleIcon className="h-5 w-5" />
-                  Maintenance Block
+                  <FaBed className="h-5 w-5" />
+                  Mark for Maintenance
                 </button>
+
+                {(() => {
+                  const roomStatus = getRoomStatus(selectedCell.roomName);
+                  if (roomStatus?.status === 'maintenance') {
+                    return (
+                      <button
+                        onClick={handleEndMaintenance}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <FaUserCheck className="h-5 w-5" />
+                        End Maintenance
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </div>
@@ -1288,39 +1386,41 @@ export default function RoomAvailabilityPage() {
                 </button>
                 <button
                   onClick={async () => {
-                    if (!maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.roomName || !maintenanceBlockForm.reason) {
-                      showToast('Please fill all required fields', 'warning');
+                    if (!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason) {
+                      showToast('Please fill in all required fields', 'warning');
                       return;
                     }
+
                     try {
-                      // Store blocked room info
-                      const roomKey = maintenanceBlockForm.roomName;
-                      const newBlock = {
-                        startDate: maintenanceBlockForm.startDate,
-                        endDate: maintenanceBlockForm.endDate,
-                        reason: maintenanceBlockForm.reason || maintenanceBlockForm.customReason
-                      };
-                      setBlockedRooms(prev => ({
-                        ...prev,
-                        [roomKey]: [...(prev[roomKey] || []), newBlock]
-                      }));
-                      showToast('Room blocked successfully', 'success');
-                      setShowMaintenanceBlock(false);
-                      setMaintenanceBlockForm({
-                        startDate: '',
-                        endDate: '',
-                        suiteType: 'Garden Suite',
-                        roomName: '',
-                        reason: '',
-                        customReason: ''
-                      });
-                      await loadData();
+                      const success = await markRoomForMaintenance(
+                        maintenanceBlockForm.roomName,
+                        new Date(maintenanceBlockForm.startDate),
+                        new Date(maintenanceBlockForm.endDate),
+                        maintenanceBlockForm.reason
+                      );
+
+                      if (success) {
+                        showToast('Room marked for maintenance', 'success');
+                        setShowMaintenanceBlock(false);
+                        setMaintenanceBlockForm({
+                          startDate: '',
+                          endDate: '',
+                          suiteType: 'Garden Suite',
+                          roomName: '',
+                          reason: '',
+                          customReason: ''
+                        });
+                        await loadData();
+                      } else {
+                        showToast('Failed to mark room for maintenance', 'error');
+                      }
                     } catch (error) {
-                      console.error('Error blocking room:', error);
-                      showToast('Failed to block room', 'error');
+                      console.error('Error marking room for maintenance:', error);
+                      showToast('Failed to mark room for maintenance', 'error');
                     }
                   }}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white hover:bg-red-700 transition-colors rounded-lg"
+                  disabled={!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Block Room
                 </button>
@@ -1332,317 +1432,306 @@ export default function RoomAvailabilityPage() {
 
       {/* Assign Room Modal */}
       {showAssignRoom && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className={`bg-white shadow-2xl w-full ${assignRoomView === 'calendar' ? 'max-w-6xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto`}>
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
-              <div className="flex items-center gap-3">
-                <h3 className="text-xl font-bold text-gray-900">Assign Rooms</h3>
-                {assignRoomView === 'calendar' && <CalendarDaysIcon className="h-5 w-5 text-gray-400" />}
-              </div>
-              <button
-                onClick={() => {
-                  setShowAssignRoom(false);
-                  setAssignRoomView('form');
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            {assignRoomView === 'calendar' ? (
-              // Calendar View - Show walk-in bookings
-              <div className="p-6">
-                {(() => {
-                  const walkInBookings = bookings.filter(b => b.bookingId?.startsWith('WALKIN-'));
-                  if (walkInBookings.length === 0) {
-                    return (
-                      <div className="text-center py-16">
-                        <div className="text-gray-400 mb-4">
-                          <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-500">No Data</p>
-                        <p className="text-sm text-gray-400 mt-2">No walk-in bookings found</p>
-                      </div>
-                    );
-                  }
-                  // Show calendar grid similar to main view but only for walk-in bookings
-                  return (
-                    <div className="text-sm text-gray-600">
-                      <p className="mb-4">Showing {walkInBookings.length} walk-in booking(s)</p>
-                      {/* You can add a simplified calendar view here showing only walk-in bookings */}
-                      <div className="space-y-2">
-                        {walkInBookings.map(booking => (
-                          <div key={booking.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-semibold text-gray-900">{booking.guestDetails.firstName} {booking.guestDetails.lastName}</p>
-                                <p className="text-sm text-gray-600">{booking.rooms[0]?.allocatedRoomType || booking.rooms[0]?.type}</p>
-                                <p className="text-xs text-gray-500">
-                                  {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <span className={`px-2 py-1 text-xs rounded ${
-                                booking.status === 'checked_in' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {booking.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            ) : (
-              // Form View
-              <div className="p-6 space-y-4">
-              {/* Date Range */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Arrival Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={assignRoomForm.startDate}
-                    onChange={(e) => {
-                      setAssignRoomForm({ ...assignRoomForm, startDate: e.target.value });
-                      if (!assignRoomForm.endDate || e.target.value > assignRoomForm.endDate) {
-                        const endDate = new Date(e.target.value);
-                        endDate.setDate(endDate.getDate() + 1);
-                        setAssignRoomForm({ ...assignRoomForm, startDate: e.target.value, endDate: endDate.toISOString().split('T')[0] });
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                  />
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowAssignRoom(false)}
+          />
+          <div className={`fixed right-0 top-0 bottom-0 z-50 w-full ${assignRoomView === 'calendar' ? 'max-w-md' : 'max-w-md'} bg-white shadow-2xl transform transition-transform duration-300 ease-in-out font-sans flex flex-col`}>
+            {/* Header */}
+            <div className="flex-none bg-white border-b border-gray-200">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold text-gray-900">Assign Rooms</h3>
+                  <button onClick={() => setAssignRoomView('calendar')} className={`p-1 rounded hover:bg-gray-100 ${assignRoomView === 'calendar' ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <CalendarDaysIcon className="h-4 w-4" />
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Departure Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={assignRoomForm.endDate}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, endDate: e.target.value })}
-                    min={assignRoomForm.startDate}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Room Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Room Type *</label>
-                <select
-                  value={assignRoomForm.suiteType}
-                  onChange={(e) => {
-                    setAssignRoomForm({ ...assignRoomForm, suiteType: e.target.value as SuiteType, roomName: '' });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                >
-                  {SUITE_TYPES.map(suite => (
-                    <option key={suite} value={suite}>{suite}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Room Selection */}
-              {assignRoomForm.startDate && assignRoomForm.endDate && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Room *</label>
-                  <select
-                    value={assignRoomForm.roomName}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, roomName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                  >
-                    <option value="">Select Room</option>
-                    {getAvailableRooms(assignRoomForm.startDate, assignRoomForm.endDate, assignRoomForm.suiteType).map(room => (
-                      <option key={room.id} value={room.roomName}>{room.roomName}</option>
-                    ))}
-                  </select>
-                  {getAvailableRooms(assignRoomForm.startDate, assignRoomForm.endDate, assignRoomForm.suiteType).length === 0 && (
-                    <p className="text-xs text-red-600 mt-1">No rooms available for selected dates</p>
-                  )}
-                </div>
-              )}
-
-              {/* Guest Information */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Guest Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={assignRoomForm.guestName}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Enter guest name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={assignRoomForm.guestEmail}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestEmail: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Enter email"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={assignRoomForm.guestPhone}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestPhone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Enter phone"
-                  />
-                </div>
-              </div>
-
-              {/* Address Fields */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={assignRoomForm.guestAddress}
-                  onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestAddress: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                  placeholder="Enter address"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    value={assignRoomForm.guestCity}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestCity: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Enter city"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    value={assignRoomForm.guestCountry}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestCountry: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Enter country"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Information */}
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Payment Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <select
-                      value={assignRoomForm.paymentMethod}
-                      onChange={(e) => setAssignRoomForm({ ...assignRoomForm, paymentMethod: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    >
-                      <option value="">Select Payment Method</option>
-                      <option value="cash">Cash</option>
-                      <option value="card">Card</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-                    <select
-                      value={assignRoomForm.paymentStatus}
-                      onChange={(e) => setAssignRoomForm({ ...assignRoomForm, paymentStatus: e.target.value as 'pending' | 'paid' | 'partial' })}
-                      className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="paid">Paid</option>
-                      <option value="partial">Partial</option>
-                    </select>
-                  </div>
-                </div>
-                {assignRoomForm.paymentStatus !== 'pending' && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Paid Amount</label>
-                    <input
-                      type="number"
-                      value={assignRoomForm.paidAmount}
-                      onChange={(e) => setAssignRoomForm({ ...assignRoomForm, paidAmount: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                      placeholder="Enter paid amount"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Walk-in Guest - Always true for this form */}
-              <input type="hidden" value="true" />
-
-              {/* Reason (for blocking) */}
-              {assignRoomForm.reason && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
-                  <input
-                    type="text"
-                    value={assignRoomForm.reason}
-                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                    placeholder="Reason for blocking"
-                  />
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowAssignRoom(false);
                     setAssignRoomView('form');
-                    setAssignRoomForm({
-                      startDate: '',
-                      endDate: '',
-                      suiteType: 'Garden Suite',
-                      roomName: '',
-                      guestName: '',
-                      guestEmail: '',
-                      guestPhone: '',
-                      guestPrefix: '',
-                      guestAddress: '',
-                      guestCity: '',
-                      guestCountry: '',
-                      paymentMethod: '',
-                      paymentStatus: 'pending',
-                      paidAmount: 0,
-                      isWalkIn: false,
-                      reason: ''
-                    });
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  Clear
-                </button>
-                <button
-                  onClick={handleAssignRoom}
-                  disabled={!assignRoomForm.startDate || !assignRoomForm.endDate || !assignRoomForm.roomName || !assignRoomForm.guestName}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Apply
+                  <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
+
+              {/* Date Strip */}
+              <div className="flex items-center border-t border-gray-200 overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => setCalendarOffset(prev => prev - 7)}
+                  className="px-1 text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <div className="flex-1 flex justify-between overflow-x-auto no-scrollbar mx-1">
+                  {[...Array(7)].map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i + calendarOffset);
+                    const dateStr = toLocalISOString(d);
+                    const isSelected = assignRoomForm.startDate === dateStr;
+
+                    const isTodayStr = toLocalISOString(new Date()) === dateStr;
+                    const effectivelySelected = assignRoomForm.startDate ? assignRoomForm.startDate === dateStr : isTodayStr;
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setAssignRoomForm(prev => ({ ...prev, startDate: dateStr }));
+                          setAssignRoomView('calendar');
+                        }}
+                        className={`min-w-[42px] flex flex-col items-center justify-center py-1.5 border-b-2 hover:bg-gray-50 transition-colors ${effectivelySelected ? 'border-blue-600 bg-blue-50' : 'border-transparent'}`}
+                      >
+                        <span className={`text-[9px] uppercase font-semibold ${effectivelySelected ? 'text-blue-600' : 'text-gray-500'}`}>{d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3)}</span>
+                        <span className={`text-sm font-bold ${effectivelySelected ? 'text-blue-800' : 'text-gray-700'}`}>{d.getDate()}</span>
+                        <span className="text-[9px] text-gray-400">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setCalendarOffset(prev => prev + 7)}
+                  className="px-1 text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+
+              </div>
             </div>
-            )}
+
+            <div className="flex-1 overflow-y-auto bg-gray-50">
+              {assignRoomView === 'calendar' ? (
+                // Calendar View
+                <div className="h-full flex flex-col">
+                  {(() => {
+                    const targetDateStr = assignRoomForm.startDate || toLocalISOString(new Date());
+                    const dayBookings = bookings.filter(b => {
+                      const start = b.checkIn.toString().split('T')[0];
+                      const end = b.checkOut.toString().split('T')[0];
+                      return targetDateStr >= start && targetDateStr < end;
+                    });
+
+                    if (dayBookings.length === 0) {
+                      return (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+                          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <div className="opacity-20 text-gray-500">
+                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                              </svg>
+                            </div>
+                          </div>
+                          <h3 className="text-gray-400 font-medium text-lg">No Data</h3>
+
+                          <button
+                            onClick={() => {
+                              // Default to 1 night stay starting from the selected date
+                              const startStr = assignRoomForm.startDate || toLocalISOString(new Date());
+                              const d = new Date(startStr);
+                              d.setDate(d.getDate() + 1);
+                              const endStr = toLocalISOString(d);
+                              setAssignRoomForm(prev => ({ ...prev, startDate: startStr, endDate: endStr }));
+                              setAssignRoomView('form');
+                            }}
+                            className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5"
+                          >
+                            Assign Room
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="p-4 space-y-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-semibold text-gray-500">Bookings ({dayBookings.length})</span>
+                          <button
+                            onClick={() => setAssignRoomView('form')}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                          >
+                            + New Assignment
+                          </button>
+                        </div>
+                        {dayBookings.map(booking => (
+                          <div key={booking.id} onClick={() => handleBookingClick(booking)} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                  {booking.guestDetails.firstName} {booking.guestDetails.lastName}
+                                </h4>
+                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-gray-300"></span>
+                                  {booking.rooms[0]?.allocatedRoomType || booking.rooms[0]?.type}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full ${booking.status === 'checked_in' ? 'bg-green-100 text-green-700' :
+                                booking.status === 'confirmed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                {booking.status.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 pt-3">
+                              <span>{new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}</span>
+                              <span className="font-medium text-gray-900">${booking.totalAmount}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                // Form View
+                <div className="p-6 space-y-5">
+                  <div className="flex items-center gap-2 mb-2 text-sm text-blue-600 cursor-pointer hover:underline" onClick={() => setAssignRoomView('calendar')}>
+                    <ChevronLeftIcon className="h-4 w-4" /> Back to Calendar
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <CalendarDaysIcon className="h-4 w-4 text-gray-400" /> Stay Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">Check-in</label>
+                        <input
+                          type="date"
+                          required
+                          value={assignRoomForm.startDate}
+                          onChange={(e) => {
+                            setAssignRoomForm({ ...assignRoomForm, startDate: e.target.value });
+                            if (!assignRoomForm.endDate || e.target.value > assignRoomForm.endDate) {
+                              const endDate = new Date(e.target.value);
+                              endDate.setDate(endDate.getDate() + 1);
+                              setAssignRoomForm({ ...assignRoomForm, startDate: e.target.value, endDate: endDate.toISOString().split('T')[0] });
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">Check-out</label>
+                        <input
+                          type="date"
+                          required
+                          value={assignRoomForm.endDate}
+                          onChange={(e) => setAssignRoomForm({ ...assignRoomForm, endDate: e.target.value })}
+                          min={assignRoomForm.startDate}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Room Selection */}
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <FaBed className="h-4 w-4 text-gray-400" /> Room Selection
+                    </h4>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Suite Type</label>
+                      <select
+                        value={assignRoomForm.suiteType}
+                        onChange={(e) => {
+                          setAssignRoomForm({ ...assignRoomForm, suiteType: e.target.value as SuiteType, roomName: '' });
+                        }}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                      >
+                        {SUITE_TYPES.map(suite => (
+                          <option key={suite} value={suite}>{suite}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {assignRoomForm.startDate && assignRoomForm.endDate && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">Available Room</label>
+                        <select
+                          value={assignRoomForm.roomName}
+                          onChange={(e) => setAssignRoomForm({ ...assignRoomForm, roomName: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        >
+                          <option value="">Select Room</option>
+                          {getAvailableRooms(assignRoomForm.startDate, assignRoomForm.endDate, assignRoomForm.suiteType).map(room => {
+                            const price = roomPriceMap[room.roomName] || 0;
+                            return (
+                              <option key={room.id} value={room.roomName}>{room.roomName} - ${price}/night</option>
+                            );
+                          })}
+                        </select>
+                        {getAvailableRooms(assignRoomForm.startDate, assignRoomForm.endDate, assignRoomForm.suiteType).length === 0 && (
+                          <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                            <XCircleIcon className="h-3 w-3" /> No rooms available
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Guest Information */}
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <UserIcon className="h-4 w-4 text-gray-400" /> Guest Details
+                    </h4>
+
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        required
+                        value={assignRoomForm.guestName}
+                        onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestName: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        placeholder="Full Name *"
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <input
+                          type="tel"
+                          required
+                          value={assignRoomForm.guestPhone}
+                          onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestPhone: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                          placeholder="Phone Number *"
+                        />
+                        <input
+                          type="email"
+                          value={assignRoomForm.guestEmail}
+                          onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestEmail: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                          placeholder="Email (Optional)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex flex-col gap-3">
+                    <button
+                      onClick={handleAssignRoom}
+                      disabled={!assignRoomForm.startDate || !assignRoomForm.endDate || !assignRoomForm.roomName || !assignRoomForm.guestName}
+                      className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-200 transform active:scale-95"
+                    >
+                      Confirm Assignment
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAssignRoom(false);
+                        setAssignRoomView('form');
+                      }}
+                      className="w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
