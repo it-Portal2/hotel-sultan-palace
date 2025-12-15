@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { SparklesIcon, PlusIcon, TrashIcon, PencilIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { getTestimonials, deleteTestimonial, Testimonial } from '@/lib/firestoreService';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminTestimonialsPage() {
@@ -30,7 +30,7 @@ export default function AdminTestimonialsPage() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter(item => 
+    return items.filter(item =>
       (item.name || '').toLowerCase().includes(q) ||
       (item.country || '').toLowerCase().includes(q) ||
       (item.text || '').toLowerCase().includes(q)
@@ -51,23 +51,23 @@ export default function AdminTestimonialsPage() {
 
   if (loading) return <div className="flex justify-center items-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin" /></div>;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Testimonials</h1>
           <p className="text-sm text-gray-500 mt-1">Manage guest testimonials displayed on the homepage • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -92,11 +92,11 @@ export default function AdminTestimonialsPage() {
         </div>
         {isReadOnly ? (
           <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Testimonial (Read-Only)
+            <PlusIcon className="h-4 w-4 mr-2" />Add Testimonial (Read-Only)
           </div>
         ) : (
           <Link href="/admin/testimonials/new" className="inline-flex items-center rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#FF6A00]/90 transition-colors">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Testimonial
+            <PlusIcon className="h-4 w-4 mr-2" />Add Testimonial
           </Link>
         )}
       </div>
@@ -138,7 +138,7 @@ export default function AdminTestimonialsPage() {
                       <Link href={`/admin/testimonials/edit/${i.id}`} className="text-blue-600 hover:text-blue-900 transition-colors">
                         <PencilIcon className="h-5 w-5" />
                       </Link>
-                      <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors">
+                      <button onClick={() => setConfirmId(i.id)} disabled={deleting === i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors">
                         <TrashIcon className="h-5 w-5" />
                       </button>
                     </>
@@ -156,8 +156,8 @@ export default function AdminTestimonialsPage() {
             <h3 className="text-lg font-semibold text-gray-900">Delete testimonial?</h3>
             <p className="mt-2 text-sm text-gray-600">This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={()=>setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting===confirmId?'Deleting...':'Delete'}</button>
+              <button onClick={() => setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting === confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting === confirmId ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>

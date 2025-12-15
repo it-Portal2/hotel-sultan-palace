@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import { getGuestServices, updateGuestService, GuestService } from '@/lib/firestoreService';
@@ -93,7 +93,7 @@ export default function AdminGuestServicesPage() {
 
   const filteredServices = useMemo(() => {
     return services.filter(service => {
-      const matchesSearch = 
+      const matchesSearch =
         service.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (service.roomNumber && service.roomNumber.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -197,23 +197,23 @@ export default function AdminGuestServicesPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Service Requests</h1>
           <p className="text-sm text-gray-500 mt-1">Manage guest service requests • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -256,41 +256,37 @@ export default function AdminGuestServicesPage() {
           <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'all'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'all'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setStatusFilter('requested')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'requested'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'requested'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               Requested
             </button>
             <button
               onClick={() => setStatusFilter('in_progress')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'in_progress'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'in_progress'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               In Progress
             </button>
             <button
               onClick={() => setStatusFilter('completed')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                statusFilter === 'completed'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'completed'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               Completed
             </button>

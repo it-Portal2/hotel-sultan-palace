@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlusIcon, TrashIcon, PhotoIcon, TagIcon, PencilIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { getOffers, deleteOffer, OfferBanner, getSpecialOffers, deleteSpecialOffer, SpecialOffer } from '@/lib/firestoreService';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 import RestrictedAction from '@/components/admin/RestrictedAction';
 
@@ -53,7 +53,7 @@ export default function AdminOffersPage() {
   const filteredSpecialOffers = useMemo(() => {
     if (!searchQuery.trim()) return specialOffers;
     const q = searchQuery.toLowerCase();
-    return specialOffers.filter(offer => 
+    return specialOffers.filter(offer =>
       (offer.title || '').toLowerCase().includes(q) ||
       (offer.description || '').toLowerCase().includes(q) ||
       (offer.couponCode || '').toLowerCase().includes(q)
@@ -84,25 +84,25 @@ export default function AdminOffersPage() {
     setConfirmType(null);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin" /></div>;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Offers</h1>
           <p className="text-sm text-gray-500 mt-1">Manage banner images and discount offers • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -155,22 +155,22 @@ export default function AdminOffersPage() {
               {banners.map((i) => (
                 <div key={i.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                   <div className="relative h-16 w-64 flex-shrink-0">
-                    <Image src={i.imageUrl} alt="offer" fill className="object-cover rounded" sizes="256px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/offer-image.jpg'}} />
+                    <Image src={i.imageUrl} alt="offer" fill className="object-cover rounded" sizes="256px" unoptimized onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/offer-image.jpg' }} />
                   </div>
                   <div className="flex items-center gap-3">
                     {!isReadOnly && (
                       <Link href={`/admin/offers/edit/${i.id}`} className="text-blue-600 hover:text-blue-900 transition-colors">
-                        <PencilIcon className="h-5 w-5"/>
+                        <PencilIcon className="h-5 w-5" />
                       </Link>
                     )}
                     {isReadOnly ? (
                       <RestrictedAction message="You don't have permission to delete banners">
                         <div className="text-gray-400">
-                          <TrashIcon className="h-5 w-5"/>
+                          <TrashIcon className="h-5 w-5" />
                         </div>
                       </RestrictedAction>
                     ) : (
-                      <button onClick={()=>{setConfirmId(i.id); setConfirmType('banner');}} disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"><TrashIcon className="h-5 w-5"/></button>
+                      <button onClick={() => { setConfirmId(i.id); setConfirmType('banner'); }} disabled={deleting === i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"><TrashIcon className="h-5 w-5" /></button>
                     )}
                   </div>
                 </div>
@@ -233,16 +233,16 @@ export default function AdminOffersPage() {
                       <div className="flex items-start gap-4 flex-1 min-w-0">
                         {offer.imageUrl && (
                           <div className="relative h-20 w-32 flex-shrink-0">
-                            <Image 
-                              src={offer.imageUrl} 
-                              alt={offer.title} 
-                              fill 
-                              className="object-cover rounded" 
-                              sizes="128px" 
-                              unoptimized 
+                            <Image
+                              src={offer.imageUrl}
+                              alt={offer.title}
+                              fill
+                              className="object-cover rounded"
+                              sizes="128px"
+                              unoptimized
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = '/offer-image.jpg';
-                              }} 
+                              }}
                             />
                           </div>
                         )}
@@ -259,7 +259,7 @@ export default function AdminOffersPage() {
                               </span>
                             )}
                             <span className="text-xs text-gray-500">
-                              {offer.discountType === 'percentage' 
+                              {offer.discountType === 'percentage'
                                 ? `${offer.discountValue}% off`
                                 : `$${offer.discountValue} off`}
                             </span>
@@ -274,22 +274,22 @@ export default function AdminOffersPage() {
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {!isReadOnly && (
                           <Link href={`/admin/offers/special/edit/${offer.id}`} className="text-blue-600 hover:text-blue-900 transition-colors">
-                            <PencilIcon className="h-5 w-5"/>
+                            <PencilIcon className="h-5 w-5" />
                           </Link>
                         )}
                         {isReadOnly ? (
                           <RestrictedAction message="You don't have permission to delete special offers">
                             <div className="text-gray-400">
-                              <TrashIcon className="h-5 w-5"/>
+                              <TrashIcon className="h-5 w-5" />
                             </div>
                           </RestrictedAction>
                         ) : (
-                          <button 
-                            onClick={() => {setConfirmId(offer.id); setConfirmType('special');}} 
-                            disabled={deleting === offer.id} 
+                          <button
+                            onClick={() => { setConfirmId(offer.id); setConfirmType('special'); }}
+                            disabled={deleting === offer.id}
                             className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"
                           >
-                            <TrashIcon className="h-5 w-5"/>
+                            <TrashIcon className="h-5 w-5" />
                           </button>
                         )}
                       </div>
@@ -310,8 +310,8 @@ export default function AdminOffersPage() {
             </h3>
             <p className="mt-2 text-sm text-gray-600">This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={()=>{setConfirmId(null); setConfirmType(null);}} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting===confirmId?'Deleting...':'Delete'}</button>
+              <button onClick={() => { setConfirmId(null); setConfirmType(null); }} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting === confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting === confirmId ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>

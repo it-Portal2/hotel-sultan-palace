@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import { getFoodOrders, updateFoodOrder, FoodOrder } from '@/lib/firestoreService';
@@ -51,21 +51,21 @@ export default function AdminFoodOrdersPage() {
 
   const filteredOrders = useMemo(() => {
     let filtered = orders;
-    
+
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
-    
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order.orderNumber.toLowerCase().includes(q) ||
         order.guestName.toLowerCase().includes(q) ||
         order.guestPhone.includes(q) ||
         (order.roomNumber && order.roomNumber.toLowerCase().includes(q))
       );
     }
-    
+
     return filtered;
   }, [orders, statusFilter, searchQuery]);
 
@@ -114,23 +114,23 @@ export default function AdminFoodOrdersPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Food Orders</h1>
           <p className="text-sm text-gray-500 mt-1">Manage all food orders from guests • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import BackButton from '@/components/admin/BackButton';
-import { getMenuItem, updateMenuItem, MenuItem } from '@/lib/firestoreService';
+import { getMenuItem, updateMenuItem, MenuItem, getMenuCategories, MenuCategory } from '@/lib/firestoreService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
@@ -14,11 +14,22 @@ export default function EditMenuItemPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [loadingCats, setLoadingCats] = useState(true);
+
   const [formData, setFormData] = useState<Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>>({
     name: '',
     description: '',
     price: 0,
-    category: 'breakfast',
+    category: '' as MenuItem['category'],
+    subcategory: '',
+    sku: '',
+    taxGroup: 'VAT',
+    cost: 0,
+    hasDiscount: false,
+    openPrice: false,
     image: '',
     isVegetarian: false,
     isAvailable: true,
@@ -28,10 +39,27 @@ export default function EditMenuItemPage() {
     discountPercent: 0,
   });
 
-  const categories: MenuItem['category'][] = [
-    'breakfast', 'soups', 'main_course', 'seafood', 
-    'indian_dishes', 'pizza', 'desserts', 'beverages', 'snacks'
-  ];
+
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats = await getMenuCategories();
+        setCategories(cats);
+      } finally {
+        setLoadingCats(false);
+      }
+    })();
+  }, []);
+
+  const categoryOptions = useMemo(() => {
+    return categories.filter(c => !c.parentId);
+  }, [categories]);
+
+  const subcategoryOptions = useMemo(() => {
+    const selectedCat = categories.find(cat => cat.name === formData.category);
+    return categories.filter(c => c.parentId === selectedCat?.id);
+  }, [categories, formData.category]);
 
   useEffect(() => {
     loadMenuItem();
@@ -116,7 +144,7 @@ export default function EditMenuItemPage() {
   return (
     <div className="space-y-6">
       <BackButton href="/admin/menu" label="Back to Menu" />
-      
+
       <div className="bg-gradient-to-r from-white to-[#FFFCF6] rounded-xl p-6 border border-[#be8c53]/20 shadow-lg">
         <h1 className="text-3xl md:text-4xl font-bold text-[#202c3b]">Edit Menu Item</h1>
         <p className="mt-2 text-[#202c3b]/70 text-lg">Update menu item details</p>
@@ -134,7 +162,7 @@ export default function EditMenuItemPage() {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
               placeholder="e.g., Seafood Platter"
             />
           </div>
@@ -149,7 +177,7 @@ export default function EditMenuItemPage() {
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
               placeholder="Describe the dish..."
             />
           </div>
@@ -162,13 +190,60 @@ export default function EditMenuItemPage() {
             <select
               required
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value as MenuItem['category'] })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              onChange={(e) => {
+                const newCategory = e.target.value as MenuItem['category'];
+                const selectedCat = categories.find(c => c.name === newCategory);
+                const subcats = categories.filter(c => c.parentId === selectedCat?.id);
+                setFormData({
+                  ...formData,
+                  category: newCategory,
+                  subcategory: subcats[0]?.name || '',
+                });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
             >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat.replace('_', ' ').toUpperCase()}</option>
-              ))}
+              {categoryOptions.length === 0 ? (
+                <option value="">No categories available</option>
+              ) : (
+                categoryOptions.map(cat => (
+                  <option key={cat.id} value={cat.name as MenuItem['category']}>{cat.label}</option>
+                ))
+              )}
             </select>
+          </div>
+
+          {/* Subcategory */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Subcategory
+            </label>
+            <select
+              value={formData.subcategory || ''}
+              onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+            >
+              {subcategoryOptions.length === 0 ? (
+                <option value="">No subcategories</option>
+              ) : (
+                subcategoryOptions.map((sub) => (
+                  <option key={sub.id} value={sub.name}>{sub.label}</option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* SKU */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              SKU
+            </label>
+            <input
+              type="text"
+              value={formData.sku || ''}
+              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+              placeholder="e.g., SKU-001"
+            />
           </div>
 
           {/* Price */}
@@ -181,9 +256,44 @@ export default function EditMenuItemPage() {
               required
               min="0"
               step="0.01"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              value={formData.price || ''}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                setFormData({ ...formData, price: isNaN(value) ? 0 : value });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+            />
+          </div>
+
+          {/* Cost */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Cost ($)
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.cost || ''}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                setFormData({ ...formData, cost: isNaN(value) ? 0 : value });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+            />
+          </div>
+
+          {/* Tax Group */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tax Group
+            </label>
+            <input
+              type="text"
+              value={formData.taxGroup || ''}
+              onChange={(e) => setFormData({ ...formData, taxGroup: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+              placeholder="VAT"
             />
           </div>
 
@@ -196,9 +306,12 @@ export default function EditMenuItemPage() {
               type="number"
               required
               min="1"
-              value={formData.preparationTime}
-              onChange={(e) => setFormData({ ...formData, preparationTime: parseInt(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              value={formData.preparationTime || ''}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setFormData({ ...formData, preparationTime: isNaN(value) ? 30 : value });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
             />
           </div>
 
@@ -212,9 +325,12 @@ export default function EditMenuItemPage() {
               min="0"
               max="5"
               step="0.1"
-              value={formData.rating || 0}
-              onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              value={formData.rating || ''}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                setFormData({ ...formData, rating: isNaN(value) ? 0 : value });
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
             />
           </div>
 
@@ -227,7 +343,7 @@ export default function EditMenuItemPage() {
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
             />
             {uploading && <p className="text-sm text-gray-500 mt-2">Uploading...</p>}
             {formData.image && (
@@ -237,6 +353,24 @@ export default function EditMenuItemPage() {
 
           {/* Checkboxes */}
           <div className="md:col-span-2 space-y-3">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.hasDiscount || false}
+                onChange={(e) => setFormData({ ...formData, hasDiscount: e.target.checked })}
+                className="h-4 w-4 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Discount</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.openPrice || false}
+                onChange={(e) => setFormData({ ...formData, openPrice: e.target.checked })}
+                className="h-4 w-4 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Open Price</span>
+            </label>
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -276,9 +410,12 @@ export default function EditMenuItemPage() {
                 type="number"
                 min="0"
                 max="100"
-                value={formData.discountPercent || 0}
-                onChange={(e) => setFormData({ ...formData, discountPercent: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                value={formData.discountPercent || ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  setFormData({ ...formData, discountPercent: isNaN(value) ? 0 : value });
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
               />
             </div>
           )}

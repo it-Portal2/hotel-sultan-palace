@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getStoryImages, deleteStoryImage, StoryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PhotoIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminStoryPicturesPage() {
@@ -27,7 +27,7 @@ export default function AdminStoryPicturesPage() {
       if (!dedupeRun.current) {
         dedupeRun.current = true;
         try {
-          const keyOf = (i: StoryImage) => `${i.imageUrl}|${i.title || ''}|${(i.text || '').slice(0,64)}`;
+          const keyOf = (i: StoryImage) => `${i.imageUrl}|${i.title || ''}|${(i.text || '').slice(0, 64)}`;
           const seen = new Map<string, string>();
           const toDelete: string[] = [];
           for (const it of data) {
@@ -53,7 +53,7 @@ export default function AdminStoryPicturesPage() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter(item => 
+    return items.filter(item =>
       (item.title || '').toLowerCase().includes(q) ||
       (item.alt || '').toLowerCase().includes(q) ||
       (item.author || '').toLowerCase().includes(q) ||
@@ -70,25 +70,25 @@ export default function AdminStoryPicturesPage() {
     setConfirmId(null);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin" /></div>;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Story in Pictures</h1>
           <p className="text-sm text-gray-500 mt-1">Add images for the home &apos;Story in Pictures&apos; gallery • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -113,11 +113,11 @@ export default function AdminStoryPicturesPage() {
         </div>
         {isReadOnly ? (
           <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Image (Read-Only)
+            <PlusIcon className="h-4 w-4 mr-2" />Add Image (Read-Only)
           </div>
         ) : (
           <Link href="/admin/story-pictures/new" className="inline-flex items-center rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#FF6A00]/90 transition-colors">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Image
+            <PlusIcon className="h-4 w-4 mr-2" />Add Image
           </Link>
         )}
       </div>
@@ -136,7 +136,7 @@ export default function AdminStoryPicturesPage() {
               <div key={i.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="relative h-16 w-32 flex-shrink-0">
-                    <Image src={i.imageUrl} alt={i.alt || 'image'} fill className="object-cover rounded" sizes="128px" unoptimized onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/story/story1.png'}} />
+                    <Image src={i.imageUrl} alt={i.alt || 'image'} fill className="object-cover rounded" sizes="128px" unoptimized onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/story/story1.png' }} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 truncate">{i.title || i.alt || 'Untitled story'}</p>
@@ -152,7 +152,7 @@ export default function AdminStoryPicturesPage() {
                         <PencilSquareIcon className="h-5 w-5" />
                       </div>
                       <div className="text-gray-400 cursor-not-allowed" title="Read-only mode: Deletion disabled">
-                        <TrashIcon className="h-5 w-5"/>
+                        <TrashIcon className="h-5 w-5" />
                       </div>
                     </>
                   ) : (
@@ -160,7 +160,7 @@ export default function AdminStoryPicturesPage() {
                       <Link href={`/admin/story-pictures/edit/${i.id}`} title="Edit" className="text-blue-600 hover:text-blue-800 inline-flex items-center transition-colors">
                         <PencilSquareIcon className="h-5 w-5" />
                       </Link>
-                      <button onClick={()=>setConfirmId(i.id)} title="Delete" disabled={deleting===i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"><TrashIcon className="h-5 w-5"/></button>
+                      <button onClick={() => setConfirmId(i.id)} title="Delete" disabled={deleting === i.id} className="text-red-600 hover:text-red-900 disabled:opacity-50 transition-colors"><TrashIcon className="h-5 w-5" /></button>
                     </>
                   )}
                 </div>
@@ -176,8 +176,8 @@ export default function AdminStoryPicturesPage() {
             <h3 className="text-lg font-semibold text-gray-900">Delete image?</h3>
             <p className="mt-2 text-sm text-gray-600">This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={()=>setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting===confirmId?'Deleting...':'Delete'}</button>
+              <button onClick={() => setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting === confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting === confirmId ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>

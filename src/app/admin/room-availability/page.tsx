@@ -397,6 +397,34 @@ export default function RoomAvailabilityPage() {
     return filtered;
   }, [roomsBySuite, selectedSuite, searchQuery, bookings]);
 
+  // JUMP TO DATE LOGIC: When search query matches a booking, jump to its start date
+  useEffect(() => {
+    if (!searchQuery.trim() || bookings.length === 0) return;
+
+    const query = searchQuery.toLowerCase();
+    // Find first matching booking
+    const match = bookings.find(b =>
+      (b.status === 'confirmed' || b.status === 'checked_in') &&
+      (b.guestDetails.firstName.toLowerCase().includes(query) ||
+        b.guestDetails.lastName.toLowerCase().includes(query) ||
+        (b.bookingId && b.bookingId.toLowerCase().includes(query)))
+    );
+
+    if (match) {
+      // Jump to check-in date
+      const checkInDate = new Date(match.checkIn);
+      checkInDate.setHours(0, 0, 0, 0);
+      setCurrentDate(prev => {
+        // Only update if significantly different (e.g. not already visible)
+        // Actually, for "StayView" feel, always jump to ensure it's in view
+        if (prev.getTime() !== checkInDate.getTime()) {
+          return checkInDate;
+        }
+        return prev;
+      });
+    }
+  }, [searchQuery, bookings]);
+
   // Navigate dates
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -591,13 +619,13 @@ export default function RoomAvailabilityPage() {
               type="date"
               value={currentDate.toISOString().split('T')[0]}
               onChange={(e) => setCurrentDate(new Date(e.target.value))}
-              className="border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+              className="border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00]"
             />
           </div>
           <select
             value={selectedSuite}
             onChange={(e) => setSelectedSuite(e.target.value as SuiteType | 'all')}
-            className="border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+            className="border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00]"
           >
             <option value="all">All Room Types</option>
             {SUITE_TYPES.map(suite => (

@@ -287,7 +287,15 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
-  category: 'breakfast' | 'soups' | 'main_course' | 'seafood' | 'indian_dishes' | 'pizza' | 'desserts' | 'beverages' | 'snacks';
+  category: 'breakfast' | 'soups' | 'main_course' | 'seafood' | 'indian_dishes' | 'pizza' | 'desserts' | 'beverages' | 'snacks' | 'starter' | 'continental' | 'open_item' | 'liquors' | 'food' | 'full_board' | 'half_board' | 'management';
+  subcategory?: string; // e.g., "Breakfast Fresh From The Kitchen", "Breakfast The Sides"
+  sku?: string; // Stock Keeping Unit
+  taxGroup?: string; // e.g., "VAT"
+  cost?: number; // Cost price
+  hasDiscount?: boolean; // Yes/No for discount
+  openPrice?: boolean; // Yes/No for open price
+  station?: 'kitchen' | 'bar' | 'bakery' | 'cold' | 'other';
+  status?: 'draft' | 'published' | 'archived';
   image?: string;
   isVegetarian: boolean;
   isAvailable: boolean;
@@ -295,6 +303,21 @@ export interface MenuItem {
   rating?: number; // 1-5 stars
   isSpecial?: boolean; // Today's special
   discountPercent?: number; // e.g., 10% off
+  availableFrom?: Date;
+  availableTo?: Date;
+  dayparts?: ('breakfast' | 'lunch' | 'dinner')[];
+  isArchived?: boolean;
+  deletedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MenuCategory {
+  id: string;
+  name: string; // machine name
+  label: string; // display label
+  parentId: string | null;
+  order?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -303,12 +326,15 @@ export interface MenuItem {
 export interface FoodOrder {
   id: string;
   orderNumber: string; // Unique order number like "ORD-001"
+  receiptNo?: string; // Receipt number
+  rtNo?: string; // R/T number
   bookingId?: string; // Link to booking if exists
   guestName: string;
   guestPhone: string;
   guestEmail?: string;
   roomNumber?: string; // Room number for delivery
   deliveryLocation: 'in_room' | 'restaurant' | 'bar' | 'beach_side' | 'pool_side';
+  orderType: 'dine_in' | 'takeaway' | 'room_service' | 'delivery';
   items: Array<{
     menuItemId: string;
     name: string;
@@ -320,16 +346,46 @@ export interface FoodOrder {
   tax?: number;
   discount?: number;
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  status: 'pending' | 'running' | 'settled' | 'voided' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
   kitchenStatus: 'received' | 'cooking' | 'ready' | 'delivered';
   scheduledDeliveryTime?: Date; // When customer wants delivery
   estimatedPreparationTime: number; // in minutes
   actualDeliveryTime?: Date;
   paymentStatus: 'pending' | 'paid' | 'refunded';
   paymentMethod?: string;
+  userId?: string; // User who created the order
+  ownerId?: string; // Order owner (for change owner feature)
   notes?: string;
+  voidReason?: string; // Reason for voiding
   createdAt: Date;
   updatedAt: Date;
+  orderTime?: Date; // Time when order was placed
+}
+
+// F&B Revenue and Sales Interfaces
+export interface FBRevenue {
+  id: string;
+  date: Date;
+  totalSales: number;
+  totalPayment: number;
+  totalOrders: number;
+  totalDiscount: number;
+  totalCustomers: number;
+  totalVoid: number;
+  orderTypeSummary: Record<string, number>; // e.g., { 'dine_in': 100, 'takeaway': 50 }
+  paymentSummary: Record<string, number>; // e.g., { 'cash': 200, 'card': 300 }
+  categorySummary: Record<string, number>; // Sales by category
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FBWeeklyRevenue {
+  weekNumber: number;
+  startDate: Date;
+  endDate: Date;
+  totalRevenue: number;
+  orders: number;
+  averageOrderValue: number;
 }
 
 // Guest Service Interface
@@ -519,6 +575,187 @@ export interface RoomType {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ==================== Inventory Management Interfaces ====================
+
+// Inventory Item Interface
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'food' | 'beverage' | 'amenity' | 'supply' | 'linen' | 'cleaning' | 'other';
+  subcategory?: string;
+  sku: string;
+  unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'other';
+  currentStock: number;
+  minStockLevel: number;
+  maxStockLevel: number;
+  reorderPoint: number;
+  unitCost: number;
+  supplier?: string;
+  location?: string; // Storage location
+  expiryDate?: Date;
+  lastRestocked?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Inventory Transaction Interface
+export interface InventoryTransaction {
+  id: string;
+  inventoryItemId: string;
+  itemName: string;
+  transactionType: 'purchase' | 'usage' | 'waste' | 'adjustment' | 'transfer';
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  previousStock: number;
+  newStock: number;
+  reason?: string;
+  relatedOrderId?: string; // Link to food order if usage
+  performedBy: string; // Staff member
+  notes?: string;
+  createdAt: Date;
+}
+
+// Low Stock Alert Interface
+export interface LowStockAlert {
+  id: string;
+  inventoryItemId: string;
+  itemName: string;
+  currentStock: number;
+  minStockLevel: number;
+  status: 'active' | 'resolved';
+  createdAt: Date;
+  resolvedAt?: Date;
+}
+
+// ==================== Accounts Management Interfaces ====================
+
+// Accounts Ledger Entry Interface
+export interface LedgerEntry {
+  id: string;
+  date: Date;
+  entryType: 'income' | 'expense';
+  category: 'room_booking' | 'food_beverage' | 'services' | 'facilities' | 'salary' | 'utilities' | 'maintenance' | 'supplies' | 'marketing' | 'other';
+  subcategory?: string;
+  amount: number;
+  description: string;
+  paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'online';
+  referenceId?: string; // Link to booking, order, etc.
+  invoiceNumber?: string;
+  taxAmount?: number;
+  netAmount?: number;
+  accountsReceivable?: boolean; // Pending payment
+  accountsPayable?: boolean; // Pending payment to vendor
+  paidDate?: Date;
+  createdBy: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Expense Interface
+export interface Expense {
+  id: string;
+  date: Date;
+  category: 'salary' | 'utilities' | 'maintenance' | 'supplies' | 'marketing' | 'inventory_purchase' | 'other';
+  vendor?: string;
+  amount: number;
+  description: string;
+  paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'online';
+  receiptNumber?: string;
+  invoiceNumber?: string;
+  isPaid: boolean;
+  paidDate?: Date;
+  approvedBy?: string;
+  notes?: string;
+  attachments?: string[]; // URLs to receipt images
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Financial Summary Interface
+export interface FinancialSummary {
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  startDate: Date;
+  endDate: Date;
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  incomeBreakdown: Record<string, number>;
+  expenseBreakdown: Record<string, number>;
+  accountsReceivable: number;
+  accountsPayable: number;
+}
+
+// ==================== Staff Management Interfaces ====================
+
+// Staff Member Interface
+export interface StaffMember {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'manager' | 'front_desk' | 'housekeeping' | 'kitchen' | 'waiter' | 'maintenance' | 'other';
+  department: 'front_office' | 'housekeeping' | 'food_beverage' | 'maintenance' | 'management';
+  salary: number;
+  salaryType: 'monthly' | 'hourly' | 'daily';
+  joinDate: Date;
+  status: 'active' | 'on_leave' | 'terminated';
+  address?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  documents?: {
+    type: string;
+    url: string;
+  }[];
+  performanceRating?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Staff Attendance Interface
+export interface StaffAttendance {
+  id: string;
+  staffId: string;
+  staffName: string;
+  date: Date;
+  checkIn?: Date;
+  checkOut?: Date;
+  status: 'present' | 'absent' | 'half_day' | 'on_leave';
+  leaveType?: 'sick' | 'casual' | 'annual' | 'other';
+  notes?: string;
+  createdAt: Date;
+}
+
+// ==================== Audit Log Interface ====================
+
+// Audit Log Interface
+export interface AuditLog {
+  id: string;
+  timestamp: Date;
+  userId: string;
+  userEmail: string;
+  action: 'create' | 'update' | 'delete' | 'login' | 'logout' | 'export' | 'other';
+  resource: string; // e.g., 'booking', 'menu_item', 'inventory'
+  resourceId?: string;
+  changes?: {
+    field: string;
+    oldValue: any;
+    newValue: any;
+  }[];
+  ipAddress?: string;
+  userAgent?: string;
+  status: 'success' | 'failed';
+  errorMessage?: string;
+  createdAt: Date;
 }
 
 // Sample data for fallback
@@ -1961,6 +2198,8 @@ export const getMenuItems = async (category?: MenuItem['category']): Promise<Men
       return {
         id: d.id,
         ...data,
+        availableFrom: data.availableFrom?.toDate?.() || data.availableFrom || undefined,
+        availableTo: data.availableTo?.toDate?.() || data.availableTo || undefined,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as MenuItem;
@@ -1996,7 +2235,18 @@ export const createMenuItem = async (data: Omit<MenuItem, 'id' | 'createdAt' | '
   if (!db) return null;
   try {
     const c = collection(db, 'menuItems');
-    const dr = await addDoc(c, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    const clean: any = {};
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) clean[k] = v;
+    });
+    const dr = await addDoc(c, {
+      status: 'published',
+      isArchived: false,
+      taxGroup: 'VAT',
+      ...clean,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
     return dr.id;
   } catch (e) {
     console.error('Error creating menu item:', e);
@@ -2008,7 +2258,11 @@ export const updateMenuItem = async (id: string, data: Partial<MenuItem>): Promi
   if (!db) return false;
   try {
     const r = doc(db, 'menuItems', id);
-    await updateDoc(r, { ...data, updatedAt: serverTimestamp() });
+    const clean: any = {};
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) clean[k] = v;
+    });
+    await updateDoc(r, { ...clean, updatedAt: serverTimestamp() });
     return true;
   } catch (e) {
     console.error('Error updating menu item:', e);
@@ -2024,6 +2278,106 @@ export const deleteMenuItem = async (id: string): Promise<boolean> => {
     return true;
   } catch (e) {
     console.error('Error deleting menu item:', e);
+    return false;
+  }
+};
+
+// Menu Categories CRUD
+export const getMenuCategories = async (): Promise<MenuCategory[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'menuCategories');
+    const qy = query(c, orderBy('order', 'asc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        name: data.name,
+        label: data.label,
+        parentId: data.parentId || null,
+        order: data.order ?? 0,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as MenuCategory;
+    });
+  } catch (e) {
+    console.error('Error fetching menu categories:', e);
+    return [];
+  }
+};
+
+export const createMenuCategory = async (data: Omit<MenuCategory, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'menuCategories');
+    const clean: any = {};
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) clean[k] = v;
+    });
+    const dr = await addDoc(c, { ...clean, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return dr.id;
+  } catch (e) {
+    console.error('Error creating menu category:', e);
+    return null;
+  }
+};
+
+export const updateMenuCategory = async (id: string, data: Partial<MenuCategory>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'menuCategories', id);
+    const clean: any = {};
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) clean[k] = v;
+    });
+    await updateDoc(r, { ...clean, updatedAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    console.error('Error updating menu category:', e);
+    return false;
+  }
+};
+
+export const deleteMenuCategory = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'menuCategories', id);
+    await deleteDoc(r);
+    return true;
+  } catch (e) {
+    console.error('Error deleting menu category:', e);
+    return false;
+  }
+};
+
+// Bulk updates for menu items
+export const updateMenuItemsAvailability = async (ids: string[], isAvailable: boolean): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    await Promise.all(ids.map(id => {
+      if (!db) return Promise.resolve();
+      const refDoc = doc(db, 'menuItems', id);
+      return updateDoc(refDoc, { isAvailable, updatedAt: serverTimestamp() });
+    }));
+    return true;
+  } catch (e) {
+    console.error('Error updating menu items availability:', e);
+    return false;
+  }
+};
+
+export const updateMenuItemsStatus = async (ids: string[], status: 'draft' | 'published' | 'archived'): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    await Promise.all(ids.map(id => {
+      if (!db) return Promise.resolve();
+      const refDoc = doc(db, 'menuItems', id);
+      return updateDoc(refDoc, { status, isArchived: status === 'archived', updatedAt: serverTimestamp() });
+    }));
+    return true;
+  } catch (e) {
+    console.error('Error updating menu items status:', e);
     return false;
   }
 };
@@ -2377,7 +2731,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     const checkOut = new Date(booking.checkOut);
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
-    const roomCharges = booking.rooms.reduce((sum, room) => sum + (room.price * nights), 0);
+    const roomCharges = (booking.rooms || []).reduce((sum, room) => sum + (room.price * nights), 0);
 
     // Get food orders
     const foodOrders = booking.foodOrderIds ? await Promise.all(
@@ -2394,7 +2748,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     const serviceCharges = validServices.reduce((sum, service) => sum + (service.amount || 0), 0);
 
     // Add-ons charges
-    const addOnsCharges = booking.addOns.reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
+    const addOnsCharges = (booking.addOns || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
 
     // Calculate taxes (assume 10% tax)
     const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges;
@@ -2408,7 +2762,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       balance <= 0 ? 'paid' : (alreadyPaid > 0 ? 'partial' : 'pending');
 
     // Get room number - use allocated room type as fallback
-    const roomNumber = booking.roomNumber || booking.rooms[0]?.allocatedRoomType || null;
+    const roomNumber = booking.roomNumber || (booking.rooms && booking.rooms[0]?.allocatedRoomType) || null;
 
     const bill: Omit<CheckoutBill, 'id' | 'createdAt' | 'updatedAt'> = {
       bookingId,
@@ -2426,7 +2780,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       paidAmount: alreadyPaid,
       balance: balance,
       paymentStatus: paymentStatus,
-      roomDetails: booking.rooms.map(room => ({
+      roomDetails: (booking.rooms || []).map(room => ({
         roomType: room.type,
         nights,
         rate: room.price,
@@ -2446,7 +2800,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         date: service.requestedAt,
       })),
       facilities: [], // Can be extended
-      addOns: booking.addOns.map(addon => ({
+      addOns: (booking.addOns || []).map(addon => ({
         name: addon.name,
         quantity: addon.quantity,
         price: addon.price,
@@ -3032,6 +3386,337 @@ export const checkOutGuest = async (
     return true;
   } catch (e) {
     console.error('Error checking out guest:', e);
+    return false;
+  }
+};
+
+// ==================== F&B Order Summary & Revenue Operations ====================
+
+// Get orders with filters for Order Summary
+export const getFBOrdersSummary = async (
+  date?: Date,
+  status?: 'all' | 'running' | 'settled' | 'voided'
+): Promise<FoodOrder[]> => {
+  if (!db) return [];
+  try {
+    const ordersRef = collection(db, 'foodOrders');
+    let q: any;
+
+    // Build query based on filters - avoid composite indexes by filtering in memory when needed
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // If status filter is also provided, we'll filter in memory to avoid composite index
+      if (status && status !== 'all') {
+        // Query by date only, filter status in memory
+        q = query(ordersRef, where('createdAt', '>=', startOfDay), where('createdAt', '<=', endOfDay));
+      } else {
+        // Query by date with ordering
+        q = query(ordersRef, where('createdAt', '>=', startOfDay), where('createdAt', '<=', endOfDay), orderBy('createdAt', 'desc'));
+      }
+    } else if (status && status !== 'all') {
+      // Query by status only
+      q = query(ordersRef, where('status', '==', status), orderBy('createdAt', 'desc'));
+    } else {
+      // No filters, just get all ordered by createdAt
+      q = query(ordersRef, orderBy('createdAt', 'desc'));
+    }
+
+    const querySnapshot = await getDocs(q);
+    let orders = querySnapshot.docs.map(doc => {
+      const data = doc.data() as any;
+      return {
+        id: doc.id,
+        ...data,
+        scheduledDeliveryTime: data?.scheduledDeliveryTime?.toDate(),
+        actualDeliveryTime: data?.actualDeliveryTime?.toDate(),
+        createdAt: data?.createdAt?.toDate() || new Date(),
+        updatedAt: data?.updatedAt?.toDate() || new Date(),
+        orderTime: data?.orderTime?.toDate() || data?.createdAt?.toDate() || new Date(),
+      } as FoodOrder;
+    });
+
+    // Filter by status in memory if date filter was also applied (to avoid composite index)
+    if (date && status && status !== 'all') {
+      orders = orders.filter(order => order.status === status);
+    }
+
+    // Sort by createdAt descending if not already sorted
+    if (!date || (date && status && status !== 'all')) {
+      orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+
+    return orders;
+  } catch (error) {
+    console.error('Error fetching F&B orders summary:', error);
+    return [];
+  }
+};
+
+// Void an order
+export const voidFBOrder = async (orderId: string, reason: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const orderRef = doc(db, 'foodOrders', orderId);
+    await updateDoc(orderRef, {
+      status: 'voided',
+      voidReason: reason,
+      updatedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error('Error voiding order:', error);
+    return false;
+  }
+};
+
+// Change order owner
+export const changeOrderOwner = async (orderId: string, ownerId: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const orderRef = doc(db, 'foodOrders', orderId);
+    await updateDoc(orderRef, {
+      ownerId: ownerId,
+      updatedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error('Error changing order owner:', error);
+    return false;
+  }
+};
+
+// Split order
+export const splitFBOrder = async (orderId: string, itemsToSplit: string[]): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const orderRef = doc(db, 'foodOrders', orderId);
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) return null;
+
+    const orderData = orderSnap.data() as FoodOrder;
+    const originalItems = orderData.items;
+    const splitItems = originalItems.filter(item => itemsToSplit.includes(item.menuItemId));
+    const remainingItems = originalItems.filter(item => !itemsToSplit.includes(item.menuItemId));
+
+    // Calculate new totals
+    const splitSubtotal = splitItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const remainingSubtotal = remainingItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Create new order for split items
+    const newOrderData = {
+      ...orderData,
+      items: splitItems,
+      subtotal: splitSubtotal,
+      totalAmount: splitSubtotal + (orderData.tax || 0) - (orderData.discount || 0),
+      orderNumber: `ORD-${Date.now()}`,
+      receiptNo: undefined,
+      rtNo: undefined,
+    };
+    delete (newOrderData as any).id;
+
+    const newOrderRef = await addDoc(collection(db, 'foodOrders'), {
+      ...newOrderData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // Update original order
+    await updateDoc(orderRef, {
+      items: remainingItems,
+      subtotal: remainingSubtotal,
+      totalAmount: remainingSubtotal + (orderData.tax || 0) - (orderData.discount || 0),
+      updatedAt: serverTimestamp(),
+    });
+
+    return newOrderRef.id;
+  } catch (error) {
+    console.error('Error splitting order:', error);
+    return null;
+  }
+};
+
+// Get F&B Revenue data
+export const getFBRevenue = async (startDate: Date, endDate: Date): Promise<FBRevenue[]> => {
+  if (!db) return [];
+  try {
+    const revenueRef = collection(db, 'fbRevenue');
+    // Use single range query to avoid composite index requirement
+    const q = query(
+      revenueRef,
+      where('date', '>=', startDate),
+      where('date', '<=', endDate)
+    );
+    const querySnapshot = await getDocs(q);
+    const results = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        date: data.date?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as FBRevenue;
+    });
+    // Sort in memory to avoid composite index
+    return results.sort((a, b) => a.date.getTime() - b.date.getTime());
+  } catch (error) {
+    console.error('Error fetching F&B revenue:', error);
+    return [];
+  }
+};
+
+// Get Weekly Revenue
+export const getFBWeeklyRevenue = async (year: number): Promise<FBWeeklyRevenue[]> => {
+  if (!db) return [];
+  try {
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+
+    const revenueRef = collection(db, 'fbRevenue');
+    // Use single range query to avoid composite index requirement
+    const q = query(
+      revenueRef,
+      where('date', '>=', startOfYear),
+      where('date', '<=', endOfYear)
+    );
+    const querySnapshot = await getDocs(q);
+    const revenueData = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        date: data.date?.toDate() || new Date(),
+        totalSales: data.totalSales || 0,
+        totalOrders: data.totalOrders || 0,
+      };
+    });
+
+    // Group by week
+    const weeklyData: Record<number, { startDate: Date; endDate: Date; revenue: number; orders: number }> = {};
+
+    revenueData.forEach(item => {
+      const date = item.date;
+      const weekNumber = getWeekNumber(date);
+      const weekStart = getWeekStart(date);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      if (!weeklyData[weekNumber]) {
+        weeklyData[weekNumber] = {
+          startDate: weekStart,
+          endDate: weekEnd,
+          revenue: 0,
+          orders: 0,
+        };
+      }
+      weeklyData[weekNumber].revenue += item.totalSales;
+      weeklyData[weekNumber].orders += item.totalOrders;
+    });
+
+    return Object.entries(weeklyData).map(([weekNum, data]) => ({
+      weekNumber: parseInt(weekNum),
+      startDate: data.startDate,
+      endDate: data.endDate,
+      totalRevenue: data.revenue,
+      orders: data.orders,
+      averageOrderValue: data.orders > 0 ? data.revenue / data.orders : 0,
+    })).sort((a, b) => a.weekNumber - b.weekNumber);
+  } catch (error) {
+    console.error('Error fetching weekly revenue:', error);
+    return [];
+  }
+};
+
+// Helper functions for week calculations
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  const weekStart = new Date(d);
+  weekStart.setDate(d.getDate() - diff + 1);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+}
+
+// Create or update daily revenue record
+export const updateDailyFBRevenue = async (date: Date, orderData: FoodOrder): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Get existing revenue record for the day
+    const revenueRef = collection(db, 'fbRevenue');
+    const q = query(
+      revenueRef,
+      where('date', '>=', startOfDay),
+      where('date', '<=', endOfDay)
+    );
+    const snapshot = await getDocs(q);
+
+    const orderType = orderData.orderType || 'dine_in';
+    const paymentMethod = orderData.paymentMethod || 'cash';
+
+    if (snapshot.empty) {
+      // Create new revenue record
+      const newRevenue: Omit<FBRevenue, 'id' | 'createdAt' | 'updatedAt'> = {
+        date: startOfDay,
+        totalSales: orderData.totalAmount,
+        totalPayment: orderData.totalAmount,
+        totalOrders: 1,
+        totalDiscount: orderData.discount || 0,
+        totalCustomers: 1,
+        totalVoid: orderData.status === 'voided' ? orderData.totalAmount : 0,
+        orderTypeSummary: { [orderType]: 1 },
+        paymentSummary: { [paymentMethod]: orderData.totalAmount },
+        categorySummary: {},
+      };
+      await addDoc(revenueRef, {
+        ...newRevenue,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      // Update existing revenue record
+      const doc = snapshot.docs[0];
+      const existing = doc.data();
+      const orderTypeSummary = existing.orderTypeSummary || {};
+      const paymentSummary = existing.paymentSummary || {};
+
+      await updateDoc(doc.ref, {
+        totalSales: (existing.totalSales || 0) + orderData.totalAmount,
+        totalPayment: (existing.totalPayment || 0) + orderData.totalAmount,
+        totalOrders: (existing.totalOrders || 0) + 1,
+        totalDiscount: (existing.totalDiscount || 0) + (orderData.discount || 0),
+        totalCustomers: (existing.totalCustomers || 0) + 1,
+        totalVoid: existing.totalVoid + (orderData.status === 'voided' ? orderData.totalAmount : 0),
+        orderTypeSummary: {
+          ...orderTypeSummary,
+          [orderType]: (orderTypeSummary[orderType] || 0) + 1,
+        },
+        paymentSummary: {
+          ...paymentSummary,
+          [paymentMethod]: (paymentSummary[paymentMethod] || 0) + orderData.totalAmount,
+        },
+        updatedAt: serverTimestamp(),
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error('Error updating daily F&B revenue:', error);
     return false;
   }
 };

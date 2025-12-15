@@ -41,23 +41,24 @@ export default function AdminRoomTypesPage() {
 
   useEffect(() => {
     loadRoomTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredRoomTypes = useMemo(() => {
     let filtered = roomTypes;
-    
+
     if (selectedSuite !== 'all') {
       filtered = filtered.filter(rt => rt.suiteType === selectedSuite);
     }
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(rt => 
+      filtered = filtered.filter(rt =>
         rt.roomName.toLowerCase().includes(query) ||
         rt.suiteType.toLowerCase().includes(query)
       );
     }
-    
+
     return filtered;
   }, [roomTypes, selectedSuite, searchQuery]);
 
@@ -181,10 +182,10 @@ export default function AdminRoomTypesPage() {
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
@@ -195,7 +196,7 @@ export default function AdminRoomTypesPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Room Types</h1>
           <p className="text-sm text-gray-500 mt-1">Manage room types for all suites • {currentDate}</p>
         </div>
-        
+
         <div className="flex items-center gap-6">
           {/* Inline Stats */}
           <div className="flex items-center gap-4 text-sm">
@@ -214,7 +215,7 @@ export default function AdminRoomTypesPage() {
               <span className="font-semibold text-gray-900">{stats.inactive}</span>
             </div>
           </div>
-          
+
           {/* Add Button */}
           {isReadOnly ? (
             <RestrictedAction message="You don't have permission to add room types">
@@ -255,11 +256,10 @@ export default function AdminRoomTypesPage() {
           <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
             <button
               onClick={() => setSelectedSuite('all')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
-                selectedSuite === 'all'
+              className={`px-3 py-1 text-sm font-medium transition-colors ${selectedSuite === 'all'
                   ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               All
             </button>
@@ -267,11 +267,10 @@ export default function AdminRoomTypesPage() {
               <button
                 key={suite}
                 onClick={() => setSelectedSuite(suite)}
-                className={`px-3 py-1 text-sm font-medium transition-colors ${
-                  selectedSuite === suite
+                className={`px-3 py-1 text-sm font-medium transition-colors ${selectedSuite === suite
                     ? 'text-[#FF6A00] border-b-2 border-[#FF6A00] -mb-[2px]'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 {suite.split(' ')[0]}
               </button>
@@ -377,7 +376,7 @@ export default function AdminRoomTypesPage() {
                 )
               )}
             </div>
-            
+
             {/* Room Types Grid */}
             {types.length === 0 ? (
               <div className="text-center py-12">
@@ -389,9 +388,8 @@ export default function AdminRoomTypesPage() {
                 {types.map(rt => (
                   <div
                     key={rt.id}
-                    className={`p-3 rounded-lg border border-gray-200 hover:border-[#FF6A00] transition-all bg-white ${
-                      !rt.isActive ? 'opacity-60' : ''
-                    }`}
+                    className={`p-3 rounded-lg border border-gray-200 hover:border-[#FF6A00] transition-all bg-white ${!rt.isActive ? 'opacity-60' : ''
+                      }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-semibold text-sm text-gray-900 truncate flex-1 pr-1" title={rt.roomName}>
@@ -406,9 +404,8 @@ export default function AdminRoomTypesPage() {
                           <>
                             <button
                               onClick={() => handleToggleActive(rt)}
-                              className={`p-1 rounded transition-colors ${
-                                rt.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'
-                              }`}
+                              className={`p-1 rounded transition-colors ${rt.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'
+                                }`}
                               title={rt.isActive ? 'Deactivate' : 'Activate'}
                             >
                               {rt.isActive ? <CheckIcon className="h-3 w-3" /> : <XMarkIcon className="h-3 w-3" />}
@@ -431,9 +428,8 @@ export default function AdminRoomTypesPage() {
                         )}
                       </div>
                     </div>
-                    <div className={`text-xs px-2 py-0.5 rounded text-center ${
-                      rt.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <div className={`text-xs px-2 py-0.5 rounded text-center ${rt.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
                       {rt.isActive ? 'Active' : 'Inactive'}
                     </div>
                   </div>

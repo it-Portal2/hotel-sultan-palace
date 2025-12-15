@@ -32,7 +32,10 @@ import {
   BellIcon,
   PhotoIcon,
   MapPinIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  StarIcon,
+  CubeIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -48,6 +51,7 @@ interface NavigationGroup {
   icon: React.ComponentType<{ className?: string }>;
   items: NavigationItem[];
   defaultOpen?: boolean;
+  isSingleItem?: boolean;
 }
 
 interface NavigationItem {
@@ -65,7 +69,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
   const pathname = usePathname();
-  const router = useRouter();
 
   // Organized navigation groups
   const navigationGroups: NavigationGroup[] = [
@@ -75,7 +78,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       items: [
         { name: 'Overview', href: '/admin', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50' },
       ],
-      defaultOpen: true
+      defaultOpen: true,
+      isSingleItem: true
     },
     {
       name: 'Reservations & Bookings',
@@ -119,6 +123,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       name: 'Food & Beverage',
       icon: BeakerIcon,
       items: [
+        { name: 'F&B Dashboard', href: '/admin/fb-dashboard', icon: Squares2X2Icon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
+        { name: 'Order Summary', href: '/admin/order-summary', icon: ClipboardDocumentListIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
         { name: 'Menu Management', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50' },
         { name: 'Kitchen Dashboard', href: '/admin/kitchen', icon: BeakerIcon, color: 'text-orange-600', bgColor: 'bg-orange-50' },
         { name: 'Food Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50' },
@@ -131,7 +137,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       items: [
         { name: 'Service Requests', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50' },
       ],
-      defaultOpen: true
+      defaultOpen: true,
+      isSingleItem: true
+    },
+    {
+      name: 'Reputation Management',
+      icon: StarIcon,
+      items: [
+        { name: 'Reputation Management', href: '/admin/reputation-management', icon: StarIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+      ],
+      defaultOpen: true,
+      isSingleItem: true
     },
     {
       name: 'Content Management',
@@ -151,7 +167,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       items: [
         { name: 'Contacts', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50' },
       ],
-      defaultOpen: false
+      defaultOpen: false,
+      isSingleItem: true
+    },
+    {
+      name: 'Inventory Management',
+      icon: CubeIcon,
+      items: [
+        { name: 'Inventory Items', href: '/admin/inventory', icon: CubeIcon, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+      ],
+      defaultOpen: false,
+      isSingleItem: true
+    },
+    {
+      name: 'Accounts & Finance',
+      icon: CurrencyDollarIcon,
+      items: [
+        { name: 'Accounts Overview', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50' },
+      ],
+      defaultOpen: false,
+      isSingleItem: true
+    },
+    {
+      name: 'Staff Management',
+      icon: UserGroupIcon,
+      items: [
+        { name: 'Staff Directory', href: '/admin/staff', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
+      ],
+      defaultOpen: false,
+      isSingleItem: true
     },
     {
       name: 'Settings',
@@ -159,7 +203,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       items: [
         { name: 'Admin Users', href: '/admin/admin-users', icon: UserGroupIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', requiresFullAdmin: true },
       ],
-      defaultOpen: false
+      defaultOpen: false,
+      isSingleItem: true
     },
   ];
 
@@ -240,7 +285,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         pathname={pathname}
-        adminRole={adminRole}
         userEmail={userEmail}
         navigationGroups={filteredNavigationGroups}
       >
@@ -254,7 +298,6 @@ function AdminLayoutContent({
   sidebarOpen,
   setSidebarOpen,
   pathname,
-  adminRole,
   userEmail,
   navigationGroups,
   children
@@ -262,7 +305,6 @@ function AdminLayoutContent({
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   pathname: string;
-  adminRole: AdminRole;
   userEmail: string | null;
   navigationGroups: NavigationGroup[];
   children: React.ReactNode;
@@ -305,6 +347,35 @@ function AdminLayoutContent({
     return (
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
         {navigationGroups.map((group) => {
+          // If it's a single item group, render as direct link (no dropdown)
+          if (group.isSingleItem && group.items.length > 0) {
+            const item = group.items[0];
+            const isActive = isItemActive(item.href);
+            return (
+              <Link
+                key={group.name}
+                href={item.href}
+                onClick={onNavClick}
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium transition-all mb-2 ${isActive
+                  ? 'bg-[#FF6A00] text-white shadow-md'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6A00]'
+                  }`}
+              >
+                <div className={`mr-3 p-1.5 ${isActive
+                  ? 'bg-white/20'
+                  : `${item.bgColor} ${item.color}`
+                  }`}>
+                  <group.icon className={`h-4 w-4 ${isActive ? 'text-white' : ''}`} />
+                </div>
+                {sidebarOpen && <span className="flex-1">{group.name}</span>}
+                {isActive && sidebarOpen && (
+                  <div className="h-2 w-2 bg-white"></div>
+                )}
+              </Link>
+            );
+          }
+
+          // Multi-item groups render as dropdown
           const hasActiveItem = group.items.some(item => isItemActive(item.href));
           const isGroupOpen = openGroups[group.name] ?? false;
 
@@ -412,11 +483,30 @@ function AdminLayoutContent({
             {/* Quick Search - Center */}
             <div className="flex flex-1 justify-center max-w-lg mx-auto">
               <div className="relative w-full">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <button
+                  onClick={() => {
+                    const input = document.getElementById('global-search') as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      router.push(`/admin/bookings?query=${encodeURIComponent(input.value.trim())}`);
+                    }
+                  }}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                </button>
                 <input
+                  id="global-search"
                   type="text"
-                  placeholder="Quick Search..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                  placeholder="Quick Search (Enter to search)..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 text-sm rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val) {
+                        router.push(`/admin/bookings?query=${encodeURIComponent(val)}`);
+                      }
+                    }
+                  }}
                 />
               </div>
             </div>

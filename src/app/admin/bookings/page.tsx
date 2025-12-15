@@ -538,7 +538,7 @@ export default function AdminBookingsPage() {
                               Mark as Confirmed
                             </button>
                           )}
-                          {selected.status !== 'cancelled' && (
+                          {selected.status !== 'cancelled' && selected.status !== 'checked_out' && (
                             <button
                               onClick={() => setConfirmAction({ type: 'cancel', booking: selected })}
                               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"

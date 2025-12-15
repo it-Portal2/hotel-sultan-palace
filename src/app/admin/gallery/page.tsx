@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getGalleryImages, deleteGalleryImage, GalleryImage } from '@/lib/firestoreService';
 import { PlusIcon, TrashIcon, PencilSquareIcon, PhotoIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import BackButton from '@/components/admin/BackButton';
+
 import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function AdminGalleryPage() {
@@ -16,7 +16,7 @@ export default function AdminGalleryPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const dedupeRun = useRef(false);
-  
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -49,7 +49,7 @@ export default function AdminGalleryPage() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter(item => 
+    return items.filter(item =>
       (item.type || '').toLowerCase().includes(q)
     );
   }, [items, searchQuery]);
@@ -71,25 +71,25 @@ export default function AdminGalleryPage() {
     setConfirmId(null);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin" /></div>;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
   });
 
   return (
     <div className="space-y-8">
-      <BackButton href="/admin" label="Back to Dashboard" />
-      
+
+
       {/* Simple Header with Inline Stats */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Gallery</h1>
           <p className="text-sm text-gray-500 mt-1">Upload images for the gallery • {currentDate}</p>
         </div>
-        
+
         {/* Inline Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -119,11 +119,11 @@ export default function AdminGalleryPage() {
         </div>
         {isReadOnly ? (
           <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Image (Read-Only)
+            <PlusIcon className="h-4 w-4 mr-2" />Add Image (Read-Only)
           </div>
         ) : (
           <Link href="/admin/gallery/new" className="inline-flex items-center rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#FF6A00]/90 transition-colors">
-            <PlusIcon className="h-4 w-4 mr-2"/>Add Image
+            <PlusIcon className="h-4 w-4 mr-2" />Add Image
           </Link>
         )}
       </div>
@@ -152,19 +152,19 @@ export default function AdminGalleryPage() {
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   unoptimized
-                  onError={(e)=>{(e.currentTarget as HTMLImageElement).src='/gallery/gallery-1.png'}}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/gallery/gallery-1.png' }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                 <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   {isReadOnly ? (
                     <>
-                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Editing disabled"><PencilSquareIcon className="h-4 w-4"/></div>
-                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Deletion disabled"><TrashIcon className="h-4 w-4"/></div>
+                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Editing disabled"><PencilSquareIcon className="h-4 w-4" /></div>
+                      <div className="p-1.5 rounded bg-white/90 text-gray-400 cursor-not-allowed shadow" title="Read-only mode: Deletion disabled"><TrashIcon className="h-4 w-4" /></div>
                     </>
                   ) : (
                     <>
-                      <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow transition-colors"><PencilSquareIcon className="h-4 w-4"/></Link>
-                      <button onClick={()=>setConfirmId(i.id)} disabled={deleting===i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50 transition-colors"><TrashIcon className="h-4 w-4"/></button>
+                      <Link href={`/admin/gallery/edit/${i.id}`} className="p-1.5 rounded bg-white/90 text-blue-600 hover:bg-white shadow transition-colors"><PencilSquareIcon className="h-4 w-4" /></Link>
+                      <button onClick={() => setConfirmId(i.id)} disabled={deleting === i.id} className="p-1.5 rounded bg-white/90 text-red-600 hover:bg-white shadow disabled:opacity-50 transition-colors"><TrashIcon className="h-4 w-4" /></button>
                     </>
                   )}
                 </div>
@@ -180,8 +180,8 @@ export default function AdminGalleryPage() {
             <h3 className="text-lg font-semibold text-gray-900">Delete image?</h3>
             <p className="mt-2 text-sm text-gray-600">This action cannot be undone.</p>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={()=>setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting===confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting===confirmId?'Deleting...':'Delete'}</button>
+              <button onClick={() => setConfirmId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting === confirmId} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{deleting === confirmId ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>
