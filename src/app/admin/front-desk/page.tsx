@@ -46,6 +46,7 @@ export default function FrontDeskPage() {
 
   useEffect(() => {
     loadBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadBookings = async () => {

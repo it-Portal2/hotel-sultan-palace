@@ -19,8 +19,7 @@ import type {
     LowStockAlert,
     LedgerEntry,
     Expense,
-    FinancialSummary,
-    StaffMember
+    FinancialSummary
 } from './firestoreService';
 
 // ==================== Inventory Management CRUD Operations ====================

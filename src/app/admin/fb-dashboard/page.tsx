@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { CalendarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 
 import { getFBRevenue, getFBWeeklyRevenue, FBRevenue } from '@/lib/firestoreService';
-import Link from 'next/link';
+
 
 type ViewType = 'overview' | 'revenue';
 type TimeRange = 'hourly' | 'weekly';
@@ -109,8 +109,8 @@ export default function FBDashboardPage() {
             <button
               onClick={() => setActiveView('overview')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${activeView === 'overview'
-                  ? 'text-[#1D69F9] border-b-2 border-[#1D69F9]'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'text-[#1D69F9] border-b-2 border-[#1D69F9]'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Overview
@@ -118,8 +118,8 @@ export default function FBDashboardPage() {
             <button
               onClick={() => setActiveView('revenue')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${activeView === 'revenue'
-                  ? 'text-[#1D69F9] border-b-2 border-[#1D69F9]'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'text-[#1D69F9] border-b-2 border-[#1D69F9]'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Revenue
@@ -132,8 +132,8 @@ export default function FBDashboardPage() {
               <button
                 onClick={() => setTimeRange('hourly')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${timeRange === 'hourly'
-                    ? 'bg-[#1D69F9] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-[#1D69F9] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 Hourly
@@ -141,8 +141,8 @@ export default function FBDashboardPage() {
               <button
                 onClick={() => setTimeRange('weekly')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${timeRange === 'weekly'
-                    ? 'bg-[#1D69F9] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-[#1D69F9] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 Weekly
@@ -282,8 +282,8 @@ function RevenueView({
                 key={range}
                 onClick={() => setTimeRange(range.toLowerCase() as any)}
                 className={`px-3 py-1 text-xs font-medium rounded transition-colors ${timeRange === range.toLowerCase()
-                    ? 'bg-[#1D69F9] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-[#1D69F9] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 {range}
@@ -309,8 +309,8 @@ function RevenueView({
               <div
                 key={week.weekNumber}
                 className={`p-4 rounded-lg border ${index === weeklyRevenue.length - 1
-                    ? 'bg-[#1D69F9]/10 border-[#1D69F9]'
-                    : 'bg-gray-50 border-gray-200'
+                  ? 'bg-[#1D69F9]/10 border-[#1D69F9]'
+                  : 'bg-gray-50 border-gray-200'
                   }`}
               >
                 <div className="flex items-center justify-between">
