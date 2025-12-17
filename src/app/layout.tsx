@@ -2,13 +2,7 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
-import { BookingEnquiryProvider } from "@/context/BookingEnquiryContext";
-import NotificationPermission from "@/components/notifications/NotificationPermission";
-import NotificationListener from "@/components/notifications/NotificationListener";
-import OfferNotificationManager from "@/components/notifications/OfferNotificationManager";
 
 export const metadata: Metadata = {
   title: "The Sultan Palace",
@@ -32,8 +26,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" 
+        <link
+          href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap"
           rel="stylesheet"
         />
       </head>
@@ -42,18 +36,9 @@ export default function RootLayout({
       >
         {/* Tailwind keep animation classes */}
         <div className="hidden animate-slide-in-bottom animate-slide-in-left animate-slide-in-left-delay-200 animate-slide-in-left-delay-400" />
-        <CartProvider>
-          <ToastProvider>
-            <BookingEnquiryProvider>
-              {children}
-              <NotificationListener />
-              <NotificationPermission />
-              <OfferNotificationManager />
-            </BookingEnquiryProvider>
-          </ToastProvider>
-        </CartProvider>
-
-        <WhatsAppButton />
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

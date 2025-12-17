@@ -36,18 +36,20 @@ export default function MapModal({ isOpen, onClose, location }: MapModalProps) {
 
   // Google Maps embed URL (using search query - no API key needed for basic embed)
   const mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(location.address)}&output=embed&zoom=15`;
-  
+
   // Google Maps directions URL
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(location.address)}`;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       onClick={onClose}
     >
+      <div className="fixed inset-0 bg-transparent" onClick={onClose}></div>
       <div
-        className="relative w-full h-full md:w-[90%] md:h-[90%] md:max-w-6xl md:max-h-[90vh] bg-white rounded-lg md:rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-full h-full md:w-[90%] md:h-[90%] md:max-w-6xl md:max-h-[90vh] bg-white rounded-lg md:rounded-xl shadow-2xl overflow-hidden border border-gray-100"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(0, 0, 0, 0.1)' }}
       >
         {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between">

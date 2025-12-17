@@ -1,318 +1,315 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Inventory Management CRUD Operations Extension
 import {
-    collection as firestoreCollection,
-    doc as firestoreDoc,
-    getDocs as firestoreGetDocs,
-    getDoc as firestoreGetDoc,
-    addDoc as firestoreAddDoc,
-    updateDoc as firestoreUpdateDoc,
-    query as firestoreQuery,
-    orderBy as firestoreOrderBy,
-    where as firestoreWhere,
-    serverTimestamp as firestoreServerTimestamp
+    collection,
+    doc,
+    getDocs,
+    getDoc,
+    addDoc,
+    updateDoc,
+    query,
+    where,
+    orderBy,
+    serverTimestamp,
+    runTransaction,
+    Timestamp,
+    limit,
+    deleteDoc
 } from 'firebase/firestore';
-import { db as firestoreDb } from './firebase';
+import { db } from './firebase';
 import type {
+    Supplier,
+    PurchaseOrder,
     InventoryItem,
     InventoryTransaction,
-    LowStockAlert,
-    LedgerEntry,
-    Expense,
-    FinancialSummary
+    Recipe,
+    FoodOrder,
+    LowStockAlert
 } from './firestoreService';
 
-// ==================== Inventory Management CRUD Operations ====================
+// ==================== SUPPLIERS ====================
 
-// Get all inventory items
-export const getInventoryItems = async (): Promise<InventoryItem[]> => {
-    if (!firestoreDb) return [];
-    try {
-        const inventoryRef = firestoreCollection(firestoreDb, 'inventory');
-        const q = firestoreQuery(inventoryRef, firestoreWhere('isActive', '==', true), firestoreOrderBy('name', 'asc'));
-        const querySnapshot = await firestoreGetDocs(q);
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                updatedAt: data.updatedAt?.toDate() || new Date(),
-                expiryDate: data.expiryDate?.toDate(),
-                lastRestocked: data.lastRestocked?.toDate(),
-            } as InventoryItem;
-        });
-    } catch (error) {
-        console.error('Error fetching inventory items:', error);
-        return [];
-    }
+export const getSuppliers = async (): Promise<Supplier[]> => {
+    if (!db) return [];
+    const q = query(collection(db, 'suppliers'), orderBy('name'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Supplier));
 };
 
-// Get single inventory item
-export const getInventoryItem = async (id: string): Promise<InventoryItem | null> => {
-    if (!firestoreDb) return null;
-    try {
-        const itemRef = firestoreDoc(firestoreDb, 'inventory', id);
-        const itemSnap = await firestoreGetDoc(itemRef);
-        if (itemSnap.exists()) {
-            const data = itemSnap.data();
-            return {
-                id: itemSnap.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                updatedAt: data.updatedAt?.toDate() || new Date(),
-                expiryDate: data.expiryDate?.toDate(),
-                lastRestocked: data.lastRestocked?.toDate(),
-            } as InventoryItem;
-        }
-        return null;
-    } catch (error) {
-        console.error('Error fetching inventory item:', error);
-        return null;
-    }
+export const createSupplier = async (data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = await addDoc(collection(db, 'suppliers'), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
 };
 
-// Create inventory item
-export const createInventoryItem = async (itemData: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
-    if (!firestoreDb) return null;
-    try {
-        const inventoryRef = firestoreCollection(firestoreDb, 'inventory');
-        const docRef = await firestoreAddDoc(inventoryRef, {
-            ...itemData,
-            createdAt: firestoreServerTimestamp(),
-            updatedAt: firestoreServerTimestamp(),
-        });
-        return docRef.id;
-    } catch (error) {
-        console.error('Error creating inventory item:', error);
-        return null;
-    }
+// ==================== PURCHASE ORDERS ====================
+
+export const createPurchaseOrder = async (poData: Partial<PurchaseOrder>): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+
+    // Generate simple PO Number (improve in production with counters)
+    const poNumber = `PO-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
+
+    const docRef = await addDoc(collection(db, 'purchaseOrders'), {
+        ...poData,
+        poNumber,
+        status: 'draft',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
 };
 
-// Update inventory item
-export const updateInventoryItem = async (id: string, itemData: Partial<InventoryItem>): Promise<boolean> => {
-    if (!firestoreDb) return false;
-    try {
-        const itemRef = firestoreDoc(firestoreDb, 'inventory', id);
-        await firestoreUpdateDoc(itemRef, {
-            ...itemData,
-            updatedAt: firestoreServerTimestamp(),
-        });
-        return true;
-    } catch (error) {
-        console.error('Error updating inventory item:', error);
-        return false;
-    }
-};
+export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId: string, quantity: number }[], receivedBy: string) => {
+    if (!db) throw new Error("Firestore not initialized");
+    const firestore = db;
 
-// Delete inventory item (soft delete)
-export const deleteInventoryItem = async (id: string): Promise<boolean> => {
-    if (!firestoreDb) return false;
-    try {
-        const itemRef = firestoreDoc(firestoreDb, 'inventory', id);
-        await firestoreUpdateDoc(itemRef, {
-            isActive: false,
-            updatedAt: firestoreServerTimestamp(),
-        });
-        return true;
-    } catch (error) {
-        console.error('Error deleting inventory item:', error);
-        return false;
-    }
-};
+    await runTransaction(firestore, async (transaction) => {
+        const poRef = doc(firestore, 'purchaseOrders', poId);
+        const poSnap = await transaction.get(poRef);
+        if (!poSnap.exists()) throw new Error("PO not found");
 
-// Record inventory transaction
-export const recordInventoryTransaction = async (
-    transactionData: Omit<InventoryTransaction, 'id' | 'createdAt'>
-): Promise<string | null> => {
-    if (!firestoreDb) return null;
-    try {
-        // Update inventory item stock
-        const itemRef = firestoreDoc(firestoreDb, 'inventory', transactionData.inventoryItemId);
-        const updateData: any = {
-            currentStock: transactionData.newStock,
-            updatedAt: firestoreServerTimestamp(),
-        };
-        if (transactionData.transactionType === 'purchase') {
-            updateData.lastRestocked = firestoreServerTimestamp();
-        }
-        await firestoreUpdateDoc(itemRef, updateData);
+        const po = poSnap.data() as PurchaseOrder;
 
-        // Record transaction
-        const transactionsRef = firestoreCollection(firestoreDb, 'inventoryTransactions');
-        const docRef = await firestoreAddDoc(transactionsRef, {
-            ...transactionData,
-            createdAt: firestoreServerTimestamp(),
-        });
+        // Update Inventory and Create Transactions
+        for (const item of receivedItems) {
+            const itemRef = doc(firestore, 'inventory', item.itemId);
+            const itemSnap = await transaction.get(itemRef);
+            if (!itemSnap.exists()) continue;
 
-        // Check if stock is below reorder point and create alert
-        const item = await getInventoryItem(transactionData.inventoryItemId);
-        if (item && item.currentStock <= item.reorderPoint) {
-            await createLowStockAlert(item);
-        }
+            const invItem = itemSnap.data() as InventoryItem;
+            const newStock = (invItem.currentStock || 0) + item.quantity;
 
-        return docRef.id;
-    } catch (error) {
-        console.error('Error recording inventory transaction:', error);
-        return null;
-    }
-};
+            // Update Inventory
+            transaction.update(itemRef, {
+                currentStock: newStock,
+                lastRestocked: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
 
-// Get inventory transactions
-export const getInventoryTransactions = async (
-    itemId?: string,
-    startDate?: Date,
-    endDate?: Date
-): Promise<InventoryTransaction[]> => {
-    if (!firestoreDb) return [];
-    try {
-        const transactionsRef = firestoreCollection(firestoreDb, 'inventoryTransactions');
-        let q = firestoreQuery(transactionsRef, firestoreOrderBy('createdAt', 'desc'));
-
-        if (itemId) {
-            q = firestoreQuery(transactionsRef, firestoreWhere('inventoryItemId', '==', itemId), firestoreOrderBy('createdAt', 'desc'));
-        }
-
-        const querySnapshot = await firestoreGetDocs(q);
-        let transactions = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-            } as InventoryTransaction;
-        });
-
-        // Filter by date range if provided
-        if (startDate || endDate) {
-            transactions = transactions.filter(t => {
-                const transDate = t.createdAt;
-                if (startDate && transDate < startDate) return false;
-                if (endDate && transDate > endDate) return false;
-                return true;
+            // Create Transaction Record
+            const transRef = doc(collection(firestore, 'inventoryTransactions'));
+            transaction.set(transRef, {
+                inventoryItemId: item.itemId,
+                itemName: invItem.name,
+                transactionType: 'purchase',
+                quantity: item.quantity,
+                unitCost: invItem.unitCost || 0, // Should come from PO ideally
+                totalCost: (invItem.unitCost || 0) * item.quantity,
+                previousStock: invItem.currentStock || 0,
+                newStock: newStock,
+                reason: `Received PO ${po.poNumber}`,
+                referenceId: poId,
+                performedBy: receivedBy,
+                createdAt: serverTimestamp()
             });
         }
 
-        return transactions;
-    } catch (error) {
-        console.error('Error fetching inventory transactions:', error);
-        return [];
-    }
-};
-
-// Create low stock alert
-const createLowStockAlert = async (item: InventoryItem): Promise<void> => {
-    if (!firestoreDb) return;
-    try {
-        // Check if alert already exists
-        const alertsRef = firestoreCollection(firestoreDb, 'lowStockAlerts');
-        const q = firestoreQuery(
-            alertsRef,
-            firestoreWhere('inventoryItemId', '==', item.id),
-            firestoreWhere('status', '==', 'active')
-        );
-        const existing = await firestoreGetDocs(q);
-
-        if (existing.empty) {
-            await firestoreAddDoc(alertsRef, {
-                inventoryItemId: item.id,
-                itemName: item.name,
-                currentStock: item.currentStock,
-                minStockLevel: item.minStockLevel,
-                status: 'active',
-                createdAt: firestoreServerTimestamp(),
-            });
-        }
-    } catch (error) {
-        console.error('Error creating low stock alert:', error);
-    }
-};
-
-// Get low stock alerts
-export const getLowStockAlerts = async (): Promise<LowStockAlert[]> => {
-    if (!firestoreDb) return [];
-    try {
-        const alertsRef = firestoreCollection(firestoreDb, 'lowStockAlerts');
-        const q = firestoreQuery(alertsRef, firestoreWhere('status', '==', 'active'), firestoreOrderBy('createdAt', 'desc'));
-        const querySnapshot = await firestoreGetDocs(q);
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                resolvedAt: data.resolvedAt?.toDate(),
-            } as LowStockAlert;
+        // Update PO Status
+        transaction.update(poRef, {
+            status: 'received',
+            updatedAt: serverTimestamp()
         });
-    } catch (error) {
-        console.error('Error fetching low stock alerts:', error);
-        return [];
-    }
+    });
 };
 
-// Resolve low stock alert
-export const resolveLowStockAlert = async (id: string): Promise<boolean> => {
-    if (!firestoreDb) return false;
-    try {
-        const alertRef = firestoreDoc(firestoreDb, 'lowStockAlerts', id);
-        await firestoreUpdateDoc(alertRef, {
-            status: 'resolved',
-            resolvedAt: firestoreServerTimestamp(),
-        });
-        return true;
-    } catch (error) {
-        console.error('Error resolving low stock alert:', error);
-        return false;
-    }
+// ==================== RECIPES & COSTING ====================
+
+export const createRecipe = async (data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = await addDoc(collection(db, 'recipes'), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
 };
 
-// Get inventory value report
-export const getInventoryValueReport = async (): Promise<{ totalValue: number; categoryBreakdown: Record<string, number> }> => {
-    if (!firestoreDb) return { totalValue: 0, categoryBreakdown: {} };
-    try {
-        const items = await getInventoryItems();
-        let totalValue = 0;
-        const categoryBreakdown: Record<string, number> = {};
-
-        items.forEach(item => {
-            const itemValue = item.currentStock * item.unitCost;
-            totalValue += itemValue;
-            categoryBreakdown[item.category] = (categoryBreakdown[item.category] || 0) + itemValue;
-        });
-
-        return { totalValue, categoryBreakdown };
-    } catch (error) {
-        console.error('Error generating inventory value report:', error);
-        return { totalValue: 0, categoryBreakdown: {} };
-    }
+export const getRecipeByMenuItem = async (menuItemId: string): Promise<Recipe | null> => {
+    if (!db) return null;
+    const q = query(collection(db, 'recipes'), where('menuItemId', '==', menuItemId), limit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return { id: snap.docs[0].id, ...snap.docs[0].data() } as Recipe;
 };
 
-// Get inventory usage report
-export const getInventoryUsageReport = async (
-    startDate: Date,
-    endDate: Date
-): Promise<{ itemName: string; totalUsage: number; totalCost: number }[]> => {
-    if (!firestoreDb) return [];
-    try {
-        const transactions = await getInventoryTransactions(undefined, startDate, endDate);
-        const usageMap: Record<string, { totalUsage: number; totalCost: number }> = {};
+// ==================== STOCK DEDUCTION (THE MAGIC) ====================
 
-        transactions
-            .filter(t => t.transactionType === 'usage')
-            .forEach(t => {
-                if (!usageMap[t.itemName]) {
-                    usageMap[t.itemName] = { totalUsage: 0, totalCost: 0 };
+/**
+ * Call this when a Food Order is "Confirmed" or "Completed"
+ * It finds recipes for all items and deducts inventory.
+ */
+export const processOrderInventoryDeduction = async (orderId: string, performedBy: string) => {
+    if (!db) throw new Error("Firestore not initialized");
+    const firestore = db;
+
+    const orderRef = doc(firestore, 'foodOrders', orderId);
+
+    await runTransaction(firestore, async (transaction) => {
+        const orderSnap = await transaction.get(orderRef);
+        if (!orderSnap.exists()) throw new Error("Order not found");
+        const order = orderSnap.data() as FoodOrder;
+
+        // Prevent double deduction
+        // In real app, check a flag like order.inventoryDeducted = true
+
+        for (const item of order.items) {
+            // Find Recipe
+            const recipesQuery = query(collection(firestore, 'recipes'), where('menuItemId', '==', item.menuItemId), limit(1));
+            const recipeSnap = await getDocs(recipesQuery);
+
+            if (!recipeSnap.empty) {
+                const recipe = recipeSnap.docs[0].data() as Recipe;
+
+                // Deduct Ingredients
+                for (const ingredient of recipe.ingredients) {
+                    const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
+                    const invSnap = await transaction.get(invRef);
+                    if (invSnap.exists()) {
+                        const currentInv = invSnap.data() as InventoryItem;
+                        const deductionAmount = ingredient.quantity * item.quantity;
+
+                        const newStock = (currentInv.currentStock || 0) - deductionAmount;
+
+                        transaction.update(invRef, {
+                            currentStock: newStock,
+                            updatedAt: serverTimestamp()
+                        });
+
+                        // Create Transaction Record
+                        const transRef = doc(collection(firestore, 'inventoryTransactions'));
+                        transaction.set(transRef, {
+                            inventoryItemId: ingredient.inventoryItemId,
+                            itemName: currentInv.name,
+                            transactionType: 'sales_deduction',
+                            quantity: -deductionAmount,
+                            unitCost: currentInv.unitCost || 0,
+                            totalCost: (currentInv.unitCost || 0) * deductionAmount,
+                            previousStock: currentInv.currentStock,
+                            newStock: newStock,
+                            reason: `Order ${order.orderNumber} - ${item.name}`,
+                            referenceId: orderId,
+                            performedBy: performedBy,
+                            createdAt: serverTimestamp()
+                        });
+                    }
                 }
-                usageMap[t.itemName].totalUsage += t.quantity;
-                usageMap[t.itemName].totalCost += t.totalCost;
-            });
+            }
+        }
+    });
+};
 
-        return Object.entries(usageMap).map(([itemName, data]) => ({
-            itemName,
-            ...data,
-        }));
-    } catch (error) {
-        console.error('Error generating inventory usage report:', error);
+// ==================== BASIC INVENTORY CRUD ====================
+
+export const getInventoryItems = async (): Promise<InventoryItem[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'inventory'), orderBy('name'));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+    } catch (e) {
+        console.error(e);
         return [];
     }
+};
+
+export const createInventoryItem = async (data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = await addDoc(collection(db, 'inventory'), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const updateInventoryItem = async (id: string, data: Partial<InventoryItem>): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'inventory', id);
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+export const deleteInventoryItem = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'inventory', id));
+};
+
+// ==================== STOCK ADJUSTMENTS ====================
+
+export const createStockAdjustment = async (
+    itemId: string,
+    quantity: number, // positive (add) or negative (deduct)
+    type: 'adjustment' | 'waste' | 'usage' | 'transfer_in' | 'transfer_out',
+    reason: string,
+    performedBy: string
+): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const firestore = db;
+
+    await runTransaction(firestore, async (transaction) => {
+        const itemRef = doc(firestore, 'inventory', itemId);
+        const itemSnap = await transaction.get(itemRef);
+        if (!itemSnap.exists()) throw new Error("Item not found");
+
+        const item = itemSnap.data() as InventoryItem;
+        const currentStock = item.currentStock || 0;
+        const newStock = currentStock + quantity;
+
+        if (newStock < 0) throw new Error("Insufficient stock");
+
+        // Update Inventory
+        transaction.update(itemRef, {
+            currentStock: newStock,
+            updatedAt: serverTimestamp()
+        });
+
+        // Create Transaction Record
+        const transRef = doc(collection(firestore, 'inventoryTransactions'));
+        transaction.set(transRef, {
+            inventoryItemId: itemId,
+            itemName: item.name,
+            transactionType: type,
+            quantity: quantity,
+            unitCost: item.unitCost || 0,
+            totalCost: (item.unitCost || 0) * Math.abs(quantity),
+            previousStock: currentStock,
+            newStock: newStock,
+            reason: reason,
+            performedBy: performedBy,
+            createdAt: serverTimestamp()
+        });
+    });
+};
+
+export const getInventoryTransactions = async (): Promise<InventoryTransaction[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'inventoryTransactions'), orderBy('createdAt', 'desc'), limit(100));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate() || new Date()
+        } as InventoryTransaction));
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+};
+
+export const getLowStockAlerts = async (): Promise<LowStockAlert[]> => {
+    const items = await getInventoryItems();
+    return items
+        .filter(i => (i.currentStock || 0) <= (i.minStockLevel || 0))
+        .map(i => ({
+            id: `alert-${i.id}`, // Generate a unique ID for the alert
+            inventoryItemId: i.id,
+            itemName: i.name,
+            currentStock: i.currentStock || 0,
+            minStockLevel: i.minStockLevel || 0,
+            status: 'active',
+            createdAt: new Date()
+        }));
 };

@@ -358,9 +358,10 @@ export const getStaffMembers = async (): Promise<StaffMember[]> => {
     if (!db) return [];
     try {
         const staffRef = collection(db, 'staffMembers');
-        const q = query(staffRef, where('status', '!=', 'terminated'), orderBy('status'), orderBy('name', 'asc'));
+        // Removed orderBy('name', 'asc') to avoid composite index requirement with inequality filter
+        const q = query(staffRef, where('status', '!=', 'terminated'), orderBy('status'));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        const staff = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -370,6 +371,9 @@ export const getStaffMembers = async (): Promise<StaffMember[]> => {
                 updatedAt: data.updatedAt?.toDate() || new Date(),
             } as StaffMember;
         });
+
+        // Sort by name in memory
+        return staff.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
         console.error('Error fetching staff members:', error);
         return [];

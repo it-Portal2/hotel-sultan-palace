@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Room } from '@/lib/firestoreService';
-import { 
+import {
   MdClose as CloseIcon,
   MdOutlineShower as BathIcon,
   MdOutlineWifi as WifiIcon,
@@ -55,7 +55,7 @@ const facilities = [
 // Function to get room-specific gallery images from public/rooms
 const getRoomGalleryImages = (roomName: string): string[] => {
   const roomNameLower = roomName.toLowerCase();
-  
+
   // Share images for all rooms (6 images)
   const shareImages = [
     '/rooms/share1.jpg',
@@ -65,10 +65,10 @@ const getRoomGalleryImages = (roomName: string): string[] => {
     '/rooms/share5.jpg',
     '/rooms/share6.jpg',
   ];
-  
+
   // Determine suite type and add specific images
   let suiteSpecificImages: string[] = [];
-  
+
   if (roomNameLower.includes('garden')) {
     // Garden Suite: add gd images
     suiteSpecificImages = [
@@ -87,15 +87,15 @@ const getRoomGalleryImages = (roomName: string): string[] => {
       '/rooms/oc1.jpg',
     ];
   }
-  
+
   // Combine share images with suite-specific images
   const allImages = [...shareImages, ...suiteSpecificImages];
-  
+
   // Ensure we have exactly 8 images (pad with last share image if needed)
   while (allImages.length < 8) {
     allImages.push(shareImages[shareImages.length - 1]);
   }
-  
+
   // Return first 8 images
   return allImages.slice(0, 8);
 };
@@ -107,16 +107,16 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Get room-specific gallery images from public/rooms
     const roomGalleryImages = getRoomGalleryImages(room.name);
-    
+
     // Use room image as first/main image, then add 8 gallery images from public/rooms
     const allImages = [
       room.image || '/figma/placeholder.jpg',
       ...roomGalleryImages
     ];
-    
+
     setGalleryImages(allImages);
   }, [room]);
 
@@ -127,7 +127,7 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-      
+
       return () => {
         document.body.style.position = '';
         document.body.style.top = '';
@@ -138,7 +138,7 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
     }
   }, [isOpen]);
 
-  if (!isOpen || !mounted) return null; 
+  if (!isOpen || !mounted) return null;
 
   const getAmenityIcon = (amenity: string): IconType => {
     const amenityLower = amenity.toLowerCase();
@@ -155,14 +155,19 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
   };
 
   const modalContent = (
-    <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
       style={{ zIndex: 99999 }}
     >
-      <div 
-        className="relative bg-white rounded-lg max-w-6xl w-full my-auto shadow-2xl flex flex-col md:flex-row md:items-stretch"
+      <div
+        className="fixed inset-0 bg-transparent"
+        onClick={onClose}
+      ></div>
+      <div
+        className="relative bg-white rounded-lg max-w-6xl w-full my-auto shadow-2xl flex flex-col md:flex-row md:items-stretch border border-gray-100"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(0, 0, 0, 0.1)' }}
       >
         <button
           onClick={onClose}
@@ -202,11 +207,10 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index + 1)}
-                    className={`relative aspect-square overflow-hidden rounded border-2 transition-all ${
-                      selectedImageIndex === index + 1
+                    className={`relative aspect-square overflow-hidden rounded border-2 transition-all ${selectedImageIndex === index + 1
                         ? 'border-[#1D69F9] ring-1 ring-[#1D69F9] ring-offset-0.5'
                         : 'border-transparent hover:border-gray-300'
-                    }`}
+                      }`}
                     aria-label={`View image ${index + 2}`}
                   >
                     <Image
@@ -229,7 +233,7 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
         <div className="w-full md:w-1/2 p-4 md:p-5 overflow-y-auto max-h-[90vh]">
           <div className="mb-3">
             <h2 className="text-xl font-semibold text-[#1A1A1A] mb-2">{room.name}</h2>
-            
+
             <div className="flex flex-wrap items-center gap-2 text-xs text-[#666666]">
               <div className="flex items-center gap-1">
                 <SizeIcon className="text-base" />

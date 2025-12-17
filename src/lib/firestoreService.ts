@@ -123,6 +123,7 @@ export interface ContactForm {
   name: string;
   phone: string;
   email: string;
+  subject: string;
   website?: string;
   message: string;
   status: 'new' | 'read' | 'replied';
@@ -579,43 +580,148 @@ export interface RoomType {
 
 // ==================== Inventory Management Interfaces ====================
 
-// Inventory Item Interface
-export interface InventoryItem {
+export interface Supplier {
   id: string;
   name: string;
-  category: 'food' | 'beverage' | 'amenity' | 'supply' | 'linen' | 'cleaning' | 'other';
-  subcategory?: string;
-  sku: string;
-  unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'other';
-  currentStock: number;
-  minStockLevel: number;
-  maxStockLevel: number;
-  reorderPoint: number;
-  unitCost: number;
-  supplier?: string;
-  location?: string; // Storage location
-  expiryDate?: Date;
-  lastRestocked?: Date;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  taxId?: string;
+  paymentTerms?: string; // e.g., "Net 30"
+  rating?: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Inventory Transaction Interface
+// Enhanced Inventory Item
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'food' | 'beverage' | 'amenity' | 'supply' | 'linen' | 'cleaning' | 'maintenance' | 'other';
+  subcategory?: string;
+  sku: string;
+  unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'can' | 'gram' | 'ml' | 'other';
+
+  // Stock Levels
+  currentStock: number;
+  minStockLevel: number; // Low stock alert
+  maxStockLevel: number; // Overstock alert
+  reorderPoint: number; // Automatic reorder trigger
+
+  // Costing & Valuation
+  unitCost: number; // Moving Average Cost or Last Purchase Price
+  totalValue: number; // currentStock * unitCost
+
+  // Procurement
+  preferredSupplierId?: string;
+  lastPurchasedDate?: Date;
+  lastPurchasedPrice?: number;
+
+  // Storage
+  location?: string; // e.g., "Main Store", "Kitchen Freezer"
+  expiryDate?: Date; // For perishable items
+
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string; // Auto-generated e.g., PO-2024-001
+  supplierId: string;
+  supplierName: string;
+  status: 'draft' | 'sent' | 'received' | 'partially_received' | 'cancelled';
+
+  items: Array<{
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+    receivedQuantity?: number; // For partial delivery
+  }>;
+
+  subtotal: number;
+  taxAmount?: number;
+  shippingCost?: number;
+  totalAmount: number;
+
+  expectedDeliveryDate?: Date;
+  actualDeliveryDate?: Date;
+
+  notes?: string;
+  createdBy: string;
+  approvedBy?: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StockTransfer {
+  id: string;
+  transferNumber: string;
+  fromLocation: string; // e.g. "Main Store"
+  toLocation: string;   // e.g. "Kitchen"
+  status: 'pending' | 'completed' | 'cancelled';
+
+  items: Array<{
+    itemId: string;
+    itemName: string;
+    quantity: number;
+  }>;
+
+  transferredBy: string;
+  date: Date;
+  notes?: string;
+}
+
+export interface Recipe {
+  id: string;
+  menuItemId: string; // Link to Menu Item
+  menuItemName: string;
+
+  ingredients: Array<{
+    inventoryItemId: string;
+    inventoryItemName: string;
+    quantity: number; // Amount used per portion
+    unit: string;
+    costPerUnit: number; // Snapshot of cost at time of recipe creation/update
+    totalCost: number;
+  }>;
+
+  totalCost: number; // Sum of ingredients
+  sellingPrice: number; // From Menu Item
+  foodCostPercentage: number; // (totalCost / sellingPrice) * 100
+
+  instructions?: string;
+  preparationTime?: number;
+
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Inventory Transaction Interface (Enhanced)
 export interface InventoryTransaction {
   id: string;
   inventoryItemId: string;
   itemName: string;
-  transactionType: 'purchase' | 'usage' | 'waste' | 'adjustment' | 'transfer';
-  quantity: number;
+  transactionType: 'purchase' | 'usage' | 'waste' | 'adjustment' | 'transfer_in' | 'transfer_out' | 'sales_deduction';
+
+  quantity: number; // Positive for add, Negative for reduce
   unitCost: number;
   totalCost: number;
+
   previousStock: number;
   newStock: number;
+
   reason?: string;
-  relatedOrderId?: string; // Link to food order if usage
+  referenceId?: string; // Link to PO, Order, or Adjustment ID
+
   performedBy: string; // Staff member
-  notes?: string;
   createdAt: Date;
 }
 
@@ -755,6 +861,41 @@ export interface AuditLog {
   userAgent?: string;
   status: 'success' | 'failed';
   errorMessage?: string;
+  createdAt: Date;
+}
+
+// ==================== Night Audit Interfaces ====================
+
+export interface BusinessDay {
+  id: string; // 'current' (singleton)
+  date: Date; // Current business date
+  status: 'open' | 'closed' | 'audit_in_progress';
+  openedAt: Date;
+  openedBy: string;
+  lastAuditDate?: Date;
+  updatedAt: Date;
+}
+
+export interface NightAuditLog {
+  id: string;
+  date: Date; // The business date being audited
+  startedAt: Date;
+  completedAt?: Date;
+  auditedBy: string;
+  status: 'in_progress' | 'completed' | 'failed';
+  steps: {
+    roomChargesPosted: boolean;
+    roomStatusUpdated: boolean;
+    reportsGenerated: boolean;
+    businessDateRolled: boolean;
+  };
+  summary: {
+    totalRevenue: number;
+    totalOccupiedRooms: number;
+    totalArrivals: number;
+    totalDepartures: number;
+  };
+  notes?: string;
   createdAt: Date;
 }
 
@@ -2650,12 +2791,55 @@ export const deleteGuestService = async (id: string): Promise<boolean> => {
   }
 };
 
+// ==================== Inventory CRUD Operations (Added for Enterprise Upgrade) ====================
+
+export const getInventoryItems = async (): Promise<InventoryItem[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'inventory');
+    const qy = query(c, orderBy('name', 'asc'));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
+      } as InventoryItem;
+    });
+  } catch (e) {
+    console.error('Error fetching inventory items:', e);
+    return [];
+  }
+};
+
+export const getInventoryItem = async (id: string): Promise<InventoryItem | null> => {
+  if (!db) return null;
+  try {
+    const d = doc(db, 'inventory', id);
+    const s = await getDoc(d);
+    if (!s.exists()) return null;
+    const data = s.data();
+    return {
+      id: s.id,
+      ...data,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date()
+    } as InventoryItem;
+  } catch (error) {
+    console.error("Error fetching inventory item:", error);
+    return null;
+  }
+};
+
 // Checkout Bills CRUD Operations
 export const getCheckoutBills = async (): Promise<CheckoutBill[]> => {
   if (!db) return [];
   try {
     const c = collection(db, 'checkoutBills');
     const qy = query(c, orderBy('createdAt', 'desc'));
+
     const snap = await getDocs(qy);
     return snap.docs.map(d => {
       const data = d.data();
@@ -2781,30 +2965,30 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       balance: balance,
       paymentStatus: paymentStatus,
       roomDetails: (booking.rooms || []).map(room => ({
-        roomType: room.type,
-        nights,
-        rate: room.price,
-        total: room.price * nights,
+        roomType: room.type || '',
+        nights: nights || 0,
+        rate: room.price || 0,
+        total: (room.price || 0) * (nights || 0),
       })),
       foodOrders: validFoodOrders.map(order => ({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        date: order.createdAt,
-        amount: order.totalAmount,
+        orderId: order.id || '',
+        orderNumber: order.orderNumber || '',
+        date: order.createdAt || new Date(),
+        amount: order.totalAmount || 0,
       })),
       services: validServices.map(service => ({
-        serviceId: service.id,
-        serviceType: service.serviceType,
-        description: service.description,
-        amount: service.amount,
-        date: service.requestedAt,
+        serviceId: service.id || '',
+        serviceType: service.serviceType || '',
+        description: service.description || '',
+        amount: service.amount || 0,
+        date: service.requestedAt || new Date(),
       })),
       facilities: [], // Can be extended
       addOns: (booking.addOns || []).map(addon => ({
-        name: addon.name,
-        quantity: addon.quantity,
-        price: addon.price,
-        total: addon.price * addon.quantity,
+        name: addon.name || '',
+        quantity: addon.quantity || 0,
+        price: addon.price || 0,
+        total: (addon.price || 0) * (addon.quantity || 0),
       })),
     };
 
@@ -3717,6 +3901,86 @@ export const updateDailyFBRevenue = async (date: Date, orderData: FoodOrder): Pr
     return true;
   } catch (error) {
     console.error('Error updating daily F&B revenue:', error);
+    return false;
+  }
+};
+
+// ==================== Maintenance Module ====================
+
+export interface MaintenanceTicket {
+  id: string;
+  ticketNumber: string;
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  location: string; // e.g. "Room 101", "Lobby", "Kitchen"
+  reportedBy: string; // User ID or Name
+  assignedTo?: string; // User ID or Name
+  images?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  resolvedAt?: Date;
+  roomNumber?: string; // Optional link to room
+}
+
+export const getMaintenanceTickets = async (status?: MaintenanceTicket['status']): Promise<MaintenanceTicket[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'maintenance');
+    const qy = query(c, orderBy('createdAt', 'desc'));
+    const snap = await getDocs(qy);
+    let items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        resolvedAt: data.resolvedAt?.toDate(),
+      } as MaintenanceTicket;
+    });
+    if (status) items = items.filter(i => i.status === status);
+    return items;
+  } catch (e) {
+    console.error('Error fetching maintenance tickets:', e);
+    return [];
+  }
+};
+
+export const createMaintenanceTicket = async (data: Omit<MaintenanceTicket, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  if (!db) throw new Error("Firestore unavailable");
+
+  // Generate Ticket Number
+  const c = collection(db, 'maintenance');
+  const snap = await getDocs(query(c, orderBy('createdAt', 'desc'))); // simple counter approach
+  const count = snap.size;
+  const ticketNumber = `MNT-${String(count + 1).padStart(4, '0')}`;
+
+  const docRef = await addDoc(c, {
+    ...data,
+    ticketNumber,
+    status: 'open',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return docRef.id;
+};
+
+export const updateMaintenanceTicket = async (id: string, data: Partial<MaintenanceTicket>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const r = doc(db, 'maintenance', id);
+    const clean: any = { ...data };
+    if (data.status === 'resolved' && !data.resolvedAt) {
+      clean.resolvedAt = serverTimestamp();
+    }
+    clean.updatedAt = serverTimestamp();
+
+    await updateDoc(r, clean);
+    return true;
+  } catch (e) {
+    console.error('Error updating maintenance ticket:', e);
     return false;
   }
 };

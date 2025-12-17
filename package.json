@@ -11,6 +11,7 @@
     "fresh": "npm run clean && npm run build && npm run dev"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@types/nodemailer": "^7.0.4",
     "firebase": "^12.4.0",

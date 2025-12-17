@@ -9,15 +9,15 @@ interface RestrictedActionProps {
   className?: string;
 }
 
-export default function RestrictedAction({ 
-  children, 
+export default function RestrictedAction({
+  children,
   message = "You don't have access to perform this action",
   className = ""
 }: RestrictedActionProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div 
+    <div
       className={`relative inline-block ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
@@ -26,7 +26,7 @@ export default function RestrictedAction({
         {children}
       </div>
       {showTooltip && (
-        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg whitespace-nowrap">
+        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs shadow-lg whitespace-nowrap">
           <div className="flex items-center gap-2">
             <InformationCircleIcon className="h-4 w-4" />
             <span>{message}</span>

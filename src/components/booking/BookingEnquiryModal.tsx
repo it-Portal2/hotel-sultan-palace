@@ -18,7 +18,7 @@ export default function BookingEnquiryModal({ isOpen, onClose }: BookingEnquiryM
     website: '',
     message: ''
   });
-  const [errors, setErrors] = useState<{name?:string; email?:string; phone?:string; message?:string}>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string; message?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isMounted, setIsMounted] = useState(false);
@@ -48,7 +48,7 @@ export default function BookingEnquiryModal({ isOpen, onClose }: BookingEnquiryM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nextErrors: {name?:string; email?:string; phone?:string; message?:string} = {};
+    const nextErrors: { name?: string; email?: string; phone?: string; message?: string } = {};
     if (!formData.name.trim()) nextErrors.name = 'Required';
     if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) nextErrors.email = 'Valid email required';
     if (!formData.phone.trim()) nextErrors.phone = 'Required';
@@ -102,16 +102,16 @@ export default function BookingEnquiryModal({ isOpen, onClose }: BookingEnquiryM
   if (!isMounted || !isOpen) return null;
 
   return createPortal(
-    <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
-      onClick={handleClose}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      
-      {/* Modal */}
-      <div 
-        className="relative bg-[#2C2B28] rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      <div
+        className="fixed inset-0 bg-transparent"
+        onClick={onClose}
+      ></div>
+      <div
+        className="relative bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 border border-gray-100"
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(0, 0, 0, 0.1)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -133,71 +133,71 @@ export default function BookingEnquiryModal({ isOpen, onClose }: BookingEnquiryM
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <input 
+              <input
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.name ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                placeholder="Your name" 
+                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.name ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                placeholder="Your name"
               />
               <MdPerson className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 text-lg pointer-events-none" />
               {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
             </div>
             <div className="relative">
-              <input 
+              <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.email ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                placeholder="Enter email" 
+                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.email ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                placeholder="Enter email"
               />
               <MdAlternateEmail className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 text-lg pointer-events-none" />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
             </div>
             <div className="relative">
-              <input 
+              <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
                 required
-                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.phone ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                placeholder="Phone No." 
+                className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.phone ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                placeholder="Phone No."
               />
               <MdPhone className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 text-lg pointer-events-none" />
               {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
             </div>
             <div className="relative">
-              <input 
+              <input
                 type="url"
                 name="website"
                 value={formData.website}
                 onChange={handleInputChange}
-                className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" 
-                placeholder="Website" 
+                className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]"
+                placeholder="Website"
               />
               <MdLanguage className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 text-lg pointer-events-none" />
             </div>
           </div>
           <div className="relative">
-            <textarea 
+            <textarea
               rows={5}
               name="message"
               value={formData.message}
               onChange={handleInputChange}
               required
-              className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.message ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none`} 
-              placeholder="Message" 
+              className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.message ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none`}
+              placeholder="Message"
             />
             <MdMessage className="absolute right-3 top-4 text-white/50 text-lg pointer-events-none" />
             {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
           </div>
           <div className="space-y-2 pt-2">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSubmitting}
               className="w-full bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei py-3 tracking-wider text-sm md:text-base rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >

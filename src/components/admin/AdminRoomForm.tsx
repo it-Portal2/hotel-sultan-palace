@@ -108,19 +108,19 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // If file is selected but not uploaded, upload it first
     if (selectedFile && !formData.image) {
       showToast('Please upload the selected image first.', 'warning');
       return;
     }
-    
+
     // For new rooms, image is required. For edits, if image exists, use it; otherwise allow empty (will use fallback)
     if (!isEdit && (!formData.image || formData.image.trim() === '')) {
       showToast('Please provide an image URL or upload an image.', 'warning');
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -212,7 +212,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
       const objRef = storageRef(storage, `rooms/${safeKey}/${fileName}`);
       await uploadBytes(objRef, selectedFile, { contentType: selectedFile.type });
       const url = await getDownloadURL(objRef);
-      
+
       // Ensure URL is properly formatted
       if (url && url.trim() !== '') {
         setFormData(prev => ({ ...prev, image: url.trim() }));
@@ -254,7 +254,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
   return (
     <div className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+        <div className="bg-white shadow px-4 py-5 sm:p-6">
           <div className="md:grid md:grid-cols-3 md:gap-6">
             <div className="md:col-span-1">
               <h3 className="text-lg font-medium leading-6 text-gray-900">Room Information</h3>
@@ -276,7 +276,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     minLength={2}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -292,7 +292,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     minLength={2}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -308,7 +308,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     min={0}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -323,7 +323,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={(formData as { cancellationFreeDays?: number }).cancellationFreeDays || ''}
                     onChange={handleInputChange}
                     min={0}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -339,7 +339,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     min={1}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -355,7 +355,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     onChange={handleInputChange}
                     required
                     minLength={10}
-                    className="mt-2 block w-full min-h-[140px] rounded-xl border border-gray-300 bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full min-h-[140px] border border-gray-300 bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -369,7 +369,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="size"
                     value={formData.size}
                     onChange={handleInputChange}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -383,7 +383,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="view"
                     value={formData.view}
                     onChange={handleInputChange}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -397,7 +397,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="beds"
                     value={formData.beds}
                     onChange={handleInputChange}
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
                 </div>
 
@@ -412,7 +412,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     value={formData.image}
                     onChange={handleInputChange}
                     placeholder="Image URL will appear here after upload or paste URL"
-                    className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                   />
 
                   {/* Local file upload */}
@@ -431,7 +431,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                         type="button"
                         onClick={handleUpload}
                         disabled={!selectedFile || uploading}
-                        className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"
+                        className="px-3 py-2 bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"
                       >
                         <CloudArrowUpIcon className="h-4 w-4" /> {uploading ? 'Uploading...' : 'Upload & Use'}
                       </button>
@@ -440,17 +440,17 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Image Preview */}
                   {formData.image && (
                     <div className="mt-3">
                       <p className="text-xs font-semibold text-gray-600 mb-2">Preview:</p>
                       <div className="relative inline-block w-64 h-40">
-                        <Image 
-                          src={formData.image} 
-                          alt="Room preview" 
+                        <Image
+                          src={formData.image}
+                          alt="Room preview"
                           fill
-                          className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                          className="object-cover border-2 border-gray-300 shadow-sm"
                           sizes="256px"
                           unoptimized
                           onError={(e) => {
@@ -459,7 +459,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                             const parent = target.parentElement;
                             if (parent) {
                               const errorDiv = document.createElement('div');
-                              errorDiv.className = 'w-64 h-40 rounded-lg border-2 border-red-300 bg-red-50 flex items-center justify-center';
+                              errorDiv.className = 'w-64 h-40 border-2 border-red-300 bg-red-50 flex items-center justify-center';
                               errorDiv.innerHTML = '<p class="text-xs text-red-600">Failed to load image</p>';
                               parent.appendChild(errorDiv);
                             }
@@ -468,7 +468,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                           title="Remove image"
                         >
                           ×
@@ -483,7 +483,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         </div>
 
         {/* Amenities */}
-        <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+        <div className="bg-white shadow px-4 py-5 sm:p-6">
           <div className="md:grid md:grid-cols-3 md:gap-6">
             <div className="md:col-span-1">
               <h3 className="text-lg font-medium leading-6 text-gray-900">Amenities</h3>
@@ -499,12 +499,12 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                       type="text"
                       value={amenity}
                       onChange={(e) => handleArrayChange('amenities', index, e.target.value)}
-                      className="flex-1 h-11 rounded-xl border border-gray-300 bg-gray-50/60 px-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                      className="flex-1 h-11 border border-gray-300 bg-gray-50/60 px-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
                     />
                     <button
                       type="button"
                       onClick={() => removeArrayItem('amenities', index)}
-                      className="px-3 py-2 border border-red-300 rounded-md text-red-700 hover:bg-red-50"
+                      className="px-3 py-2 border border-red-300 text-red-700 hover:bg-red-50"
                     >
                       Remove
                     </button>
@@ -513,7 +513,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                 <button
                   type="button"
                   onClick={() => addArrayItem('amenities')}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Add Amenity
                 </button>
@@ -527,14 +527,14 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
           <button
             type="button"
             onClick={() => router.push('/admin/rooms')}
-            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+            className="bg-white py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
           >
             {loading ? 'Saving...' : (isEdit ? 'Update Room' : 'Create Room')}
           </button>
