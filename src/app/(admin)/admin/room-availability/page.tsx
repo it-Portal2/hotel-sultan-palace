@@ -13,6 +13,7 @@ import {
 
   XCircleIcon,
   XMarkIcon,
+  InformationCircleIcon
 
 } from '@heroicons/react/24/outline';
 import { FaBed, FaUserCheck, FaUserSlash } from 'react-icons/fa';
@@ -644,6 +645,40 @@ export default function RoomAvailabilityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Legend Popover */}
+          <div className="relative group">
+            <InformationCircleIcon className="h-6 w-6 text-gray-400 hover:text-gray-600 cursor-help" />
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-3 z-50 hidden group-hover:block">
+              <h4 className="text-xs font-bold text-gray-700 mb-2 border-b pb-1">Status Legend</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white bg-green-500 rounded-full p-0.5">
+                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-gray-600">Checked In (White)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-red-500 bg-green-500 rounded-full p-0.5">
+                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-gray-600">Checked Out (Red)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-200 bg-green-500 rounded-full p-0.5">
+                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-gray-600">Future/Conf (Blue)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-300 bg-green-500 rounded-full p-0.5">
+                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-gray-600">Pending (Yellow)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button
             onClick={() => {
               // Show calendar view of walk-in bookings
@@ -813,6 +848,15 @@ export default function RoomAvailabilityPage() {
                                 date >= bar.startDate && date < bar.endDate
                               );
 
+                              // Logic to determine if we should render the start of a booking bar here
+                              // Render if:
+                              // 1. This is the booking start date
+                              // 2. OR this is the first visible date (index 0) AND the booking started before this date AND ends after this date
+                              const shouldRenderBar = bookingBar && (
+                                date.toDateString() === bookingBar.startDate.toDateString() ||
+                                (dateIdx === 0 && bookingBar.startDate < date && bookingBar.endDate > date)
+                              );
+
                               return (
                                 <div
                                   key={dateIdx}
@@ -834,40 +878,79 @@ export default function RoomAvailabilityPage() {
                                     } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHoveredDate ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
                                   style={{ minHeight: '32px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default' }}
                                 >
-                                  {bookingBar && dateIdx === dateRange.dates.findIndex(d =>
-                                    d.toDateString() === bookingBar.startDate.toDateString()
-                                  ) && (
-                                      <div
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleBookingClick(bookingBar.booking);
-                                        }}
-                                        onMouseEnter={() => {
-                                          setHoveredDateIndex(dateIdx);
-                                          setHoveredRoomId(room.roomName);
-                                        }}
-                                        onMouseLeave={() => {
-                                          setHoveredDateIndex(null);
-                                          setHoveredRoomId(null);
-                                        }}
-                                        className="absolute top-0 left-0.5 right-0.5 bg-green-500 text-white text-[10px] py-1.5 px-1 z-10 cursor-pointer hover:bg-green-600 transition-colors leading-tight"
-                                        style={{
-                                          width: `calc(${Math.max(1, Math.ceil((bookingBar.endDate.getTime() - bookingBar.startDate.getTime()) / (1000 * 60 * 60 * 24)))} * 80px - 4px)`,
-                                          minWidth: '60px',
-                                          minHeight: '32px'
-                                        }}
-                                        title={`Click to view details: ${bookingBar.booking.guestDetails?.firstName} ${bookingBar.booking.guestDetails?.lastName}`}
-                                      >
-                                        <div className="font-semibold truncate leading-tight">
-                                          {bookingBar.booking.guestDetails?.firstName} {bookingBar.booking.guestDetails?.lastName}
-                                        </div>
-                                        {bookingBar.booking.paymentStatus === 'paid' && (
-                                          <div className="text-[8px] mt-0.5 flex items-center gap-0.5">
-                                            <span className="bg-red-500 text-white px-0.5 leading-tight">S</span>
+                                  {shouldRenderBar && (
+                                    <div
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleBookingClick(bookingBar.booking);
+                                      }}
+                                      onMouseEnter={() => {
+                                        setHoveredDateIndex(dateIdx);
+                                        setHoveredRoomId(room.roomName);
+                                      }}
+                                      onMouseLeave={() => {
+                                        setHoveredDateIndex(null);
+                                        setHoveredRoomId(null);
+                                      }}
+                                      className="absolute top-0 left-0.5 bg-green-500 text-white text-[10px] py-1.5 px-2 z-10 cursor-pointer hover:bg-green-600 transition-all shadow-sm rounded-sm flex items-center gap-1.5 overflow-hidden"
+                                      style={{
+                                        // Calculate width: 
+                                        // If starts here: (endDate - startDate)
+                                        // If continues from left: (endDate - currentViewStart)
+                                        // BUT formatted to days count.
+                                        // Min width ensures small snippets are visible.
+                                        width: (() => {
+                                          const viewStart = date; // This is either start date or current cell date
+                                          const effectiveEnd = bookingBar.endDate;
+                                          // const diffTime = Math.abs(effectiveEnd.getTime() - viewStart.getTime());
+                                          // const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                          // Fix width calculation to not overflow the row if it goes beyond visible range
+                                          // But for now, simple css overflow hidden on parent or let it scroll is fine.
+                                          // Actually, we need to respect the daysToShow. 
+                                          // Let's just draw it as long as it needs to be, parent overflow-hidden clips it? 
+                                          // No, parent is 'flex-1 flex relative' (row). It might overflow the row container if super long.
+                                          // Better to span only visible days if we want strict clipping, but usually absolute positioning lets it flow.
+                                          // Let's stick to days difference.
+
+                                          // Calculate effective end date for this view
+                                          const viewLimit = new Date(dateRange.end);
+                                          viewLimit.setDate(viewLimit.getDate() + 1);
+                                          viewLimit.setHours(0, 0, 0, 0);
+
+                                          const clampedEnd = effectiveEnd < viewLimit ? effectiveEnd : viewLimit;
+                                          const diff = Math.ceil((clampedEnd.getTime() - viewStart.getTime()) / (1000 * 60 * 60 * 24));
+                                          return `calc(${Math.max(0, diff)} * 80px - 4px)`;
+                                        })(),
+                                        minWidth: '76px',
+                                        minHeight: '26px',
+                                        top: '3px'
+                                      }}
+                                      title={`Click to view details: ${bookingBar.booking.guestDetails?.firstName} ${bookingBar.booking.guestDetails?.lastName}`}
+                                    >
+                                      {/* Icon based on status */}
+                                      {(() => {
+                                        const status = bookingBar.booking.status;
+                                        const iconColor =
+                                          status === 'checked_in' ? 'text-white' :
+                                            status === 'checked_out' ? 'text-red-500' :
+                                              status === 'confirmed' ? 'text-blue-200' :
+                                                'text-yellow-300';
+
+                                        return (
+                                          <div className="bg-green-600/30 p-0.5 rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-3 h-3 ${iconColor}`}>
+                                              <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                                            </svg>
                                           </div>
-                                        )}
+                                        );
+                                      })()}
+
+                                      <div className="font-semibold truncate leading-tight text-white/90">
+                                        {bookingBar.booking.guestDetails?.firstName} {bookingBar.booking.guestDetails?.lastName}
                                       </div>
-                                    )}
+                                    </div>
+                                  )}
                                   {!bookingBar && avail?.blocked && (() => {
                                     const roomStatus = getRoomStatus(room.roomName);
                                     const isInMaintenance = roomStatus?.status === 'maintenance';

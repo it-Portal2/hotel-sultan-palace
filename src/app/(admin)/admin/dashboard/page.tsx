@@ -8,7 +8,10 @@ import {
   getAllContactForms,
   getAllBookingEnquiries,
   getRoomStatuses,
-  getRooms
+  getRooms,
+  getPendingWorkOrders,
+  getLowStockInventory,
+  getPendingPurchaseOrders
 } from '@/lib/firestoreService';
 import StatsOverview from '@/components/admin/dashboard/StatsOverview';
 import OccupancyCharts from '@/components/admin/dashboard/OccupancyCharts';
@@ -16,7 +19,7 @@ import StatusCharts from '@/components/admin/dashboard/StatusCharts';
 import ActivitySection from '@/components/admin/dashboard/ActivitySection';
 
 // --- Types ---
-type NotificationKey = 'workOrder' | 'bookingInquiry' | 'paymentFailed' | 'overbooking' | 'guestPortal' | 'guestMessage' | 'cardVerificationFailed' | 'tasks' | 'review';
+type NotificationKey = 'workOrder' | 'bookingInquiry' | 'paymentFailed' | 'overbooking' | 'guestPortal' | 'guestMessage' | 'cardVerificationFailed' | 'tasks' | 'review' | 'inventoryAlert';
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -46,7 +49,8 @@ export default function AdminDashboard() {
       guestMessage: 0,
       cardVerificationFailed: 0,
       tasks: 0,
-      review: 0
+      review: 0,
+      inventoryAlert: 0
     },
     activities: [] as Array<{ type: string; message: string; time: Date; status?: string }>,
     totalRooms: 0,
@@ -59,12 +63,15 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [bookings, contacts, enquiries, roomStatuses, rooms] = await Promise.all([
+      const [bookings, contacts, enquiries, roomStatuses, rooms, workOrders, lowStockItems, pendingPOs] = await Promise.all([
         getAllBookings(),
         getAllContactForms(),
         getAllBookingEnquiries(),
         getRoomStatuses(),
-        getRooms()
+        getRooms(),
+        getPendingWorkOrders(),
+        getLowStockInventory(),
+        getPendingPurchaseOrders()
       ]);
 
       const today = new Date();
@@ -138,15 +145,16 @@ export default function AdminDashboard() {
 
       // Notifications
       const notificationsData = {
-        workOrder: 0,
+        workOrder: workOrders.length,
         bookingInquiry: enquiries.filter(e => e.status === 'new').length,
-        paymentFailed: 0,
+        paymentFailed: 0, // Need payment system integration
         overbooking: 0,
         guestPortal: 0,
         guestMessage: contacts.filter(c => c.status === 'new').length,
         cardVerificationFailed: 0,
-        tasks: 0,
-        review: 0
+        tasks: housekeepingData.hkAssign, // Using Needs Attention rooms as tasks? Or general tasks?
+        review: 0, // pending reviews?
+        inventoryAlert: lowStockItems.length + pendingPOs.length // Combine low stock and pending POs for alert? Or just low stock? Let's treat Inventory Alert as Low Stock.
       };
 
       // Activities

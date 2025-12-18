@@ -9,7 +9,9 @@ import {
     CheckBadgeIcon,
     CheckCircleIcon,
     ChevronDownIcon,
-    ArrowPathIcon
+
+    ArrowPathIcon,
+    ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 
 interface NotificationItem {
@@ -30,6 +32,7 @@ interface ActivitySectionProps {
         cardVerificationFailed: number;
         tasks: number;
         review: number;
+        inventoryAlert: number;
     };
     activities: Array<{
         type: string;
@@ -51,7 +54,8 @@ export default function ActivitySection({ notifications, activities }: ActivityS
         { key: 'guestMessage', label: 'Guest Message', icon: ChatBubbleLeftRightIcon, count: notifications.guestMessage },
         { key: 'cardVerificationFailed', label: 'Card Verification', icon: CreditCardIcon, count: notifications.cardVerificationFailed },
         { key: 'tasks', label: 'Tasks', icon: CheckBadgeIcon, count: notifications.tasks },
-        { key: 'review', label: 'Review', icon: CheckCircleIcon, count: notifications.review }
+        { key: 'review', label: 'Review', icon: CheckCircleIcon, count: notifications.review },
+        { key: 'inventoryAlert', label: 'Inventory Alert', icon: ArchiveBoxIcon, count: notifications.inventoryAlert }
     ];
 
     const activeNotifications = allNotifications.filter(n => n.count > 0 || ['bookingInquiry', 'guestMessage', 'workOrder'].includes(n.key));

@@ -2814,6 +2814,48 @@ export const getInventoryItems = async (): Promise<InventoryItem[]> => {
   }
 };
 
+export const getLowStockInventory = async (): Promise<InventoryItem[]> => {
+  if (!db) return [];
+  try {
+    // Note: Collection is 'inventory' based on getInventoryItems
+    const c = collection(db, 'inventory');
+    const qy = query(c, where('isActive', '==', true));
+    const snap = await getDocs(qy);
+    const items = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
+      } as InventoryItem;
+    });
+    // Filter in memory for now as minStockLevel is per item
+    return items.filter(item => item.currentStock <= (item.minStockLevel || 0));
+  } catch (e) {
+    console.error('Error fetching low stock inventory:', e);
+    return [];
+  }
+};
+
+export const getPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'purchaseOrders');
+    const qy = query(c, where('status', 'in', ['sent', 'partially_received']));
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate() || new Date(),
+      updatedAt: d.data().updatedAt?.toDate() || new Date()
+    } as PurchaseOrder));
+  } catch (e) {
+    console.error('Error fetching pending purchase orders:', e);
+    return [];
+  }
+};
+
 export const getInventoryItem = async (id: string): Promise<InventoryItem | null> => {
   if (!db) return null;
   try {
@@ -3233,6 +3275,30 @@ export const getHousekeepingTasks = async (status?: HousekeepingTask['status']):
     return tasks;
   } catch (e) {
     console.error('Error fetching housekeeping tasks:', e);
+    return [];
+  }
+};
+
+export const getPendingWorkOrders = async (): Promise<HousekeepingTask[]> => {
+  if (!db) return [];
+  try {
+    const c = collection(db, 'housekeepingTasks');
+    const qy = query(
+      c,
+      where('taskType', '==', 'maintenance'),
+      where('status', 'in', ['pending', 'in_progress'])
+    );
+    const snap = await getDocs(qy);
+    return snap.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+      scheduledTime: d.data().scheduledTime?.toDate(),
+      completedTime: d.data().completedTime?.toDate(),
+      createdAt: d.data().createdAt?.toDate() || new Date(),
+      updatedAt: d.data().updatedAt?.toDate() || new Date(),
+    } as HousekeepingTask));
+  } catch (e) {
+    console.error('Error fetching pending work orders:', e);
     return [];
   }
 };
