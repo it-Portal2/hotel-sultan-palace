@@ -74,8 +74,8 @@ export default function StatusCharts({ roomStatus, housekeeping }: StatusChartsP
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 ml-4 flex-1">
                         {roomStatusChartData.map((item) => (
-                            <div key={item.name} className="flex items-center justify-between text-sm">
-                                <div className="flex items-center">
+                            <div key={item.name} className="flex items-center text-sm w-full gap-4">
+                                <div className="flex items-center flex-1">
                                     <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: item.color }}></span>
                                     <span className="text-gray-600">{item.name}</span>
                                 </div>

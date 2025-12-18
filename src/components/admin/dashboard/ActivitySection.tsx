@@ -9,9 +9,13 @@ import {
     CheckBadgeIcon,
     CheckCircleIcon,
     ChevronDownIcon,
-
     ArrowPathIcon,
-    ArchiveBoxIcon
+    ArchiveBoxIcon,
+    UserGroupIcon,
+    TagIcon,
+    DocumentTextIcon,
+    SparklesIcon,
+    ClockIcon
 } from '@heroicons/react/24/outline';
 
 interface NotificationItem {
@@ -23,16 +27,15 @@ interface NotificationItem {
 
 interface ActivitySectionProps {
     notifications: {
-        workOrder: number;
         bookingInquiry: number;
-        paymentFailed: number;
-        overbooking: number;
-        guestPortal: number;
         guestMessage: number;
-        cardVerificationFailed: number;
-        tasks: number;
-        review: number;
-        inventoryAlert: number;
+        walkInGuest: number;
+        onlineBooking: number; // New
+        activeOffers: number;
+
+        // Retain types for TS compatibility if needed, else remove/ignore in simple component
+        // But for cleaner code, we only define what we use:
+        [key: string]: number; // Allow flexible props or define explicity
     };
     activities: Array<{
         type: string;
@@ -46,19 +49,17 @@ export default function ActivitySection({ notifications, activities }: ActivityS
     const [activityFilter, setActivityFilter] = useState('All');
 
     const allNotifications: NotificationItem[] = [
-        { key: 'workOrder', label: 'Work Order', icon: ClipboardDocumentIcon, count: notifications.workOrder },
-        { key: 'bookingInquiry', label: 'Booking Inquiry', icon: CalendarDaysIcon, count: notifications.bookingInquiry },
-        { key: 'paymentFailed', label: 'Payment Failed', icon: CreditCardIcon, count: notifications.paymentFailed },
-        { key: 'overbooking', label: 'Overbooking', icon: ExclamationTriangleIcon, count: notifications.overbooking },
-        { key: 'guestPortal', label: 'Guest Portal', icon: PhoneIcon, count: notifications.guestPortal },
-        { key: 'guestMessage', label: 'Guest Message', icon: ChatBubbleLeftRightIcon, count: notifications.guestMessage },
-        { key: 'cardVerificationFailed', label: 'Card Verification', icon: CreditCardIcon, count: notifications.cardVerificationFailed },
-        { key: 'tasks', label: 'Tasks', icon: CheckBadgeIcon, count: notifications.tasks },
-        { key: 'review', label: 'Review', icon: CheckCircleIcon, count: notifications.review },
-        { key: 'inventoryAlert', label: 'Inventory Alert', icon: ArchiveBoxIcon, count: notifications.inventoryAlert }
+        { key: 'bookingInquiry', label: 'Inquiries (Today)', icon: CalendarDaysIcon, count: notifications.bookingInquiry },
+        { key: 'guestMessage', label: 'Guest Messages', icon: ChatBubbleLeftRightIcon, count: notifications.guestMessage },
+        { key: 'walkInGuest', label: 'Walk-in Guests', icon: UserGroupIcon, count: notifications.walkInGuest },
+        { key: 'onlineBooking', label: 'Online Bookings', icon: CreditCardIcon, count: notifications.onlineBooking },
+        { key: 'activeOffers', label: 'Active Offers', icon: TagIcon, count: notifications.activeOffers },
     ];
 
-    const activeNotifications = allNotifications.filter(n => n.count > 0 || ['bookingInquiry', 'guestMessage', 'workOrder'].includes(n.key));
+    // All these keys are priority as per user request
+    const priorityKeys = ['bookingInquiry', 'guestMessage', 'walkInGuest', 'onlineBooking', 'activeOffers'];
+
+    const activeNotifications = allNotifications.filter(n => n.count > 0 || priorityKeys.includes(n.key));
 
     const filteredActivities = activityFilter === 'All'
         ? activities
@@ -69,7 +70,7 @@ export default function ActivitySection({ notifications, activities }: ActivityS
             {/* Notifications */}
             <div className="bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
                 <h3 className="text-lg font-semibold text-gray-800 mb-6">Notifications</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-10 gap-x-6">
                     {activeNotifications.map((item) => (
                         <div key={item.key} className="flex items-start group">
                             <div className="mr-3 mt-1 p-2 bg-gray-50 group-hover:bg-[#FF6A00]/10 transition-colors">

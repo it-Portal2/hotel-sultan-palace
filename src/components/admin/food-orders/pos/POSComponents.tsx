@@ -124,25 +124,25 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
     });
 
     return (
-        <div className="flex-1 p-6 overflow-y-auto h-full bg-gray-50/50">
+        <div className="flex-1 p-6 overflow-y-auto h-full bg-slate-50">
             {/* Filters */}
-            <div className="mb-6 space-y-4">
-                <div className="relative">
+            <div className="mb-8 space-y-4 sticky top-0 bg-slate-50 z-20 pb-4 pt-2">
+                <div className="relative max-w-lg">
                     <input
                         type="text"
-                        placeholder="Search menu items..."
-                        className="w-full pl-4 pr-10 py-3 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none"
+                        placeholder="Search items..."
+                        className="w-full pl-5 pr-10 py-4 rounded-xl border-0 shadow-sm ring-1 ring-gray-200 focus:ring-2 focus:ring-[#FF6A00] outline-none text-lg"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
                     <button
                         onClick={() => setSelectedCategory('all')}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === 'all'
-                            ? 'bg-[#FF6A00] text-white shadow-md'
-                            : 'bg-white text-gray-600 border border-gray-200 hover:border-[#FF6A00]'
+                        className={`whitespace-nowrap px-6 py-3 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${selectedCategory === 'all'
+                            ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                            : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-slate-300'
                             }`}
                     >
                         All Items
@@ -150,10 +150,10 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
                     {categories.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setSelectedCategory(cat.name)} // Assuming 'name' matches item.category
-                            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-colors ${selectedCategory === cat.name
-                                ? 'bg-[#FF6A00] text-white shadow-md'
-                                : 'bg-white text-gray-600 border border-gray-200 hover:border-[#FF6A00]'
+                            onClick={() => setSelectedCategory(cat.name)}
+                            className={`whitespace-nowrap px-6 py-3 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${selectedCategory === cat.name
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-slate-300'
                                 }`}
                         >
                             {cat.label}
@@ -163,33 +163,32 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-24">
                 {filteredItems.map(item => (
                     <button
                         key={item.id}
                         onClick={() => onAddToCart(item)}
-                        className="flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#FF6A00] transition-all text-left h-full group"
+                        className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group h-[280px]"
                     >
-                        {item.image ? (
-                            <div className="h-32 w-full bg-gray-100 relative overflow-hidden">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            </div>
-                        ) : (
-                            <div className="h-32 w-full bg-gray-100 flex items-center justify-center text-gray-300">
-                                <span className="text-xs font-mono">NO IMAGE</span>
-                            </div>
-                        )}
-                        <div className="p-3 flex flex-col flex-1 w-full">
-                            <div className="flex justify-between items-start w-full">
-                                <h4 className="font-bold text-gray-900 text-sm line-clamp-1 group-hover:text-[#FF6A00] transition-colors">{item.name}</h4>
-                                <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">${item.price}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
-
-                            <div className="mt-auto pt-3 w-full">
-                                <div className="w-full py-1.5 bg-gray-50 text-[#FF6A00] text-xs font-bold text-center rounded border border-transparent group-hover:bg-[#FF6A00] group-hover:text-white transition-colors">
-                                    ADD TO ORDER
+                        <div className="h-40 w-full bg-slate-100 relative overflow-hidden">
+                            {item.image ? (
+                                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-100">
+                                    <span className="text-xs font-black opacity-30 tracking-widest">NO IMAGE</span>
                                 </div>
+                            )}
+                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm font-bold text-slate-900 text-sm">
+                                ${item.price}
+                            </div>
+                        </div>
+
+                        <div className="p-4 flex flex-col flex-1 w-full text-left relative">
+                            <h4 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2 mb-1 group-hover:text-[#FF6A00] transition-colors">{item.name}</h4>
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+
+                            <div className="mt-auto w-full pt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0 text-[#FF6A00] font-bold text-xs flex items-center gap-1 uppercase tracking-wide">
+                                <PlusIcon className="w-4 h-4" /> Add to Order
                             </div>
                         </div>
                     </button>

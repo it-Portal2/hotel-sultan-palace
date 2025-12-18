@@ -14,23 +14,26 @@ export default function KitchenKanbanBoard({ orders, onUpdateStatus }: KitchenKa
     const readyOrders = orders.filter(o => o.status === 'ready');
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-full overflow-x-auto pb-4">
+        <div className="flex flex-col lg:flex-row gap-6 h-full overflow-x-auto pb-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
             {/* Incoming / Pending Column */}
-            <div className="flex-1 min-w-[320px] bg-gray-50 border border-gray-200 flex flex-col h-full max-h-[calc(100vh-180px)]">
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-50 text-blue-600">
-                            <InboxIcon className="h-5 w-5" />
+            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
+                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                            <InboxIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm">New Orders</h3>
+                        <div>
+                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">New Orders</h3>
+                            <p className="text-gray-500 text-xs text-left">Waiting for acceptance</p>
+                        </div>
                     </div>
-                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">{pendingOrders.length}</span>
+                    <span className="bg-blue-100 text-blue-700 text-sm font-bold px-3 py-1 rounded-full">{pendingOrders.length}</span>
                 </div>
                 <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                     {pendingOrders.length === 0 ? (
-                        <div className="h-32 flex flex-col items-center justify-center text-gray-400">
-                            <InboxIcon className="h-8 w-8 mb-2 opacity-50" />
-                            <span className="text-sm">No new orders</span>
+                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
+                            <InboxIcon className="h-12 w-12 mb-3 opacity-20" />
+                            <span className="text-sm font-medium opacity-60">No inbound orders</span>
                         </div>
                     ) : (
                         pendingOrders.map(order => (
@@ -41,21 +44,24 @@ export default function KitchenKanbanBoard({ orders, onUpdateStatus }: KitchenKa
             </div>
 
             {/* Cooking / Preparing Column */}
-            <div className="flex-1 min-w-[320px] bg-gray-50 border border-gray-200 flex flex-col h-full max-h-[calc(100vh-180px)]">
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-orange-50 text-orange-600">
-                            <FireIcon className="h-5 w-5" />
+            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
+                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg border border-orange-100">
+                            <FireIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm">Cooking</h3>
+                        <div>
+                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">Prep Station</h3>
+                            <p className="text-gray-500 text-xs text-left">Currently cooking</p>
+                        </div>
                     </div>
-                    <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full">{preparingOrders.length}</span>
+                    <span className="bg-orange-100 text-orange-700 text-sm font-bold px-3 py-1 rounded-full">{preparingOrders.length}</span>
                 </div>
                 <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                     {preparingOrders.length === 0 ? (
-                        <div className="h-32 flex flex-col items-center justify-center text-gray-400">
-                            <FireIcon className="h-8 w-8 mb-2 opacity-50" />
-                            <span className="text-sm">Station clear</span>
+                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
+                            <FireIcon className="h-12 w-12 mb-3 opacity-20" />
+                            <span className="text-sm font-medium opacity-60">Station inactive</span>
                         </div>
                     ) : (
                         preparingOrders.map(order => (
@@ -66,21 +72,24 @@ export default function KitchenKanbanBoard({ orders, onUpdateStatus }: KitchenKa
             </div>
 
             {/* Ready to Serve Column */}
-            <div className="flex-1 min-w-[320px] bg-gray-50 border border-gray-200 flex flex-col h-full max-h-[calc(100vh-180px)]">
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-green-50 text-green-600">
-                            <CheckBadgeIcon className="h-5 w-5" />
+            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
+                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
+                            <CheckBadgeIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm">Ready to Serve</h3>
+                        <div>
+                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">Pass / Ready</h3>
+                            <p className="text-gray-500 text-xs text-left">Ready for pickup</p>
+                        </div>
                     </div>
-                    <span className="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">{readyOrders.length}</span>
+                    <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{readyOrders.length}</span>
                 </div>
                 <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                     {readyOrders.length === 0 ? (
-                        <div className="h-32 flex flex-col items-center justify-center text-gray-400">
-                            <CheckBadgeIcon className="h-8 w-8 mb-2 opacity-50" />
-                            <span className="text-sm">No pending service</span>
+                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
+                            <CheckBadgeIcon className="h-12 w-12 mb-3 opacity-20" />
+                            <span className="text-sm font-medium opacity-60">Pass clear</span>
                         </div>
                     ) : (
                         readyOrders.map(order => (

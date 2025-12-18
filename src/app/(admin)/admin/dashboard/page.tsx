@@ -11,7 +11,9 @@ import {
   getRooms,
   getPendingWorkOrders,
   getLowStockInventory,
-  getPendingPurchaseOrders
+  getPendingPurchaseOrders,
+  getBusinessDay,
+  getSpecialOffers
 } from '@/lib/firestoreService';
 import StatsOverview from '@/components/admin/dashboard/StatsOverview';
 import OccupancyCharts from '@/components/admin/dashboard/OccupancyCharts';
@@ -19,7 +21,7 @@ import StatusCharts from '@/components/admin/dashboard/StatusCharts';
 import ActivitySection from '@/components/admin/dashboard/ActivitySection';
 
 // --- Types ---
-type NotificationKey = 'workOrder' | 'bookingInquiry' | 'paymentFailed' | 'overbooking' | 'guestPortal' | 'guestMessage' | 'cardVerificationFailed' | 'tasks' | 'review' | 'inventoryAlert';
+type NotificationKey = 'bookingInquiry' | 'guestMessage' | 'walkInGuest' | 'onlineBooking' | 'activeOffers' | string;
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,14 @@ export default function AdminDashboard() {
       cardVerificationFailed: 0,
       tasks: 0,
       review: 0,
-      inventoryAlert: 0
+      inventoryAlert: 0,
+      walkInGuest: 0,
+      onlineBooking: 0,
+      activeOffers: 0,
+      lowStock: 0,
+      pendingPOs: 0,
+      dirtyRooms: 0,
+      auditAlert: 0
     },
     activities: [] as Array<{ type: string; message: string; time: Date; status?: string }>,
     totalRooms: 0,
@@ -63,7 +72,7 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [bookings, contacts, enquiries, roomStatuses, rooms, workOrders, lowStockItems, pendingPOs] = await Promise.all([
+      const [bookings, contacts, enquiries, roomStatuses, rooms, workOrders, lowStockItems, pendingPOs, businessDay, offers] = await Promise.all([
         getAllBookings(),
         getAllContactForms(),
         getAllBookingEnquiries(),
@@ -71,7 +80,9 @@ export default function AdminDashboard() {
         getRooms(),
         getPendingWorkOrders(),
         getLowStockInventory(),
-        getPendingPurchaseOrders()
+        getPendingPurchaseOrders(),
+        getBusinessDay(),
+        getSpecialOffers()
       ]);
 
       const today = new Date();
@@ -144,17 +155,40 @@ export default function AdminDashboard() {
         .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
       // Notifications
+      const isToday = (date: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        const d = date instanceof Date ? date : new Date(date);
+        const t = new Date();
+        return d.getDate() === t.getDate() &&
+          d.getMonth() === t.getMonth() &&
+          d.getFullYear() === t.getFullYear();
+      };
+
       const notificationsData = {
-        workOrder: workOrders.length,
-        bookingInquiry: enquiries.filter(e => e.status === 'new').length,
-        paymentFailed: 0, // Need payment system integration
+        bookingInquiry: enquiries.filter(e => isToday(e.createdAt)).length,
+        guestMessage: contacts.filter(c => isToday(c.createdAt)).length,
+        walkInGuest: bookings.filter(b => {
+          const isWalkIn = b.source === 'walk_in' || (typeof b.bookingId === 'string' && b.bookingId.startsWith('WALKIN-'));
+          return isWalkIn && isToday(b.createdAt);
+        }).length,
+        onlineBooking: bookings.filter(b => {
+          const isWalkIn = b.source === 'walk_in' || (typeof b.bookingId === 'string' && b.bookingId.startsWith('WALKIN-'));
+          return !isWalkIn && isToday(b.createdAt);
+        }).length,
+        activeOffers: offers.filter(o => o.isActive).length,
+
+        // Keep strictly required types to satisfy TS for now, but set to 0/ignored
+        workOrder: 0,
+        paymentFailed: 0,
         overbooking: 0,
         guestPortal: 0,
-        guestMessage: contacts.filter(c => c.status === 'new').length,
         cardVerificationFailed: 0,
-        tasks: housekeepingData.hkAssign, // Using Needs Attention rooms as tasks? Or general tasks?
-        review: 0, // pending reviews?
-        inventoryAlert: lowStockItems.length + pendingPOs.length // Combine low stock and pending POs for alert? Or just low stock? Let's treat Inventory Alert as Low Stock.
+        tasks: 0,
+        review: 0,
+        inventoryAlert: 0,
+        lowStock: 0,
+        pendingPOs: 0,
+        dirtyRooms: 0,
+        auditAlert: 0
       };
 
       // Activities

@@ -75,7 +75,7 @@ interface NavigationItem {
 // Helper to determine portal from path
 const getPortalFromPath = (path: string): PortalType => {
   if (path === '/admin') return 'selection';
-  if (path.startsWith('/admin/kitchen') || path.startsWith('/admin/food-orders') || path.startsWith('/admin/menu')) return 'kitchen';
+  if (path.startsWith('/admin/kitchen') || path.startsWith('/admin/food-orders') || path.startsWith('/admin/menu') || path.startsWith('/admin/fb-dashboard')) return 'kitchen';
   if (path.startsWith('/admin/gallery') || path.startsWith('/admin/story-pictures') || path.startsWith('/admin/testimonials') || path.startsWith('/admin/offers') || path.startsWith('/admin/excursions') || path.startsWith('/admin/contacts') || path.startsWith('/admin/reputation-management') || path.startsWith('/admin/booking-enquiries')) return 'website';
   if (path.startsWith('/admin/accounts')) return 'finance';
   if (path.startsWith('/admin/staff') || path.startsWith('/admin/admin-users')) return 'staff';

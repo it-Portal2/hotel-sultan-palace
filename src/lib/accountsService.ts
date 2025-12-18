@@ -30,8 +30,18 @@ export const createLedgerEntry = async (entryData: Omit<LedgerEntry, 'id' | 'cre
     if (!db) return null;
     try {
         const ledgerRef = collection(db, 'accountsLedger');
+
+        // Remove undefined values
+        const cleanData: any = {};
+        Object.keys(entryData).forEach(key => {
+            const value = (entryData as any)[key];
+            if (value !== undefined) {
+                cleanData[key] = value;
+            }
+        });
+
         const docRef = await addDoc(ledgerRef, {
-            ...entryData,
+            ...cleanData,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });

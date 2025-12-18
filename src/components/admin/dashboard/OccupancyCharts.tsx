@@ -28,14 +28,14 @@ export default function OccupancyCharts({ arrivals, departures, guestsInHouse }:
                                 <span className="w-2.5 h-2.5 rounded-full bg-blue-100 mr-2"></span>
                                 <span className="text-sm text-gray-600">Pending</span>
                             </div>
-                            <span className="text-sm font-semibold">{arrivals.pending}</span>
+                            <span className="text-sm font-semibold pl-4">{arrivals.pending}</span>
                         </div>
                         <div className="flex items-center justify-between min-w-[100px]">
                             <div className="flex items-center">
                                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span>
                                 <span className="text-sm text-gray-600">Arrived</span>
                             </div>
-                            <span className="text-sm font-semibold">{arrivals.arrived}</span>
+                            <span className="text-sm font-semibold pl-4">{arrivals.arrived}</span>
                         </div>
                     </div>
                 </div>
@@ -60,14 +60,14 @@ export default function OccupancyCharts({ arrivals, departures, guestsInHouse }:
                                 <span className="w-2.5 h-2.5 rounded-full bg-orange-100 mr-2"></span>
                                 <span className="text-sm text-gray-600">Pending</span>
                             </div>
-                            <span className="text-sm font-semibold">{departures.pending}</span>
+                            <span className="text-sm font-semibold pl-4">{departures.pending}</span>
                         </div>
                         <div className="flex items-center justify-between min-w-[100px]">
                             <div className="flex items-center">
                                 <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-2"></span>
                                 <span className="text-sm text-gray-600">Checked Out</span>
                             </div>
-                            <span className="text-sm font-semibold">{departures.checkedOut}</span>
+                            <span className="text-sm font-semibold pl-4">{departures.checkedOut}</span>
                         </div>
                     </div>
                 </div>
@@ -91,14 +91,14 @@ export default function OccupancyCharts({ arrivals, departures, guestsInHouse }:
                                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500 mr-2"></span>
                                 <span className="text-sm text-gray-600">Adult</span>
                             </div>
-                            <span className="text-sm font-semibold">{guestsInHouse.adults}</span>
+                            <span className="text-sm font-semibold pl-4">{guestsInHouse.adults}</span>
                         </div>
                         <div className="flex items-center justify-between min-w-[100px]">
                             <div className="flex items-center">
                                 <span className="w-2.5 h-2.5 rounded-full bg-purple-200 mr-2"></span>
                                 <span className="text-sm text-gray-600">Child</span>
                             </div>
-                            <span className="text-sm font-semibold">{guestsInHouse.children}</span>
+                            <span className="text-sm font-semibold pl-4">{guestsInHouse.children}</span>
                         </div>
                     </div>
                 </div>

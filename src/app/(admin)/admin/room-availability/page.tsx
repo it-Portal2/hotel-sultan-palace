@@ -13,7 +13,8 @@ import {
 
   XCircleIcon,
   XMarkIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  CreditCardIcon
 
 } from '@heroicons/react/24/outline';
 import { FaBed, FaUserCheck, FaUserSlash } from 'react-icons/fa';
@@ -127,7 +128,12 @@ export default function RoomAvailabilityPage() {
     paymentStatus: 'pending' as 'pending' | 'paid' | 'partial',
     paidAmount: 0,
     isWalkIn: false,
-    reason: ''
+    reason: '',
+    adults: 1,
+    children: 0,
+    idProofType: 'Passport',
+    idProofNumber: '',
+    notes: ''
   });
   const [calendarOffset, setCalendarOffset] = useState(0);
   const [maintenanceBlockForm, setMaintenanceBlockForm] = useState({
@@ -463,8 +469,8 @@ export default function RoomAvailabilityPage() {
         checkIn: assignRoomForm.startDate,
         checkOut: assignRoomForm.endDate,
         guests: {
-          adults: 1,
-          children: 0,
+          adults: Number(assignRoomForm.adults) || 1,
+          children: Number(assignRoomForm.children) || 0,
           rooms: 1
         },
         guestDetails: {
@@ -495,7 +501,10 @@ export default function RoomAvailabilityPage() {
         paymentStatus: assignRoomForm.paymentStatus,
         paidAmount: assignRoomForm.paidAmount || 0,
         paymentMethod: assignRoomForm.paymentMethod || '',
-        paymentDate: new Date()
+        paymentDate: new Date(),
+        source: 'walk_in',
+        notes: assignRoomForm.notes || '',
+        guestIdProof: assignRoomForm.idProofNumber ? `${assignRoomForm.idProofType}: ${assignRoomForm.idProofNumber}` : undefined
       };
 
       await createBooking(newBooking);
@@ -517,7 +526,12 @@ export default function RoomAvailabilityPage() {
         paymentStatus: 'pending',
         paidAmount: 0,
         isWalkIn: false,
-        reason: ''
+        reason: '',
+        adults: 1,
+        children: 0,
+        idProofType: 'Passport',
+        idProofNumber: '',
+        notes: ''
       });
       await loadData();
     } catch (error) {
@@ -1773,44 +1787,202 @@ export default function RoomAvailabilityPage() {
                       </div>
                     </div>
 
-                    {/* Right Col: Guest Info */}
-                    <div className="bg-gray-50/50 p-5 border border-gray-100">
-                      <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <UserIcon className="h-4 w-4 text-[#FF6A00]" /> Guest Details
-                      </h4>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Name *</label>
-                          <input
-                            type="text"
-                            required
-                            value={assignRoomForm.guestName}
-                            onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestName: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
-                            placeholder="John Doe"
-                          />
+                    {/* Right Col: Guest Info & Billing */}
+                    <div className="space-y-6">
+                      <div className="bg-gray-50/50 p-5 border border-gray-100">
+                        <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <UserIcon className="h-4 w-4 text-[#FF6A00]" /> Guest Details
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full Name *</label>
+                              <input
+                                type="text"
+                                required
+                                value={assignRoomForm.guestName}
+                                onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestName: e.target.value })}
+                                className="w-full px-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
+                                placeholder="John Doe"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Phone *</label>
+                              <input
+                                type="tel"
+                                required
+                                value={assignRoomForm.guestPhone}
+                                onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestPhone: e.target.value })}
+                                className="w-full px-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
+                                placeholder="+1..."
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+                              <input
+                                type="email"
+                                value={assignRoomForm.guestEmail}
+                                onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestEmail: e.target.value })}
+                                className="w-full px-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
+                                placeholder="guest@example.com"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Adults</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={assignRoomForm.adults}
+                                  onChange={(e) => setAssignRoomForm({ ...assignRoomForm, adults: parseInt(e.target.value) || 1 })}
+                                  className="w-full px-2 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Child</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={assignRoomForm.children}
+                                  onChange={(e) => setAssignRoomForm({ ...assignRoomForm, children: parseInt(e.target.value) || 0 })}
+                                  className="w-full px-2 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="col-span-1">
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">ID Type</label>
+                              <select
+                                value={assignRoomForm.idProofType}
+                                onChange={(e) => setAssignRoomForm({ ...assignRoomForm, idProofType: e.target.value })}
+                                className="w-full px-2 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm"
+                              >
+                                <option value="Passport">Passport</option>
+                                <option value="National ID">National ID</option>
+                                <option value="Driver License">Driver License</option>
+                              </select>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">ID Number</label>
+                              <input
+                                type="text"
+                                value={assignRoomForm.idProofNumber}
+                                onChange={(e) => setAssignRoomForm({ ...assignRoomForm, idProofNumber: e.target.value })}
+                                className="w-full px-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm"
+                                placeholder="AB1234567"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Notes / Requests</label>
+                            <textarea
+                              rows={2}
+                              value={assignRoomForm.notes}
+                              onChange={(e) => setAssignRoomForm({ ...assignRoomForm, notes: e.target.value })}
+                              className="w-full px-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm resize-none"
+                              placeholder="Early check-in, etc."
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-500 mb-1.5">PhoneNumber *</label>
-                          <input
-                            type="tel"
-                            required
-                            value={assignRoomForm.guestPhone}
-                            onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestPhone: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
-                            placeholder="+1 234 567 890"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email (Optional)</label>
-                          <input
-                            type="email"
-                            value={assignRoomForm.guestEmail}
-                            onChange={(e) => setAssignRoomForm({ ...assignRoomForm, guestEmail: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all text-sm placeholder:text-gray-400"
-                            placeholder="guest@example.com"
-                          />
-                        </div>
+                      </div>
+
+                      {/* Billing Information */}
+                      <div className="bg-gray-50/50 p-5 border border-gray-100">
+                        <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <CreditCardIcon className="h-4 w-4 text-[#FF6A00]" /> Billing Information
+                        </h4>
+
+                        {(() => {
+                          const start = new Date(assignRoomForm.startDate);
+                          const end = new Date(assignRoomForm.endDate);
+                          const nights = assignRoomForm.startDate && assignRoomForm.endDate ? Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+                          const pricePerNight = roomPriceMap[assignRoomForm.roomName] || 0;
+                          const totalAmount = pricePerNight * nights;
+                          const remaining = totalAmount - (assignRoomForm.paidAmount || 0);
+
+                          return (
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center bg-blue-50 p-3 rounded border border-blue-100 mb-4">
+                                <div>
+                                  <p className="text-xs text-blue-600 font-semibold uppercase">Total Amount</p>
+                                  <p className="text-lg font-bold text-blue-800">${totalAmount.toFixed(2)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-blue-600 font-semibold uppercase">{nights} Nights</p>
+                                  <p className="text-xs text-blue-800">${pricePerNight}/night</p>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Paid Amount</label>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={totalAmount}
+                                      value={assignRoomForm.paidAmount}
+                                      onChange={(e) => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        setAssignRoomForm(prev => ({
+                                          ...prev,
+                                          paidAmount: val,
+                                          paymentStatus: val >= totalAmount ? 'paid' : val > 0 ? 'partial' : 'pending'
+                                        }));
+                                      }}
+                                      className="w-full pl-7 pr-4 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm font-semibold"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Remaining</label>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                      type="text"
+                                      readOnly
+                                      value={remaining.toFixed(2)}
+                                      className="w-full pl-7 pr-4 py-2 bg-gray-100 border border-gray-200 text-gray-500 outline-none text-sm font-semibold cursor-not-allowed"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Payment Method</label>
+                                  <select
+                                    value={assignRoomForm.paymentMethod}
+                                    onChange={(e) => setAssignRoomForm({ ...assignRoomForm, paymentMethod: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none text-sm"
+                                  >
+                                    <option value="">Select Method</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Status</label>
+                                  <div className={`w-full px-3 py-2 text-sm font-bold uppercase rounded border text-center ${assignRoomForm.paymentStatus === 'paid' ? 'bg-green-50 text-green-600 border-green-200' :
+                                    assignRoomForm.paymentStatus === 'partial' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' :
+                                      'bg-red-50 text-red-600 border-red-200'
+                                    }`}>
+                                    {assignRoomForm.paymentStatus}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

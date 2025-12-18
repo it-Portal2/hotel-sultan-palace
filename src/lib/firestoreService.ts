@@ -64,6 +64,9 @@ export interface Booking {
     prefix: string;
   };
 
+  // Booking Source
+  source?: 'web' | 'mobile' | 'walk_in' | 'ota';
+
   // User address details
   address: {
     country: string;
@@ -113,6 +116,9 @@ export interface Booking {
   paidAmount?: number; // Amount paid during booking
   paymentMethod?: string; // e.g., 'card', 'cash', 'online'
   paymentDate?: Date; // When payment was made
+
+  notes?: string;
+  guestIdProof?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -1533,6 +1539,56 @@ export const getExcursions = async (): Promise<Excursion[]> => {
   } catch (e) {
     console.error('Error fetching excursions:', e);
     return [];
+  }
+};
+
+export const getBusinessDay = async (): Promise<BusinessDay> => {
+  if (!db) {
+    return {
+      id: 'current',
+      date: new Date(),
+      status: 'open',
+      openedAt: new Date(),
+      openedBy: 'system',
+      updatedAt: new Date()
+    };
+  }
+
+  try {
+    const docRef = doc(db, 'businessDays', 'current');
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        id: 'current',
+        ...data,
+        date: data.date?.toDate() || new Date(),
+        openedAt: data.openedAt?.toDate() || new Date(),
+        lastAuditDate: data.lastAuditDate?.toDate(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as BusinessDay;
+    }
+
+    // Default if not found
+    return {
+      id: 'current',
+      date: new Date(),
+      status: 'open',
+      openedAt: new Date(),
+      openedBy: 'system',
+      updatedAt: new Date()
+    };
+  } catch (error) {
+    console.error('Error fetching business day:', error);
+    return {
+      id: 'current',
+      date: new Date(),
+      status: 'open',
+      openedAt: new Date(),
+      openedBy: 'system',
+      updatedAt: new Date()
+    };
   }
 };
 

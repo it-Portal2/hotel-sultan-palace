@@ -107,26 +107,26 @@ export default function KitchenDashboardPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col">
-      <div className="flex items-center justify-between mb-6 px-1">
+    <div className="h-[calc(100vh-100px)] flex flex-col bg-gray-50/50 p-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-            <span className="bg-black text-white px-2 py-0.5 text-lg font-mono rounded-sm">KDS</span>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+            <span className="bg-[#FF6A00] text-white px-3 py-1 text-sm font-bold rounded shadow-sm">KDS</span>
             Kitchen Display System
           </h1>
-          <p className="text-sm text-gray-500 font-medium mt-1 uppercase tracking-wide">{currentDate} • Active Orders: {orders.length}</p>
+          <p className="text-sm text-gray-500 font-medium mt-1 ml-14">{currentDate} • <span className="text-gray-900 font-bold">{orders.length} Active Orders</span></p>
         </div>
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-white border border-gray-300"></span>
+        <div className="flex items-center gap-4 text-xs font-bold text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-gray-400 rounded-full"></span>
             <span>Normal</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-orange-50 border border-orange-200"></span>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-pulse"></span>
             <span>{'>'} 30m</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-red-50 border border-red-200"></span>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-red-600 rounded-full animate-pulse"></span>
             <span>{'>'} 45m</span>
           </div>
         </div>
