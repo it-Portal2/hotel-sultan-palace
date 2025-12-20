@@ -788,14 +788,15 @@ export default function RoomAvailabilityPage() {
                           return (
                             <div
                               key={dateIdx}
-                              className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50' : 'bg-white'
+                              className={`flex-1 min-w-[80px] border-r border-[#d1d5db] py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50/50' : 'bg-white'
                                 } ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}
+                              style={{ borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}
                             >
-                              <div className={`text-xs font-semibold border border-red-300 px-0.5 py-0 inline-block mb-0.5 leading-tight ${isHovered ? 'text-red-700 bg-red-50' : 'text-red-600'}`}>
-                                {availableCount}
+                              <div className={`text-xs font-semibold border border-red-300 rounded px-1 py-0.5 inline-block mb-0.5 leading-tight ${isHovered ? 'text-red-700 bg-red-50' : 'text-red-600'}`}>
+                                {availableCount} left
                               </div>
                               <div className={`text-[10px] leading-tight ${isHovered ? 'text-red-700' : 'text-gray-500'}`}>
-                                {price ? price.toFixed(2) : 'N/A'}
+                                {price ? `$${price.toFixed(0)}` : 'N/A'}
                               </div>
                             </div>
                           );
@@ -890,7 +891,7 @@ export default function RoomAvailabilityPage() {
                                   }}
                                   className={`flex-1 min-w-[80px] border-r border-gray-200 relative transition-colors ${avail?.blocked ? 'bg-red-100' : 'bg-white hover:bg-blue-50'
                                     } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHoveredDate ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
-                                  style={{ minHeight: '32px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default' }}
+                                  style={{ minHeight: '32px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}
                                 >
                                   {shouldRenderBar && (
                                     <div

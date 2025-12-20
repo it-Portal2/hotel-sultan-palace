@@ -21,7 +21,7 @@ export default function AdminBookingsPage() {
   // Filters
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
+  const [status, setStatus] = useState<'all' | 'pending' | 'confirmed' | 'cancelled' | 'walk_in'>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [sort, setSort] = useState<'newest' | 'oldest' | 'amount_desc' | 'amount_asc'>('newest');
@@ -74,7 +74,9 @@ export default function AdminBookingsPage() {
       list = list.filter(b => (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) < e);
     }
 
-    if (status !== 'all') {
+    if (status === 'walk_in') {
+      list = list.filter(b => b.source === 'walk_in' || (b.bookingId || b.id).toUpperCase().startsWith('WALKIN'));
+    } else if (status !== 'all') {
       list = list.filter(b => b.status === status);
     }
 

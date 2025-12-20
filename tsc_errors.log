@@ -1,0 +1,6 @@
+﻿src/app/(admin)/admin/reports/arrival-list/page.tsx(42,29): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/(admin)/admin/reports/no-show/page.tsx(41,17): error TS2367: This comparison appears to be unintentional because the types '"pending" | "confirmed" | "cancelled" | "checked_in" | "checked_out"' and '"no_show"' have no overlap.
+src/app/(admin)/admin/reports/no-show/page.tsx(44,34): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/(website)/hotel/page.tsx(370,58): error TS2345: Argument of type '{ checkIn: string; checkOut: string; rooms: { type: string; price: number; suiteType: "Garden Suite" | "Imperial Suite" | "Ocean Suite"; }[]; guests: { rooms: number; adults: number; children: number; }; ... 8 more ...; status: "pending"; }' is not assignable to parameter of type 'Omit<Booking, "id" | "createdAt" | "updatedAt">'.
+  Types of property 'paymentStatus' are incompatible.
+    Type 'string' is not assignable to type '"pending" | "partial" | "paid" | "refunded" | undefined'.

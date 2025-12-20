@@ -79,125 +79,212 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         }
     };
 
+    const categories = [
+        { id: 'all', label: 'All Categories' },
+        { id: 'food', label: 'Food' },
+        { id: 'beverage', label: 'Beverage' },
+        { id: 'amenity', label: 'Amenity' },
+        { id: 'supply', label: 'Supply' },
+        { id: 'linen', label: 'Linen' },
+        { id: 'cleaning', label: 'Cleaning' },
+        { id: 'other', label: 'Other' }
+    ];
+
     if (loading) {
         return <div className="text-center py-12 text-gray-500">Loading items...</div>;
     }
 
     return (
-        <div className="space-y-6">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex flex-1 w-full gap-4">
-                    <div className="relative flex-1">
+        <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-140px)] min-h-[600px]">
+            {/* Sidebar Categories */}
+            <div className="w-full md:w-64 flex-none bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Categories</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setFilterCategory(cat.id)}
+                            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors flex justify-between items-center ${filterCategory === cat.id
+                                ? 'bg-orange-50 text-[#FF6A00]'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                        >
+                            <span>{cat.label}</span>
+                            {filterCategory === cat.id && <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00]"></span>}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                {/* Toolbar */}
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <div className="relative flex-1 w-full sm:w-auto">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search items..."
+                            placeholder="Search items by name or SKU..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:outline-none focus:border-[#FF6A00] focus:ring-0"
+                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6A00] focus:bg-white transition-all"
                         />
                     </div>
-                    <select
-                        value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 focus:outline-none focus:border-[#FF6A00] focus:ring-0 bg-white"
+                    <button
+                        onClick={() => {
+                            setEditingItem(null);
+                            setShowModal(true);
+                        }}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-transform active:scale-95 font-bold text-sm shadow-sm whitespace-nowrap"
                     >
-                        <option value="all">All Categories</option>
-                        <option value="food">Food</option>
-                        <option value="beverage">Beverage</option>
-                        <option value="amenity">Amenity</option>
-                        <option value="supply">Supply</option>
-                        <option value="linen">Linen</option>
-                        <option value="cleaning">Cleaning</option>
-                        <option value="other">Other</option>
-                    </select>
+                        <PlusIcon className="w-5 h-5" />
+                        New Item
+                    </button>
                 </div>
-                <button
-                    onClick={() => {
-                        setEditingItem(null);
-                        setShowModal(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors whitespace-nowrap"
-                >
-                    <PlusIcon className="w-5 h-5" />
-                    New Item
-                </button>
-            </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Details</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredItems.length === 0 ? (
+                {/* Table (Desktop) */}
+                <div className="hidden md:flex bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex-col">
+                    <div className="overflow-x-auto flex-1">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                        No items found.
-                                    </td>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Item Details</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
-                            ) : (
-                                filteredItems.map((item) => {
-                                    const status = getStockStatus(item);
-                                    return (
-                                        <tr key={item.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{item.name}</span>
-                                                    <span className="text-xs text-gray-500">SKU: {item.sku}</span>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                                {filteredItems.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="p-3 bg-gray-100 rounded-full">
+                                                    <MagnifyingGlassIcon className="h-6 w-6 text-gray-400" />
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="capitalize px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                                                    {item.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                <span className="font-bold text-gray-900">{item.currentStock}</span> {item.unit}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                ${(item.currentStock * item.unitCost).toFixed(2)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStockColor(status)}`}>
-                                                    {status.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingItem(item);
-                                                            setShowModal(true);
-                                                        }}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                    >
-                                                        <PencilIcon className="w-5 h-5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        <TrashIcon className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                                                <p className="font-medium">No items found</p>
+                                                <p className="text-sm">Try adjusting your search or category filter</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredItems.map((item) => {
+                                        const status = getStockStatus(item);
+                                        return (
+                                            <tr key={item.id} className="hover:bg-gray-50/80 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-gray-900">{item.name}</span>
+                                                        <span className="text-xs text-gray-400 font-mono mt-0.5">SKU: {item.sku}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="capitalize inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                        {item.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-bold text-gray-900">{item.currentStock}</span>
+                                                        <span className="text-gray-400 text-xs">{item.unit}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                    ${(item.currentStock * item.unitCost).toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`px-2.5 py-1 inline-flex text-xs leading-none font-bold rounded-full ${getStockColor(status)}`}>
+                                                        {status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingItem(item);
+                                                                setShowModal(true);
+                                                            }}
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Edit Item"
+                                                        >
+                                                            <PencilIcon className="w-5 h-5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Delete Item"
+                                                        >
+                                                            <TrashIcon className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="md:hidden space-y-3 pb-20">
+                    {filteredItems.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                            <p>No items found.</p>
+                        </div>
+                    ) : (
+                        filteredItems.map(item => {
+                            const status = getStockStatus(item);
+                            const statusColor = getStockColor(status);
+                            return (
+                                <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">{item.name}</h3>
+                                            <span className="text-xs text-gray-500 font-mono">SKU: {item.sku}</span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => { setEditingItem(item); setShowModal(true); }}
+                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg"
+                                            >
+                                                <PencilIcon className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(item.id)}
+                                                className="p-2 bg-red-50 text-red-600 rounded-lg"
+                                            >
+                                                <TrashIcon className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="bg-gray-50 p-2 rounded-lg">
+                                            <span className="text-xs text-gray-500 block">Stock</span>
+                                            <span className="font-bold text-gray-900">{item.currentStock} {item.unit}</span>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded-lg">
+                                            <span className="text-xs text-gray-500 block">Value</span>
+                                            <span className="font-bold text-gray-900">${(item.currentStock * item.unitCost).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                                        <span className="text-xs font-semibold text-gray-500 uppercase">{item.category}</span>
+                                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${statusColor}`}>
+                                            {status}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 

@@ -10,7 +10,8 @@ import {
   query,
   orderBy,
   where,
-  serverTimestamp
+  serverTimestamp,
+  limit
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -101,7 +102,7 @@ export interface Booking {
   // Financial details
   totalAmount: number;
   bookingId: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show';
 
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
@@ -116,6 +117,14 @@ export interface Booking {
   paidAmount?: number; // Amount paid during booking
   paymentMethod?: string; // e.g., 'card', 'cash', 'online'
   paymentDate?: Date; // When payment was made
+
+  // Master Data References (Optional for now)
+  travelAgentId?: string;
+  companyId?: string;
+  marketSegmentId?: string;
+  businessSourceId?: string;
+  rateTypeId?: string;
+  reservationTypeId?: string;
 
   notes?: string;
   guestIdProof?: string;
@@ -741,6 +750,148 @@ export interface LowStockAlert {
   status: 'active' | 'resolved';
   createdAt: Date;
   resolvedAt?: Date;
+}
+
+// ==================== Cashiering Master Data Interfaces ====================
+
+export interface TravelAgent {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  commissionRate?: number;
+  address?: string;
+  contactPerson?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  contactPerson?: string;
+  taxId?: string; // VAT/GST
+  creditLimit?: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SalesPerson {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MarketSegment {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BusinessSource {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RateType {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReservationType {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== Audit Trail ====================
+
+export interface AuditLogEntry {
+  id: string;
+  businessDate: string;
+  timestamp: Date;
+  action: string;
+  details?: string;
+  user?: string; // e.g. "System" or "Admin"
+  ip?: string;
+  oldValue?: string;
+  newValue?: string;
+  category: string; // Relaxed to string to support master data collection names
+  createdAt: Date;
+}
+
+export const createAuditLog = async (log: Omit<AuditLogEntry, 'id' | 'createdAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const ref = collection(db, 'auditLogs');
+    const docRef = await addDoc(ref, {
+      ...log,
+      createdAt: new Date()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating audit log:', error);
+    return null;
+  }
+}
+
+export const getAuditLogs = async (businessDate?: string, category?: string): Promise<AuditLogEntry[]> => {
+  if (!db) return [];
+  try {
+    const ref = collection(db, 'auditLogs');
+    let q = query(ref, orderBy('timestamp', 'desc'));
+
+    if (businessDate) {
+      q = query(ref, where('businessDate', '==', businessDate), orderBy('timestamp', 'desc'));
+    }
+
+    if (category) {
+      // If businessDate is also provided, we might need composite index. 
+      // For now, let's assume filtering by category is primarily for the Master Data modal which doesn't filter by businessDate initially.
+      // Remove orderBy to avoid needing a composite index immediately.
+      // We will sort in memory below.
+      q = query(ref, where('category', '==', category));
+    }
+
+    const snap = await getDocs(q);
+    const results = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate() || new Date(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+    })) as AuditLogEntry[];
+
+    // Sort in memory to ensure correct order without composite index
+    return results.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    return [];
+  }
 }
 
 // ==================== Accounts Management Interfaces ====================
@@ -1644,9 +1795,94 @@ export const getOffers = async (): Promise<OfferBanner[]> => {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as OfferBanner;
     });
-  } catch (e) {
-    console.error('Error fetching offers:', e);
     return [];
+  } catch (error) {
+    console.error('Error fetching offers:', error);
+    return [];
+  }
+};
+
+// ==================== Transaction Codes & System Locks ====================
+
+export interface TransactionCode {
+  code: string;
+  description: string;
+  type: 'charge' | 'payment' | 'adjustment';
+  group: 'room' | 'fb' | 'misc' | 'payment';
+}
+
+export const getTransactionCodes = async (): Promise<TransactionCode[]> => {
+  // In a real app, this would come from a 'transactionCodes' collection.
+  // For now, we return a comprehensive static list to simulate "dynamic" master data.
+  return [
+    // Charges
+    { code: '1000', description: 'Room Charge', type: 'charge', group: 'room' },
+    { code: '2000', description: 'F&B Breakfast', type: 'charge', group: 'fb' },
+    { code: '2001', description: 'F&B Lunch', type: 'charge', group: 'fb' },
+    { code: '2002', description: 'F&B Dinner', type: 'charge', group: 'fb' },
+    { code: '2010', description: 'Bar / Beverage', type: 'charge', group: 'fb' },
+    { code: '3000', description: 'Laundry', type: 'charge', group: 'misc' },
+    { code: '3001', description: 'Minibar', type: 'charge', group: 'misc' },
+    { code: '3002', description: 'Spa Service', type: 'charge', group: 'misc' },
+    { code: '3003', description: 'Transport', type: 'charge', group: 'misc' },
+    { code: '3004', description: 'Excursion', type: 'charge', group: 'misc' },
+    { code: '9000', description: 'Miscellaneous Charge', type: 'charge', group: 'misc' },
+
+    // Payments
+    { code: '9001', description: 'Cash Payment', type: 'payment', group: 'payment' },
+    { code: '9002', description: 'Credit Card - Visa', type: 'payment', group: 'payment' },
+    { code: '9003', description: 'Credit Card - MasterCard', type: 'payment', group: 'payment' },
+    { code: '9004', description: 'Credit Card - Amex', type: 'payment', group: 'payment' },
+    { code: '9005', description: 'Bank Transfer', type: 'payment', group: 'payment' },
+
+    // Adjustments
+    { code: '8000', description: 'Allowance / Rebate', type: 'adjustment', group: 'room' },
+  ];
+};
+
+export interface SystemLock {
+  id: string;
+  resourceType: 'folio' | 'room' | 'date' | 'system';
+  resourceId: string;
+  resourceName: string;
+  lockedBy: string;
+  lockedAt: Date;
+  description: string;
+}
+
+export const getSystemLocks = async (): Promise<SystemLock[]> => {
+  if (!db) return [];
+  try {
+    const ref = collection(db, 'systemLocks');
+    const q = query(ref, orderBy('lockedAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      lockedAt: doc.data().lockedAt?.toDate() || new Date()
+    })) as SystemLock[];
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+};
+
+export const addSystemLock = async (lockData: Omit<SystemLock, 'id'>): Promise<string> => {
+  if (!db) throw new Error('DB not available');
+  const ref = collection(db, 'systemLocks');
+  const docRef = await addDoc(ref, lockData);
+  return docRef.id;
+};
+
+export const deleteSystemLock = async (id: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const ref = doc(db, 'systemLocks', id);
+    await deleteDoc(ref);
+    return true;
+  } catch (e) {
+    console.error('Error deleting system lock:', e);
+    return false;
   }
 };
 
@@ -3029,16 +3265,37 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     const validServices = services.filter(s => s !== null) as GuestService[];
     const serviceCharges = validServices.reduce((sum, service) => sum + (service.amount || 0), 0);
 
+    // Get folio transactions (real-time payments and charges)
+    const transactions = await getFolioTransactions(bookingId);
+
+    // Calculate additional charges from transactions (e.g., ad-hoc charges)
+    const transactionCharges = transactions
+      .filter(t => t.type === 'charge')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Calculate total payments from transactions
+    const transactionPayments = transactions
+      .filter(t => t.type === 'payment')
+      .reduce((sum, t) => sum + t.amount, 0);
+
     // Add-ons charges
     const addOnsCharges = (booking.addOns || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
 
     // Calculate taxes (assume 10% tax)
-    const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges;
+    // Note: transactionCharges might already be inclusive or exclusive, assuming exclusive for now to match pattern
+    const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges + transactionCharges;
     const taxes = subtotal * 0.1;
     const totalAmount = subtotal + taxes;
 
-    // Get already paid amount from booking (payment made during booking)
-    const alreadyPaid = booking.paidAmount || 0;
+    // Total Paid: Booking initial payment + Transaction payments
+    // If transactions are used effectively, they should likely track ALL payments including the initial one if recorded there.
+    // For safety, we sum booking.paidAmount (if not duplicated) and transactionPayments.
+    // However, if the initial payment isn't in transactions, we add it. 
+    // Best approach: Use transactionPayments if > 0 (implying system is used), else fallback or add.
+    // Let's being additive but careful. If transactionPayments > 0, we assume it captures flow. 
+    // Actually, simple addition is safest unless we migrate old payments.
+    const alreadyPaid = (booking.paidAmount || 0) + transactionPayments;
+
     const balance = totalAmount - alreadyPaid;
     const paymentStatus: CheckoutBill['paymentStatus'] =
       balance <= 0 ? 'paid' : (alreadyPaid > 0 ? 'partial' : 'pending');
@@ -4104,5 +4361,291 @@ export const updateMaintenanceTicket = async (id: string, data: Partial<Maintena
   } catch (e) {
     console.error('Error updating maintenance ticket:', e);
     return false;
+  }
+};
+// ==================== Generic Master Data Operations ====================
+
+// Generic function to get all documents from a collection
+export const getMasterData = async <T>(collectionName: string): Promise<T[]> => {
+  if (!db) return [];
+  try {
+    const colRef = collection(db, collectionName);
+    const q = query(colRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+    })) as T[];
+  } catch (error) {
+    console.error(`Error fetching ${collectionName}:`, error);
+    return [];
+  }
+};
+
+// Generic function to add a document to a collection
+export const addMasterData = async <T>(collectionName: string, data: any, userInfo?: { user: string; ip?: string }): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const colRef = collection(db, collectionName);
+    const docRef = await addDoc(colRef, {
+      ...data,
+      isActive: true, // Default to active
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    if (userInfo) {
+      await createAuditLog({
+        businessDate: new Date().toISOString().split('T')[0], // Simple current date
+        timestamp: new Date(),
+        action: `Add ${collectionName}`,
+        details: `New item added: ${data.name || data.firstName || 'Unknown'}`,
+        category: collectionName,
+        user: userInfo.user,
+        ip: userInfo.ip || '127.0.0.1'
+      });
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error(`Error adding to ${collectionName}:`, error);
+    return null;
+  }
+};
+
+// Generic function to update a document
+export const updateMasterData = async (collectionName: string, id: string, data: any, userInfo?: { user: string; ip?: string }): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const docRef = doc(db, collectionName, id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: new Date(),
+    });
+
+    if (userInfo) {
+      await createAuditLog({
+        businessDate: new Date().toISOString().split('T')[0],
+        timestamp: new Date(),
+        action: `Edit ${collectionName}`,
+        details: `Item updated: ${data.name || data.firstName || id}`,
+        category: collectionName,
+        user: userInfo.user,
+        ip: userInfo.ip || '127.0.0.1'
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error updating ${collectionName}:`, error);
+    return false;
+  }
+};
+
+// Generic function to delete (soft delete usually, but hard delete for now if unused)
+export const deleteMasterData = async (collectionName: string, id: string, userInfo?: { user: string; ip?: string }): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const docRef = doc(db, collectionName, id);
+    await deleteDoc(docRef);
+
+    if (userInfo) {
+      await createAuditLog({
+        businessDate: new Date().toISOString().split('T')[0],
+        timestamp: new Date(),
+        action: `Delete ${collectionName}`,
+        details: `Item deleted: ${id}`,
+        category: collectionName,
+        user: userInfo.user,
+        ip: userInfo.ip || '127.0.0.1'
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error deleting from ${collectionName}:`, error);
+    return false;
+  }
+};
+
+export interface UsageRecord {
+  module: string;
+  record: string;
+  type: 'delete_only' | 'inactive_only' | 'both';
+}
+
+export const checkMasterDataUsage = async (collectionName: string, id: string): Promise<UsageRecord[]> => {
+  if (!db) return [];
+
+  const usage: UsageRecord[] = [];
+  const bookingsRef = collection(db, 'bookings');
+
+  // Determine the field name based on collection
+  let fieldName = '';
+  if (collectionName === 'travel-agents') fieldName = 'travelAgentId';
+  else if (collectionName === 'companies') fieldName = 'companyId';
+  else if (collectionName === 'sales-persons') fieldName = 'salesPersonId';
+
+  if (fieldName) {
+    try {
+      const q = query(bookingsRef, where(fieldName, '==', id), limit(5)); // Limit to 5 for preview
+      const snap = await getDocs(q);
+
+      snap.forEach(doc => {
+        const b = doc.data() as Booking;
+        usage.push({
+          module: 'Booking Exists',
+          record: `Folio : ${b.bookingId} (${b.guestDetails.firstName} ${b.guestDetails.lastName})`,
+          type: 'delete_only' // Hardcoded logic for now: usually depends on status
+        });
+      });
+    } catch (e) {
+      console.error("Error checking usage:", e);
+    }
+  }
+
+  return usage;
+};
+
+// ==========================================
+// INCIDENTAL INVOICE Interfaces & Functions
+// ==========================================
+
+export interface InvoiceItem {
+  id: string; // unique for row key
+  srNo: number;
+  refNo?: string;
+  particular: string; // transaction code name
+  comments?: string;
+  amount: number;
+  qty: number;
+  discountType?: 'Percentage' | 'Amount';
+  discountValue?: number;
+  isTaxInclusive: boolean;
+}
+
+export interface PaymentItem {
+  id: string;
+  srNo: number;
+  refNo?: string;
+  type: string; // Cash, Card, etc.
+  comments?: string;
+  amount: number;
+}
+
+export interface IncidentalInvoice {
+  id: string;
+  voucherNo: string;
+  date: string; // ISO Date String
+  contactType: 'Guest' | 'City Ledger' | 'Walk-in';
+  guestName: string;
+  paymentType: 'Cash/Bank' | 'City Ledger';
+  paymentMethod?: string;
+  charges: InvoiceItem[];
+  payments: PaymentItem[];
+  subTotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  totalPaid: number;
+  balance: number;
+  preparedBy: string;
+  status: 'active' | 'void';
+  createdAt: any;
+}
+
+export const getIncidentalInvoices = async (): Promise<IncidentalInvoice[]> => {
+  if (!db) return [];
+  try {
+    const invoicesRef = collection(db, 'incidentalInvoices');
+    const q = query(invoicesRef, orderBy('createdAt', 'desc'));
+
+    // Note: If you need precise date filtering, use 'date' field or 'createdAt'
+    // For simplicity, fetching all sorted by new first.
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as IncidentalInvoice));
+  } catch (error) {
+    console.error("Error getting incidental invoices:", error);
+    return [];
+  }
+};
+
+export const addIncidentalInvoice = async (invoice: Omit<IncidentalInvoice, 'id'>) => {
+  if (!db) throw new Error("Firestore unavailable");
+  try {
+    return await addDoc(collection(db, 'incidentalInvoices'), {
+      ...invoice,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error adding invoice:", error);
+    throw error;
+  }
+};
+
+export const updateIncidentalInvoice = async (id: string, data: Partial<IncidentalInvoice>) => {
+  if (!db) throw new Error("Firestore unavailable");
+  try {
+    const docRef = doc(db, 'incidentalInvoices', id);
+    await updateDoc(docRef, data);
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    throw error;
+  }
+};
+
+
+
+// ==================== Folio Transactions ====================
+
+export interface FolioTransaction {
+  id: string;
+  bookingId: string;
+  date: Date;
+  type: 'charge' | 'payment' | 'allowance' | 'adjustment';
+  code: string; // e.g., "ROOM_CHARGE", "VISA", "CASH", "F&B"
+  description: string;
+  amount: number;
+  reference?: string;
+  userId: string; // Staff
+  createdAt: Date;
+}
+
+export const addFolioTransaction = async (transaction: Omit<FolioTransaction, 'id' | 'createdAt'>) => {
+  if (!db) return;
+  try {
+    await addDoc(collection(db, 'folioTransactions'), {
+      ...transaction,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error adding transaction", error);
+    throw error;
+  }
+};
+
+export const getFolioTransactions = async (bookingId: string): Promise<FolioTransaction[]> => {
+  if (!db) return [];
+  try {
+    const q = query(
+      collection(db, 'folioTransactions'),
+      where('bookingId', '==', bookingId),
+      orderBy('date', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      date: doc.data().date?.toDate(),
+      createdAt: doc.data().createdAt?.toDate()
+    } as FolioTransaction));
+  } catch (error) {
+    console.error("Error fetching transactions", error);
+    return [];
   }
 };

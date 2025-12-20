@@ -1,483 +1,421 @@
 /**
- * Admin User Management System
+ * Admin User Management System with Granular RBAC
  * 
  * Main Admin: admin@sultanpalacehotelznz.com (Full Access)
  * - Can manage all admin users
  * - Can assign roles to other users
  * - Full access to all features
- * 
- * Role-Based Access Control:
- * - kitchen: Kitchen Dashboard, Food Orders (update status only)
- * - housekeeping: Housekeeping Tasks, Room Status (view and update)
- * - front_desk: Front Desk, Check-in/Check-out, Bookings (view and check-in/out)
- * - manager: All view access + some edit permissions
- * - readonly: View only access
  */
 
-import { db } from './firebase';
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import app, { db } from './firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  serverTimestamp,
+  getDoc
+} from 'firebase/firestore';
+import { initializeApp, getApp, getApps, deleteApp, FirebaseApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 
-export type AdminRoleType = 'full' | 'kitchen' | 'housekeeping' | 'front_desk' | 'manager' | 'readonly';
+// --- Types & Interfaces ---
+
+export type AccessLevel = 'none' | 'read' | 'read_write' | 'full_control';
+
+export interface SectionPermission {
+  access: AccessLevel;
+}
+
+export interface PortalPermission {
+  enabled: boolean;
+  sections: Record<string, SectionPermission>;
+}
+
+export interface RBACPermissions {
+  // Portals
+  inventory?: PortalPermission;
+  front_office?: PortalPermission;
+  accounts?: PortalPermission;
+  kitchen?: PortalPermission;
+  housekeeping?: PortalPermission;
+  audit?: PortalPermission;
+  maintenance?: PortalPermission;
+  cashiering?: PortalPermission; // New: Cashiering Module
+  reports?: PortalPermission;   // New: Reports Module
+  users?: PortalPermission; // For User Management
+  settings?: PortalPermission;
+
+  // Explicit Global Actions (optional overrides)
+  [key: string]: any;
+}
+
+export type AdminRoleType = 'super_admin' | 'manager' | 'receptionist' | 'chef' | 'housekeeper' | 'auditor' | 'accountant' | 'custom';
 
 export interface AdminUser {
   id: string;
   email: string;
+  username: string;
+  employeeId: string; // Unique Link to Staff
   role: AdminRoleType;
-  name?: string;
-  permissions: {
-    // Booking permissions
-    canViewBookings: boolean;
-    canEditBookings: boolean;
-    canCancelBookings: boolean;
-    canConfirmBookings: boolean;
-    
-    // Room permissions
-    canViewRooms: boolean;
-    canEditRooms: boolean;
-    canManageRoomStatus: boolean;
-    
-    // Food & Kitchen permissions
-    canViewFoodOrders: boolean;
-    canUpdateFoodOrderStatus: boolean;
-    canViewKitchen: boolean;
-    canManageMenu: boolean;
-    
-    // Guest Services permissions
-    canViewGuestServices: boolean;
-    canUpdateGuestServiceStatus: boolean;
-    canCreateGuestServices: boolean;
-    
-    // Housekeeping permissions
-    canViewHousekeeping: boolean;
-    canCreateHousekeepingTasks: boolean;
-    canUpdateHousekeepingTasks: boolean;
-    
-    // Front Desk permissions
-    canViewFrontDesk: boolean;
-    canCheckIn: boolean;
-    canCheckOut: boolean;
-    
-    // Checkout & Billing permissions
-    canViewCheckout: boolean;
-    canGenerateBills: boolean;
-    
-    // Content Management permissions
-    canManageGallery: boolean;
-    canManageOffers: boolean;
-    canManageAddons: boolean;
-    canManageRooms: boolean;
-    
-    // Admin Management permissions
-    canManageAdmins: boolean;
-  };
+  name: string;
+
+  // Granular Permissions
+  permissions: RBACPermissions;
+
+  // Access Control
+  allowedPortals: string[]; // Quick lookup for UI hiding
+
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  createdBy?: string; // Email of admin who created this user
+  createdBy?: string;
 }
 
-// Default permissions for each role
-const rolePermissions: Record<AdminRoleType, AdminUser['permissions']> = {
-  full: {
-    canViewBookings: true,
-    canEditBookings: true,
-    canCancelBookings: true,
-    canConfirmBookings: true,
-    canViewRooms: true,
-    canEditRooms: true,
-    canManageRoomStatus: true,
-    canViewFoodOrders: true,
-    canUpdateFoodOrderStatus: true,
-    canViewKitchen: true,
-    canManageMenu: true,
-    canViewGuestServices: true,
-    canUpdateGuestServiceStatus: true,
-    canCreateGuestServices: true,
-    canViewHousekeeping: true,
-    canCreateHousekeepingTasks: true,
-    canUpdateHousekeepingTasks: true,
-    canViewFrontDesk: true,
-    canCheckIn: true,
-    canCheckOut: true,
-    canViewCheckout: true,
-    canGenerateBills: true,
-    canManageGallery: true,
-    canManageOffers: true,
-    canManageAddons: true,
-    canManageRooms: true,
-    canManageAdmins: true,
-  },
-  kitchen: {
-    canViewBookings: false,
-    canEditBookings: false,
-    canCancelBookings: false,
-    canConfirmBookings: false,
-    canViewRooms: false,
-    canEditRooms: false,
-    canManageRoomStatus: false,
-    canViewFoodOrders: true,
-    canUpdateFoodOrderStatus: true,
-    canViewKitchen: true,
-    canManageMenu: false,
-    canViewGuestServices: false,
-    canUpdateGuestServiceStatus: false,
-    canCreateGuestServices: false,
-    canViewHousekeeping: false,
-    canCreateHousekeepingTasks: false,
-    canUpdateHousekeepingTasks: false,
-    canViewFrontDesk: false,
-    canCheckIn: false,
-    canCheckOut: false,
-    canViewCheckout: false,
-    canGenerateBills: false,
-    canManageGallery: false,
-    canManageOffers: false,
-    canManageAddons: false,
-    canManageRooms: false,
-    canManageAdmins: false,
-  },
-  housekeeping: {
-    canViewBookings: true,
-    canEditBookings: false,
-    canCancelBookings: false,
-    canConfirmBookings: false,
-    canViewRooms: true,
-    canEditRooms: false,
-    canManageRoomStatus: true,
-    canViewFoodOrders: false,
-    canUpdateFoodOrderStatus: false,
-    canViewKitchen: false,
-    canManageMenu: false,
-    canViewGuestServices: false,
-    canUpdateGuestServiceStatus: false,
-    canCreateGuestServices: false,
-    canViewHousekeeping: true,
-    canCreateHousekeepingTasks: true,
-    canUpdateHousekeepingTasks: true,
-    canViewFrontDesk: false,
-    canCheckIn: false,
-    canCheckOut: false,
-    canViewCheckout: false,
-    canGenerateBills: false,
-    canManageGallery: false,
-    canManageOffers: false,
-    canManageAddons: false,
-    canManageRooms: false,
-    canManageAdmins: false,
-  },
-  front_desk: {
-    canViewBookings: true,
-    canEditBookings: false,
-    canCancelBookings: false,
-    canConfirmBookings: false,
-    canViewRooms: true,
-    canEditRooms: false,
-    canManageRoomStatus: false,
-    canViewFoodOrders: true,
-    canUpdateFoodOrderStatus: false,
-    canViewKitchen: false,
-    canManageMenu: false,
-    canViewGuestServices: true,
-    canUpdateGuestServiceStatus: true,
-    canCreateGuestServices: true,
-    canViewHousekeeping: true,
-    canCreateHousekeepingTasks: false,
-    canUpdateHousekeepingTasks: false,
-    canViewFrontDesk: true,
-    canCheckIn: true,
-    canCheckOut: true,
-    canViewCheckout: true,
-    canGenerateBills: true,
-    canManageGallery: false,
-    canManageOffers: false,
-    canManageAddons: false,
-    canManageRooms: false,
-    canManageAdmins: false,
+// --- Default Role Templates ---
+
+export const defaultPermissions: Record<AdminRoleType, RBACPermissions> = {
+  super_admin: {
+    inventory: { enabled: true, sections: { all: { access: 'full_control' } } },
+    front_office: { enabled: true, sections: { all: { access: 'full_control' } } },
+    accounts: { enabled: true, sections: { all: { access: 'full_control' } } },
+    kitchen: { enabled: true, sections: { all: { access: 'full_control' } } },
+    housekeeping: { enabled: true, sections: { all: { access: 'full_control' } } },
+    audit: { enabled: true, sections: { all: { access: 'full_control' } } },
+    maintenance: { enabled: true, sections: { all: { access: 'full_control' } } },
+    cashiering: { enabled: true, sections: { all: { access: 'full_control' } } },
+    reports: { enabled: true, sections: { all: { access: 'full_control' } } },
+    users: { enabled: true, sections: { all: { access: 'full_control' } } },
+    settings: { enabled: true, sections: { all: { access: 'full_control' } } },
   },
   manager: {
-    canViewBookings: true,
-    canEditBookings: true,
-    canCancelBookings: true,
-    canConfirmBookings: true,
-    canViewRooms: true,
-    canEditRooms: false,
-    canManageRoomStatus: true,
-    canViewFoodOrders: true,
-    canUpdateFoodOrderStatus: true,
-    canViewKitchen: true,
-    canManageMenu: false,
-    canViewGuestServices: true,
-    canUpdateGuestServiceStatus: true,
-    canCreateGuestServices: true,
-    canViewHousekeeping: true,
-    canCreateHousekeepingTasks: true,
-    canUpdateHousekeepingTasks: true,
-    canViewFrontDesk: true,
-    canCheckIn: true,
-    canCheckOut: true,
-    canViewCheckout: true,
-    canGenerateBills: true,
-    canManageGallery: false,
-    canManageOffers: false,
-    canManageAddons: false,
-    canManageRooms: false,
-    canManageAdmins: false,
+    inventory: { enabled: true, sections: { all: { access: 'read_write' } } },
+    front_office: { enabled: true, sections: { all: { access: 'full_control' } } },
+    accounts: { enabled: true, sections: { all: { access: 'read' } } },
+    kitchen: { enabled: true, sections: { all: { access: 'read_write' } } },
+    housekeeping: { enabled: true, sections: { all: { access: 'read_write' } } },
+    audit: { enabled: true, sections: { all: { access: 'read' } } },
+    maintenance: { enabled: true, sections: { all: { access: 'read_write' } } },
+    cashiering: { enabled: true, sections: { all: { access: 'read_write' } } },
+    reports: { enabled: true, sections: { all: { access: 'read_write' } } },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: true, sections: { general: { access: 'read_write' } } },
   },
-  readonly: {
-    canViewBookings: true,
-    canEditBookings: false,
-    canCancelBookings: false,
-    canConfirmBookings: false,
-    canViewRooms: true,
-    canEditRooms: false,
-    canManageRoomStatus: false,
-    canViewFoodOrders: true,
-    canUpdateFoodOrderStatus: false,
-    canViewKitchen: true,
-    canManageMenu: false,
-    canViewGuestServices: true,
-    canUpdateGuestServiceStatus: false,
-    canCreateGuestServices: false,
-    canViewHousekeeping: true,
-    canCreateHousekeepingTasks: false,
-    canUpdateHousekeepingTasks: false,
-    canViewFrontDesk: true,
-    canCheckIn: false,
-    canCheckOut: false,
-    canViewCheckout: true,
-    canGenerateBills: false,
-    canManageGallery: false,
-    canManageOffers: false,
-    canManageAddons: false,
-    canManageRooms: false,
-    canManageAdmins: false,
+  receptionist: {
+    front_office: {
+      enabled: true,
+      sections: {
+        bookings: { access: 'read_write' },
+        guests: { access: 'read_write' },
+        unsettled_folios: { access: 'read_write' },
+        transactions: { access: 'read_write' },
+        net_locks: { access: 'read' } // View only for locks usually
+      }
+    },
+    housekeeping: { enabled: true, sections: { all: { access: 'read' } } },
+    reports: { enabled: true, sections: { all: { access: 'read' } } }, // Can view reports
+    cashiering: { enabled: false, sections: {} }, // Typically explicitly separated
+    inventory: { enabled: false, sections: {} },
+    accounts: { enabled: false, sections: {} },
+    kitchen: { enabled: false, sections: {} },
+    audit: { enabled: false, sections: {} },
+    maintenance: { enabled: false, sections: {} },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: false, sections: {} },
   },
+  chef: {
+    kitchen: { enabled: true, sections: { orders: { access: 'full_control' }, history: { access: 'read' } } },
+    inventory: { enabled: true, sections: { items: { access: 'read' }, stock: { access: 'read' } } },
+    reports: { enabled: false, sections: {} },
+    cashiering: { enabled: false, sections: {} },
+    front_office: { enabled: false, sections: {} },
+    accounts: { enabled: false, sections: {} },
+    housekeeping: { enabled: false, sections: {} },
+    audit: { enabled: false, sections: {} },
+    maintenance: { enabled: false, sections: {} },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: false, sections: {} },
+  },
+  housekeeper: {
+    housekeeping: { enabled: true, sections: { tasks: { access: 'full_control' } } },
+    front_office: { enabled: true, sections: { rooms: { access: 'read' } } }, // To see room status
+    inventory: { enabled: true, sections: { supplies: { access: 'read_write' } } },
+    reports: { enabled: false, sections: {} },
+    cashiering: { enabled: false, sections: {} },
+    accounts: { enabled: false, sections: {} },
+    kitchen: { enabled: false, sections: {} },
+    audit: { enabled: false, sections: {} },
+    maintenance: { enabled: true, sections: { requests: { access: 'read_write' } } },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: false, sections: {} },
+  },
+  auditor: {
+    audit: { enabled: true, sections: { all: { access: 'full_control' } } },
+    accounts: { enabled: true, sections: { all: { access: 'read' } } },
+    inventory: { enabled: true, sections: { all: { access: 'read' } } },
+    front_office: { enabled: true, sections: { all: { access: 'read' } } },
+    kitchen: { enabled: true, sections: { all: { access: 'read' } } },
+    housekeeping: { enabled: true, sections: { all: { access: 'read' } } },
+    maintenance: { enabled: true, sections: { all: { access: 'read' } } },
+    cashiering: { enabled: true, sections: { all: { access: 'read' } } },
+    reports: { enabled: true, sections: { all: { access: 'read' } } },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: false, sections: {} },
+  },
+  accountant: {
+    accounts: { enabled: true, sections: { all: { access: 'full_control' } } },
+    inventory: { enabled: true, sections: { purchase_orders: { access: 'read_write' } } },
+    front_office: { enabled: true, sections: { billing: { access: 'read_write' } } },
+    cashiering: { enabled: true, sections: { all: { access: 'full_control' } } },
+    reports: { enabled: true, sections: { all: { access: 'read_write' } } },
+    kitchen: { enabled: false, sections: {} },
+    housekeeping: { enabled: false, sections: {} },
+    audit: { enabled: true, sections: { all: { access: 'read' } } },
+    maintenance: { enabled: false, sections: {} },
+    users: { enabled: false, sections: {} },
+    settings: { enabled: false, sections: {} },
+  },
+  custom: {},
 };
 
-// Get main admin email from environment
+// --- Helper Functions ---
+
 function getMainAdminEmail(): string {
   return process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',')[0]?.trim().toLowerCase() || 'admin@sultanpalacehotelznz.com';
 }
 
-/**
- * Get admin user from Firestore by email
- */
+function getSafeAllowedPortals(permissions: RBACPermissions): string[] {
+  return Object.keys(permissions).filter(key => permissions[key as keyof RBACPermissions]?.enabled);
+}
+
+// --- Main Service Functions ---
+
 export async function getAdminUser(email: string | null | undefined): Promise<AdminUser | null> {
   if (!email || !db) return null;
-  
-  try {
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    // Check if it's main admin
-    const mainAdminEmail = getMainAdminEmail();
-    if (normalizedEmail === mainAdminEmail) {
-      return {
-        id: 'main-admin',
-        email: normalizedEmail,
-        role: 'full',
-        permissions: rolePermissions.full,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
-    
-    // Check Firestore for admin user
-    const adminUsersRef = collection(db, 'adminUsers');
-    const q = query(adminUsersRef, where('email', '==', normalizedEmail));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
-      // If not found in Firestore, default to readonly
-      return {
-        id: 'default-readonly',
-        email: normalizedEmail,
-        role: 'readonly',
-        permissions: rolePermissions.readonly,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
-    
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-    
+  const normalizedEmail = email.toLowerCase().trim();
+  const mainAdminEmail = getMainAdminEmail();
+
+  // Super Admin Check
+  if (normalizedEmail === mainAdminEmail) {
     return {
-      id: doc.id,
-      email: data.email,
-      role: data.role || 'readonly',
-      name: data.name,
-      permissions: data.permissions || rolePermissions[data.role as AdminRoleType] || rolePermissions.readonly,
-      isActive: data.isActive !== false,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
-      createdBy: data.createdBy,
-    };
-  } catch (error) {
-    console.error('Error getting admin user:', error);
-    // Fallback to readonly on error
-    return {
-      id: 'error-readonly',
-      email: email.toLowerCase().trim(),
-      role: 'readonly',
-      permissions: rolePermissions.readonly,
+      id: 'main-admin',
+      email: normalizedEmail,
+      username: 'Main Admin',
+      employeeId: 'ADM001',
+      role: 'super_admin',
+      name: 'System Administrator',
+      permissions: defaultPermissions.super_admin,
+      allowedPortals: Object.keys(defaultPermissions.super_admin),
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
   }
+
+  // Firestore Check
+  const q = query(collection(db, 'adminUsers'), where('email', '==', normalizedEmail));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) return null;
+
+  const docData = snapshot.docs[0].data();
+  // Ensure backward compatibility or safe defaults
+  const role = (docData.role as AdminRoleType) || 'custom';
+  const permissions = docData.permissions || defaultPermissions[role] || {};
+
+  return {
+    id: snapshot.docs[0].id,
+    email: docData.email,
+    username: docData.username || docData.email,
+    employeeId: docData.employeeId || '',
+    role: role,
+    name: docData.name,
+    permissions: permissions,
+    allowedPortals: docData.allowedPortals || getSafeAllowedPortals(permissions),
+    isActive: docData.isActive !== false,
+    createdAt: docData.createdAt?.toDate() || new Date(),
+    updatedAt: docData.updatedAt?.toDate() || new Date(),
+    createdBy: docData.createdBy,
+  };
 }
 
-/**
- * Get all admin users (only for full admin)
- */
 export async function getAllAdminUsers(): Promise<AdminUser[]> {
   if (!db) return [];
-  
   try {
-    const adminUsersRef = collection(db, 'adminUsers');
-    const snapshot = await getDocs(adminUsersRef);
-    
+    const s = await getDocs(collection(db, 'adminUsers'));
     const mainAdminEmail = getMainAdminEmail();
-    const mainAdmin: AdminUser = {
-      id: 'main-admin',
-      email: mainAdminEmail,
-      role: 'full',
-      permissions: rolePermissions.full,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    const users = snapshot.docs.map(doc => {
-      const data = doc.data();
+
+    // Always inject main admin
+    const mainAdmin = await getAdminUser(mainAdminEmail);
+    const users = s.docs.map(d => {
+      const data = d.data();
       return {
-        id: doc.id,
-        email: data.email,
-        role: data.role || 'readonly',
-        name: data.name,
-        permissions: data.permissions || rolePermissions[data.role as AdminRoleType] || rolePermissions.readonly,
-        isActive: data.isActive !== false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        createdBy: data.createdBy,
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
       } as AdminUser;
     });
-    
-    return [mainAdmin, ...users];
-  } catch (error) {
-    console.error('Error getting all admin users:', error);
+
+    // Remove duplicates if main admin is in DB for some reason, though logic handles it
+    const filteredUsers = users.filter(u => u.email !== mainAdminEmail);
+    return mainAdmin ? [mainAdmin, ...filteredUsers] : filteredUsers;
+  } catch (e) {
+    console.error(e);
     return [];
   }
 }
 
-/**
- * Create new admin user (only full admin can do this)
- */
-export async function createAdminUser(
-  email: string,
-  role: AdminRoleType,
-  name?: string,
-  createdBy?: string
-): Promise<string | null> {
-  if (!db) return null;
-  
+// --- User Creation with Password (The "Secondary App" Trick) ---
+
+export async function createSystemUser(
+  userData: {
+    email: string;
+    password?: string; // Optional if only creating DB record (legacy), but required for new flow
+    name: string;
+    username: string;
+    employeeId: string;
+    role: AdminRoleType;
+    permissions?: RBACPermissions;
+  },
+  creatorEmail: string
+): Promise<{ success: boolean; error?: string; id?: string }> {
+  if (!db || !app) return { success: false, error: 'Database or App unavailable' };
+
   try {
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    // Check if user already exists
+    const normalizedEmail = userData.email.toLowerCase().trim();
+
+    // 1. Check DB existence
     const existing = await getAdminUser(normalizedEmail);
-    if (existing && existing.id !== 'default-readonly' && existing.id !== 'error-readonly') {
-      throw new Error('Admin user already exists');
+    if (existing) return { success: false, error: 'User already exists' };
+
+    // 2. Create Auth User (if password provided)
+    // We utilize a secondary Firebase App to avoid logging out the current admin
+    if (userData.password) {
+      let secondaryApp: FirebaseApp | undefined;
+      try {
+        // Check if app exists or initialize unique one
+        const appName = 'secondary-auth-worker';
+        const existingApps = getApps();
+        secondaryApp = existingApps.find(a => a.name === appName) || initializeApp(app.options, appName);
+
+        const secondaryAuth = getAuth(secondaryApp);
+        await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, userData.password);
+
+        // Immediately sign out this secondary worker to be safe
+        await signOut(secondaryAuth);
+
+        // Clean up: valid workaround for web SDK limitation
+        // Note: deleteApp is async. We don't await it strictly to avoid blocking UI excessive time if not needed.
+        deleteApp(secondaryApp).catch(console.error);
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          return { success: false, error: 'This email is already registered. Please use a different email.' };
+        }
+        console.error('Auth Creation Error:', authError);
+        return { success: false, error: authError.message || 'Failed to create authentication credentials.' };
+      }
     }
-    
-    const adminUsersRef = collection(db, 'adminUsers');
-    const docRef = await addDoc(adminUsersRef, {
+
+    // 3. Create Firestore Record
+    const finalPermissions = userData.permissions || defaultPermissions[userData.role] || {};
+
+    const ref = await addDoc(collection(db, 'adminUsers'), {
       email: normalizedEmail,
-      role,
-      name: name || '',
-      permissions: rolePermissions[role],
+      username: userData.username,
+      employeeId: userData.employeeId,
+      name: userData.name,
+      role: userData.role,
+      permissions: finalPermissions,
+      allowedPortals: getSafeAllowedPortals(finalPermissions),
       isActive: true,
-      createdBy: createdBy || '',
+      createdBy: creatorEmail,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating admin user:', error);
-    return null;
+
+    return { success: true, id: ref.id };
+
+  } catch (e: any) {
+    console.error('Create System User Error:', e);
+    return { success: false, error: e.message };
   }
 }
 
-/**
- * Update admin user (only full admin can do this)
- */
-export async function updateAdminUser(
-  id: string,
-  updates: Partial<Pick<AdminUser, 'role' | 'name' | 'isActive' | 'permissions'>>
+export async function updateSystemUserPermissions(
+  userId: string,
+  role: AdminRoleType,
+  permissions: RBACPermissions
 ): Promise<boolean> {
-  if (!db) return false;
-  
+  if (!userId || !db) return false;
   try {
-    // Can't update main admin
-    if (id === 'main-admin') {
-      throw new Error('Cannot update main admin');
-    }
-    
-    const adminUserRef = doc(db, 'adminUsers', id);
-    const updateData: Record<string, unknown> = {
-      updatedAt: serverTimestamp(),
-    };
-    
-    if (updates.role !== undefined) {
-      updateData.role = updates.role;
-      updateData.permissions = rolePermissions[updates.role];
-    }
-    
-    if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
-    if (updates.permissions !== undefined) updateData.permissions = updates.permissions;
-    
-    await updateDoc(adminUserRef, updateData);
+    const ref = doc(db, 'adminUsers', userId);
+    await updateDoc(ref, {
+      role,
+      permissions,
+      allowedPortals: getSafeAllowedPortals(permissions),
+      updatedAt: serverTimestamp()
+    });
     return true;
-  } catch (error) {
-    console.error('Error updating admin user:', error);
+  } catch (e) {
+    console.error(e);
     return false;
   }
 }
 
-/**
- * Delete admin user (only full admin can do this)
- */
-export async function deleteAdminUser(id: string): Promise<boolean> {
+export async function deleteSystemUser(userId: string): Promise<boolean> {
+  // Note: This only deletes the DB record. Auth user deletion requires Admin SDK or Cloud Function.
+  // For client-side, we primarily rely on disabling the account or removing the DB record 
+  // which prevents the permission check from succeeding "isActive".
   if (!db) return false;
-  
   try {
-    // Can't delete main admin
-    if (id === 'main-admin') {
-      throw new Error('Cannot delete main admin');
-    }
-    
-    const adminUserRef = doc(db, 'adminUsers', id);
-    await deleteDoc(adminUserRef);
+    await deleteDoc(doc(db, 'adminUsers', userId));
     return true;
-  } catch (error) {
-    console.error('Error deleting admin user:', error);
+  } catch (e) {
     return false;
   }
 }
 
-/**
- * Check if user has specific permission
- */
-export async function hasPermission(
-  email: string | null | undefined,
-  permission: keyof AdminUser['permissions']
-): Promise<boolean> {
-  const adminUser = await getAdminUser(email);
-  if (!adminUser || !adminUser.isActive) return false;
-  return adminUser.permissions[permission] === true;
+// --- Legacy Adapters for Backward Compatibility ---
+
+export async function createAdminUser(email: string, role: string): Promise<string | null> {
+  // Map legacy roles to new RBAC roles
+  let newRole: AdminRoleType = 'custom';
+  if (role === 'full') newRole = 'super_admin';
+  else if (role === 'kitchen') newRole = 'chef';
+  else if (role === 'frontdesk') newRole = 'receptionist';
+  else if (role === 'readonly') newRole = 'auditor'; // Best fit for read-only
+
+  const result = await createSystemUser({
+    email,
+    role: newRole,
+    name: email.split('@')[0],
+    username: email.split('@')[0],
+    employeeId: 'LEGACY-' + Math.floor(Math.random() * 10000),
+  }, 'legacy-adapter');
+
+  // @ts-ignore
+  return result.success ? result.id : null;
 }
+
+export async function updateAdminUser(uid: string, data: { role?: string }): Promise<void> {
+  if (data.role) {
+    let newRole: AdminRoleType = 'custom';
+    if (data.role === 'full') newRole = 'super_admin';
+    else if (data.role === 'kitchen') newRole = 'chef';
+    else if (data.role === 'frontdesk') newRole = 'receptionist';
+    else if (data.role === 'readonly') newRole = 'auditor';
+
+    // We need permissions for this role to update properly
+    const permissions = defaultPermissions[newRole] || {};
+    await updateSystemUserPermissions(uid, newRole, permissions);
+  }
+}
+
+export const deleteAdminUser = deleteSystemUser;
+
 

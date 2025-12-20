@@ -1,4 +1,5 @@
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminRoleProvider } from "@/context/AdminRoleContext";
 
 export default function Layout({
     children,
@@ -6,8 +7,10 @@ export default function Layout({
     children: React.ReactNode;
 }) {
     return (
-        <AdminLayout>
-            {children}
-        </AdminLayout>
+        <AdminRoleProvider>
+            <AdminLayout>
+                {children}
+            </AdminLayout>
+        </AdminRoleProvider>
     );
 }

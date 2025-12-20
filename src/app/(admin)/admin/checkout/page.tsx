@@ -10,6 +10,7 @@ import {
   generateCheckoutBill,
   getCheckoutBill,
   checkOutGuest,
+  getSystemLocks, // New Import
   Booking,
   CheckoutBill,
   HousekeepingTask
@@ -124,6 +125,30 @@ export default function AdminCheckoutPage() {
     }
 
     setProcessing(true);
+
+    // NET LOCK CHECK
+    try {
+      const locks = await getSystemLocks();
+      const roomNum = selectedBooking.roomNumber || selectedBooking.rooms[0]?.allocatedRoomType;
+      const activeLock = locks.find(lock =>
+        (lock.resourceType === 'folio' && lock.resourceId === selectedBooking.id) ||
+        (roomNum && lock.resourceType === 'room' && lock.resourceId === roomNum)
+      );
+
+      if (activeLock) {
+        showToast(`Checkout Blocked: Folio is locked by ${activeLock.lockedBy}. Reason: ${activeLock.description}`, 'error');
+        setProcessing(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking locks:", err);
+      // Optional: block or allow? Safe to allow if check fails? Or Block? Let's log and proceed or block.
+      // Blocking is safer for "Net Lock" concept.
+      showToast("Error checking system locks. Please try again.", 'error');
+      setProcessing(false);
+      return;
+    }
+
     try {
       const success = await checkOutGuest(
         selectedBooking.id,

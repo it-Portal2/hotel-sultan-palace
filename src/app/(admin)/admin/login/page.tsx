@@ -84,11 +84,11 @@ export default function AdminLoginPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 required
-                minLength={8}
+                minLength={6}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setTyping(true); }}
                 className="block w-full h-14 rounded-2xl border border-gray-300 bg-gray-50/60 px-5 pr-12 text-lg shadow-sm placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30"
-                placeholder="••••••••"
+                placeholder="••••••"
               />
               <button
                 type="button"
@@ -119,9 +119,6 @@ export default function AdminLoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        <div className="mt-5 text-sm text-gray-600 text-center">
-          Don&apos;t have an admin account? <Link href="/admin/signup" className="text-orange-600 hover:text-orange-800">Create one</Link>
-        </div>
       </div>
       <style jsx>{`
         .shake { animation: shake 0.5s ease-in-out; }

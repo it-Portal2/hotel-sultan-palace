@@ -4,8 +4,8 @@ import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon } from '@heroicons/r
 interface BookingFiltersProps {
     query: string;
     setQuery: (q: string) => void;
-    status: 'all' | 'pending' | 'confirmed' | 'cancelled';
-    setStatus: (s: 'all' | 'pending' | 'confirmed' | 'cancelled') => void;
+    status: 'all' | 'pending' | 'confirmed' | 'cancelled' | 'walk_in';
+    setStatus: (s: 'all' | 'pending' | 'confirmed' | 'cancelled' | 'walk_in') => void;
     startDate: string;
     setStartDate: (d: string) => void;
     endDate: string;
@@ -56,7 +56,7 @@ export default function BookingFilters({
 
                 {/* Status Tabs */}
                 <div className="flex bg-gray-100 p-1 w-full md:w-auto overflow-x-auto no-scrollbar">
-                    {(['all', 'pending', 'confirmed', 'cancelled'] as const).map((s) => (
+                    {(['all', 'walk_in', 'pending', 'confirmed', 'cancelled'] as const).map((s) => (
                         <button
                             key={s}
                             onClick={() => setStatus(s)}
@@ -65,7 +65,7 @@ export default function BookingFilters({
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
                                 }`}
                         >
-                            {s}
+                            {s === 'walk_in' ? 'Walk-in Guest' : s}
                         </button>
                     ))}
                 </div>

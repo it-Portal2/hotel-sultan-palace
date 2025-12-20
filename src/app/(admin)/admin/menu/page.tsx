@@ -284,9 +284,9 @@ export default function AdminMenuPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-0">
+    <div className="flex flex-col md:flex-row h-full md:h-[calc(100vh-8rem)] gap-0">
       {/* Left Sidebar - Categories */}
-      <div className={`w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-0 overflow-hidden opacity-0 hidden' : 'w-64 opacity-100'}`}>
+      <div className={`w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex-shrink-0 flex flex-col transition-all duration-300 ${sidebarOpen ? 'md:w-0 overflow-hidden opacity-0 hidden' : 'md:w-64 opacity-100'}`}>
         {/* Header */}
         <div className="p-3 border-b border-gray-200">
           <h2 className="text-sm font-semibold text-gray-700 uppercase">Categories</h2>
@@ -463,7 +463,7 @@ export default function AdminMenuPage() {
             </div>
           ) : (
             <div className="flex-1 bg-white border border-gray-200 rounded overflow-hidden flex flex-col">
-              <div className="overflow-auto flex-1">
+              <div className="hidden md:block overflow-auto flex-1">
                 <table className="w-full">
                   <thead className="bg-orange-50 border-b border-gray-200 sticky top-0">
                     <tr>
@@ -550,6 +550,58 @@ export default function AdminMenuPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile List View - Redesigned Grid */}
+              <div className="md:hidden overflow-auto flex-1 p-3 pb-24 bg-gray-50/50">
+                {Object.entries(groupedItems).map(([subcategory, items]) => (
+                  <React.Fragment key={subcategory}>
+                    {subcategory !== 'Other' && (
+                      <div className="px-1 py-2 text-xs font-black text-gray-400 uppercase tracking-widest mt-4 first:mt-0 flex items-center gap-2">
+                        <span className="w-1 h-3 bg-[#FF6A00] rounded-full"></span>
+                        {subcategory}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {items.map((item) => (
+                        <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full relative group active:scale-95 transition-transform duration-200">
+                          {/* Status Indicator */}
+                          <div className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${item.isAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
+
+                          {/* Image Placeholder / Content */}
+                          <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center relative">
+                            <div className="text-gray-300 font-bold text-[10px] tracking-widest uppercase">Item</div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                              <div className="text-white font-bold text-lg leading-none drop-shadow-sm">${item.price.toFixed(0)}</div>
+                            </div>
+                          </div>
+
+                          <div className="p-3 flex flex-col flex-1">
+                            <h3 className="font-bold text-gray-800 text-sm leading-snug line-clamp-2 mb-1">{item.name}</h3>
+                            <p className="text-[10px] text-gray-500 mb-2">{item.sku}</p>
+
+                            <div className="mt-auto pt-2 border-t border-gray-50 flex items-center justify-between gap-2">
+                              <Link
+                                href={`/admin/menu/edit/${item.id}`}
+                                className="flex-1 py-1.5 bg-orange-50 text-[#FF6A00] text-xs font-bold rounded text-center"
+                              >
+                                Edit
+                              </Link>
+                              {!isReadOnly && (
+                                <button
+                                  onClick={() => setDeleteConfirm(item.id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-500"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           )}

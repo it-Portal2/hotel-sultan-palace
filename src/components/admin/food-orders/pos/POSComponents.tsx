@@ -26,17 +26,23 @@ export function POSCart({
     subtotal, tax, total, isSubmitting, canSubmit
 }: POSCartProps) {
     return (
-        <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-96 fixed right-0 top-0 bottom-0 z-30 pt-[72px]"> {/* Adjusted top padding for header */}
+        <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-full md:w-96 fixed right-0 top-0 bottom-0 z-50 pt-[64px] md:pt-[72px] transition-transform duration-300">
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                    <ShoppingCartIcon className="h-5 w-5" />
-                    Current Order
-                </h3>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                        <ShoppingCartIcon className="h-6 w-6 text-[#FF6A00]" />
+                        Current Order
+                    </h3>
+                    <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">{cart.reduce((a, b) => a + b.quantity, 0)} Items</span>
+                </div>
 
                 {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
-                        <ShoppingCartIcon className="h-8 w-8 mb-2 opacity-50" />
-                        <span className="text-sm">Cart is empty</span>
+                    <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        <div className="bg-white p-4 rounded-full shadow-sm mb-3">
+                            <ShoppingCartIcon className="h-8 w-8 text-gray-300" />
+                        </div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Your cart is empty</h4>
+                        <p className="text-sm text-gray-500 max-w-[200px]">Select items from the menu to start a new order.</p>
                     </div>
                 ) : (
                     <div className="space-y-4">

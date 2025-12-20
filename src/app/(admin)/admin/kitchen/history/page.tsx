@@ -88,7 +88,7 @@ export default function KitchenHistoryPage() {
             </div>
 
             {/* Stats Cards - Quick Summary */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
                     <div>
                         <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Orders</div>

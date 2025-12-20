@@ -23,6 +23,15 @@ import type {
     AuditLog
 } from './firestoreService';
 
+export type {
+    LedgerEntry,
+    Expense,
+    FinancialSummary,
+    StaffMember,
+    StaffAttendance,
+    AuditLog
+};
+
 // ==================== Accounts Management CRUD Operations ====================
 
 // Create ledger entry

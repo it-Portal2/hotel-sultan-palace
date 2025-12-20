@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FoodOrder } from '@/lib/firestoreService';
-import KitchenOrderTicket from './KitchenOrderTicket';
-import { InboxIcon, FireIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
+import KitchenOrderCard from './KitchenOrderCard';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface KitchenKanbanBoardProps {
     orders: FoodOrder[];
@@ -9,93 +9,93 @@ interface KitchenKanbanBoardProps {
 }
 
 export default function KitchenKanbanBoard({ orders, onUpdateStatus }: KitchenKanbanBoardProps) {
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed');
-    const preparingOrders = orders.filter(o => o.status === 'preparing');
-    const readyOrders = orders.filter(o => o.status === 'ready');
+
+    const columns = useMemo(() => {
+        return {
+            pending: orders.filter(o => o.status === 'confirmed' || o.status === 'pending'),
+            cooking: orders.filter(o => o.status === 'preparing'),
+            ready: orders.filter(o => o.status === 'ready'),
+        };
+    }, [orders]);
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-full overflow-x-auto pb-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
-            {/* Incoming / Pending Column */}
-            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
-                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
-                            <InboxIcon className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">New Orders</h3>
-                            <p className="text-gray-500 text-xs text-left">Waiting for acceptance</p>
-                        </div>
-                    </div>
-                    <span className="bg-blue-100 text-blue-700 text-sm font-bold px-3 py-1 rounded-full">{pendingOrders.length}</span>
-                </div>
-                <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-                    {pendingOrders.length === 0 ? (
-                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
-                            <InboxIcon className="h-12 w-12 mb-3 opacity-20" />
-                            <span className="text-sm font-medium opacity-60">No inbound orders</span>
-                        </div>
-                    ) : (
-                        pendingOrders.map(order => (
-                            <KitchenOrderTicket key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
-                        ))
-                    )}
+        <div className="h-full flex flex-col overflow-hidden bg-gray-50/50 relative">
+            {/* Mobile Scroll Hint */}
+            <div className="md:hidden absolute top-20 right-0 z-50 pointer-events-none">
+                <div className="animate-bounce-x bg-white/80 p-1 rounded-l-full shadow-md border border-gray-200">
+                    <ChevronRightIcon className="h-6 w-6 text-slate-600" />
                 </div>
             </div>
+            {/* Desktop: Grid | Mobile: Snap Scroll Row */}
+            <div className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex md:grid md:grid-cols-3 gap-4 md:gap-6 p-4">
 
-            {/* Cooking / Preparing Column */}
-            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
-                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg border border-orange-100">
-                            <FireIcon className="h-6 w-6" />
+                {/* NEW ORDERS */}
+                <div className="flex-none w-[85vw] md:w-auto h-full flex flex-col bg-white rounded-xl shadow-sm border-t-4 border-t-yellow-400 border-x border-b border-gray-100 snap-center">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-yellow-50/30">
+                        <div className="flex items-center gap-2">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                            </span>
+                            <h2 className="font-bold text-gray-800 uppercase tracking-wider text-sm">New Orders</h2>
                         </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">Prep Station</h3>
-                            <p className="text-gray-500 text-xs text-left">Currently cooking</p>
-                        </div>
+                        <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full">{columns.pending.length}</span>
                     </div>
-                    <span className="bg-orange-100 text-orange-700 text-sm font-bold px-3 py-1 rounded-full">{preparingOrders.length}</span>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-200">
+                        {columns.pending.map(order => (
+                            <KitchenOrderCard key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
+                        ))}
+                        {columns.pending.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
+                                <span className="opacity-50 text-4xl mb-2">🍽️</span>
+                                No new orders
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-                    {preparingOrders.length === 0 ? (
-                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
-                            <FireIcon className="h-12 w-12 mb-3 opacity-20" />
-                            <span className="text-sm font-medium opacity-60">Station inactive</span>
-                        </div>
-                    ) : (
-                        preparingOrders.map(order => (
-                            <KitchenOrderTicket key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
-                        ))
-                    )}
-                </div>
-            </div>
 
-            {/* Ready to Serve Column */}
-            <div className="flex-1 min-w-[350px] bg-white border border-gray-200 rounded-lg flex flex-col h-full max-h-[calc(100vh-200px)] shadow-sm">
-                <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
-                            <CheckBadgeIcon className="h-6 w-6" />
+                {/* COOKING */}
+                <div className="flex-none w-[85vw] md:w-auto h-full flex flex-col bg-white rounded-xl shadow-sm border-t-4 border-t-orange-500 border-x border-b border-gray-100 snap-center">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-orange-50/30">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                            <h2 className="font-bold text-gray-800 uppercase tracking-wider text-sm">Preparing</h2>
                         </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900 uppercase tracking-wide text-sm font-sans">Pass / Ready</h3>
-                            <p className="text-gray-500 text-xs text-left">Ready for pickup</p>
-                        </div>
+                        <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full">{columns.cooking.length}</span>
                     </div>
-                    <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">{readyOrders.length}</span>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-200">
+                        {columns.cooking.map(order => (
+                            <KitchenOrderCard key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
+                        ))}
+                        {columns.cooking.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
+                                <span className="opacity-50 text-4xl mb-2">👨‍🍳</span>
+                                Nothing cooking
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-                    {readyOrders.length === 0 ? (
-                        <div className="h-48 flex flex-col items-center justify-center text-gray-400">
-                            <CheckBadgeIcon className="h-12 w-12 mb-3 opacity-20" />
-                            <span className="text-sm font-medium opacity-60">Pass clear</span>
+
+                {/* READY */}
+                <div className="flex-none w-[85vw] md:w-auto h-full flex flex-col bg-white rounded-xl shadow-sm border-t-4 border-t-green-500 border-x border-b border-gray-100 snap-center">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-green-50/30">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                            <h2 className="font-bold text-gray-800 uppercase tracking-wider text-sm">Ready to Serve</h2>
                         </div>
-                    ) : (
-                        readyOrders.map(order => (
-                            <KitchenOrderTicket key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
-                        ))
-                    )}
+                        <span className="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full">{columns.ready.length}</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-200">
+                        {columns.ready.map(order => (
+                            <KitchenOrderCard key={order.id} order={order} onUpdateStatus={onUpdateStatus} />
+                        ))}
+                        {columns.ready.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
+                                <span className="opacity-50 text-4xl mb-2">✅</span>
+                                No ready orders
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

@@ -28,6 +28,7 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   ClipboardDocumentListIcon,
+  ReceiptPercentIcon,
   KeyIcon,
   BellIcon,
   PhotoIcon,
@@ -40,12 +41,21 @@ import {
   ClockIcon,
   TruckIcon,
   WrenchIcon,
-  ClipboardDocumentCheckIcon
+
+  ClipboardDocumentCheckIcon,
+  LockClosedIcon,
+  BuildingOffice2Icon,
+  ChartPieIcon,
+  GlobeAltIcon,
+  XCircleIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
+import { UserIcon as UserIconSolid } from '@heroicons/react/24/solid';
+import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getAdminRoleSync, type AdminRole } from '@/lib/adminRoles';
-import { AdminRoleProvider, useAdminRole } from '@/context/AdminRoleContext';
+import { useAdminRole } from '@/context/AdminRoleContext';
 import { SidebarProvider, useSidebar } from '@/context/SidebarContext';
 
 interface AdminLayoutProps {
@@ -69,7 +79,9 @@ interface NavigationItem {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   bgColor: string;
-  requiresFullAdmin?: boolean;
+  section?: string; // RBAC Section Key
+  requiresFullAdmin?: boolean; // Legacy fallback
+  locked?: boolean;
 }
 
 // Helper to determine portal from path
@@ -83,10 +95,16 @@ const getPortalFromPath = (path: string): PortalType => {
 };
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const { adminUser, userEmail, isLoading: isRoleLoading, hasSectionAccess } = useAdminRole();
   const [authChecked, setAuthChecked] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
   const pathname = usePathname();
+
+  // Update auth check when role context is ready
+  useEffect(() => {
+    if (!isRoleLoading) {
+      setAuthChecked(true);
+    }
+  }, [isRoleLoading]);
 
   const currentPortal = useMemo(() => getPortalFromPath(pathname), [pathname]);
 
@@ -98,7 +116,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Dashboard',
         icon: Squares2X2Icon,
         items: [
-          { name: 'Front Desk', href: '/admin/dashboard', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50' },
+          { name: 'Front Desk', href: '/admin/dashboard', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50', section: 'dashboard' },
         ],
         defaultOpen: true,
         isSingleItem: true
@@ -107,8 +125,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Reservations',
         icon: ClipboardDocumentListIcon,
         items: [
-          { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
-          { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+          { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'reservations' },
+          { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'reservations' },
         ],
         defaultOpen: true
       },
@@ -117,27 +135,64 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Front Office',
         icon: KeyIcon,
         items: [
-          { name: 'Check-in', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
-          { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+          { name: 'Check-in', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'front_office' },
+          { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'front_office' },
         ],
         defaultOpen: true
       },
+
       {
         name: 'Rooms',
         icon: BuildingOfficeIcon,
         items: [
-          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50' },
-          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
+          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
+          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
+          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
         ],
         defaultOpen: true
+      },
+
+      {
+        name: 'Reports',
+        icon: ChartBarIcon,
+        items: [
+          { name: 'Analytics', href: '/admin/reports', icon: ChartBarIcon, color: 'text-pink-600', bgColor: 'bg-pink-50', section: 'analytics' },
+          { name: 'Arrival List', href: '/admin/reports/arrival-list', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'arrival_list' },
+          { name: 'Cancelled Reservations', href: '/admin/reports/cancelled', icon: XCircleIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'cancelled' },
+          { name: 'No Show Reservations', href: '/admin/reports/no-show', icon: userSlashIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'no_show' },
+        ],
+        defaultOpen: true
+      },
+
+      {
+        name: 'Cashiering',
+        icon: CurrencyDollarIcon,
+        items: [
+          { name: 'Unsettled Folios', href: '/admin/cashiering/unsettled-folios', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
+          { name: 'Insert Transaction', href: '/admin/cashiering/transactions', icon: CurrencyDollarIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
+          { name: 'Travel Agents Database', href: '/admin/cashiering/travel-agents', icon: UserGroupIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'travel_agents' },
+          { name: 'Companies Database', href: '/admin/cashiering/companies', icon: BuildingOffice2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'companies' },
+          { name: 'Sales Persons Database', href: '/admin/cashiering/sales-persons', icon: UserIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'sales_persons' },
+          { name: 'Incidental Invoice', href: '/admin/cashiering/incidental-invoice', icon: ReceiptPercentIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'incidental_invoice' },
+        ],
+        defaultOpen: true
+      },
+
+      {
+        name: 'Net Locks',
+        icon: LockClosedIcon,
+        items: [
+          { name: 'Net Locks', href: '/admin/cashiering/net-locks', icon: LockClosedIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', section: 'net_locks' },
+        ],
+        defaultOpen: true,
+        isSingleItem: true
       },
 
       {
         name: 'Night Audit',
         icon: ClockIcon,
         items: [
-          { name: 'Night Audit', href: '/admin/front-desk/night-audit', icon: ClockIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+          { name: 'Night Audit', href: '/admin/front-desk/night-audit', icon: ClockIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'night_audit' },
         ],
         defaultOpen: true,
         isSingleItem: true
@@ -147,7 +202,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Guest Services',
         icon: WrenchScrewdriverIcon,
         items: [
-          { name: 'Guest Services', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50' },
+          { name: 'Guest Services', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50', section: 'guest_services' },
         ],
         defaultOpen: true,
         isSingleItem: true
@@ -157,7 +212,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Housekeeping',
         icon: CleaningIcon,
         items: [
-          { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+          { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
         ],
         defaultOpen: true,
         isSingleItem: true
@@ -167,31 +222,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Inventory',
         icon: ClipboardDocumentListIcon,
         items: [
-          { name: 'Inventory', href: '/admin/inventory', icon: ClipboardDocumentListIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+          { name: 'Inventory', href: '/admin/inventory', icon: ClipboardDocumentListIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'inventory' },
         ],
         defaultOpen: true,
         isSingleItem: true
       },
 
-      {
-        name: 'Reports',
-        icon: ChartBarIcon,
-        items: [
-          { name: 'Analytics', href: '/admin/reports', icon: ChartBarIcon, color: 'text-pink-600', bgColor: 'bg-pink-50' },
-          { name: 'Accounts', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50' }, // Shared link
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
+
     ],
     kitchen: [
       {
         name: 'Kitchen',
         icon: BeakerIcon,
         items: [
-          { name: 'Dashboard', href: '/admin/kitchen', icon: HomeIcon, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-          { name: 'Active Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50' },
-          { name: 'Order History', href: '/admin/kitchen/history', icon: ClipboardDocumentListIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+          { name: 'Dashboard', href: '/admin/kitchen', icon: HomeIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'kitchen_dashboard' },
+          { name: 'Active Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'kitchen_dashboard' },
+          { name: 'Order History', href: '/admin/kitchen/history', icon: ClipboardDocumentListIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'kitchen_dashboard' },
         ],
         defaultOpen: true
       },
@@ -199,8 +245,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Menu',
         icon: ClipboardDocumentListIcon,
         items: [
-          { name: 'Menu Items', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50' },
-          { name: 'Recipes / Costing', href: '/admin/menu/recipes', icon: BeakerIcon, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+          { name: 'Menu Items', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50', section: 'menu_management' },
+          { name: 'Recipes / Costing', href: '/admin/menu/recipes', icon: BeakerIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'menu_management' },
         ],
         defaultOpen: true,
         isSingleItem: false // changed to false to show both
@@ -209,7 +255,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Analytics',
         icon: ChartBarIcon,
         items: [
-          { name: 'F&B Stats', href: '/admin/fb-dashboard', icon: ChartBarIcon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
+          { name: 'F&B Stats', href: '/admin/fb-dashboard', icon: ChartBarIcon, color: 'text-teal-500', bgColor: 'bg-teal-50', section: 'analytics' },
         ],
         defaultOpen: true,
         isSingleItem: true
@@ -220,9 +266,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Content',
         icon: PhotoIcon,
         items: [
-          { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50' },
-          { name: 'Story Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50' },
-          { name: 'Excursions', href: '/admin/excursions', icon: MapPinIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50' },
+          { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50', section: 'content' },
+          { name: 'Story Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50', section: 'content' },
+          { name: 'Excursions', href: '/admin/excursions', icon: MapPinIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50', section: 'content' },
         ],
         defaultOpen: true
       },
@@ -230,9 +276,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Marketing',
         icon: TagIcon,
         items: [
-          { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50' },
-          { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50' },
-          { name: 'Reputation', href: '/admin/reputation-management', icon: StarIcon, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+          { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50', section: 'marketing' },
+          { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50', section: 'marketing' },
+          { name: 'Reputation', href: '/admin/reputation-management', icon: StarIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'marketing' },
         ],
         defaultOpen: true
       },
@@ -240,8 +286,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Inquiries',
         icon: EnvelopeIcon,
         items: [
-          { name: 'Contact Msgs', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50' },
-          { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50' },
+          { name: 'Contact Msgs', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50', section: 'inquiries' },
+          { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50', section: 'inquiries' },
         ],
         defaultOpen: true
       },
@@ -251,8 +297,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Finance',
         icon: CurrencyDollarIcon,
         items: [
-          { name: 'Accounts Overview', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50' },
-          { name: 'Transactions', href: '/admin/accounts?tab=transactions', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+          { name: 'Accounts Overview', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'finance_ops' },
+          { name: 'Transactions', href: '/admin/accounts?tab=transactions', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'finance_ops' },
         ],
         defaultOpen: true
       },
@@ -262,49 +308,90 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Staff',
         icon: UserGroupIcon,
         items: [
-          { name: 'Directory', href: '/admin/staff', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
-          { name: 'Admin Users', href: '/admin/admin-users', icon: KeyIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', requiresFullAdmin: true },
+          { name: 'Directory', href: '/admin/staff', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'directory' },
+          { name: 'Admin Users', href: '/admin/admin-users', icon: KeyIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', section: 'admin_users' },
         ],
         defaultOpen: true
       },
     ],
   };
 
+
+
   const filteredNavigationGroups = useMemo(() => {
     const groups = portalNavigationGroups[currentPortal] || [];
     return groups.map(group => ({
       ...group,
-      items: group.items.filter(item => {
-        if (item.requiresFullAdmin) {
-          return adminRole === 'full';
-        }
-        return true;
-      })
-    })).filter(group => group.items.length > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminRole, currentPortal]);
+      items: group.items.map(item => {
+        let isLocked = false;
 
-  useEffect(() => {
-    if (!auth) {
-      setAuthChecked(true);
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const email = user?.email ?? null;
-      setUserEmail(email);
-      setAdminRole(getAdminRoleSync(email));
-      setAuthChecked(true);
-    });
-    return () => unsubscribe();
-  }, []);
+        // Legacy fallback
+        if (item.requiresFullAdmin) {
+          if (!(adminUser?.role === 'super_admin' || adminUser?.role === 'manager')) {
+            isLocked = true;
+          }
+        }
+
+        // Granular Check
+        const portal = currentPortal;
+        const actualPortalKey = portal === 'operations' ? 'front_office' : portal;
+
+        let hasAccess = true;
+
+        if (item.section) {
+          hasAccess = hasSectionAccess(actualPortalKey, item.section);
+        } else {
+          // Fallback for items without explicit section tag
+          const groupToSection: Record<string, string> = {
+            'Dashboard': 'dashboard',
+            'Reservations': 'reservations',
+            'Front Office': 'front_office',
+            'Rooms': 'rooms',
+            'Night Audit': 'night_audit',
+            'Guest Services': 'guest_services',
+            'Housekeeping': 'housekeeping',
+            'Inventory': 'inventory',
+            'Reports': 'reports',
+            'Kitchen': 'kitchen_dashboard',
+            'Menu': 'menu_management',
+            'Analytics': 'analytics',
+            'Content': 'content',
+            'Marketing': 'marketing',
+            'Inquiries': 'inquiries',
+            'Finance': 'finance_dashboard',
+            'Staff': 'directory'
+          };
+
+          const inferredSection = groupToSection[group.name];
+          if (inferredSection) {
+            hasAccess = hasSectionAccess(actualPortalKey, inferredSection);
+          }
+        }
+
+        if (!hasAccess) isLocked = true;
+
+        return { ...item, locked: isLocked };
+      })
+    }));
+    // removed .filter(group => group.items.length > 0) so even locked items show up
+  }, [adminUser, currentPortal, hasSectionAccess]);
+
+
 
   const isAuthorized = useMemo(() => {
+    // 1. Legacy Check (Env Var)
     const allowList = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    if (allowList.length === 0) {
-      return Boolean(userEmail);
-    }
-    return userEmail ? allowList.includes(userEmail.toLowerCase()) : false;
-  }, [userEmail]);
+    const legacyAuth = userEmail ? allowList.includes(userEmail.toLowerCase()) : false;
+
+    // 2. Firestore Check (adminUser object exists)
+    const firestoreAuth = !!adminUser;
+
+    // 3. Fallback: If env var list is empty, treat any logged in user as potentially authorized (dangerous, but matching legacy logic if env is missing)
+    // Actually, safer to deny if strict. But let's stick to: "If allowList is empty, rely on presence of userEmail?" -> No, that's unsafe.
+    // If allowList is empty and no adminUser, deny.
+
+    return legacyAuth || firestoreAuth;
+  }, [userEmail, adminUser]);
 
   const isPublicAdminAuthRoute = useMemo(() => {
     if (!pathname) return false;
@@ -343,18 +430,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <AdminRoleProvider>
-      <SidebarProvider>
-        <AdminLayoutContent
-          pathname={pathname}
-          userEmail={userEmail}
-          currentPortal={currentPortal}
-          navigationGroups={filteredNavigationGroups}
-        >
-          {children}
-        </AdminLayoutContent>
-      </SidebarProvider>
-    </AdminRoleProvider>
+    <SidebarProvider>
+      <AdminLayoutContent
+        pathname={pathname}
+        userEmail={userEmail}
+        currentPortal={currentPortal}
+        navigationGroups={filteredNavigationGroups}
+      >
+        {children}
+      </AdminLayoutContent>
+    </SidebarProvider>
   );
 }
 
@@ -409,11 +494,19 @@ function AdminLayoutContent({
   }, [navigationGroups, pathname]); // Re-eval when path changes to keep sync? checking user intent.. active tab should stay open.
 
   const roleLabels: Record<string, string> = {
+    super_admin: 'System Administrator',
+    manager: 'Manager',
+    receptionist: 'Front Desk',
+    chef: 'Head Chef',
+    housekeeper: 'Housekeeping',
+    auditor: 'Night Auditor',
+    accountant: 'Accountant',
+    custom: 'Staff Member',
+    // Legacy support
     full: 'Full Admin',
     kitchen: 'Kitchen Staff',
-    housekeeping: 'Housekeeping',
+    housekeeping_legacy: 'Housekeeping',
     front_desk: 'Check-in',
-    manager: 'Manager',
     readonly: 'Read Only',
   };
 
@@ -504,17 +597,28 @@ function AdminLayoutContent({
                 {group.items.map((item) => {
                   const isActive = isItemActive(item.href);
                   return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={onNavClick}
-                      className={`group flex items-center pl-10 pr-6 py-3 text-sm font-medium transition-all border-l-4 ${isActive
-                        ? 'border-[#FF6A00] text-[#FF6A00] bg-orange-50'
-                        : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                    >
-                      <span className="flex-1">{item.name}</span>
-                    </Link>
+                    item.locked ? (
+                      <div
+                        key={item.name}
+                        className="group flex items-center pl-10 pr-4 py-3 text-sm font-medium border-l-4 border-transparent text-gray-400 bg-gray-50 cursor-not-allowed opacity-60"
+                        title="Access Restricted - Contact Administrator"
+                      >
+                        <span className="flex-1">{item.name}</span>
+                        <LockClosedIcon className="h-4 w-4 text-gray-400 ml-2" />
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={onNavClick}
+                        className={`group flex items-center pl-10 pr-6 py-3 text-sm font-medium transition-all border-l-4 ${isActive
+                          ? 'border-[#FF6A00] text-[#FF6A00] bg-orange-50'
+                          : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                          }`}
+                      >
+                        <span className="flex-1">{item.name}</span>
+                      </Link>
+                    )
                   );
                 })}
               </div>
@@ -579,12 +683,10 @@ function AdminLayoutContent({
                 onClick={() => setSidebarOpen(!sidebarOpen)}
               >
                 {sidebarOpen ? (
-                  <XMarkIcon className="h-6 w-6 hidden md:block" /> // Show X only on desktop here, mobile has it in sidebar
+                  <XMarkIcon className="h-6 w-6 hidden md:block" />
                 ) : (
                   <Bars3Icon className="h-6 w-6" />
                 )}
-                {/* Mobile: Hamburger always shows sidebar, back/close is handled by backdrop or sidebar internal close */}
-                <Bars3Icon className="h-6 w-6 md:hidden" />
               </button>
             )}
 
@@ -671,19 +773,8 @@ function AdminLayoutContent({
                           <span className="text-xs text-gray-500 truncate max-w-[150px]">{userEmail}</span>
                         </div>
                         {adminUser && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border ${adminUser.role === 'full'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : adminUser.role === 'manager'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : adminUser.role === 'kitchen'
-                                ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                : adminUser.role === 'housekeeping'
-                                  ? 'bg-teal-50 text-teal-700 border-teal-200'
-                                  : adminUser.role === 'front_desk'
-                                    ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}>
-                            {roleLabels[adminUser.role] || 'Read Only'}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border rounded bg-gray-100 text-gray-700 border-gray-200`}>
+                            {roleLabels[adminUser.role] || adminUser.role}
                           </span>
                         )}
                         <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
@@ -695,19 +786,8 @@ function AdminLayoutContent({
                             <p className="text-sm font-semibold text-gray-900">{adminUser?.name || userEmail.split('@')[0]}</p>
                             <p className="text-xs text-gray-500 truncate">{userEmail}</p>
                             {adminUser && (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border mt-2 ${adminUser.role === 'full'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : adminUser.role === 'manager'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : adminUser.role === 'kitchen'
-                                    ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                    : adminUser.role === 'housekeeping'
-                                      ? 'bg-teal-50 text-teal-700 border-teal-200'
-                                      : adminUser.role === 'front_desk'
-                                        ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
-                                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                                }`}>
-                                {roleLabels[adminUser.role] || 'Read Only'}
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border mt-2 rounded bg-gray-100 text-gray-700 border-gray-200`}>
+                                {roleLabels[adminUser.role] || adminUser.role}
                               </span>
                             )}
                           </div>

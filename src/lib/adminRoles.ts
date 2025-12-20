@@ -14,16 +14,16 @@ export type AdminRole = 'full' | 'readonly';
  */
 export async function getAdminRole(email: string | null | undefined): Promise<AdminRole> {
   if (!email) return 'readonly';
-  
+
   try {
     const adminUser = await getAdminUser(email);
     if (!adminUser) return 'readonly';
-    
+
     // Full admin or manager role = full access
-    if (adminUser.role === 'full' || adminUser.role === 'manager') {
+    if (adminUser.role === 'super_admin' || adminUser.role === 'manager') {
       return 'full';
     }
-    
+
     return 'readonly';
   } catch (error) {
     console.error('Error getting admin role:', error);
@@ -37,14 +37,14 @@ export async function getAdminRole(email: string | null | undefined): Promise<Ad
  */
 export function getAdminRoleSync(email: string | null | undefined): AdminRole {
   if (!email) return 'readonly';
-  
+
   const normalizedEmail = email.toLowerCase().trim();
   const mainAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',')[0]?.trim().toLowerCase() || 'admin@sultanpalacehotelznz.com';
-  
+
   if (normalizedEmail === mainAdminEmail) {
     return 'full';
   }
-  
+
   return 'readonly';
 }
 

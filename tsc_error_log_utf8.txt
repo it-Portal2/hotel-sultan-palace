@@ -1,0 +1,2 @@
+﻿src/app/(admin)/admin/reservations/walkin/page.tsx(17,26): error TS2724: '"@/lib/firestoreService"' has no exported member named 'getAllRooms'. Did you mean 'getRooms'?
+src/app/(admin)/admin/reservations/walkin/page.tsx(64,45): error TS7006: Parameter 'b' implicitly has an 'any' type.

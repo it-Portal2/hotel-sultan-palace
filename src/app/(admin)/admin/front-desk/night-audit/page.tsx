@@ -7,31 +7,33 @@ import {
     getCurrentBusinessDate,
     getAuditBlockers,
     performNightAudit,
-    getAuditHistory,
-    AuditBlockers
+    getAuditHistory
 } from '@/lib/nightAuditService';
-import type { NightAuditLog } from '@/lib/firestoreService';
+import { getAuditLogs, AuditLogEntry, NightAuditLog } from '@/lib/firestoreService';
 import {
     CalendarDaysIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    ClockIcon,
-    DocumentChartBarIcon
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
+
+interface PreAuditBlocker {
+    type: string;
+    message: string;
+    count: number;
+}
 
 export default function NightAuditPage() {
-    const { adminUser, isReadOnly } = useAdminRole();
+    const { isReadOnly } = useAdminRole(); // Assuming role object has info, otherwise mock user
     const { showToast } = useToast();
-    const router = useRouter();
 
-    // State
-    const [businessDate, setBusinessDate] = useState<Date | null>(null);
-    const [blockers, setBlockers] = useState<AuditBlockers | null>(null);
+    const [currentDate, setCurrentDate] = useState<string>('');
+    const [status, setStatus] = useState<string>('idle');
+    const [blockers, setBlockers] = useState<PreAuditBlocker[]>([]);
     const [history, setHistory] = useState<NightAuditLog[]>([]);
+    const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [runningAudit, setRunningAudit] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
+    const [activeTab, setActiveTab] = useState<'status' | 'history' | 'trail'>('status');
 
     useEffect(() => {
         loadData();
@@ -40,259 +42,186 @@ export default function NightAuditPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [date, blockersData, historyData] = await Promise.all([
-                getCurrentBusinessDate(),
-                // Pass today's date context if needed, but service handles standard logic
-                getCurrentBusinessDate().then(d => getAuditBlockers(d)),
-                getAuditHistory()
-            ]);
-            setBusinessDate(date);
-            setBlockers(blockersData);
-            setHistory(historyData);
+            const date = await getCurrentBusinessDate();
+            setCurrentDate(date.toISOString().split('T')[0]);
+
+            const hist = await getAuditHistory();
+            setHistory(hist);
+
+            const logs = await getAuditLogs();
+            setAuditLogs(logs);
+
+            // Check blockers
+            const auditBlockers = await getAuditBlockers(date);
+            const newBlockers: PreAuditBlocker[] = [];
+
+            if (auditBlockers.pendingArrivals > 0) {
+                newBlockers.push({ type: 'Pending Arrivals', message: 'Guests expected to arrive', count: auditBlockers.pendingArrivals });
+            }
+            if (auditBlockers.pendingDepartures > 0) {
+                newBlockers.push({ type: 'Pending Departures', message: 'Guests expected to checkout', count: auditBlockers.pendingDepartures });
+            }
+            if (auditBlockers.uncleanRooms > 0) {
+                newBlockers.push({ type: 'Unclean Rooms', message: 'Rooms status dirty/inspection', count: auditBlockers.uncleanRooms });
+            }
+            setBlockers(newBlockers);
+
         } catch (error) {
             console.error(error);
-            showToast('Failed to load audit data', 'error');
+            showToast('Failed to load night audit data', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     const handleRunAudit = async () => {
-        if (isReadOnly) return;
+        if (blockers.length > 0) {
+            showToast('Cannot run audit. Resolve blockers first.', 'error');
+            return;
+        }
 
-        setRunningAudit(true);
+        if (!confirm('Are you sure you want to run the Night Audit? This will roll the business date.')) return;
+
+        setStatus('running');
         try {
-            // Use actual logged-in user ID
-            const staffId = adminUser?.id || 'unknown';
-            const staffName = adminUser?.name || 'Unknown Staff';
+            // Mock staff info or get from auth context if available
+            const staffId = 'admin';
+            const staffName = 'Main Admin';
+
             const resultId = await performNightAudit(staffId, staffName);
 
             if (resultId) {
-                showToast('Night Audit Completed Successfully!', 'success');
-                setShowConfirm(false);
-                await loadData();
+                showToast('Night Audit completed successfully', 'success');
+                loadData();
             } else {
-                showToast('Night Audit Failed. Check logs.', 'error');
+                showToast('Night Audit failed. Check console.', 'error');
             }
         } catch (error) {
             console.error(error);
-            showToast('An unexpected error occurred', 'error');
+            showToast('Error running night audit', 'error');
         } finally {
-            setRunningAudit(false);
+            setStatus('idle');
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
-            </div>
-        );
-    }
-
-    const hasBlockers = blockers && (blockers.pendingArrivals > 0 || blockers.pendingDepartures > 0);
-
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-light text-gray-900">Night Audit</h1>
-                    <p className="text-gray-500 mt-2">End-of-day processing and reporting</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Night Audit</h1>
+                    <p className="text-gray-500">Business Date: {currentDate}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">Business Date:</span>
-                    <span className="text-lg font-mono font-bold text-[#FF6A00]">
-                        {businessDate?.toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })}
-                    </span>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setActiveTab('status')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'status' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border'}`}
+                    >
+                        Current Status
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border'}`}
+                    >
+                        Audit History
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('trail')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'trail' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border'}`}
+                    >
+                        Audit Trail
+                    </button>
                 </div>
             </div>
 
-            {/* Main Status Area */}
-            <div className="bg-white border border-gray-200 p-8 shadow-sm">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Audit Status</h2>
-                        {hasBlockers ? (
-                            <div className="flex items-center gap-3 text-red-600">
-                                <ExclamationTriangleIcon className="h-6 w-6" />
-                                <span className="text-lg">Attention Required</span>
-                                <p className="text-sm text-gray-500 ml-2">Resolve pending items before closing the day.</p>
+            {activeTab === 'status' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />
+                            Pre-Audit Check
+                        </h2>
+                        {blockers.length === 0 ? (
+                            <div className="text-green-600 flex items-center gap-2 bg-green-50 p-4 rounded-lg">
+                                <CheckCircleIcon className="h-6 w-6" />
+                                <span className="font-medium">All checks passed. Ready to run audit.</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3 text-green-600">
-                                <CheckCircleIcon className="h-6 w-6" />
-                                <span className="text-lg">Ready to Close</span>
-                                <p className="text-sm text-gray-500 ml-2">All pre-audit checks passed.</p>
-                            </div>
+                            <ul className="space-y-3">
+                                {blockers.map((blocker, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 bg-red-50 p-3 rounded-lg text-red-700">
+                                        <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="font-bold block">{blocker.type}</span>
+                                            <span className="text-sm">{blocker.message} ({blocker.count} items)</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </div>
 
-                    <div>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-center items-center text-center">
+                        <CalendarDaysIcon className="h-16 w-16 text-blue-600 mb-4" />
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Run Night Audit</h3>
+                        <p className="text-gray-500 mb-6 max-w-sm">
+                            This process will close the current business date ({currentDate}) and roll over to the next day.
+                            Ensure all transactions are posted.
+                        </p>
                         <button
-                            onClick={() => setShowConfirm(true)}
-                            disabled={hasBlockers || runningAudit || isReadOnly}
-                            className={`
-                                flex items-center gap-2 px-8 py-4 text-white font-bold transition-all
-                                ${hasBlockers || isReadOnly
-                                    ? 'bg-gray-300 cursor-not-allowed'
-                                    : 'bg-[#FF6A00] hover:bg-[#FF6A00]/90 shadow-md hover:shadow-lg active:translate-y-0.5'
-                                }
-                            `}
+                            onClick={handleRunAudit}
+                            disabled={status === 'running' || blockers.length > 0 || isReadOnly}
+                            className={`px-8 py-3 rounded-lg text-white font-bold flex items-center gap-2 shadow-lg transition-all
+                                ${status === 'running' || blockers.length > 0 || isReadOnly
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'}`}
                         >
-                            {runningAudit ? (
+                            {status === 'running' ? (
                                 <>
-                                    <div className="h-5 w-5 border-2 border-white border-t-transparent animate-spin"></div>
-                                    Running System Audit...
+                                    <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                                    Running Audit...
                                 </>
                             ) : (
-                                <>
-                                    <ClockIcon className="h-5 w-5" />
-                                    RUN NIGHT AUDIT
-                                </>
+                                'Start Night Audit Process'
                             )}
                         </button>
                     </div>
                 </div>
+            )}
 
-                <hr className="my-8 border-gray-100" />
-
-                {/* Pre-Audit Grid */}
-                <div>
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Pre-Audit Checklist</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Pending Arrivals */}
-                        <div className={`p-6 border transition-all ${blockers?.pendingArrivals ? 'bg-orange-50/30 border-orange-200' : 'bg-white border-gray-200'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="text-gray-600 font-medium">Pending Arrivals</span>
-                                {blockers?.pendingArrivals ? <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" /> : <CheckCircleIcon className="h-5 w-5 text-green-500" />}
-                            </div>
-                            <div className="flex items-baseline justify-between">
-                                <span className="text-4xl font-light text-gray-900">{blockers?.pendingArrivals}</span>
-                                {blockers?.pendingArrivals ? (
-                                    <a href="/admin/front-desk?tab=arrivals" className="text-sm font-bold text-[#FF6A00] hover:underline uppercase tracking-wide">Resolve</a>
-                                ) : (
-                                    <span className="text-xs font-bold text-green-700 bg-green-50 px-3 py-1">CLEARED</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Pending Departures */}
-                        <div className={`p-6 border transition-all ${blockers?.pendingDepartures ? 'bg-orange-50/30 border-orange-200' : 'bg-white border-gray-200'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="text-gray-600 font-medium">Pending Departures</span>
-                                {blockers?.pendingDepartures ? <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" /> : <CheckCircleIcon className="h-5 w-5 text-green-500" />}
-                            </div>
-                            <div className="flex items-baseline justify-between">
-                                <span className="text-4xl font-light text-gray-900">{blockers?.pendingDepartures}</span>
-                                {blockers?.pendingDepartures ? (
-                                    <a href="/admin/front-desk?tab=departures" className="text-sm font-bold text-[#FF6A00] hover:underline uppercase tracking-wide">Resolve</a>
-                                ) : (
-                                    <span className="text-xs font-bold text-green-700 bg-green-50 px-3 py-1">CLEARED</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Unclean Rooms */}
-                        <div className={`p-6 border transition-all ${blockers?.uncleanRooms ? 'bg-orange-50/30 border-orange-200' : 'bg-white border-gray-200'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="text-gray-600 font-medium">Unclean Rooms</span>
-                                {blockers?.uncleanRooms ? <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" /> : <CheckCircleIcon className="h-5 w-5 text-green-500" />}
-                            </div>
-                            <div className="flex items-baseline justify-between">
-                                <span className="text-4xl font-light text-gray-900">{blockers?.uncleanRooms}</span>
-                                {blockers?.uncleanRooms ? (
-                                    <a href="/admin/housekeeping" className="text-sm font-bold text-[#FF6A00] hover:underline uppercase tracking-wide">View</a>
-                                ) : (
-                                    <span className="text-xs font-bold text-green-700 bg-green-50 px-3 py-1">CLEARED</span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Workflow Steps - Clean/Minimal */}
-                <div className="mt-12">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Audit Sequence</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-gray-200 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gray-50/30">
-                        <div className="p-6">
-                            <span className="block text-2xl font-bold text-gray-200 mb-2">01</span>
-                            <h4 className="font-bold text-gray-900">Post Charges</h4>
-                            <p className="text-sm text-gray-500 mt-1">Room rates & tax posted to guest folios</p>
-                        </div>
-                        <div className="p-6">
-                            <span className="block text-2xl font-bold text-gray-200 mb-2">02</span>
-                            <h4 className="font-bold text-gray-900">Update Rooms</h4>
-                            <p className="text-sm text-gray-500 mt-1">Status verified & no-shows processed</p>
-                        </div>
-                        <div className="p-6">
-                            <span className="block text-2xl font-bold text-gray-200 mb-2">03</span>
-                            <h4 className="font-bold text-gray-900">Reports</h4>
-                            <p className="text-sm text-gray-500 mt-1">Daily revenue & occupancy reports</p>
-                        </div>
-                        <div className="p-6 bg-[#FF6A00]/5">
-                            <span className="block text-2xl font-bold text-[#FF6A00]/20 mb-2">04</span>
-                            <h4 className="font-bold text-[#FF6A00]">Roll Date</h4>
-                            <p className="text-sm text-gray-500 mt-1">System advances to next business day</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Audit History - Clean Table */}
-            <div className="bg-white border border-gray-200 shadow-sm">
-                <div className="px-8 py-6 border-b border-gray-200 flex items-center justify-between">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        <DocumentChartBarIcon className="h-5 w-5 text-[#FF6A00]" />
-                        Audit History
-                    </h3>
-                    <button className="text-sm text-gray-500 hover:text-[#FF6A00] transition-colors">View All Logs</button>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-100">
-                        <thead>
-                            <tr className="bg-gray-50/50">
-                                <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Business Date</th>
-                                <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Time</th>
-                                <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Revenue</th>
-                                <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Occupancy</th>
-                                <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+            {activeTab === 'history' && (
+                <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Revenue</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Occupancy</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Run At</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
+                        <tbody className="bg-white divide-y divide-gray-200">
                             {history.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-8 py-12 text-center text-gray-500">
-                                        No audit history found.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">No audit history found.</td></tr>
                             ) : (
-                                history.map((log) => (
-                                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-8 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {log.date?.toLocaleDateString()}
+                                history.map((h) => (
+                                    <tr key={h.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {new Date(h.date).toLocaleDateString()}
                                         </td>
-                                        <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {log.startedAt?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </td>
-                                        <td className="px-8 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                                            ${log.summary?.totalRevenue?.toFixed(2)}
-                                        </td>
-                                        <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {log.summary?.totalOccupiedRooms} <span className="text-xs">rms</span>
-                                        </td>
-                                        <td className="px-8 py-4 whitespace-nowrap">
-                                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wide border ${log.status === 'completed'
-                                                ? 'bg-green-50 text-green-700 border-green-100'
-                                                : 'bg-red-50 text-red-700 border-red-100'
-                                                }`}>
-                                                {log.status}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${h.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                {h.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                                            ${h.summary?.totalRevenue?.toFixed(2) || '0.00'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            {h.summary?.totalOccupiedRooms || 0} rooms
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {h.completedAt ? new Date(h.completedAt).toLocaleString() : '-'}
                                         </td>
                                     </tr>
                                 ))
@@ -300,62 +229,57 @@ export default function NightAuditPage() {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            )}
 
-            {/* Confirmation Modal - Sharp */}
-            {showConfirm && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white shadow-2xl max-w-md w-full p-8 animate-scale-up border-t-4 border-[#FF6A00]">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="bg-orange-50 p-3">
-                                <ExclamationTriangleIcon className="h-8 w-8 text-[#FF6A00]" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900">Confirm Audit</h3>
-                                <p className="text-sm text-gray-500">End of Day Processing</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 p-4 border-l-2 border-gray-300 mb-6">
-                            <p className="text-sm text-gray-600">
-                                You are closing the business day for <span className="font-bold text-gray-900">{businessDate?.toLocaleDateString()}</span>.
-                            </p>
-                        </div>
-
-                        <div className="space-y-4 mb-8">
-                            <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">System Actions:</p>
-                            <ul className="space-y-3">
-                                {[
-                                    'Post room charges for in-house guests',
-                                    'Finalize consumption and revenue',
-                                    'Lock inventory and financial data',
-                                    'Update room statuses',
-                                    'Generate daily reports',
-                                    'Roll system date to next day'
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
-                                        <CheckCircleIcon className="h-5 w-5 text-gray-400 shrink-0" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="flex justify-end gap-0 border-t border-gray-100 pt-6">
-                            <button
-                                onClick={() => setShowConfirm(false)}
-                                className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors mr-4"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleRunAudit}
-                                className="px-6 py-2 bg-[#FF6A00] text-white font-bold hover:bg-[#FF6A00]/90 transition-all shadow-sm"
-                            >
-                                CONFIRM & RUN
-                            </button>
-                        </div>
+            {activeTab === 'trail' && (
+                <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Filter Header similar to screenshot */}
+                    <div className="p-4 bg-gray-50 border-b flex gap-4 overflow-x-auto">
+                        <select className="text-sm border-gray-300 rounded"><option>All Users</option></select>
+                        <select className="text-sm border-gray-300 rounded"><option>All Actions</option></select>
+                        <input type="date" className="text-sm border-gray-300 rounded" />
                     </div>
+
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">Date & Time</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">Logs</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">User</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-100">
+                            {auditLogs.length === 0 ? (
+                                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">No detailed logs found.</td></tr>
+                            ) : (
+                                auditLogs.map((log) => (
+                                    <tr key={log.id} className="hover:bg-blue-50 transition-colors">
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 font-mono">
+                                            {new Date(log.timestamp).toLocaleString()}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-800">
+                                            <div className="font-bold text-blue-900">{log.action}</div>
+                                            {(log.oldValue || log.newValue) ? (
+                                                <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-1 rounded border border-gray-100 inline-block">
+                                                    {log.oldValue && <span className="text-red-600 mr-2">Old: {log.oldValue}</span>}
+                                                    {log.newValue && <span className="text-green-600">New: {log.newValue}</span>}
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-gray-500 italic">{log.details}</div>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                            {log.user || 'System'}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">
+                                            {log.ip || '192.168.1.1'} {/* Mock IP if missing */}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>

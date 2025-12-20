@@ -7,7 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getAllGuestReviews, getSpecialOffers, SpecialOffer } from '@/lib/firestoreService';
 import { AppliedOfferInfo, buildAppliedOfferInfo, calculateDiscountAmount, isSpecialOfferValid } from '@/lib/offers';
 import { getAvailableRoomCount } from '@/lib/bookingService';
-import { 
+import {
   MdLocationOn as LocationIcon,
   MdDirections as DirectionsIcon,
   MdAdd as AddIcon,
@@ -30,7 +30,7 @@ import BookingForm from '@/components/booking/BookingForm';
 import FacilitiesDrawer from '@/components/hotel/FacilitiesDrawer';
 import TransportSection from '@/components/hotel/TransportSection';
 import PoliciesSection from '@/components/hotel/PoliciesSection';
-import FoodAndDrinkSection from '@/components/hotel/FoodAndDrinkSection'; 
+import FoodAndDrinkSection from '@/components/hotel/FoodAndDrinkSection';
 import { popularFacilities } from '@/components/hotel/facilitiesData';
 import ActivitiesSection from '@/components/hotel/ActivitiesSection'
 import BedAndChildInfoSection from '@/components/hotel/BedAndChildInfoSection'
@@ -49,7 +49,7 @@ function HotelContent() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout' | 'both'>('both');
-  
+
   const getInitialDates = () => {
     if (bookingData) {
       return {
@@ -65,7 +65,7 @@ function HotelContent() {
     checkOutDate.setDate(checkOutDate.getDate() + 1);
     return { checkIn: checkInDate, checkOut: checkOutDate };
   };
-  
+
   const initialDates = getInitialDates();
   const [tempCheckIn, setTempCheckIn] = useState<Date | null>(initialDates.checkIn);
   const [tempCheckOut, setTempCheckOut] = useState<Date | null>(initialDates.checkOut);
@@ -95,7 +95,7 @@ function HotelContent() {
         setRooms(roomsData);
         setGalleryImages(galleryData);
         setSpecialOffers(offers);
-        
+
         // Calculate overall rating from reviews
         if (reviews.length > 0) {
           const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
@@ -124,12 +124,12 @@ function HotelContent() {
   useEffect(() => {
     const fetchAvailableCounts = async () => {
       if (!tempCheckIn || !tempCheckOut || rooms.length === 0) return;
-      
+
       const checkInStr = tempCheckIn.toISOString().split('T')[0];
       const checkOutStr = tempCheckOut.toISOString().split('T')[0];
-      
+
       const counts: Record<string, number> = {};
-      
+
       for (const room of rooms) {
         // Determine suite type from room name
         let suiteType: SuiteType | undefined;
@@ -141,7 +141,7 @@ function HotelContent() {
         } else if (roomNameLower.includes('ocean')) {
           suiteType = 'Ocean Suite';
         }
-        
+
         if (suiteType) {
           try {
             const count = await getAvailableRoomCount(suiteType, checkInStr, checkOutStr);
@@ -152,10 +152,10 @@ function HotelContent() {
           }
         }
       }
-      
+
       setAvailableRoomCounts(counts);
     };
-    
+
     fetchAvailableCounts();
   }, [tempCheckIn, tempCheckOut, rooms]);
 
@@ -192,7 +192,7 @@ function HotelContent() {
     setTempCheckIn(new Date(bookingData.checkIn));
     setTempCheckOut(new Date(bookingData.checkOut));
     setTempGuests(bookingData.guests);
-    
+
     // Reset temp values ref when bookingData changes externally
     // This allows the sync effect to run if needed
     prevTempValuesRef.current = JSON.stringify({
@@ -200,7 +200,7 @@ function HotelContent() {
       checkOut: bookingData.checkOut,
       guests: bookingData.guests
     });
-    
+
     isInitialMount.current = false;
   }, [bookingData]);
 
@@ -225,10 +225,10 @@ function HotelContent() {
 
     // Use setTimeout to defer the update to avoid updating during render
     const timeoutId = setTimeout(() => {
-      updateBookingData({ 
-        checkIn: tempCheckIn.toISOString(), 
-        checkOut: tempCheckOut.toISOString(), 
-        guests: tempGuests 
+      updateBookingData({
+        checkIn: tempCheckIn.toISOString(),
+        checkOut: tempCheckOut.toISOString(),
+        guests: tempGuests
       });
     }, 0);
     return () => clearTimeout(timeoutId);
@@ -295,21 +295,21 @@ function HotelContent() {
 
   const changeGuest = (key: 'adults' | 'children' | 'rooms', delta: number) => {
     setTempGuests((prev) => {
-      const next = { ...prev, [key]: Math.max( key === 'children' ? 0 : 1, prev[key] + delta) };
+      const next = { ...prev, [key]: Math.max(key === 'children' ? 0 : 1, prev[key] + delta) };
       return next;
     });
   };
 
   const addToCart = async (room: Room, roomCount: number = 1) => {
     if (!tempCheckIn || !tempCheckOut) {
-      
+
       return;
     }
 
     try {
-      
+
       const { checkRoomAvailability } = await import('@/lib/bookingService');
-      
+
       let suiteType: 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite' | undefined;
       const roomTypeLower = room.type.toLowerCase();
       if (roomTypeLower.includes('garden')) {
@@ -326,15 +326,15 @@ function HotelContent() {
         const baseGuests = bookingData ? bookingData.guests : tempGuests;
         // Use the roomCount from the specific room card
         const guests = { ...baseGuests, rooms: roomCount };
-        
+
         if (!bookingData) {
-          updateBookingData({ 
-            checkIn, 
-            checkOut, 
-            guests 
+          updateBookingData({
+            checkIn,
+            checkOut,
+            guests
           });
         }
-        
+
         const bookingDataForCheck = {
           checkIn,
           checkOut,
@@ -361,15 +361,17 @@ function HotelContent() {
           reservationGuests: [],
           addOns: [],
           totalAmount: 0,
+          paidAmount: 0,
+          paymentStatus: 'pending' as const,
           bookingId: '',
           status: 'pending' as const
         };
 
         const availability = await checkRoomAvailability(bookingDataForCheck);
-        
+
         if (!availability.available) {
           alert(availability.message || 'No rooms available for the selected dates. Please choose different dates.');
-          console.error(availability.message); 
+          console.error(availability.message);
           return;
         }
       }
@@ -394,7 +396,7 @@ function HotelContent() {
 
   const containerPad = '';
 
-  
+
 
   const comforts = [
     { icon: MdFreeBreakfast, category: 'Breakfast', title: 'Delightful Breakfast' },
@@ -434,7 +436,7 @@ function HotelContent() {
           color: white !important;
         }
       `}</style>
-      
+
       <section className="w-full relative pt-[80px] md:pt-[191px]" style={{ zIndex: 10000, pointerEvents: 'none' }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
@@ -444,10 +446,10 @@ function HotelContent() {
               <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-left pl-2">Guests</span>
             </div>
             <div className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative" style={{ zIndex: 10001, pointerEvents: 'auto' }}>
-              <BookingForm 
-              navigateOnSubmit={false}
-              borderColorClass="border-[#BE8C53]"
-              onComplete={() => roomsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              <BookingForm
+                navigateOnSubmit={false}
+                borderColorClass="border-[#BE8C53]"
+                onComplete={() => roomsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               />
             </div>
           </div>
@@ -462,23 +464,22 @@ function HotelContent() {
                 {/* Mobile Gallery - Simple Grid */}
                 <div className="lg:hidden grid grid-cols-2 gap-2">
                   {heroGalleryImages.slice(0, 5).map((img, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`relative ${
-                        idx === 0 ? 'col-span-2 aspect-[2/1]' : 
-                        idx === 1 || idx === 2 ? 'aspect-square' : 
-                        'aspect-square'
-                      }`}
+                    <div
+                      key={idx}
+                      className={`relative ${idx === 0 ? 'col-span-2 aspect-[2/1]' :
+                        idx === 1 || idx === 2 ? 'aspect-square' :
+                          'aspect-square'
+                        }`}
                     >
-                      <Image 
-                        src={img?.imageUrl || '/figma/placeholder.jpg'} 
+                      <Image
+                        src={img?.imageUrl || '/figma/placeholder.jpg'}
                         alt={`Gallery ${idx + 1}`}
                         fill
                         className="object-cover rounded-[8px]"
                         sizes="(max-width: 768px) 50vw, 100vw"
                       />
                       {idx === 4 && remainingImagesCount > 0 && (
-                        <button 
+                        <button
                           className="absolute inset-0 bg-black/35 rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors z-10"
                           onClick={() => router.push('/gallery')}
                           aria-label="Open gallery"
@@ -489,50 +490,50 @@ function HotelContent() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Desktop Gallery - Original Layout */}
                 <div className="hidden lg:block relative" style={{ width: '674px', maxWidth: '100%', height: '520px' }}>
                   <div className="absolute -top-2 -left-[6px] w-[403px] h-[316px]">
-                    <Image 
-                      src={heroGalleryImages[0]?.imageUrl || '/figma/placeholder.jpg'} 
+                    <Image
+                      src={heroGalleryImages[0]?.imageUrl || '/figma/placeholder.jpg'}
                       alt="Gallery 1"
                       fill
                       className="object-cover rounded-[10px]"
                     />
                   </div>
                   <div className="absolute -top-2 left-[401px] w-[288px] h-[316px]">
-                    <Image 
-                      src={heroGalleryImages[1]?.imageUrl || '/figma/placeholder.jpg'} 
+                    <Image
+                      src={heroGalleryImages[1]?.imageUrl || '/figma/placeholder.jpg'}
                       alt="Gallery 2"
                       fill
                       className="object-cover rounded-[10px]"
                     />
                   </div>
                   <div className="absolute top-[312px] -left-[6px] w-[231px] h-[218px]">
-                    <Image 
-                      src={heroGalleryImages[2]?.imageUrl || '/figma/placeholder.jpg'} 
+                    <Image
+                      src={heroGalleryImages[2]?.imageUrl || '/figma/placeholder.jpg'}
                       alt="Gallery 3"
                       fill
                       className="object-cover rounded-[10px]"
                     />
                   </div>
                   <div className="absolute top-[312px] left-[229px] w-[230px] h-[218px]">
-                    <Image 
-                      src={heroGalleryImages[3]?.imageUrl || '/figma/placeholder.jpg'} 
+                    <Image
+                      src={heroGalleryImages[3]?.imageUrl || '/figma/placeholder.jpg'}
                       alt="Gallery 4"
                       fill
                       className="object-cover rounded-[10px]"
                     />
                   </div>
                   <div className="absolute top-[312px] left-[463px] w-[231px] h-[218px]">
-                    <Image 
-                      src={heroGalleryImages[4]?.imageUrl || '/figma/placeholder.jpg'} 
+                    <Image
+                      src={heroGalleryImages[4]?.imageUrl || '/figma/placeholder.jpg'}
                       alt="Gallery 5"
                       fill
                       className="object-cover rounded-[10px]"
                     />
                     {remainingImagesCount > 0 && (
-                      <button 
+                      <button
                         className="absolute inset-0 bg-black/35 rounded-[10px] flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors"
                         onClick={() => router.push('/gallery')}
                         aria-label="Open gallery"
@@ -581,7 +582,7 @@ function HotelContent() {
                           document.execCommand('copy');
                           document.body.removeChild(el);
                           console.log('Link copied to clipboard');
-                        } catch {}
+                        } catch { }
                       }
                     }}
                     className="flex items-center justify-center w-[46px] h-[46px] border border-[#1D69F9] rounded-full bg-white text-[#1D69F9] hover:bg-[#1D69F9] hover:text-white transition-colors"
@@ -603,7 +604,7 @@ function HotelContent() {
                       {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
                     </span>
                   )}
-                  <span 
+                  <span
                     onClick={() => router.push('/reviews/submit')}
                     className="text-[16px] font-medium text-[#0088FF] ml-0 cursor-pointer hover:underline"
                   >
@@ -616,7 +617,7 @@ function HotelContent() {
                     <LocationIcon className="text-[#1D69F9] text-[20px]" />
                     <span className="text-[16px] text-[#3B3B3B]">Dongwe, East Coast, Zanzibar</span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       window.open('https://maps.app.goo.gl/pWzSDEjy1P4wRZqKA?g_st=aw', '_blank', 'noopener,noreferrer');
                     }}
@@ -639,12 +640,12 @@ function HotelContent() {
                         <span className="text-[14px]">{label}</span>
                       </div>
                     ))}
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setShowFacilities(true);
-                      }} 
+                      }}
                       className="text-[#007FEE] text-[16px] font-medium hover:underline text-left"
                       type="button"
                     >
@@ -656,7 +657,7 @@ function HotelContent() {
                 <FacilitiesDrawer open={showFacilities} onClose={() => setShowFacilities(false)} />
 
                 <div className="w-full flex justify-start pt-[8px]">
-                  <button 
+                  <button
                     onClick={() => roomsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className="w-full sm:w-[360px] h-[64px] bg-[#1D69F9] text-white rounded-[7px] text-[20px] font-medium hover:bg-[#1a5ae0] transition-colors"
                   >
@@ -667,7 +668,7 @@ function HotelContent() {
             </div>
           </div>
 
-          
+
           <div className="bg-white rounded-[2px] mt-0">
             <div className="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
               <div className="flex flex-nowrap gap-[20px] md:gap-[60px] px-4 md:px-[122px] py-[20px] md:py-[35px] border-b border-[rgba(0,0,0,0.23)] min-w-max md:min-w-0">
@@ -676,12 +677,12 @@ function HotelContent() {
                   { id: 'transport', label: 'Transport' },
                   { id: 'facilities', label: 'Facilities' },
                   { id: 'policies', label: 'Policies' },
-                  { id: 'food', label: 'Food & Drink' }, 
+                  { id: 'food', label: 'Food & Drink' },
                   { id: 'activities', label: 'Activities' },
                   { id: 'bed', label: 'Bed & Child info' },
                   { id: 'legal', label: 'Legal info' },
                 ].map((tab) => (
-                  <button 
+                  <button
                     key={tab.id}
                     onClick={(e) => {
                       e.preventDefault();
@@ -692,11 +693,10 @@ function HotelContent() {
                         setActiveTab(tab.id);
                       }
                     }}
-                    className={`pb-2 font-medium text-[14px] md:text-[16px] relative whitespace-nowrap flex-shrink-0 ${
-                      activeTab === tab.id 
-                        ? 'text-[#1D69F9] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#1D69F9]' 
-                        : 'text-[#242424]'
-                    }`}
+                    className={`pb-2 font-medium text-[14px] md:text-[16px] relative whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                      ? 'text-[#1D69F9] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#1D69F9]'
+                      : 'text-[#242424]'
+                      }`}
                     type="button"
                   >
                     {tab.label}
@@ -788,20 +788,20 @@ function HotelContent() {
       {isMounted && isCalendarOpen && datePopupPosition.top > 0 && createPortal(
         <div>
           <div className="fixed inset-0 bg-transparent cursor-pointer" onClick={() => setIsCalendarOpen(false)} style={{ zIndex: 99998, position: 'fixed' }} />
-          <div 
+          <div
             className="fixed transition-all duration-200 ease-out opacity-100"
             onClick={(e) => e.stopPropagation()}
             style={{ zIndex: 99999, top: `${datePopupPosition.top}px`, left: `${datePopupPosition.left}px`, minWidth: '350px', maxWidth: datePopupPosition.width > 0 ? `${datePopupPosition.width}px` : 'auto', position: 'fixed' }}
           >
             <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-visible">
-              <CalendarWidget 
-                isOpen={isCalendarOpen} 
+              <CalendarWidget
+                isOpen={isCalendarOpen}
                 onClose={() => {
                   setIsCalendarOpen(false);
                   setCalendarMode('both');
-                }} 
-                onDateSelect={handleDateSelect} 
-                selectedCheckIn={tempCheckIn} 
+                }}
+                onDateSelect={handleDateSelect}
+                selectedCheckIn={tempCheckIn}
                 selectedCheckOut={tempCheckOut}
                 selectionMode={calendarMode}
                 autoConfirm={true}
@@ -822,13 +822,13 @@ function HotelContent() {
           >
             <div className="bg-white rounded-xl shadow-2xl ring-1 ring-black/5 p-6">
               <div className="space-y-5">
-                {(['adults','children','rooms'] as const).map((k) => (
+                {(['adults', 'children', 'rooms'] as const).map((k) => (
                   <div key={k} className="flex justify-between items-center">
                     <div>
-                      <h4 className="font-semibold text-gray-800 text-base">{k.charAt(0).toUpperCase()+k.slice(1)}</h4>
+                      <h4 className="font-semibold text-gray-800 text-base">{k.charAt(0).toUpperCase() + k.slice(1)}</h4>
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => changeGuest(k, -1)} disabled={(tempGuests as Record<string, number>)[k] <= (k==='children'?0:1)} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95">
+                      <button onClick={() => changeGuest(k, -1)} disabled={(tempGuests as Record<string, number>)[k] <= (k === 'children' ? 0 : 1)} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-[#FF6A00] hover:border-[#FF6A00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95">
                         <RemoveIcon className="text-[16px]" />
                       </button>
                       <span className="w-8 text-center font-semibold text-base text-gray-800">{(tempGuests as Record<string, number>)[k]}</span>
@@ -845,9 +845,9 @@ function HotelContent() {
         document.body
       )}
 
-        <GuestReviewsSection />
-        <FAQSection />
-          </div>
+      <GuestReviewsSection />
+      <FAQSection />
+    </div>
   );
 }
 
