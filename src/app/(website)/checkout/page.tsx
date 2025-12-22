@@ -31,6 +31,7 @@ interface ReservationGuest {
   firstName: string;
   lastName: string;
   specialNeeds: string;
+  idDocument?: File;
 }
 
 interface Address {
@@ -85,6 +86,7 @@ export default function CheckoutPage() {
       firstName: "",
       lastName: "",
       specialNeeds: "",
+      idDocument: undefined,
     },
   ]);
 
@@ -267,7 +269,7 @@ export default function CheckoutPage() {
   const updateReservationGuest = (
     id: string,
     field: keyof ReservationGuest,
-    value: string
+    value: string | File | undefined
   ) => {
     setReservationGuests((prev) =>
       prev.map((g) => (g.id === id ? { ...g, [field]: value } : g))
@@ -280,6 +282,7 @@ export default function CheckoutPage() {
       firstName: "",
       lastName: "",
       specialNeeds: "",
+      idDocument: undefined,
     };
     setReservationGuests((prev) => [...prev, newGuest]);
   };
@@ -533,6 +536,21 @@ export default function CheckoutPage() {
                               year: "numeric",
                             })}`
                             : "Thu, Nov 20, 2025 - Fri, Nov 21, 2025"}
+                        </p>
+                        <p className="text-[14px] text-[#489219] font-medium flex items-center gap-1 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Free cancellation till {(() => {
+                            if (!bookingData?.checkIn) return "Dec 29th";
+                            const checkInDate = new Date(bookingData.checkIn);
+                            const cancellationDays = rooms[0]?.cancellationFreeDays ?? 2;
+                            checkInDate.setDate(checkInDate.getDate() - cancellationDays);
+                            return checkInDate.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric"
+                            });
+                          })()}
                         </p>
                       </div>
                       <button
@@ -910,31 +928,27 @@ export default function CheckoutPage() {
                             Upload ID
                             <input
                               type="file"
-                              accept=".pdf"
+                              accept=".pdf,image/*"
                               className="hidden"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  console.log("File selected:", file.name);
-                                  // Handle file upload logic here
-                                  setAddress((prev) => ({
-                                    ...prev,
-                                    idDocument: file,
-                                  }));
+                                  console.log("File selected for guest", guest.id, ":", file.name);
+                                  updateReservationGuest(guest.id, "idDocument", file);
                                 }
                               }}
                             />
                           </label>
 
                           <p className="text-[12px] text-[#202C3B] flex items-center">
-                            Please upload your ID in PDF format
+                            Please upload your ID in PDF or Image format
                             <br />
                             (max 2MB) for verification.
                           </p>
 
-                          {address.idDocument && (
+                          {guest.idDocument && (
                             <div className="flex items-center gap-2 text-sm text-green-600">
-                              <span>✓ {address.idDocument.name}</span>
+                              <span>✓ {guest.idDocument.name}</span>
                             </div>
                           )}
 
@@ -1023,8 +1037,8 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={handleApplyCoupon}
                             className={`px-6 py-[7px] text-white text-[18px] font-semibold ${couponAlreadyApplied
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-[#1D69F9] hover:bg-[#1750c2] transition-colors"
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-[#1D69F9] hover:bg-[#1750c2] transition-colors"
                               }`}
                             disabled={couponAlreadyApplied || isApplyingCoupon}
                           >
@@ -1041,8 +1055,8 @@ export default function CheckoutPage() {
                     {showPaymentCouponField && couponFeedback && (
                       <p
                         className={`text-sm ${couponFeedback.type === "success"
-                            ? "text-green-600"
-                            : "text-red-600"
+                          ? "text-green-600"
+                          : "text-red-600"
                           }`}
                       >
                         {couponFeedback.message}
@@ -1203,8 +1217,8 @@ export default function CheckoutPage() {
                     !agreements.privacy || !agreements.booking || isSubmitting
                   }
                   className={`w-full py-[7px] text-white text-[18px] font-semibold transition-colors flex items-center justify-center ${agreements.privacy && agreements.booking && !isSubmitting
-                      ? "bg-[#1D69F9] hover:bg-[#1A5CE6] cursor-pointer"
-                      : "bg-gray-300 cursor-not-allowed"
+                    ? "bg-[#1D69F9] hover:bg-[#1A5CE6] cursor-pointer"
+                    : "bg-gray-300 cursor-not-allowed"
                     }`}
                 >
                   {isSubmitting ? (
