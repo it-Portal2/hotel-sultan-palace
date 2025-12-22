@@ -99,27 +99,16 @@ export default function AddOnsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <style jsx global>{`
-        header {
-          position: absolute;
-          background-color: transparent;
-        }
-        header * {
-          color: white !important;
-        }
-      `}</style>
-
       {/* Dedicated Header Background for Overlap */}
-      <div className="w-full h-[450px] bg-[#0a1a2b] absolute top-0 left-0 z-0" />
+      <div className="w-full h-[270px] bg-[#0a1a2b] absolute top-0 left-0 z-0" />
 
       <section className="w-full relative pt-[100px] md:pt-[230px]" style={{ zIndex: 10 }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
-            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_140px] items-center gap-0 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
-              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Check in</span>
-              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Check out</span>
-              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Guests</span>
-              <div></div> {/* Spacer for button column */}
+            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 xl:gap-x-6 px-4 xl:px-6 mb-1 md:mb-1.5 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
+              <span className="text-white text-sm md:text-base font-bold text-center">Check-in</span>
+              <span className="text-white text-sm md:text-base font-bold text-center">Check-out</span>
+              <span className="text-white text-sm md:text-base font-bold text-left pl-2 md:pl-4">Guest</span>
             </div>
             <div id="booking-form" className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative lg:block" style={{ zIndex: 10001, pointerEvents: 'auto' }}>
               <BookingForm
