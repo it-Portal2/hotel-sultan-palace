@@ -81,7 +81,7 @@ const FAQItemComponent: React.FC<{ item: FAQItem }> = ({ item }) => {
   );
 };
 
-export default function FAQSection() {
+export default function FAQSection({ onContactClick }: { onContactClick?: () => void }) {
   return (
     <div className="bg-white rounded-[2px] mt-[40px]">
       <div className="max-w-[1600px] mx-auto px-[24px] md:px-[32px] lg:px-[114px] py-[117px] space-y-[40px]">
@@ -112,7 +112,7 @@ export default function FAQSection() {
               <p className="text-sm text-[#4B4B4B]">
                 Can&apos;t find the answer you&apos;re looking for? Reach out to our customer support team.
               </p>
-              <button className="w-full py-2 border border-[#1D69F9] text-[#1D69F9] rounded-md font-medium hover:bg-blue-50 transition-colors">
+              <button onClick={onContactClick} className="w-full py-2 border border-[#1D69F9] text-[#1D69F9] rounded-md font-medium hover:bg-blue-50 transition-colors">
                 Connect Us
               </button>
             </div>

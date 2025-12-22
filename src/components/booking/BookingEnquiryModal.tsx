@@ -64,8 +64,8 @@ export default function BookingEnquiryModal({ isOpen, onClose }: BookingEnquiryM
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        website: formData.website.trim() || undefined,
-        message: formData.message.trim()
+        message: formData.message.trim(),
+        ...(formData.website.trim() ? { website: formData.website.trim() } : {})
       };
       console.log('BookingEnquiryModal: Data to save:', enquiryData);
       const result = await createBookingEnquiry(enquiryData);

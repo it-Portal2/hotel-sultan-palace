@@ -165,9 +165,9 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
 
                     {/* Top Form Grid */}
-                    <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-x-6 gap-y-4">
                         {/* Row 1 */}
-                        <div className="col-span-3">
+                        <div className="col-span-1 md:col-span-3">
                             <label className="block text-[11px] text-gray-600 mb-1">Contact Type</label>
                             <select
                                 value={contactType}
@@ -180,7 +180,7 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                             </select>
                         </div>
 
-                        <div className="col-span-3 relative">
+                        <div className="col-span-1 md:col-span-3 relative">
                             <label className="block text-[11px] text-red-500 mb-1">* Name</label>
                             <div className="flex">
                                 <input
@@ -196,12 +196,12 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                             {showNameError && <span className="text-[10px] text-red-500 absolute -bottom-4 left-0">Name is required.</span>}
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="col-span-1 md:col-span-2">
                             <label className="block text-[11px] text-red-500 mb-1">* Voucher Number</label>
                             <input type="text" value={voucherNo} disabled className="block w-full border-gray-200 bg-gray-50 text-gray-400 text-xs py-1.5" />
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="col-span-1 md:col-span-2">
                             <label className="block text-[11px] text-gray-600 mb-1">Voucher Date</label>
                             <div className="relative">
                                 <input
@@ -213,7 +213,7 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                             </div>
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="col-span-1 md:col-span-2">
                             <label className="block text-[11px] text-gray-600 mb-1">Prepared By</label>
                             <input
                                 type="text"
@@ -224,7 +224,7 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                         </div>
 
                         {/* Row 2 */}
-                        <div className="col-span-2">
+                        <div className="col-span-1 md:col-span-3">
                             <label className="block text-[11px] text-gray-600 mb-2">Payment Type</label>
                             <div className="flex gap-4 items-center h-8">
                                 <label className="inline-flex items-center text-xs text-gray-700">
@@ -238,7 +238,7 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                             </div>
                         </div>
 
-                        <div className="col-span-3">
+                        <div className="col-span-1 md:col-span-3">
                             <label className="block text-[11px] text-red-500 mb-1">* Payment Method</label>
                             <select
                                 value={paymentMethod}
@@ -257,9 +257,9 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                     </div>
 
                     {/* Charges Section */}
-                    <div className="mt-8">
+                    <div className="mt-8 overflow-x-auto">
                         <h3 className="text-xs font-bold text-gray-700 mb-2 uppercase">CHARGES</h3>
-                        <table className="w-full">
+                        <table className="w-full min-w-[700px]">
                             <thead>
                                 <tr className="text-left">
                                     <th className="w-8"></th>
@@ -397,9 +397,9 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                     </div>
 
                     {/* Payments Section */}
-                    <div className="mt-8">
+                    <div className="mt-8 overflow-x-auto">
                         <h3 className="text-xs font-bold text-gray-700 mb-2 uppercase">PAYMENTS</h3>
-                        <table className="w-full">
+                        <table className="w-full min-w-[600px]">
                             <thead>
                                 <tr className="text-left">
                                     <th className="w-8"></th>
@@ -547,33 +547,35 @@ export default function IncidentalInvoicePage() {
             {/* Top Bar */}
             <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-gray-800">Incidental Invoice</h1>
-                <div className="flex items-center gap-3">
-                    <div className="relative">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                    <div className="relative w-full md:w-auto">
                         <input
                             type="text"
                             placeholder="Search by Voucher no./Name/Type"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 pr-4 py-1.5 text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 w-64"
+                            className="pl-8 pr-4 py-1.5 text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 w-full md:w-64"
                         />
                         <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-2.5 top-2" />
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white border border-gray-300 rounded px-2 py-1.5 text-sm">
-                        <CalendarIcon className="h-4 w-4 text-gray-500" />
-                        <input type="date" className="border-none p-0 text-xs focus:ring-0" />
-                        <span className="text-gray-400 mx-1">→</span>
-                        <input type="date" className="border-none p-0 text-xs focus:ring-0" />
-                    </div>
+                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <div className="flex items-center gap-2 bg-white border border-gray-300 rounded px-2 py-1.5 text-sm whitespace-nowrap overflow-x-auto max-w-full">
+                            <CalendarIcon className="h-4 w-4 text-gray-500 shrink-0" />
+                            <input type="date" className="border-none p-0 text-xs focus:ring-0 w-24" />
+                            <span className="text-gray-400 mx-1">→</span>
+                            <input type="date" className="border-none p-0 text-xs focus:ring-0 w-24" />
+                        </div>
 
-                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                        <input type="checkbox" className="rounded text-blue-600" checked={!showVoid} onChange={(e) => setShowVoid(!e.target.checked)} />
-                        Hide Void
-                    </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                            <input type="checkbox" className="rounded text-blue-600" checked={!showVoid} onChange={(e) => setShowVoid(!e.target.checked)} />
+                            Hide Void
+                        </label>
+                    </div>
 
                     <button
                         onClick={handleAddNew}
-                        className="flex items-center gap-1 bg-white border border-blue-500 text-blue-600 px-3 py-1.5 rounded text-sm hover:bg-blue-50 font-medium"
+                        className="flex items-center gap-1 bg-white border border-blue-500 text-blue-600 px-3 py-1.5 rounded text-sm hover:bg-blue-50 font-medium w-full md:w-auto justify-center"
                     >
                         <PlusIcon className="h-4 w-4" />
                         Add New
@@ -582,9 +584,12 @@ export default function IncidentalInvoicePage() {
             </div>
 
             {/* Split Pane Layout */}
-            <div className="flex flex-1 overflow-hidden">
-                {/* Left Panel: List */}
-                <div className="w-80 bg-white border-r flex flex-col">
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                {/* Left Panel: List (Hidden on mobile if detail viewed? No, let's stack or keep generic split) 
+                    For better UX: on mobile, list takes full width, detail takes full width below (scrolling), or toggle.
+                    Simple approach: stack them, giving specific max-heights to list on mobile.
+                */}
+                <div className="w-full md:w-80 bg-white border-r flex flex-col h-[300px] md:h-auto border-b md:border-b-0">
                     <div className="p-2 bg-gray-50 border-b flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-500 uppercase">Invoice Details</span>
                         <span className="text-xs font-bold text-gray-500 uppercase">Amount</span>
@@ -624,7 +629,7 @@ export default function IncidentalInvoicePage() {
                 </div>
 
                 {/* Right Panel: Detail or Empty State */}
-                <div className="flex-1 bg-gray-50 flex items-center justify-center p-8">
+                <div className="flex-1 bg-gray-50 flex items-start md:items-center justify-center p-4 md:p-8 overflow-y-auto">
                     {selectedInvoice && !isFormOpen ? (
                         // View Mode (For now, re-opening Edit form for simplicity as requested "Add/View" flow usually merges)
                         // But matching the image "Click on voucher to view details", I'll show a simple details card or standard empty state if nothing selected.

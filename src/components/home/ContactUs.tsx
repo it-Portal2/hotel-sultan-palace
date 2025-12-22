@@ -4,15 +4,15 @@ import { MdEmail, MdPhone, MdAccessTime, MdLocationOn, MdPerson, MdAlternateEmai
 import { createBookingEnquiry } from "@/lib/firestoreService";
 
 const info = [
-  { 
-    icon: MdEmail, 
+  {
+    icon: MdEmail,
     items: [
       { text: "portaholdingsznz@gmail.com", link: "mailto:portaholdingsznz@gmail.com" },
       { text: "reservations@sultanpalacehotelznz.com", link: "mailto:reservations@sultanpalacehotelznz.com" }
     ]
   },
-  { 
-    icon: MdPhone, 
+  {
+    icon: MdPhone,
     items: [
       { text: "+255 684 888 111", link: "tel:+255684888111" },
       { text: "+255 777 085 630", link: "tel:+255777085630" },
@@ -33,7 +33,7 @@ export default function ContactUs() {
     website: '',
     message: ''
   });
-  const [errors, setErrors] = useState<{name?:string; email?:string; phone?:string; message?:string}>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string; message?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -65,7 +65,7 @@ export default function ContactUs() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nextErrors: {name?:string; email?:string; phone?:string; message?:string} = {};
+    const nextErrors: { name?: string; email?: string; phone?: string; message?: string } = {};
     if (!formData.name.trim()) nextErrors.name = 'Required';
     if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) nextErrors.email = 'Valid email required';
     if (!formData.phone.trim()) nextErrors.phone = 'Required';
@@ -81,8 +81,8 @@ export default function ContactUs() {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        website: formData.website.trim() || undefined,
-        message: formData.message.trim()
+        message: formData.message.trim(),
+        ...(formData.website.trim() ? { website: formData.website.trim() } : {})
       };
       console.log('Home Contact section: Data to save:', enquiryData);
       const result = await createBookingEnquiry(enquiryData);
@@ -123,9 +123,9 @@ export default function ContactUs() {
                   {item.items ? (
                     <div className="flex flex-col gap-1 pt-1 md:pt-2 flex-1 min-w-0">
                       {item.items.map((itemData, i) => (
-                        <a 
+                        <a
                           key={i}
-                          href={itemData.link} 
+                          href={itemData.link}
                           className="font-kaisei text-xs md:text-sm text-white/90 hover:underline transition-colors break-words"
                         >
                           {itemData.text}
@@ -144,71 +144,71 @@ export default function ContactUs() {
             {/* Right: form */}
             <form onSubmit={handleSubmit} className={`grid grid-cols-1 md:grid-cols-2 gap-4 z-10 min-w-0 contact-us-form ${isVisible ? 'contact-us-form-visible' : ''}`}>
               <div className="relative">
-                <input 
+                <input
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.name ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                  placeholder="Your name" 
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.name ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                  placeholder="Your name"
                 />
                 <MdPerson className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
                 {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
               <div className="relative">
-                <input 
+                <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.email ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                  placeholder="Enter email" 
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.email ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                  placeholder="Enter email"
                 />
                 <MdAlternateEmail className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
                 {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
               </div>
               <div className="relative">
-                <input 
+                <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
                   required
-                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.phone ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`} 
-                  placeholder="Phone No." 
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.phone ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]`}
+                  placeholder="Phone No."
                 />
                 <MdPhone className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
                 {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
               </div>
               <div className="relative">
-                <input 
+                <input
                   type="url"
                   name="website"
                   value={formData.website}
                   onChange={handleInputChange}
-                  className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" 
-                  placeholder="Website" 
+                  className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]"
+                  placeholder="Website"
                 />
                 <MdLanguage className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-white/50 text-base md:text-lg pointer-events-none" />
               </div>
               <div className="relative md:col-span-2">
-                <textarea 
+                <textarea
                   rows={5}
                   name="message"
                   value={formData.message}
                   onChange={handleInputChange}
                   required
-                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.message ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none`} 
-                  placeholder="Message" 
+                  className={`w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border ${errors.message ? 'border-red-400' : 'border-white'} rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#BE8C53] resize-none`}
+                  placeholder="Message"
                 />
                 <MdMessage className="absolute right-3 md:right-4 top-4 text-white/50 text-base md:text-lg pointer-events-none" />
                 {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
               </div>
 
               <div className="md:col-span-2 mt-2 space-y-2">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isSubmitting}
                   className="w-full bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei py-3 tracking-wider text-sm md:text-base rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -225,7 +225,7 @@ export default function ContactUs() {
           </div>
         </div>
       </div>
-      
+
       {/* Bottom Section: Subscribe */}
       <div className={`w-full bg-[#1F1F1E] py-8 md:py-10 contact-us-subscribe ${isVisible ? 'contact-us-subscribe-visible' : ''}`}>
         <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
@@ -233,7 +233,7 @@ export default function ContactUs() {
             <h3 className={`font-kaisei text-white text-lg md:text-xl lg:text-2xl contact-us-subscribe-title ${isVisible ? 'contact-us-subscribe-title-visible' : ''}`}>Get Timely Updates</h3>
             <div className={`mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 w-full max-w-[420px] mx-auto contact-us-subscribe-form ${isVisible ? 'contact-us-subscribe-form-visible' : ''}`}>
               <input className="w-full bg-[#2C2B26] text-sm text-white/80 placeholder-white/80 border border-white rounded-md py-2.5 pl-3 pr-3 focus:outline-none focus:ring-2 focus:ring-[#BE8C53]" placeholder="Enter Your Email Address" />
-              
+
               <button className="w-full sm:w-auto bg-[#BE8C53] hover:bg-[#A67948] text-white font-kaisei px-8 md:px-10 py-2.5 md:py-2 text-sm rounded-md transition-colors whitespace-nowrap">Subscribe</button>
             </div>
           </div>

@@ -126,11 +126,10 @@ export default function InsertTransactionPage() {
                 <h1 className="text-lg font-bold text-gray-800">Insert Transaction</h1>
             </div>
 
-            <div className="flex-1 overflow-auto p-6 md:p-8">
+            <div className="flex-1 overflow-auto p-4 md:p-8">
                 <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-6">
 
-                    {/* Folio Search Section */}
-                    <div className="mb-8">
+                    <div className="mb-8 relative">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Select Folio / Guest</label>
                         <div className="relative">
                             <input
@@ -146,7 +145,7 @@ export default function InsertTransactionPage() {
 
                         {/* Dropdown Results */}
                         {searchTerm && !selectedBooking && (
-                            <div className="absolute z-10 mt-1 w-full max-w-4xl bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto sm:text-sm">
+                            <div className="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-auto overflow-x-hidden sm:text-sm">
                                 {loading && <div className="p-2 text-center">Loading...</div>}
                                 {!loading && filteredBookings.length === 0 && (
                                     <div className="p-2 text-center text-gray-500">No guests found</div>
@@ -158,13 +157,13 @@ export default function InsertTransactionPage() {
                                             setSelectedBooking(booking);
                                             setSearchTerm(`${booking.guestDetails?.firstName || ''} ${booking.guestDetails?.lastName || ''} - ${booking.roomNumber || 'Unallocated'} (#${booking.bookingId})`);
                                         }}
-                                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50"
+                                        className="cursor-pointer select-none relative py-2 pl-3 pr-4 hover:bg-blue-50 border-b border-gray-50 last:border-0"
                                     >
-                                        <div className="flex justify-between">
-                                            <span className="font-medium text-gray-900">{booking.guestDetails?.firstName || ''} {booking.guestDetails?.lastName || ''}</span>
-                                            <span className="text-gray-500">Room: {booking.roomNumber || 'N/A'}</span>
+                                        <div className="flex justify-between items-start">
+                                            <span className="font-medium text-gray-900 break-words pr-2 text-sm">{booking.guestDetails?.firstName || ''} {booking.guestDetails?.lastName || ''}</span>
+                                            <span className="text-gray-500 text-xs whitespace-nowrap shrink-0 bg-gray-100 px-1.5 py-0.5 rounded">Room: {booking.roomNumber || 'N/A'}</span>
                                         </div>
-                                        <p className="text-xs text-gray-400">{booking.bookingId} • {booking.status}</p>
+                                        <p className="text-xs text-gray-400 truncate mt-0.5">{booking.bookingId} • {booking.status}</p>
                                     </div>
                                 ))}
                             </div>

@@ -23,23 +23,23 @@ export default function SpiritOfSwahiliPage() {
   }, []);
   return (
     <>
-            <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero */}
         <section className="relative w-full h-[560px] md:h-[700px] lg:h-[928px] overflow-hidden">
-        
-          <Image 
-            src="/spirit/spirit-hero-2.png" 
-            alt="Spirit of Swahili" 
-            fill 
-            priority 
+
+          <Image
+            src="/spirit/spirit-hero-2.png"
+            alt="Spirit of Swahili"
+            fill
+            priority
             loading="eager"
             fetchPriority="high"
             quality={90}
             sizes="100vw"
-            className="object-cover" 
+            className="object-cover"
             style={{ opacity: 1 }}
           />
-         
+
           <div className="absolute inset-0 pointer-events-none">
             <Image src="/spirit/spirit-top-mask.svg" alt="Mask" fill className="object-cover" />
           </div>
@@ -57,7 +57,7 @@ export default function SpiritOfSwahiliPage() {
                 "linear-gradient(0deg, rgba(255,252,246,0) 77%, rgba(255,252,246,1) 100%)",
             }}
           />
-        
+
         </section>
 
         <section aria-hidden className="h-12 md:h-20 lg:h-24"></section>
@@ -70,7 +70,7 @@ export default function SpiritOfSwahiliPage() {
             <p className="text-[#423B2D] text-[20px] md:text-[22px] lg:text-[24px] font-normal leading-[1.6875] font-open-sans max-w-[1200px] mx-auto">
               Welcome to Sultan Palace Hotel Zanzibar, where timeless Swahili traditions blend with royal island luxury.
               Every corner tells a story — of spice, sea, and soul — inviting you to experience Zanzibar not just as a
-              destination, but as a living heritage. 
+              destination, but as a living heritage.
             </p>
           </div>
         </section>
@@ -83,7 +83,7 @@ export default function SpiritOfSwahiliPage() {
           </div>
         </section>
 
-       
+
         <section className="relative z-20 -mt-12 md:-mt-16 lg:-mt-20 pb-20 md:pb-26 lg:pb-32">
           <div className="w-full px-2 md:px-3 lg:px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
@@ -119,7 +119,7 @@ export default function SpiritOfSwahiliPage() {
           </div>
         </section>
 
-         
+
         <section className="relative z-10 py-12 overflow-visible">
           <div className="absolute left-0 right-0 -top-[400px] bottom-150 z-0 opacity-25 pointer-events-none">
             <Image src="/spirit/spirit-hero-2.png" alt="bg" fill className="object-cover" style={{ objectPosition: "70% 28%" }} />
@@ -139,7 +139,7 @@ export default function SpiritOfSwahiliPage() {
                     cardamom. Guests can stroll fragrant gardens, learn traditional cultivation, and taste freshly harvested
                     spices — a living tribute to the island&rsquo;s centuries-old trade and culinary heritage.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
+                  <Link href="/hotel" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
@@ -156,7 +156,7 @@ export default function SpiritOfSwahiliPage() {
                     mangroves and tropical trees, discovering native flora and fauna while witnessing the playful, vibrant
                     life of Zanzibar&rsquo;s endemic primates in their natural jungle habitat.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
+                  <Link href="/hotel" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
@@ -184,35 +184,35 @@ export default function SpiritOfSwahiliPage() {
                 </div>
               </div>
               <div className="flex items-center so-animate so-delay-1">
-              <div className="flex items-center order-2 md:order-1">
-                <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
-                  <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Swahili Culinary Heritage</h3>
-                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
-                    Immerse in the flavors of Swahili cuisine — rich curries, tropical fruits, and freshly caught seafood
-                    infused with exotic spices. Cooking workshops and chef-led tastings allow guests to experience the
-                    authentic culinary traditions that define Zanzibar&rsquo;s island lifestyle.
-                  </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
-                    <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
-                    <FiArrowRight className="text-[#FF6A00]" size={22} />
-                  </Link>
+                <div className="flex items-center order-2 md:order-1">
+                  <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
+                    <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Swahili Culinary Heritage</h3>
+                    <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
+                      Immerse in the flavors of Swahili cuisine — rich curries, tropical fruits, and freshly caught seafood
+                      infused with exotic spices. Cooking workshops and chef-led tastings allow guests to experience the
+                      authentic culinary traditions that define Zanzibar&rsquo;s island lifestyle.
+                    </p>
+                    <Link href="/hotel" className="mt-6 inline-flex items-center gap-4 justify-center">
+                      <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
+                      <FiArrowRight className="text-[#FF6A00]" size={22} />
+                    </Link>
+                  </div>
                 </div>
-              </div>
               </div>
             </div>
 
-          
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
               <div className="flex items-center order-2 md:order-1 so-animate so-delay-1">
                 <div className="p-6 md:p-8 max-w-[646px] mx-auto justify-center">
                   <h3 className="text-[#2D2922] text-[26px] font-semibold leading-[1.25] font-quicksand mb-4 md:mb-5 text-center">Traditional Handicrafts & Art</h3>
-                    <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
+                  <p className="text-[#1A1711] text-[16px] font-medium leading-[1.85] font-quicksand max-w-[546px] text-center">
                     Discover Zanzibar&rsquo;s artistry through visits to local workshops. From intricately carved wooden doors and
                     woven mats to colorful pottery and jewelry, guests engage with artisans preserving generations-old
                     crafts, connecting deeply with the culture and creative spirit of the island.
                   </p>
-                  <Link href="/rooms" className="mt-6 inline-flex items-center gap-4 justify-center">
+                  <Link href="/hotel" className="mt-6 inline-flex items-center gap-4 justify-center">
                     <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                     <FiArrowRight className="text-[#FF6A00]" size={22} />
                   </Link>
@@ -233,7 +233,7 @@ export default function SpiritOfSwahiliPage() {
           </div>
         </section>
 
-      
+
 
         <section className="relative w-full max-w-full py-12 md:py-16 lg:py-20 -mt-20 overflow-hidden">
           <div className="absolute inset-0 z-0">
@@ -250,20 +250,20 @@ export default function SpiritOfSwahiliPage() {
                 fruits, and fragrant herbs bring every creation to life. A memorable activity for families, couples, and
                 culture enthusiasts seeking a true taste of Zanzibar.
               </p>
-              <Link href="/rooms" className="mt-4 inline-flex items-center gap-4">
+              <Link href="/hotel" className="mt-4 inline-flex items-center gap-4">
                 <span className="text-[#FF6A00] text-[16px] font-bold leading-[2.3125] font-quicksand">Book Your Stay</span>
                 <FiArrowRight className="text-[#FF6A00]" size={22} />
               </Link>
             </div>
           </div>
         </section>
-            
+
 
         <section className="relative w-full max-w-full h-[769px] overflow-hidden">
           <Image src="/spirit/crop.png" alt="Pre-footer Background" fill className="object-cover" />
         </section>
       </main>
-            <style jsx global>{`
+      <style jsx global>{`
         .so-animate { opacity: 0; transform: translateY(40px); transition: opacity 700ms ease, transform 700ms ease; }
         .so-animate.so-delay-1 { transition-delay: 120ms; }
         .so-animate.so-delay-2 { transition-delay: 240ms; }

@@ -254,47 +254,47 @@ export default function MasterDataManagement({
                     <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
                     <p className="text-sm text-gray-500">Manage {title.toLowerCase()} records</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                     {/* New Buttons */}
                     {!isReadOnly && (
                         <button
                             onClick={handleCreate}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-blue-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-blue-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium w-full sm:w-auto justify-center"
                         >
                             <PlusIcon className="h-4 w-4" />
-                            Add {title}
+                            Add <span className="hidden sm:inline">{title}</span><span className="sm:hidden">New</span>
                         </button>
                     )}
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium w-full sm:w-auto justify-center"
                     >
                         <ArrowDownTrayIcon className="h-4 w-4" />
-                        Export
+                        <span className="hidden sm:inline">Export</span>
                     </button>
                     <button
                         onClick={handleOpenAuditTrail}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium w-full sm:w-auto justify-center"
                     >
                         <ClockIcon className="h-4 w-4" />
-                        Audit Trail
+                        <span className="hidden sm:inline">Audit Trail</span>
                     </button>
 
-                    <div className="relative ml-2">
+                    <div className="relative w-full sm:w-auto sm:ml-2 mt-2 sm:mt-0">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder={`Search ${title}...`}
                             value={searchQuery}
                             onChange={(e) => handleSearch(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] text-sm"
+                            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] text-sm w-full"
                         />
                     </div>
 
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden min-h-[400px]">
+            <div className="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden min-h-[400px] overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>

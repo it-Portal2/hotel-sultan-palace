@@ -45,16 +45,16 @@ export default function UnsettledFoliosPage() {
     return (
         <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b px-6 py-3 flex items-center justify-between">
+            <div className="bg-white border-b px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold text-gray-800">Unsettled Folios</h1>
-                <div className="flex gap-3">
-                    <div className="relative">
+                <div className="flex gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none">
                         <input
                             type="text"
                             placeholder="Search..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 pr-4 py-1.5 text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 w-64"
+                            className="pl-9 pr-4 py-1.5 text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 w-full md:w-64"
                         />
                         <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-3 top-2.5" />
                     </div>
@@ -65,8 +65,8 @@ export default function UnsettledFoliosPage() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 overflow-auto">
-                <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
+            <div className="flex-1 p-4 md:p-6 overflow-auto">
+                <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 text-gray-600 font-medium border-b">
                             <tr>

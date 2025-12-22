@@ -17,15 +17,15 @@ export default function OceanBreezeSpaPage() {
 
     const setupObservers = () => {
       const keys = ['title', 'cards', 'portrait', 'video'];
-      
+
       keys.forEach((key) => {
         const element = sectionRefs.current[key];
         if (element && !observedElements.has(element)) {
           observedElements.add(element);
-          
+
           const rect = element.getBoundingClientRect();
           const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
-          
+
           if (isVisibleNow) {
             setTimeout(() => {
               setIsVisible((prev) => ({ ...prev, [key]: true }));
@@ -63,7 +63,7 @@ export default function OceanBreezeSpaPage() {
   }, []);
   return (
     <>
-            <main className="w-full max-w-full bg-[#FFFCF6] font-open-sans relative overflow-x-hidden">
+      <main className="w-full max-w-full bg-[#FFFCF6] font-open-sans relative overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[520px] md:h-[800px] lg:h-[1018px] overflow-hidden">
           <Image
@@ -78,15 +78,15 @@ export default function OceanBreezeSpaPage() {
             className="object-cover"
             style={{ opacity: 1 }}
           />
-          
+
           {/* Gradient Overlays */}
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none z-10"
             style={{
               background: "linear-gradient(180deg, rgba(255, 252, 246, 0) 82%, rgba(255, 252, 246, 1) 100%)"
             }}
           />
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none z-10"
             style={{
               background: "linear-gradient(2deg, rgba(0, 0, 0, 0) 73%, rgba(0, 0, 0, 1) 98%)"
@@ -113,40 +113,40 @@ export default function OceanBreezeSpaPage() {
           <div className="relative z-10 w-full max-w-[1596px] mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-3 lg:px-4">
               {[
-                { 
-                  title: "Island Harmony Ritual", 
-                  desc: "Mind and body renewal through aromatherapy and gentle rhythmic strokes.", 
-                  image: "/spa_treatment_1.png" 
+                {
+                  title: "Island Harmony Ritual",
+                  desc: "Mind and body renewal through aromatherapy and gentle rhythmic strokes.",
+                  image: "/spa_treatment_1.png"
                 },
-                { 
-                  title: "Ocean Breeze Detox", 
-                  desc: "Warm stone massage infused with calming spices to ease tension.", 
-                  image: "/spa_treatment_2-7c5567.png" 
+                {
+                  title: "Ocean Breeze Detox",
+                  desc: "Warm stone massage infused with calming spices to ease tension.",
+                  image: "/spa_treatment_2-7c5567.png"
                 },
-                { 
-                  title: "Tropical Rainforest Massage", 
-                  desc: "Relax with exotic oils inspired by Zanzibar's lush forest aromas.", 
-                  image: "/spa_treatment_3.png" 
+                {
+                  title: "Tropical Rainforest Massage",
+                  desc: "Relax with exotic oils inspired by Zanzibar's lush forest aromas.",
+                  image: "/spa_treatment_3.png"
                 },
-                { 
-                  title: "Golden Sunset Therapy", 
-                  desc: "Cleanse and rejuvenate your body with sea salt and herbal wraps.", 
-                  image: "/spa_treatment_4.png" 
+                {
+                  title: "Golden Sunset Therapy",
+                  desc: "Cleanse and rejuvenate your body with sea salt and herbal wraps.",
+                  image: "/spa_treatment_4.png"
                 }
               ].map((treatment, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`w-full overflow-hidden group cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-2 hover:shadow-2xl wellness-card-item ${isVisible['cards'] ? 'wellness-card-item-visible' : ''}`}
                   style={{ transitionDelay: `${i * 0.15}s` }}
                 >
                   <div className="relative w-full h-[320px] sm:h-[380px] md:h-[500px] overflow-hidden">
-                    <Image 
-                      src={treatment.image} 
-                      alt={treatment.title} 
-                      fill 
+                    <Image
+                      src={treatment.image}
+                      alt={treatment.title}
+                      fill
                       quality={85}
                       sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110" 
+                      className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
                     />
                     {/* Overlay gradient on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -172,13 +172,13 @@ export default function OceanBreezeSpaPage() {
               {/* Mobile/Tablet Layout */}
               <div className="block lg:hidden grid grid-cols-1 gap-8 items-start">
                 <div className="relative w-full h-[300px] md:h-[450px] order-2">
-                  <Image 
-                    src="/spa_portrait-62b712.png" 
-                    alt="Spa Portrait" 
-                    fill 
+                  <Image
+                    src="/spa_portrait-62b712.png"
+                    alt="Spa Portrait"
+                    fill
                     quality={85}
                     sizes="100vw"
-                    className="object-cover" 
+                    className="object-cover"
                   />
                 </div>
                 <div className=" px-4 mt-10 md:mt-20 lg:mt-24 mb-10 md:mb-16 lg:mb-20">
@@ -200,21 +200,21 @@ export default function OceanBreezeSpaPage() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Desktop Layout - Exact Figma Positioning */}
               <div className="hidden lg:block relative w-full min-h-[594px]">
                 {/* Portrait Image - Position (180, 0) */}
                 <div className="absolute left-[100px] top-0 w-[558px] h-[594px]">
-                  <Image 
-                    src="/spa_portrait-62b712.png" 
-                    alt="Spa Portrait" 
-                    fill 
+                  <Image
+                    src="/spa_portrait-62b712.png"
+                    alt="Spa Portrait"
+                    fill
                     quality={85}
                     sizes="558px"
-                    className="object-cover" 
+                    className="object-cover"
                   />
                 </div>
-                
+
                 {/* Text Section - Position (766, 0) */}
                 <div className="absolute left-[766px] top-0 w-[536px]">
                   <div className="flex flex-col gap-[43px]">
@@ -226,14 +226,14 @@ export default function OceanBreezeSpaPage() {
                         exotic aromas, and luxurious treatments restore your body, calm your mind, and leave you feeling completely renewed in Zanzibar&apos;s serene beauty.
                       </p>
                     </div>
-                    <Link
-                      href="#"
+                    <button
+                      onClick={openModal}
                       className="inline-flex items-center justify-center gap-[10px] bg-[#FF6A00] hover:opacity-95 transition-opacity text-white px-[10px] py-[10px] rounded-[6px] text-[18px] font-medium leading-[1.944] font-quicksand w-fit h-[42px] shadow-md"
                       aria-label="Booking Enquiry"
                     >
                       Booking Enquiry
                       <FiArrowRight size={23} className="text-white" strokeWidth={1.3} />
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -256,6 +256,6 @@ export default function OceanBreezeSpaPage() {
           </div>
         </section>
       </main>
-          </>
+    </>
   );
 }

@@ -27,6 +27,7 @@ import { createPortal } from 'react-dom';
 import RoomCard from '@/components/hotel/RoomCard';
 import ComfortCard from '@/components/hotel/ComfortCard';
 import BookingForm from '@/components/booking/BookingForm';
+import ContactForm from '@/components/contact/ContactForm';
 import FacilitiesDrawer from '@/components/hotel/FacilitiesDrawer';
 import TransportSection from '@/components/hotel/TransportSection';
 import PoliciesSection from '@/components/hotel/PoliciesSection';
@@ -47,6 +48,7 @@ function HotelContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isGuestOpen, setIsGuestOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout' | 'both'>('both');
 
@@ -417,33 +419,25 @@ function HotelContent() {
     <div className={`min-h-screen bg-[#F7F7F7] overflow-x-hidden ${containerPad}`}>
       <style jsx global>{`
         header {
-          background-color: rgba(0, 0, 0, 0.8) !important;
-          backdrop-filter: blur(8px);
-          position: relative;
-        }
-        header::after {
-          content: '';
           position: absolute;
-          bottom: -60px;
-          left: 0;
-          right: 0;
-          height: 60px;
-          background-color: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(8px);
-          z-index: 1;
+          background-color: transparent;
         }
         header * {
           color: white !important;
         }
       `}</style>
 
-      <section className="w-full relative pt-[80px] md:pt-[191px]" style={{ zIndex: 10000, pointerEvents: 'none' }}>
+      {/* Dedicated Header Background for Overlap */}
+      <div className="w-full h-[450px] bg-[#0a1a2b] absolute top-0 left-0 z-0" />
+
+      <section className="w-full relative pt-[100px] md:pt-[230px]" style={{ zIndex: 10 }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
-            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr] items-center gap-x-4 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
-              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check in</span>
-              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-center">Check out</span>
-              <span className="text-[rgba(255,255,255,0.69)] text-[16px] font-normal text-left pl-2">Guests</span>
+            <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_140px] items-center gap-0 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
+              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Check in</span>
+              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Check out</span>
+              <span className="text-[rgba(255,255,255,0.8)] text-[15px] font-semibold text-left pl-5">Guests</span>
+              <div></div> {/* Spacer for button column */}
             </div>
             <div className="rounded-[9px] border-[2.3px] border-[#BE8C53] overflow-hidden bg-white relative" style={{ zIndex: 10001, pointerEvents: 'auto' }}>
               <BookingForm
@@ -846,7 +840,50 @@ function HotelContent() {
       )}
 
       <GuestReviewsSection />
-      <FAQSection />
+      <FAQSection onContactClick={() => setIsContactModalOpen(true)} />
+
+      {/* Contact Us Modal */}
+      {isContactModalOpen && createPortal(
+        <div className="fixed inset-0 z-[10005]">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsContactModalOpen(false)}
+          />
+
+          {/* Modal Container */}
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div
+              className="bg-[#242424] rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative animate-in fade-in zoom-in duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setIsContactModalOpen(false)}
+                className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                <div
+                  className="hidden lg:block bg-cover bg-center min-h-[500px]"
+                  style={{
+                    backgroundImage: 'url(/contact-form-bg.png)',
+                  }}
+                />
+
+                <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+                  <h3 className="text-white text-2xl font-serif mb-6">Contact Us</h3>
+                  <ContactForm onSuccess={() => setIsContactModalOpen(false)} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
