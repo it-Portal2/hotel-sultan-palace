@@ -36,6 +36,8 @@ interface AppliedCoupon {
   source: 'special' | 'discount';
   expiresAt?: string | null;
   title?: string;
+  targetAudience?: 'all' | 'specific_rooms';
+  roomTypes?: string[];
 }
 
 interface CartContextProps {
@@ -74,7 +76,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Always clear any legacy localStorage booking data to avoid stale UI
   useEffect(() => {
-    try { localStorage.removeItem('bookingData'); } catch {}
+    try { localStorage.removeItem('bookingData'); } catch { }
   }, []);
 
   // Remove expired coupons automatically
@@ -167,13 +169,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  // Calculate room total (for discounts)
+  const calculateRoomTotal = () => {
+    const nights = getNumberOfNights();
+    return rooms.reduce((total, room) => total + (room.price * nights), 0);
+  };
+
   // Calculate base total price (rooms + addOns) before discount
   const calculateBaseTotal = () => {
     const nights = getNumberOfNights();
 
-    // Room total = room price * number of nights
-    const roomTotal = rooms.reduce((total, room) => total + (room.price * nights), 0);
-    
+    // Room total
+    const roomTotal = calculateRoomTotal();
+
     // Add-ons total with proper multipliers
     const addOnTotal = addOns.reduce((total, item) => {
       let multiplier = 1;
@@ -192,11 +200,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Get discount amount
   const getDiscountAmount = () => {
     if (!appliedCoupon) return 0;
-    const baseTotal = calculateBaseTotal();
-    if (appliedCoupon.discountType === 'percentage') {
-      return (baseTotal * appliedCoupon.discountValue) / 100;
+
+    // Calculate eligible total based on targeting
+    const nights = getNumberOfNights();
+    let eligibleAmount = 0;
+
+    if (appliedCoupon.targetAudience === 'specific_rooms' && appliedCoupon.roomTypes?.length) {
+      // Filter rooms that match the coupon's target rooms
+      const eligibleRooms = rooms.filter(room => {
+        // Check if room name or id is in the target list (flexible check)
+        // Normalize strings for comparison
+        const rName = room.name.toLowerCase();
+        // Check if any of the target types/names are contained in the room name
+        return appliedCoupon.roomTypes!.some(target => rName.includes(target.toLowerCase()));
+      });
+
+      eligibleAmount = eligibleRooms.reduce((total, room) => total + (room.price * nights), 0);
     } else {
-      return Math.min(appliedCoupon.discountValue, baseTotal);
+      // General coupons apply to Room Total only (standard practice), not Add-ons
+      eligibleAmount = calculateRoomTotal();
+    }
+
+    if (eligibleAmount === 0) return 0;
+
+    if (appliedCoupon.discountType === 'percentage') {
+      return (eligibleAmount * appliedCoupon.discountValue) / 100;
+    } else {
+      return Math.min(appliedCoupon.discountValue, eligibleAmount);
     }
   };
 
@@ -244,10 +274,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           minPersons: data.minPersons || null,
           maxPersons: data.maxPersons || null,
           applyToAllPersons: data.applyToAllPersons || false,
+          targetAudience: data.targetAudience || (data.applyToAllRooms ? 'all' : 'specific_rooms'),
           roomTypes: data.roomTypes || [],
-          applyToAllRooms: data.applyToAllRooms || false,
           discountType: data.discountType || 'percentage',
           discountValue: data.discountValue || 0,
+          couponMode: data.couponMode || 'static',
           couponCode: data.couponCode || null,
           lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
           createdAt: data.createdAt?.toDate() || new Date(),
@@ -275,6 +306,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           source: 'special',
           expiresAt: offer.endDate || null,
           title: offer.title,
+          targetAudience: offer.targetAudience,
+          roomTypes: offer.roomTypes,
         });
 
         return { success: true };

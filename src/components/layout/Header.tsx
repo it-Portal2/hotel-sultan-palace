@@ -44,34 +44,34 @@ function TimeAndTemperature() {
     const fetchTemp = async (lat = -6.165, lon = 39.2025) => {
       // Only fetch in browser environment
       if (typeof window === "undefined") return;
-      
+
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&timezone=auto`;
-        
+
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        const res = await fetch(url, { 
+
+        const res = await fetch(url, {
           cache: "no-store",
           signal: controller.signal,
           headers: {
             'Accept': 'application/json',
           }
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        
+
         const data = await res.json();
         const t = data?.current?.temperature_2m;
         if (typeof t === "number") setTempC(Math.round(t));
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
-          console.error("Failed to fetch temperature:", error);
+          console.warn("Failed to fetch temperature:", error);
         }
         // Keep tempC as null to show "--" in UI
       }
@@ -118,8 +118,8 @@ export default function Header() {
     { label: "Wellness & Relaxation", caret: true, href: "#", hasSubmenu: true },
     { label: "Villas", href: "/villas" },
     { label: "Gallery", href: "/gallery" },
-    { label: "Offers",  href: "/offers" },
-    { label: "About Us", href: "#" ,caret: true, hasSubmenu: true},
+    { label: "Offers", href: "/offers" },
+    { label: "About Us", href: "#", caret: true, hasSubmenu: true },
     { label: "Contact Us", href: "/contact-us" },
   ];
 
@@ -154,14 +154,14 @@ export default function Header() {
     };
   }, [isMenuOpen]);
 
- 
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // Close submenu if clicking outside both the button and submenu container
       const clickedSubmenu = target.closest('.submenu-container');
       const clickedButton = target.closest('button[aria-haspopup="true"]');
-      
+
       if (!clickedSubmenu && !clickedButton) {
         setIsAboutUsMenuOpen(false);
         setIsActivitiesMenuOpen(false);
@@ -188,14 +188,14 @@ export default function Header() {
     <>
       <header className={`w-full absolute top-0 left-0 z-[9999] font-open-sans overflow-visible ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`} style={{ position: 'absolute', zIndex: 9999 }}>
         {/* Black Linear Gradient Overlay at Top - 0% black to 100% transparent */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background: "linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)",
             zIndex: 0
           }}
         />
-        
+
         {/* Top Section - Desktop Only */}
         <div className="hidden md:block w-full px-4 md:px-6 lg:px-10 xl:px-20 relative z-10">
           <div className="flex items-center justify-between py-1 md:py-4 gap-2 xl:gap-4">
@@ -233,7 +233,7 @@ export default function Header() {
                   width={200}
                   height={200}
                   priority
-                  className="!h-[50px] md:!h-[70px] xl:!h-[84px] !w-auto" 
+                  className="!h-[50px] md:!h-[70px] xl:!h-[84px] !w-auto"
                   style={{ height: "50px", width: "auto" }}
                 />
               </Link>
@@ -286,14 +286,13 @@ export default function Header() {
                     >
                       <span className="truncate max-w-[120px] xl:max-w-none">{item.label}</span>
                       {item.caret && (
-                        <ChevronDown 
-                          size={14} 
-                          className={`transition-transform duration-300 ${
-                            (item.label === "Activities" && isActivitiesMenuOpen) ||
-                            (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
-                            (item.label === "About Us" && isAboutUsMenuOpen)
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-300 ${(item.label === "Activities" && isActivitiesMenuOpen) ||
+                              (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
+                              (item.label === "About Us" && isAboutUsMenuOpen)
                               ? 'rotate-180' : 'rotate-0'
-                          }`}
+                            }`}
                         />
                       )}
                     </button>
@@ -306,20 +305,20 @@ export default function Header() {
                       {item.caret && <ChevronDown size={14} />}
                     </Link>
                   )}
-                  
+
                   {/* Activities Submenu */}
                   {item.hasSubmenu && item.label === "Activities" && isActivitiesMenuOpen && (
-                    <div 
-                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
-                      style={{ 
-                        clipPath: 'none', 
-                        overflow: 'visible', 
-                        zIndex: 10000, 
+                    <div
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible"
+                      style={{
+                        clipPath: 'none',
+                        overflow: 'visible',
+                        zIndex: 10000,
                         position: 'absolute',
                         top: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        marginTop: '8px', 
+                        marginTop: '8px',
                         willChange: 'opacity, transform',
                         isolation: 'isolate',
                         contain: 'none',
@@ -349,17 +348,17 @@ export default function Header() {
 
                   {/* Wellness Submenu */}
                   {item.hasSubmenu && item.label === "Wellness & Relaxation" && isWellnessMenuOpen && (
-                    <div 
-                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
-                      style={{ 
-                        clipPath: 'none', 
-                        overflow: 'visible', 
-                        zIndex: 10000, 
+                    <div
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[250px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible"
+                      style={{
+                        clipPath: 'none',
+                        overflow: 'visible',
+                        zIndex: 10000,
                         position: 'absolute',
                         top: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        marginTop: '8px', 
+                        marginTop: '8px',
                         willChange: 'opacity, transform',
                         isolation: 'isolate',
                         contain: 'none',
@@ -386,20 +385,20 @@ export default function Header() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* about Submenu */}
                   {item.hasSubmenu && item.label === "About Us" && isAboutUsMenuOpen && (
-                    <div 
-                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[280px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible" 
-                      style={{ 
-                        clipPath: 'none', 
-                        overflow: 'visible', 
-                        zIndex: 10000, 
+                    <div
+                      className="submenu-container absolute top-full left-1/2 transform -translate-x-1/2 mt-2 py-2 min-w-[200px] max-w-[280px] bg-[#242424] shadow-lg transition-all duration-300 ease-out opacity-100 translate-y-0 pointer-events-auto visible"
+                      style={{
+                        clipPath: 'none',
+                        overflow: 'visible',
+                        zIndex: 10000,
                         position: 'absolute',
                         top: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        marginTop: '8px', 
+                        marginTop: '8px',
                         willChange: 'opacity, transform',
                         isolation: 'isolate',
                         contain: 'none',
@@ -418,7 +417,7 @@ export default function Header() {
                             >
                               {subItem.label}
                             </Link>
-                              {index < aboutUsSubmenu.length - 1 && (
+                            {index < aboutUsSubmenu.length - 1 && (
                               <hr className="border-white/8 mt-5" />
                             )}
                           </div>

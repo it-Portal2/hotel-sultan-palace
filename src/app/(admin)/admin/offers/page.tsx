@@ -226,12 +226,27 @@ export default function AdminOffersPage() {
                           {offer.discountType === 'percentage' ? `${offer.discountValue}%` : `$${offer.discountValue}`}
                         </span>
                       </div>
-                      {offer.couponCode && (
-                        <div className="flex flex-col items-end">
-                          <span className="text-xs text-gray-400 font-medium uppercase">Code</span>
-                          <span className="font-mono text-sm font-semibold bg-gray-100 px-2 py-1 rounded text-gray-700">{offer.couponCode}</span>
+
+                      <div className="flex flex-col items-end gap-1">
+                        {/* Targeting Info */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-gray-400 uppercase font-medium">Target:</span>
+                          <span className="text-xs font-semibold text-gray-600">
+                            {offer.targetAudience === 'specific_rooms' ? `${offer.roomTypes?.length || 0} Suites` : 'All Rooms'}
+                          </span>
                         </div>
-                      )}
+
+                        {/* Coupon Info */}
+                        {offer.couponMode === 'unique_per_user' ? (
+                          <span className="text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Unique Codes</span>
+                        ) : offer.couponCode ? (
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-sm font-semibold bg-gray-100 px-2 py-1 rounded text-gray-700">{offer.couponCode}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">No Coupon</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

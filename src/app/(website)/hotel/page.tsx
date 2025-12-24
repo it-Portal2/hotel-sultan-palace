@@ -40,7 +40,7 @@ import GuestReviewsSection from '@/components/hotel/GuestReviewsSection'
 import FAQSection from '@/components/hotel/FAQSection'
 function HotelContent() {
   const router = useRouter();
-  const { bookingData, addRoom, updateBookingData } = useCart();
+  const { bookingData, addRoom, updateBookingData, rooms: cartRooms } = useCart();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
@@ -304,7 +304,17 @@ function HotelContent() {
 
   const addToCart = async (room: Room, roomCount: number = 1) => {
     if (!tempCheckIn || !tempCheckOut) {
+      return;
+    }
 
+    // Check if room is already in cart to prevent accidental duplicates
+    const existingCount = cartRooms.filter(r => r.id === room.id).length;
+    const needed = roomCount - existingCount;
+
+    if (needed <= 0) {
+      // Already have enough of this room in cart
+      // Just redirect to add-ons
+      router.push('/add-ons');
       return;
     }
 
@@ -326,7 +336,7 @@ function HotelContent() {
         const checkIn = bookingData ? bookingData.checkIn : tempCheckIn.toISOString();
         const checkOut = bookingData ? bookingData.checkOut : tempCheckOut.toISOString();
         const baseGuests = bookingData ? bookingData.guests : tempGuests;
-        // Use the roomCount from the specific room card
+        // Use the roomCount (total desired) for availability check
         const guests = { ...baseGuests, rooms: roomCount };
 
         if (!bookingData) {
@@ -378,8 +388,9 @@ function HotelContent() {
         }
       }
 
-      // Add the room to cart with the specified quantity (base price)
-      addRoom(room, roomCount);
+      // Add ONLY the needed amount to cart
+      addRoom(room, needed);
+      router.push('/add-ons');
     } catch (error) {
       console.error('Error checking availability:', error);
     }

@@ -33,7 +33,7 @@ export default function CartSummary({
     removeCoupon,
     getDiscountAmount,
   } = useCart();
-  
+
   const [couponCode, setCouponCode] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [couponError, setCouponError] = useState('');
@@ -77,16 +77,16 @@ export default function CartSummary({
 
   const dateRangeText = bookingData
     ? `${new Date(bookingData.checkIn).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })} - ${new Date(bookingData.checkOut).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })}`
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })} - ${new Date(bookingData.checkOut).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}`
     : "Thu, Nov 20, 2025 - Fri, Nov 21, 2025";
 
   const defaultDescription =
@@ -304,7 +304,7 @@ export default function CartSummary({
                       Coupon Applied: {appliedCoupon.code}
                     </p>
                     <p className="text-xs text-green-600">
-                      {appliedCoupon.discountType === 'percentage' 
+                      {appliedCoupon.discountType === 'percentage'
                         ? `${appliedCoupon.discountValue}% off`
                         : `$${appliedCoupon.discountValue} off`}
                     </p>
@@ -326,7 +326,7 @@ export default function CartSummary({
                     type="text"
                     value={couponCode}
                     onChange={(e) => {
-                      setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+                      setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
                       setCouponError('');
                     }}
                     placeholder="Enter coupon code"
@@ -523,7 +523,7 @@ export default function CartSummary({
                     <p className="text-xs text-green-700">{appliedCoupon.title}</p>
                   )}
                   <p className="text-xs text-green-600">
-                    {appliedCoupon.discountType === 'percentage' 
+                    {appliedCoupon.discountType === 'percentage'
                       ? `${appliedCoupon.discountValue}% off`
                       : `$${appliedCoupon.discountValue} off`}
                   </p>
@@ -548,7 +548,7 @@ export default function CartSummary({
                   type="text"
                   value={couponCode}
                   onChange={(e) => {
-                    setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+                    setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
                     setCouponError('');
                   }}
                   placeholder="Enter coupon code"

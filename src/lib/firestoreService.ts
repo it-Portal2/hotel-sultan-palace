@@ -251,11 +251,18 @@ export interface SpecialOffer {
   minPersons: number | null;
   maxPersons: number | null;
   applyToAllPersons: boolean;
-  roomTypes: string[];
-  applyToAllRooms: boolean;
+
+  // Targeting
+  targetAudience: 'all' | 'specific_rooms';
+  roomTypes: string[]; // specific room IDs or Suite Types
+
   discountType: 'percentage' | 'fixed';
   discountValue: number;
-  couponCode: string | null;
+
+  // Coupon Logic
+  couponMode: 'none' | 'static' | 'unique_per_user';
+  couponCode: string | null; // Used if couponMode is 'static'
+
   lastNotificationSentAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -2086,10 +2093,11 @@ export const getSpecialOffers = async (): Promise<SpecialOffer[]> => {
         minPersons: data.minPersons || null,
         maxPersons: data.maxPersons || null,
         applyToAllPersons: data.applyToAllPersons || false,
+        targetAudience: data.targetAudience || 'all',
         roomTypes: data.roomTypes || [],
-        applyToAllRooms: data.applyToAllRooms || false,
         discountType: data.discountType || 'percentage',
         discountValue: data.discountValue || 0,
+        couponMode: data.couponMode || 'none',
         couponCode: data.couponCode || null,
         lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
         createdAt: data.createdAt?.toDate() || new Date(),
@@ -2122,16 +2130,34 @@ export const getSpecialOffer = async (id: string): Promise<SpecialOffer | null> 
       minPersons: data.minPersons || null,
       maxPersons: data.maxPersons || null,
       applyToAllPersons: data.applyToAllPersons || false,
+      targetAudience: data.targetAudience || 'all',
       roomTypes: data.roomTypes || [],
-      applyToAllRooms: data.applyToAllRooms || false,
       discountType: data.discountType || 'percentage',
       discountValue: data.discountValue || 0,
+      couponMode: data.couponMode || 'none',
       couponCode: data.couponCode || null,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     } as SpecialOffer;
   } catch (e) {
     console.error('Error fetching special offer:', e);
+    return null;
+  }
+};
+
+// Special Offers CRUD Operations
+export const createSpecialOffer = async (data: Omit<SpecialOffer, 'id' | 'createdAt' | 'updatedAt' | 'lastNotificationSentAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const specialOffersRef = collection(db, 'specialOffers');
+    const docRef = await addDoc(specialOffersRef, {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating special offer:', error);
     return null;
   }
 };
@@ -4649,3 +4675,4 @@ export const getFolioTransactions = async (bookingId: string): Promise<FolioTran
     return [];
   }
 };
+

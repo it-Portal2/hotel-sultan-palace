@@ -17,6 +17,7 @@ export interface AppliedOfferInfo {
   discountType: DiscountType;
   discountValue: number;
   couponCode: string | null;
+  couponMode: 'none' | 'static' | 'unique_per_user';
   startDate: string | null;
   endDate: string | null;
 }
@@ -50,12 +51,18 @@ export const isSpecialOfferValid = (
     if (offer.maxPersons && guests > offer.maxPersons) return false;
   }
 
-  if (!offer.applyToAllRooms && offer.roomTypes?.length) {
-    const roomName = context.roomName?.toLowerCase() || '';
-    const matches = offer.roomTypes.some((type) =>
-      roomName.includes(type.toLowerCase())
-    );
-    if (!matches) return false;
+  if (offer.targetAudience === 'specific_rooms' && offer.roomTypes?.length) {
+    if (context.roomName) {
+      const roomName = context.roomName.toLowerCase();
+      const matches = offer.roomTypes.some((type) =>
+        roomName.includes(type.toLowerCase())
+      );
+      if (!matches) return false;
+    }
+    // If context.roomName is not provided, we skip the room check.
+    // This allows the offer to be considered "valid" for the cart overall,
+    // (e.g., dates are valid), and specific room exclusions will be handled
+    // by the calculation logic (getDiscountAmount).
   }
 
   return true;
@@ -80,6 +87,7 @@ export const buildAppliedOfferInfo = (
   discountType: offer.discountType,
   discountValue: offer.discountValue,
   couponCode: offer.couponCode || null,
+  couponMode: offer.couponMode,
   startDate: offer.startDate || null,
   endDate: offer.endDate || null,
 });

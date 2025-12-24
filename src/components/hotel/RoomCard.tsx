@@ -5,16 +5,16 @@ import { useRouter } from 'next/navigation';
 import { Room } from '@/lib/firestoreService';
 import RoomDetailsModal from './RoomDetailsModal';
 import { AppliedOfferInfo, calculateDiscountAmount } from '@/lib/offers';
-import { 
+import {
   MdDone as DoneIcon,
   MdCreditCardOff as NoCreditCardIcon,
   MdChildCare as ChildIcon,
   MdOutlineAdd as AddIcon,
   MdOutlineRemove as RemoveIcon,
-  MdOutlineBed as BedIcon, 
-  MdOutlineShower as BathIcon, 
-  MdOutlineWifi as WifiIcon, 
-  MdOutlineAcUnit as AcIcon, 
+  MdOutlineBed as BedIcon,
+  MdOutlineShower as BathIcon,
+  MdOutlineWifi as WifiIcon,
+  MdOutlineAcUnit as AcIcon,
   MdOutlineBalcony as BalconyIcon,
   MdOutlinePrivacyTip as PrivateSuiteIcon,
   MdOutlineRoomService as RoomIcon
@@ -39,33 +39,33 @@ interface RoomCardProps {
 }
 
 const GuestControl = ({ label, value, onIncrease, onDecrease, min }: {
-    label: string;
-    value: number;
-    onIncrease: () => void;
-    onDecrease: () => void;
-    min: number;
+  label: string;
+  value: number;
+  onIncrease: () => void;
+  onDecrease: () => void;
+  min: number;
 }) => (
-    <div className="flex items-center justify-between">
-      <span className="text-[12px] md:text-[14px] text-[#383838]">{label}</span>
-      <div className="flex items-center gap-1.5 md:gap-2 border border-[#383838] rounded-[4px] px-1 md:px-[5px] py-1 md:py-[3px]">
-        <button 
-          onClick={onDecrease}
-          disabled={value <= min}
-          className="text-[#383838] disabled:opacity-50 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
-          aria-label={`Decrease ${label}`}
-        >
-          <RemoveIcon className="text-[16px] md:text-[18px]" />
-        </button>
-        <span className="text-[12px] md:text-[14px] text-[#383838] w-4 md:w-5 text-center">{value}</span>
-        <button 
-          onClick={onIncrease} 
-          className="text-[#383838] w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
-          aria-label={`Increase ${label}`}
-        >
-          <AddIcon className="text-[16px] md:text-[18px]" />
-        </button>
-      </div>
+  <div className="flex items-center justify-between">
+    <span className="text-[12px] md:text-[14px] text-[#383838]">{label}</span>
+    <div className="flex items-center gap-1.5 md:gap-2 border border-[#383838] rounded-[4px] px-1 md:px-[5px] py-1 md:py-[3px]">
+      <button
+        onClick={onDecrease}
+        disabled={value <= min}
+        className="text-[#383838] disabled:opacity-50 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
+        aria-label={`Decrease ${label}`}
+      >
+        <RemoveIcon className="text-[16px] md:text-[18px]" />
+      </button>
+      <span className="text-[12px] md:text-[14px] text-[#383838] w-4 md:w-5 text-center">{value}</span>
+      <button
+        onClick={onIncrease}
+        className="text-[#383838] w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
+        aria-label={`Increase ${label}`}
+      >
+        <AddIcon className="text-[16px] md:text-[18px]" />
+      </button>
     </div>
+  </div>
 );
 
 
@@ -85,35 +85,36 @@ export default function RoomCard({
   const [localRoomCount, setLocalRoomCount] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
+
   const nightsText = nights > 1 ? `${nights} nights` : '1 night';
-  
+
   const basePrice = room.price * nights * localRoomCount;
   const originalPrice = Math.round(basePrice);
   const discountAmount = activeOffer
     ? Math.round(
-        calculateDiscountAmount(basePrice, {
-          discountType: activeOffer.discountType,
-          discountValue: activeOffer.discountValue,
-        })
-      )
+      calculateDiscountAmount(basePrice, {
+        discountType: activeOffer.discountType,
+        discountValue: activeOffer.discountValue,
+      })
+    )
     : 0;
   const discountedPrice = Math.max(0, originalPrice - discountAmount);
 
   const getCancellationText = (): string => {
     const daysBefore = room.cancellationFreeDays ?? 2;
-    
+
     if (!checkIn) {
-      
+
       return `Free cancellation ${daysBefore} day${daysBefore > 1 ? 's' : ''} before check-in`;
     }
-    
+
     const cancellationDate = new Date(checkIn);
     cancellationDate.setDate(checkIn.getDate() - daysBefore);
-    
-    return `Free cancellation before ${cancellationDate.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+
+    return `Free cancellation before ${cancellationDate.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     })}`;
   };
 
@@ -125,8 +126,8 @@ export default function RoomCard({
     if (amenityLower.includes('garden') && amenityLower.includes('view')) return GardenIcon;
     if (amenityLower.includes('sea') && amenityLower.includes('view')) return GardenIcon;
     if (amenityLower.includes('private') && amenityLower.includes('suite')) return PrivateSuiteIcon;
-    if (amenityLower.includes('romm') ) return RoomIcon;
-     
+    if (amenityLower.includes('romm')) return RoomIcon;
+
     if (amenityLower.includes('bathroom') || amenityLower.includes('bath')) return BathIcon;
     if (amenityLower.includes('pool') && amenityLower.includes('view')) return PoolIcon;
     return WifiIcon;
@@ -151,12 +152,12 @@ export default function RoomCard({
 
   return (
     <>
-    <div className="flex flex-col lg:grid lg:grid-cols-[1.5fr_1fr_1fr] h-full min-h-0">
-        
+      <div className="flex flex-col lg:grid lg:grid-cols-[1.5fr_1fr_1fr] h-full min-h-0">
+
         <div className="p-4 md:p-[20px] lg:p-[30px] flex flex-col justify-between space-y-4 min-h-0">
           <div>
             <div className="mb-[10px]">
-              <h3 
+              <h3
                 className="text-[18px] md:text-[20px] font-semibold text-[#1D69F9] mb-[5px] cursor-pointer hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
@@ -168,14 +169,14 @@ export default function RoomCard({
               </h3>
               {availableRoomCount !== undefined && checkIn && checkOut && (
                 <p className="text-[12px] md:text-[13px] text-[#FF0000] bg-[#FFE5E5] px-2 py-1 rounded-[4px] font-medium w-fit">
-                  {availableRoomCount > 0 
+                  {availableRoomCount > 0
                     ? `${availableRoomCount} room${availableRoomCount > 1 ? 's' : ''} available`
                     : 'No rooms available'
                   }
                 </p>
               )}
             </div>
-            
+
             <div className="space-y-[7px] mb-[15px] text-[#373737]">
               <div className="flex items-center gap-[5px]">
                 <BedIcon className="text-[#363636] text-[16px] md:text-[18px]" />
@@ -192,7 +193,7 @@ export default function RoomCard({
             </div>
 
             <p className="text-[13px] md:text-[14px] text-[#373737] leading-[1.6] mb-[20px] line-clamp-3 md:line-clamp-none">{room.description}</p>
-            
+
             <div className="flex flex-wrap gap-x-[15px] md:gap-x-[25px] gap-y-[8px] md:gap-y-[10px]">
               {amenities.map(item => {
                 const IconComponent: IconType = item.icon;
@@ -207,10 +208,8 @@ export default function RoomCard({
           </div>
         </div>
 
-        <div className={`relative flex flex-col justify-center border-[1.5px] p-3 md:p-[14px] w-full lg:w-[376px] min-h-[300px] lg:h-[350px] ${
-          activeOffer ? 'bg-[#EBFDED] border-[#88B988]' : 'bg-[#FFF5F5] border-[#F3B1B1]'
-        }`}>
-          
+        <div className={`relative flex flex-col justify-center border-[1.5px] p-3 md:p-[14px] w-full lg:w-[376px] min-h-[300px] h-auto bg-[#EBFDED] border-[#88B988]`}>
+
           <div className="absolute top-2 right-2 md:top-[8px] md:right-[14px]">
             <span className="text-[11px] md:text-[13px] font-light text-[rgba(0,0,0,0.83)]">
               {activeOffer ? 'Discount' : 'No discount available'}
@@ -232,7 +231,7 @@ export default function RoomCard({
           </div>
 
           <div className="flex flex-col">
-            <p className="text-[12px] md:text-[14px] font-semibold text-[#000000] mb-[10px]">
+            <p className="text-[12px] md:text-[14px] font-semibold text-[#000000] mb-[10px] pr-16 bg-transparent">
               Price for {nights} {nights > 1 ? 'nights' : 'night'}, {guests.adults} {guests.adults > 1 ? 'adults' : 'adult'}
               {localRoomCount > 1 && `, ${localRoomCount} rooms`}
             </p>
@@ -254,43 +253,64 @@ export default function RoomCard({
             </div>
             {activeOffer ? (
               <>
-                {activeOffer.couponCode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined' && navigator?.clipboard) {
-                        navigator.clipboard
-                          .writeText(activeOffer.couponCode || '')
-                          .then(() => {
-                            setCopiedCouponId(activeOffer.id);
-                            setTimeout(() => setCopiedCouponId(null), 2000);
-                          })
-                          .catch(() => {});
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-[#1D69F9] px-3 py-1.5 rounded cursor-pointer"
-                    title={`Copy coupon code ${activeOffer.couponCode}`}
-                  >
-                    <ClipboardDocumentIcon className="w-4 h-4" />
-                    {copiedCouponId === activeOffer.id ? 'Copied!' : 'Copy coupon code'}
-                  </button>
-                )}
-                <p className="text-[12px] md:text-[13px] font-semibold text-[#14532D] uppercase tracking-wide">
-                  {activeOffer.title || 'Special Offer'}
-                </p>
-                {getValidityText() && (
-                  <p className="text-[11px] text-[#065F46]">{getValidityText()}</p>
-                )}
+                <div className="flex flex-col gap-1 w-full my-1">
+                  <p className="text-[12px] md:text-[13px] font-semibold text-[#14532D] uppercase tracking-wide">
+                    {activeOffer.title || 'Special Offer'}
+                  </p>
+
+
+                  {/* Coupon Code Logic - Static Only */}
+                  {activeOffer.couponMode === 'static' && activeOffer.couponCode && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (typeof window !== 'undefined' && navigator?.clipboard) {
+                          navigator.clipboard
+                            .writeText(activeOffer.couponCode || '')
+                            .then(() => {
+                              setCopiedCouponId(activeOffer.id);
+                              setTimeout(() => setCopiedCouponId(null), 2000);
+                            })
+                            .catch(() => { });
+                        }
+                      }}
+                      className="group flex items-center justify-between gap-2 bg-white border border-dashed border-[#1D69F9] rounded px-2.5 py-1.5 cursor-pointer hover:bg-blue-50 transition-colors"
+                      title="Click to copy coupon code"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-gray-500 uppercase">Coupon Code</span>
+                        <span className="text-[13px] font-bold text-[#1D69F9] tracking-wider">
+                          {activeOffer.couponCode}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[#1D69F9]">
+                        {copiedCouponId === activeOffer.id ? (
+                          <>
+                            <DoneIcon className="w-4 h-4" />
+                            <span className="text-[11px] font-medium">Copied</span>
+                          </>
+                        ) : (
+                          <ClipboardDocumentIcon className="w-5 h-5" />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {getValidityText() && (
+                    <p className="text-[11px] text-[#065F46] mt-1">{getValidityText()}</p>
+                  )}
+                </div>
               </>
             ) : (
-              <p className="text-[13px] font-semibold text-[#DC2626]">
-                No discount available right now
+              <p className="text-[13px] font-semibold text-gray-500 italic mt-2">
+                No special offers currently available for this room
               </p>
             )}
           </div>
-          
+
           <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[10px] mt-[10px]">+ $50 taxes and charge</span>
-          
+
           <div className="space-y-[6px] md:space-y-[9px] mt-[12px] md:mt-[18px]">
             <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
               <DoneIcon className="text-[#489219] text-[15px] md:text-[17px] flex-shrink-0" />
@@ -316,12 +336,12 @@ export default function RoomCard({
         </div>
 
         <div className="p-4 md:p-[20px] lg:p-[30px] flex flex-col justify-between bg-white space-y-4 min-h-0">
-          
+
           <div className="bg-[#E9F1FF] border border-[#1D69F9] rounded-[4px] p-2 md:p-[10px] mb-3">
             <div className="flex flex-col gap-[6px] md:gap-[8px]">
               <p className="text-[12px] md:text-[14px] text-[#323232]">Check in - Check out</p>
               <p className="text-[14px] md:text-[16px] font-semibold text-[#0088FF] break-words">
-                {checkIn && checkOut 
+                {checkIn && checkOut
                   ? `${formatDate(checkIn)}-${formatDate(checkOut)}`
                   : 'Select dates'
                 }
@@ -329,23 +349,23 @@ export default function RoomCard({
             </div>
             <p className="text-[12px] md:text-[14px] text-[#000000] font-semibold mt-[8px] md:mt-[10px]">{nightsText}</p>
           </div>
-          
+
           <div className="space-y-[10px] md:space-y-[14px] pb-4">
-            <GuestControl 
+            <GuestControl
               label="Number of rooms"
               value={localRoomCount}
               onIncrease={() => setLocalRoomCount(prev => prev + 1)}
               onDecrease={() => setLocalRoomCount(prev => Math.max(1, prev - 1))}
               min={1}
             />
-            <GuestControl 
+            <GuestControl
               label="Number of Guests"
               value={guests.adults}
               onIncrease={() => onGuestChange('adults', 1)}
               onDecrease={() => onGuestChange('adults', -1)}
               min={1}
             />
-            <GuestControl 
+            <GuestControl
               label="Child"
               value={guests.children}
               onIncrease={() => onGuestChange('children', 1)}
@@ -353,8 +373,8 @@ export default function RoomCard({
               min={0}
             />
           </div>
-          
-          <button 
+
+          <button
             onClick={async () => {
               if (availableRoomCount !== undefined && availableRoomCount === 0) {
                 alert('No rooms available for the selected dates. Please choose different dates.');
@@ -364,18 +384,17 @@ export default function RoomCard({
               router.push('/add-ons');
             }}
             disabled={availableRoomCount !== undefined && availableRoomCount === 0}
-            className={`w-full font-medium py-2 md:py-[10px] rounded-[7px] transition-colors text-[16px] md:text-[20px] mt-auto ${
-              availableRoomCount !== undefined && availableRoomCount === 0
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-[#1D69F9] text-white hover:bg-[#1a5ae0]'
-            }`}
+            className={`w-full font-medium py-2 md:py-[10px] rounded-[7px] transition-colors text-[16px] md:text-[20px] mt-auto ${availableRoomCount !== undefined && availableRoomCount === 0
+              ? 'bg-gray-400 text-white cursor-not-allowed'
+              : 'bg-[#1D69F9] text-white hover:bg-[#1a5ae0]'
+              }`}
           >
             {availableRoomCount !== undefined && availableRoomCount === 0 ? 'Not Available' : 'Reserve'}
           </button>
         </div>
       </div>
-      
-      <RoomDetailsModal 
+
+      <RoomDetailsModal
         room={room}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
