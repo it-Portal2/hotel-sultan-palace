@@ -22,8 +22,38 @@ import type {
     InventoryTransaction,
     Recipe,
     FoodOrder,
-    LowStockAlert
+    LowStockAlert,
+    InventoryCategory
 } from './firestoreService';
+
+// ==================== CATEGORIES ====================
+
+export const getInventoryCategories = async (): Promise<InventoryCategory[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'inventoryCategories'), orderBy('createdAt', 'asc'));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryCategory));
+    } catch (e) {
+        console.error("Error fetching categories:", e);
+        return [];
+    }
+};
+
+export const createInventoryCategory = async (name: string, label: string): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = await addDoc(collection(db, 'inventoryCategories'), {
+        name,
+        label,
+        createdAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const deleteInventoryCategory = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'inventoryCategories', id));
+};
 
 // ==================== SUPPLIERS ====================
 

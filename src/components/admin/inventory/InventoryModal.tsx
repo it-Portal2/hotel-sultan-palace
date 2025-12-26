@@ -1,57 +1,82 @@
 import React, { useState } from 'react';
-import type { InventoryItem } from '@/lib/firestoreService';
+import type { InventoryItem, InventoryCategory } from '@/lib/firestoreService';
 
 interface InventoryModalProps {
     item: InventoryItem | null;
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: Partial<InventoryItem>) => void;
+    categories: InventoryCategory[];
 }
 
 export default function InventoryModal({
     item,
     isOpen,
     onClose,
-    onSave
+    onSave,
+    categories
 }: InventoryModalProps) {
-    const [formData, setFormData] = useState<Partial<InventoryItem>>(
-        item || {
-            name: '',
-            category: 'food',
-            sku: '',
-            unit: 'piece',
-            currentStock: 0,
-            minStockLevel: 0,
-            maxStockLevel: 0,
-            reorderPoint: 0,
-            unitCost: 0,
-            isActive: true,
-        }
-    );
+    const [formData, setFormData] = useState({
+        name: '',
+        category: categories.length > 0 ? categories[0].name : 'food',
+        sku: '',
+        unit: 'piece',
+        currentStock: '',
+        minStockLevel: '',
+        maxStockLevel: '',
+        reorderPoint: '',
+        unitCost: '',
+        location: '',
+        preferredSupplierId: '',
+        isActive: true,
+    });
 
     // Update state when item changes (for edit mode)
     React.useEffect(() => {
         if (item) {
-            setFormData(item);
+            setFormData({
+                name: item.name,
+                category: item.category,
+                sku: item.sku,
+                unit: item.unit,
+                currentStock: item.currentStock.toString(),
+                minStockLevel: item.minStockLevel.toString(),
+                maxStockLevel: item.maxStockLevel.toString(),
+                reorderPoint: item.reorderPoint.toString(),
+                unitCost: item.unitCost.toString(),
+                location: item.location || '',
+                preferredSupplierId: item.preferredSupplierId || '',
+                isActive: item.isActive,
+            });
         } else {
             setFormData({
                 name: '',
-                category: 'food',
+                category: categories.length > 0 ? categories[0].name : 'food',
                 sku: '',
                 unit: 'piece',
-                currentStock: 0,
-                minStockLevel: 0,
-                maxStockLevel: 0,
-                reorderPoint: 0,
-                unitCost: 0,
+                currentStock: '',
+                minStockLevel: '',
+                maxStockLevel: '',
+                reorderPoint: '',
+                unitCost: '',
+                location: '',
+                preferredSupplierId: '',
                 isActive: true,
             });
         }
-    }, [item]);
+    }, [item, categories]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        onSave({
+            ...formData,
+            unit: formData.unit as any,
+            currentStock: parseFloat(formData.currentStock) || 0,
+            minStockLevel: parseFloat(formData.minStockLevel) || 0,
+            maxStockLevel: parseFloat(formData.maxStockLevel) || 0,
+            reorderPoint: parseFloat(formData.reorderPoint) || 0,
+            unitCost: parseFloat(formData.unitCost) || 0,
+        });
     };
 
     if (!isOpen) return null;
@@ -86,31 +111,33 @@ export default function InventoryModal({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                             <select
                                 value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent bg-white"
                             >
-                                <option value="food">Food</option>
-                                <option value="beverage">Beverage</option>
-                                <option value="amenity">Amenity</option>
-                                <option value="supply">Supply</option>
-                                <option value="linen">Linen</option>
-                                <option value="cleaning">Cleaning</option>
-                                <option value="other">Other</option>
+                                {categories.length > 0 ? (
+                                    categories.map((cat) => (
+                                        <option key={cat.id} value={cat.name}>
+                                            {cat.label}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="other">Other (No categories defined)</option>
+                                )}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">UOM</label>
                             <select
                                 value={formData.unit}
                                 onChange={(e) => setFormData({ ...formData, unit: e.target.value as any })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent bg-white"
                             >
+                                <option value="piece">Piece (PC)</option>
                                 <option value="kg">Kilogram (kg)</option>
                                 <option value="liter">Liter</option>
-                                <option value="piece">Piece</option>
                                 <option value="bottle">Bottle</option>
-                                <option value="box">Box</option>
-                                <option value="pack">Pack</option>
+                                <option value="box">Box (CTN)</option>
+                                <option value="pack">Pack (PKT)</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
@@ -120,8 +147,9 @@ export default function InventoryModal({
                                 type="number"
                                 required
                                 min="0"
+                                step="any"
                                 value={formData.currentStock}
-                                onChange={(e) => setFormData({ ...formData, currentStock: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 focus:border-[#FF6A00] focus:ring-0 outline-none"
                             />
                         </div>
@@ -131,9 +159,9 @@ export default function InventoryModal({
                                 type="number"
                                 required
                                 min="0"
-                                step="0.01"
+                                step="any"
                                 value={formData.unitCost}
-                                onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 focus:border-[#FF6A00] focus:ring-0 outline-none"
                             />
                         </div>
@@ -143,8 +171,9 @@ export default function InventoryModal({
                                 type="number"
                                 required
                                 min="0"
+                                step="any"
                                 value={formData.minStockLevel}
-                                onChange={(e) => setFormData({ ...formData, minStockLevel: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, minStockLevel: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 focus:border-[#FF6A00] focus:ring-0 outline-none"
                             />
                         </div>
@@ -154,8 +183,9 @@ export default function InventoryModal({
                                 type="number"
                                 required
                                 min="0"
+                                step="any"
                                 value={formData.maxStockLevel}
-                                onChange={(e) => setFormData({ ...formData, maxStockLevel: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, maxStockLevel: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 focus:border-[#FF6A00] focus:ring-0 outline-none"
                             />
                         </div>
@@ -165,8 +195,9 @@ export default function InventoryModal({
                                 type="number"
                                 required
                                 min="0"
+                                step="any"
                                 value={formData.reorderPoint}
-                                onChange={(e) => setFormData({ ...formData, reorderPoint: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, reorderPoint: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 focus:border-[#FF6A00] focus:ring-0 outline-none"
                             />
                         </div>

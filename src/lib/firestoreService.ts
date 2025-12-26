@@ -618,10 +618,17 @@ export interface Supplier {
 }
 
 // Enhanced Inventory Item
+export interface InventoryCategory {
+  id: string;
+  name: string; // machine name (slug) - used for filtering
+  label: string; // display label
+  createdAt: Date;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
-  category: 'food' | 'beverage' | 'amenity' | 'supply' | 'linen' | 'cleaning' | 'maintenance' | 'other';
+  category: string;
   subcategory?: string;
   sku: string;
   unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'can' | 'gram' | 'ml' | 'other';

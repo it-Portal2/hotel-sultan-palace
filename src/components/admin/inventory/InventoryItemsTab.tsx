@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import type { InventoryItem } from '@/lib/firestoreService';
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/inventoryService';
+import React, { useState, useEffect } from 'react';
+import type { InventoryItem, InventoryCategory } from '@/lib/firestoreService';
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, getInventoryCategories } from '@/lib/inventoryService';
 import InventoryModal from './InventoryModal';
+import CategoryManager from './CategoryManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
 interface InventoryItemsTabProps {
@@ -17,8 +18,19 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
     const [showModal, setShowModal] = useState(false);
+    const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [categories, setCategories] = useState<InventoryCategory[]>([]);
+
+    useEffect(() => {
+        loadCategories();
+    }, []);
+
+    const loadCategories = async () => {
+        const data = await getInventoryCategories();
+        setCategories(data);
+    };
 
     const handleSave = async (formData: Partial<InventoryItem>) => {
         try {
@@ -79,15 +91,10 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         }
     };
 
-    const categories = [
-        { id: 'all', label: 'All Categories' },
-        { id: 'food', label: 'Food' },
-        { id: 'beverage', label: 'Beverage' },
-        { id: 'amenity', label: 'Amenity' },
-        { id: 'supply', label: 'Supply' },
-        { id: 'linen', label: 'Linen' },
-        { id: 'cleaning', label: 'Cleaning' },
-        { id: 'other', label: 'Other' }
+    // Combine static 'All' with dynamic categories
+    const displayCategories = [
+        { id: 'all', label: 'All Categories', name: 'all' },
+        ...categories
     ];
 
     if (loading) {
@@ -98,21 +105,28 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-140px)] min-h-[600px]">
             {/* Sidebar Categories */}
             <div className="w-full md:w-64 flex-none bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                     <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Categories</h3>
+                    <button
+                        onClick={() => setShowCategoryManager(true)}
+                        className="text-[#FF6A00] hover:bg-orange-100 p-1.5 rounded-lg transition-colors"
+                        title="Manage Categories"
+                    >
+                        <FolderPlusIcon className="w-4 h-4" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {categories.map(cat => (
+                    {displayCategories.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setFilterCategory(cat.id)}
-                            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors flex justify-between items-center ${filterCategory === cat.id
+                            onClick={() => setFilterCategory(cat.name)}
+                            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg transition-colors flex justify-between items-center ${filterCategory === cat.name
                                 ? 'bg-orange-50 text-[#FF6A00]'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                         >
-                            <span>{cat.label}</span>
-                            {filterCategory === cat.id && <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00]"></span>}
+                            <span className="truncate">{cat.label}</span>
+                            {filterCategory === cat.name && <span className="w-1.5 h-1.5 flex-shrink-0 rounded-full bg-[#FF6A00]"></span>}
                         </button>
                     ))}
                 </div>
@@ -296,6 +310,14 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                     setEditingItem(null);
                 }}
                 onSave={handleSave}
+                categories={categories}
+            />
+
+            <CategoryManager
+                categories={categories}
+                isOpen={showCategoryManager}
+                onClose={() => setShowCategoryManager(false)}
+                onRefresh={loadCategories}
             />
 
             <ConfirmationModal
