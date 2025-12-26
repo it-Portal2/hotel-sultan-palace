@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getAllBookings, Booking, updateBooking } from '@/lib/firestoreService';
+import { getAllBookings, Booking, updateBooking, checkInGuest, checkOutGuest, getSystemLocks } from '@/lib/firestoreService';
 import { cancelBooking, confirmBooking } from '@/lib/bookingService';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import BookingStats from '@/components/admin/bookings/BookingStats';
 import BookingFilters from '@/components/admin/bookings/BookingFilters';
 import BookingTable from '@/components/admin/bookings/BookingTable';
 import BookingDetailsModal from '@/components/admin/bookings/BookingDetailsModal';
+import CheckInModal, { CheckInData } from '@/components/admin/front-desk/CheckInModal';
+import CheckOutModal, { CheckOutData } from '@/components/admin/front-desk/CheckOutModal';
 
 export default function AdminBookingsPage() {
   const { isReadOnly } = useAdminRole();
@@ -17,8 +19,12 @@ export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Booking | null>(null);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showCheckOutModal, setShowCheckOutModal] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   // Filters
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | 'pending' | 'confirmed' | 'cancelled' | 'walk_in'>('all');
@@ -154,11 +160,13 @@ export default function AdminBookingsPage() {
         await updateBooking(booking.id, { status: 'pending' });
         showToast('Booking marked as pending', 'success');
       } else if (type === 'check_in') {
-        await updateBooking(booking.id, { status: 'checked_in' });
-        showToast('Guest Checked In', 'success');
+        setShowCheckInModal(true);
+        return; // Handled by modal
       } else if (type === 'check_out') {
-        await updateBooking(booking.id, { status: 'checked_out' });
-        showToast('Guest Checked Out', 'success');
+        // Redirection to Unified Checkout Flow
+        const bookingId = booking.bookingId || booking.id;
+        router.push(`/admin/checkout?bookingId=${bookingId}`);
+        return;
       }
 
       // Optimistic update or refresh
@@ -174,6 +182,88 @@ export default function AdminBookingsPage() {
     } catch (error) {
       console.error('Error updating status:', error);
       showToast('Action failed. Please try again.', 'error');
+    }
+  };
+
+  const handleCheckInConfirm = async (data: CheckInData) => {
+    if (!selected) return;
+    setProcessing(true);
+    try {
+      const recordId = await checkInGuest(
+        selected.id,
+        data.staffName,
+        data.idDocumentType,
+        data.idDocumentNumber || undefined,
+        data.roomKeyNumber || undefined,
+        data.depositAmount ? parseFloat(data.depositAmount) : undefined,
+        data.notes || undefined,
+        data.allocatedRoomName
+      );
+
+      if (recordId) {
+        showToast('Guest checked in successfully!', 'success');
+        setShowCheckInModal(false);
+        setSelected(null); // Close details modal too
+        await refreshData();
+      } else {
+        showToast('Failed to check in guest', 'error');
+      }
+    } catch (error) {
+      console.error('Error checking in guest:', error);
+      showToast('Failed to check in guest', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleCheckOutConfirm = async (data: CheckOutData) => {
+    if (!selected) return;
+    setProcessing(true);
+
+    // Lock check before checkout
+    try {
+      const locks = await getSystemLocks();
+      const roomNum = selected.roomNumber || selected.rooms[0]?.allocatedRoomType;
+      const activeLock = locks.find(lock =>
+        (lock.resourceType === 'folio' && lock.resourceId === selected.id) ||
+        (roomNum && lock.resourceType === 'room' && lock.resourceId === roomNum)
+      );
+
+      if (activeLock) {
+        showToast(`Checkout Blocked: Locked by ${activeLock.lockedBy}`, 'error');
+        setProcessing(false);
+        return;
+      }
+    } catch (e) {
+      console.error("Lock check failed", e);
+    }
+
+    try {
+      const success = await checkOutGuest(
+        selected.id,
+        data.staffName,
+        data.depositReturned,
+        data.notes || undefined,
+        {
+          priority: data.housekeepingPriority,
+          assignedTo: data.housekeepingAssignee || undefined,
+          scheduledTime: new Date(),
+        }
+      );
+
+      if (success) {
+        showToast('Guest checked out successfully!', 'success');
+        setShowCheckOutModal(false);
+        setSelected(null);
+        await refreshData();
+      } else {
+        showToast('Failed to check out guest', 'error');
+      }
+    } catch (error) {
+      console.error('Error checking out guest:', error);
+      showToast('Failed to check out guest', 'error');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -212,12 +302,30 @@ export default function AdminBookingsPage() {
       />
 
       {/* Modal */}
-      {selected && (
+      {selected && !showCheckInModal && !showCheckOutModal && (
         <BookingDetailsModal
           booking={selected}
           onClose={() => setSelected(null)}
           isReadOnly={isReadOnly}
           onStatusUpdate={handleStatusUpdate}
+        />
+      )}
+
+      {selected && showCheckInModal && (
+        <CheckInModal
+          booking={selected}
+          onClose={() => setShowCheckInModal(false)}
+          onConfirm={handleCheckInConfirm}
+          processing={processing}
+        />
+      )}
+
+      {selected && showCheckOutModal && (
+        <CheckOutModal
+          booking={selected}
+          onClose={() => setShowCheckOutModal(false)}
+          onConfirm={handleCheckOutConfirm}
+          processing={processing}
         />
       )}
     </div>

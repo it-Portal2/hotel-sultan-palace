@@ -21,6 +21,7 @@ import { Tab } from '@headlessui/react';
 import { Squares2X2Icon, ListBulletIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import RoomDetailsModal from '@/components/admin/housekeeping/RoomDetailsModal';
+import AddTaskModal from '@/components/admin/housekeeping/AddTaskModal';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -46,6 +47,7 @@ export default function HousekeepingPage() {
 
   // Modal State
   const [selectedRoomName, setSelectedRoomName] = useState<string | null>(null);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -176,12 +178,22 @@ export default function HousekeepingPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Housekeeping Management</h1>
           <p className="text-sm text-gray-500 mt-1">Manage cleaning tasks and monitor room status.</p>
         </div>
-        <button
-          onClick={() => { loadTasks(); loadRoomData(); }}
-          className="bg-white border border-gray-200 text-gray-600 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          Refresh Data
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { loadTasks(); loadRoomData(); }}
+            className="bg-white border border-gray-200 text-gray-600 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Refresh Data
+          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="bg-[#FF6A00] text-white px-4 py-2 text-sm font-bold rounded shadow-lg shadow-orange-200 hover:bg-[#e65f00] transition-colors"
+            >
+              + Add Task
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Info Alert for Workflow */}
@@ -194,7 +206,7 @@ export default function HousekeepingPage() {
             <li><strong>Tasks:</strong> Assign tasks to staff. When they mark a task as <span className="font-semibold text-green-600">Completed</span>, the room status automatically updates to <span className="font-semibold text-green-600">Clean/Available</span>.</li>
           </ul>
         </div>
-      </div>
+      </div >
 
       <Tab.Group>
         <Tab.List className="flex space-x-1 bg-gray-100 p-1 w-fit">
@@ -307,14 +319,23 @@ export default function HousekeepingPage() {
       </Tab.Group>
 
       {/* Room Details Modal */}
-      {selectedRoomName && (
-        <RoomDetailsModal
-          isOpen={true}
-          roomName={selectedRoomName}
-          onClose={() => setSelectedRoomName(null)}
-          onUpdate={loadRoomData}
-        />
-      )}
-    </div>
+      {
+        selectedRoomName && (
+          <RoomDetailsModal
+            isOpen={true}
+            roomName={selectedRoomName}
+            onClose={() => setSelectedRoomName(null)}
+            onUpdate={loadRoomData}
+          />
+        )
+      }
+      {/* Add Task Modal */}
+      <AddTaskModal
+        isOpen={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        onSuccess={() => { loadTasks(); loadRoomData(); }}
+        roomTypes={roomTypes}
+      />
+    </div >
   );
 }

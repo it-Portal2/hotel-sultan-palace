@@ -176,17 +176,17 @@ export default function AdminDashboard() {
         }).length,
         activeOffers: offers.filter(o => o.isActive).length,
 
-        // Keep strictly required types to satisfy TS for now, but set to 0/ignored
-        workOrder: 0,
+        // Wired up real counts
+        workOrder: workOrders.length,
         paymentFailed: 0,
         overbooking: 0,
         guestPortal: 0,
         cardVerificationFailed: 0,
-        tasks: 0,
+        tasks: 0, // Could link to housekeeping tasks if needed
         review: 0,
         inventoryAlert: 0,
-        lowStock: 0,
-        pendingPOs: 0,
+        lowStock: lowStockItems.length,
+        pendingPOs: pendingPOs.length,
         dirtyRooms: 0,
         auditAlert: 0
       };

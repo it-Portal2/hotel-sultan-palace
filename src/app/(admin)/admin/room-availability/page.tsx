@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { getAllBookings, getRoomTypes, createBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
+import { sendBookingConfirmationEmailAction } from '@/app/actions/emailActions';
 import { useToast } from '@/context/ToastContext';
 import {
   CalendarDaysIcon,
@@ -81,22 +82,46 @@ export default function RoomAvailabilityPage() {
 
   // Calculate suite prices from Rooms collection
   const suitePriceMap = useMemo(() => {
+    // Default fallback prices
     const map: Record<SuiteType, number> = {
       'Garden Suite': 260,
       'Imperial Suite': 370,
       'Ocean Suite': 310
     };
 
-    // Update prices from Rooms collection
-    rooms.forEach(room => {
-      if (room.type.toLowerCase().includes('garden')) {
-        map['Garden Suite'] = room.price;
-      } else if (room.type.toLowerCase().includes('imperial')) {
-        map['Imperial Suite'] = room.price;
-      } else if (room.type.toLowerCase().includes('ocean')) {
-        map['Ocean Suite'] = room.price;
-      }
-    });
+    // Update prices from Rooms collection (Source of Truth)
+    if (rooms && rooms.length > 0) {
+      const foundSuites = new Set<string>();
+
+      rooms.forEach(room => {
+        let matchedSuite: SuiteType | null = null;
+
+        // 1. Try exact match on suiteType key (Best)
+        if (room.suiteType && SUITE_TYPES.includes(room.suiteType)) {
+          matchedSuite = room.suiteType;
+        }
+        // 2. Try matching room type string to known keys
+        else if (room.type) {
+          const typeLower = room.type.toLowerCase();
+          if (typeLower.includes('garden')) matchedSuite = 'Garden Suite';
+          else if (typeLower.includes('imperial') || typeLower.includes('sea suite')) matchedSuite = 'Imperial Suite';
+          else if (typeLower.includes('ocean')) matchedSuite = 'Ocean Suite';
+        }
+        // 3. Try matching room name/title
+        else if (room.name) {
+          const nameLower = room.name.toLowerCase();
+          if (nameLower.includes('garden')) matchedSuite = 'Garden Suite';
+          else if (nameLower.includes('imperial')) matchedSuite = 'Imperial Suite';
+          else if (nameLower.includes('ocean')) matchedSuite = 'Ocean Suite';
+        }
+
+        // Only update if we haven't found a newer definition for this suite yet
+        if (matchedSuite && !foundSuites.has(matchedSuite)) {
+          map[matchedSuite] = room.price;
+          foundSuites.add(matchedSuite);
+        }
+      });
+    }
 
     return map;
   }, [rooms]);
@@ -465,6 +490,15 @@ export default function RoomAvailabilityPage() {
 
       const bookingId = `WALKIN-${Date.now()}`;
       const nameParts = assignRoomForm.guestName.split(' ');
+
+      const guestDetails = {
+        prefix: assignRoomForm.guestPrefix || '',
+        firstName: nameParts[0] || assignRoomForm.guestName,
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: assignRoomForm.guestEmail || '',
+        phone: assignRoomForm.guestPhone,
+      };
+
       const newBooking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
         checkIn: assignRoomForm.startDate,
         checkOut: assignRoomForm.endDate,
@@ -473,13 +507,7 @@ export default function RoomAvailabilityPage() {
           children: Number(assignRoomForm.children) || 0,
           rooms: 1
         },
-        guestDetails: {
-          prefix: assignRoomForm.guestPrefix || '',
-          firstName: nameParts[0] || assignRoomForm.guestName,
-          lastName: nameParts.slice(1).join(' ') || '',
-          email: assignRoomForm.guestEmail || '',
-          phone: assignRoomForm.guestPhone,
-        },
+        guestDetails: guestDetails,
         address: {
           country: assignRoomForm.guestCountry || '',
           city: assignRoomForm.guestCity || '',
@@ -504,11 +532,30 @@ export default function RoomAvailabilityPage() {
         paymentDate: new Date(),
         source: 'walk_in',
         notes: assignRoomForm.notes || '',
-        guestIdProof: assignRoomForm.idProofNumber ? `${assignRoomForm.idProofType}: ${assignRoomForm.idProofNumber}` : undefined
+        ...(assignRoomForm.idProofNumber ? { guestIdProof: `${assignRoomForm.idProofType}: ${assignRoomForm.idProofNumber}` } : {})
       };
 
       await createBooking(newBooking);
       showToast('Walk-in guest assigned successfully!', 'success');
+
+      // Send confirmation email
+      if (assignRoomForm.guestEmail) {
+        const bookingForEmail = {
+          ...newBooking,
+          id: bookingId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as Booking;
+
+        try {
+          await sendBookingConfirmationEmailAction(bookingForEmail);
+          showToast('Confirmation email sent to guest.', 'success');
+        } catch (emailErr) {
+          console.error("Failed to send walk-in email", emailErr);
+          showToast('Booking saved but email failed.', 'warning');
+        }
+      }
+
       setShowAssignRoom(false);
       setAssignRoomForm({
         startDate: '',
@@ -570,19 +617,56 @@ export default function RoomAvailabilityPage() {
   };
 
   // Get available rooms for a date range
+  // Get available rooms for a date range (Fixed: Independent of view range)
   const getAvailableRooms = (startDate: string, endDate: string, suiteType: SuiteType) => {
     if (!startDate || !endDate) return [];
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const dates = getDatesInRange(start, end);
+    const start = normalizeDate(startDate);
+    const end = normalizeDate(endDate);
 
-    return roomsBySuite[suiteType].filter(room => {
-      return dates.every(date => {
-        const dateStr = date.toISOString().split('T')[0];
-        const avail = roomAvailability[room.roomName]?.[dateStr];
-        return avail?.available;
+    // Filter rooms by suite type
+    const candidateRooms = roomsBySuite[suiteType] || [];
+
+    return candidateRooms.filter(room => {
+      // 1. Check for Booking Collisions
+      const hasBookingCollision = bookings.some(booking => {
+        if (booking.status === 'cancelled' || booking.status === 'no_show') return false;
+
+        // Check if this booking allocates this room
+        const hasRoom = booking.rooms.some(r => r.allocatedRoomType === room.roomName);
+        if (!hasRoom) return false;
+
+        const bookingStart = normalizeDate(booking.checkIn);
+        const bookingEnd = normalizeDate(booking.checkOut);
+
+        // Overlap check: Returns true if there IS a collision
+        // Collision exists if ranges overlap. 
+        // Two ranges [start1, end1) and [start2, end2) overlap if start1 < end2 && start2 < end1
+        return bookingStart < end && start < bookingEnd;
       });
+
+      if (hasBookingCollision) return false;
+
+      // 2. Check for Maintenance/Blocked Collisions
+      const roomBlocks = blockedRooms[room.roomName] || [];
+      const hasBlockCollision = roomBlocks.some(block => {
+        const blockStart = normalizeDate(block.startDate);
+        const blockEnd = normalizeDate(block.endDate);
+        return blockStart < end && start < blockEnd;
+      });
+
+      if (hasBlockCollision) return false;
+
+      // 3. Check for Room Status Maintenance
+      const rs = getRoomStatus(room.roomName);
+      if (rs?.status === 'maintenance' && rs.maintenanceStartDate && rs.maintenanceEndDate) {
+        const maintStart = normalizeDate(rs.maintenanceStartDate);
+        const maintEnd = normalizeDate(rs.maintenanceEndDate);
+        // Only collide if maintenance overlaps with request
+        return maintStart < end && start < maintEnd;
+      }
+
+      return true;
     });
   };
 

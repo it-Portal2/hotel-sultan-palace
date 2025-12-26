@@ -20,25 +20,46 @@ export default function OffersPage() {
   const [offers, setOffers] = useState<SpecialOffer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
 
+  // Hero Animation - Run immediately on mount
   useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Data Loading
+  useEffect(() => {
+    let mounted = true;
     async function fetchOffers() {
       try {
-        const data = await getSpecialOffers();
-        const now = new Date();
-        // Filter valid only
-        const valid = data.filter(o => o.isActive && isSpecialOfferValid(o, { now }));
-        setOffers(valid);
+        // Add a timeout to the fetch to prevent hanging indefinitely
+        const fetchPromise = getSpecialOffers();
+        const timeoutPromise = new Promise<SpecialOffer[]>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 10000)
+        );
+
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (mounted) {
+          const now = new Date();
+          // Filter valid only
+          const valid = data.filter(o => o.isActive && isSpecialOfferValid(o, { now }));
+          setOffers(valid);
+        }
       } catch (e) {
         console.error("Failed to fetch offers", e);
       } finally {
-        setLoadingOffers(false);
+        if (mounted) {
+          setLoadingOffers(false);
+        }
       }
     }
     fetchOffers();
+    return () => { mounted = false; };
   }, []);
 
+  // Intersection Observers - Run when loading is done
   useEffect(() => {
-    setIsVisible(true);
+    if (loadingOffers) return;
 
     // Enhanced Intersection Observer for sections and cards
     const observers: IntersectionObserver[] = [];
@@ -72,7 +93,7 @@ export default function OffersPage() {
                   }
                 });
               },
-              { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+              { threshold: 0.05, rootMargin: '0px 0px -50px 0px' }
             );
             observer.observe(element);
             observers.push(observer);
@@ -82,39 +103,60 @@ export default function OffersPage() {
 
       // Observe individual cards with different animations
       const cards = document.querySelectorAll(".offer-card");
-      cards.forEach((card, index) => {
-        if (!observedElements.has(card as HTMLElement)) {
-          observedElements.add(card as HTMLElement);
-          const observer = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add("card-visible");
-                  // Add specific animation class based on index
-                  const animationType = index % 4;
-                  entry.target.classList.add(`card-animation-${animationType}`);
-                  observer.unobserve(entry.target);
-                }
-              });
-            },
-            { threshold: 0.15, rootMargin: '0px 0px -100px 0px' }
-          );
-          observer.observe(card);
-          observers.push(observer);
-        }
-      });
+      if (cards.length > 0) {
+        cards.forEach((card, index) => {
+          if (!observedElements.has(card as HTMLElement)) {
+            observedElements.add(card as HTMLElement);
+
+            // Initial check if already visible
+            const rect = card.getBoundingClientRect();
+            // Expanded check: if it's near the viewport
+            if (rect.top < window.innerHeight + 100) {
+              card.classList.add("card-visible");
+              const animationType = index % 4;
+              card.classList.add(`card-animation-${animationType}`);
+            } else {
+              const observer = new IntersectionObserver(
+                (entries) => {
+                  entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                      entry.target.classList.add("card-visible");
+                      const animationType = index % 4;
+                      entry.target.classList.add(`card-animation-${animationType}`);
+                      observer.unobserve(entry.target);
+                    }
+                  });
+                },
+                { threshold: 0.01, rootMargin: '0px 0px 50px 0px' } // More forgiving threshold/margin
+              );
+              observer.observe(card);
+              observers.push(observer);
+            }
+          }
+        });
+      }
     };
 
-    setupObservers();
-    const timeoutId = setTimeout(setupObservers, 200);
-    const timeoutId2 = setTimeout(setupObservers, 500);
+    // Run setup after a tick to allow DOM updates
+    const timeoutId = setTimeout(setupObservers, 150);
+    // Backup check
+    const timeoutId2 = setTimeout(setupObservers, 800);
+    // Final failsafe to ensure visibility
+    const timeoutId3 = setTimeout(() => {
+      const cards = document.querySelectorAll(".offer-card");
+      cards.forEach((card) => {
+        card.classList.add("card-visible");
+      });
+      setSectionVisible(prev => ({ ...prev, 'cards-section': true, 'carousel-section': true, 'transfers-section': true }));
+    }, 3000);
 
     return () => {
       clearTimeout(timeoutId);
       clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
       observers.forEach((observer) => observer.disconnect());
     };
-  }, []);
+  }, [loadingOffers]);
 
   const headingWords = "Exclusive Offers & Packages".split(" ");
 
@@ -176,124 +218,172 @@ export default function OffersPage() {
           </div>
         </section>
 
-        <section ref={(el) => { if (el) sectionRefs.current['cards-section'] = el; }} className={`relative min-h-[631px] overflow-hidden offers-cards-section ${sectionVisible['cards-section'] ? 'offers-cards-section-visible' : ''}`}>
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{
-              background: 'linear-gradient(180deg, #616C26 0%, #C8CCB3 31%, #F1F2EE 49%, #FFFFFF 62%, #FFFFFF 71%, #FFFFFF 100%)',
-              opacity: 1
-            }}
-          ></div>
+        <section ref={(el) => { if (el) sectionRefs.current['cards-section'] = el; }} className={`relative min-h-[631px] offers-cards-section ${sectionVisible['cards-section'] ? 'offers-cards-section-visible' : ''}`}>
+          {/* Removed green gradient background to match Figma design (clean white/light background) */}
 
           <div ref={cardsRef} className="relative z-10 max-w-[1596px] mx-auto px-4 md:px-6 py-16 pb-12 md:pb-16">
-            <div className="flex flex-col gap-[40px]">
+            <div className="flex flex-col gap-[60px] md:gap-[100px]">
               {loadingOffers ? (
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
                 </div>
-              ) : offers.length === 0 ? (
-                <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-white/60">
-                  <p className="text-xl text-gray-600 font-quicksand">No active offers at the moment. Please check back later!</p>
-                </div>
-              ) : (
-                offers.map((offer, index) => {
-                  const isReverse = index % 2 !== 0;
-                  // If unique, get from local storage or wait for user to click "Reveal"?
-                  // For simplicity on public page with many cards, we show generic logic or allow copy if static.
-                  const displayCode = offer.couponMode === 'static' ? offer.couponCode : (offer.couponCode || 'GET CODE');
-                  const layoutClass = isReverse ? "md:flex-row-reverse" : "md:flex-row";
+              ) : (offers.length > 0 ? offers : [
+                {
+                  id: 'offer-1',
+                  title: 'Advance Escape Offer',
+                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Save 10% when you confirm your stay at least 5 months in advance.</li><li>Plan early, pay less, and look forward to your tropical dream.</li><li>Not valid during July, August & festive season.</li></ul>',
+                  imageUrl: '/offers/advance-escape-bg.png',
+                  discountType: 'percentage',
+                  discountValue: 10,
+                  couponMode: 'none',
+                  couponCode: null,
+                  isActive: true,
+                  startDate: new Date().toISOString(),
+                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                  targetAudience: 'all',
+                  sendNotification: false,
+                  minPersons: null,
+                  maxPersons: null,
+                  applyToAllPersons: true,
+                  roomTypes: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: 'offer-2',
+                  title: 'Stay More, Spend Less',
+                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Stay 5 nights and pay for only 4!</li><li>Enjoy an extra night of ocean breeze, relaxation, and island luxury — on us.</li><li class="text-red-500">Blackout dates: July, August & festive period.</li></ul>',
+                  imageUrl: '/offers/stay-more-bg.png',
+                  discountType: 'fixed', // Represents 1 night free
+                  discountValue: 0,
+                  couponMode: 'none',
+                  couponCode: null,
+                  isActive: true,
+                  startDate: new Date().toISOString(),
+                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                  targetAudience: 'all',
+                  sendNotification: false,
+                  minPersons: null,
+                  maxPersons: null,
+                  applyToAllPersons: true,
+                  roomTypes: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: 'offer-3',
+                  title: 'Family Getaway Treat',
+                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Children under 12 years stay free when sharing with parents in Garden View Villas (up to 2 kids).</li><li>Perfect opportunity to make family memories that last forever.</li><li class="text-red-500">Not valid during July, August & festive period.</li></ul>',
+                  imageUrl: '/offers/family-getaway-bg.png',
+                  discountType: 'percentage',
+                  discountValue: 0, // Child free logic
+                  couponMode: 'none',
+                  couponCode: null,
+                  isActive: true,
+                  startDate: new Date().toISOString(),
+                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                  targetAudience: 'all',
+                  sendNotification: false,
+                  minPersons: null,
+                  maxPersons: null,
+                  applyToAllPersons: true,
+                  roomTypes: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: 'offer-4',
+                  title: 'Romance by the Ocean',
+                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Celebrate your love with our Honeymoon Indulgence Offer 💍</li><li>Stay 5 nights or more and enjoy:<ul class="list-[lower-alpha] pl-5 space-y-1 pt-1"><li>Complimentary 30-minute couple’s massage</li><li>Welcome bottle of wine & sunset cocktail for two</li><li>10% off scuba diving experiences</li></ul></li><li>Valid within one year of your wedding (proof required).</li><li class="text-red-500">Not valid during July, August & festive season.</li></ul>',
+                  imageUrl: '/offers/seventh-night-bg.png',
 
-                  return (
-                    <div
-                      key={offer.id}
-                      className={`offer-card flex flex-col ${layoutClass} items-center gap-[92px]`}
-                    >
-                      <div className="relative w-full md:w-[650px] h-[450px] rounded-[15px] overflow-hidden flex-shrink-0 group cursor-pointer offer-card-image">
-                        <Image
-                          src={offer.imageUrl}
-                          alt={offer.title}
-                          fill
-                          quality={85}
-                          sizes="(max-width: 768px) 100vw, 650px"
-                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                          unoptimized
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/offer-image.jpg' }}
+                  discountType: 'fixed',
+                  discountValue: 100, // Visual value
+                  couponMode: 'none',
+                  couponCode: null,
+                  isActive: true,
+                  startDate: new Date().toISOString(),
+                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                  targetAudience: 'all',
+                  sendNotification: false,
+                  minPersons: null,
+                  maxPersons: null,
+                  applyToAllPersons: true,
+                  roomTypes: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                {
+                  id: 'offer-5',
+                  title: 'Seventh Night on Us',
+                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Stay 7 nights, pay for only 5 — and receive:</li><ul class="list-[lower-alpha] pl-5 space-y-1"><li>A bottle of sparkling wine upon arrival</li><li>Sunset drinks at our beach bar</li><li>10% off all water activities</li></ul><li class="text-red-500 pt-2">Offer not valid during July, August & festive period.</li></ul>',
+                  discountType: 'fixed',
+                  imageUrl: '/offers/family-getaway-bg.png',
+
+                  discountValue: 0,
+                  couponMode: 'none',
+                  couponCode: null,
+                  isActive: true,
+                  startDate: new Date().toISOString(),
+                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                  targetAudience: 'all',
+                  sendNotification: false,
+                  minPersons: null,
+                  maxPersons: null,
+                  applyToAllPersons: true,
+                  roomTypes: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }
+              ] as SpecialOffer[]).map((offer, index) => {
+                const isReverse = index % 2 !== 0;
+
+                return (
+                  <div
+                    key={offer.id}
+                    className={`offer-card flex flex-col ${isReverse ? "md:flex-row-reverse" : "md:flex-row"} items-center justify-between gap-8 md:gap-12 lg:gap-20 opacity-0 translate-y-8 transition-all duration-700 ease-out py-8 md:py-12 border-b border-gray-100 last:border-0`}
+                  >
+                    <div className="relative w-full md:w-[50%] lg:w-[540px] xl:w-[600px] h-[280px] md:h-[350px] lg:h-[400px] rounded-[15px] overflow-hidden flex-shrink-0 group cursor-pointer offer-card-image shadow-xl hover:shadow-2xl transition-shadow duration-500">
+                      <Image
+                        src={offer.imageUrl}
+                        alt={offer.title}
+                        fill
+                        quality={95}
+                        sizes="(max-width: 768px) 100vw, 600px"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        unoptimized
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/offer-image.jpg' }}
+                      />
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500"></div>
+                    </div>
+
+                    <div className="w-full md:w-[50%] flex flex-col justify-center items-start text-left lg:pl-4">
+                      <h3 className="text-[#16130E] text-[26px] md:text-[32px] font-bold leading-tight mb-4 font-quicksand tracking-tight">
+                        {offer.title}
+                      </h3>
+
+                      <div
+                        className="text-[#4A4A4A] text-[15px] md:text-[16px] leading-[1.7] md:leading-[1.8] tracking-normal font-quicksand mb-6 md:mb-8"
+                        dangerouslySetInnerHTML={{ __html: offer.description }}
+                      />
+
+                      <div className="mt-2">
+                        <ContactUsButton
+                          onClick={openModal}
+                          text="Booking Enquiry"
+                          width="w-[160px] md:w-[180px]"
+                          bgColor="#FF6A00"
+                          shadowColor="#E55F00"
+                          rounded="rounded-[6px]"
+                          textSize="text-[14px] md:text-[15px] font-bold"
+                          height="h-[44px] md:h-[48px]"
                         />
-                        {/* Gradient overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        {/* Shimmer effect on hover */}
-                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out">
-                          <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                        </div>
-                      </div>
-                      <div className="w-full flex flex-col justify-between group offer-card-content">
-                        <div className="space-y-[31px]">
-                          <h3 className="text-[#16130E] text-[26px] font-semibold leading-[1.25] font-quicksand transform transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00]">
-                            {offer.title}
-                          </h3>
-                          <div className="text-[#2C271E] text-[16px] font-medium leading-[1.6875] tracking-[0.01em] font-quicksand space-y-3">
-                            <p className="transform transition-all duration-300 offer-desc-item group-hover:translate-x-1 whitespace-pre-wrap">
-                              {offer.description}
-                            </p>
-                            {/* Discount Badge */}
-                            <div className="pt-2 flex gap-4">
-                              <span className="inline-flex items-center px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-sm font-bold">
-                                {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `$${offer.discountValue} OFF`}
-                              </span>
-                              {offer.couponMode !== 'none' && (
-                                <button
-                                  onClick={() => {
-                                    // Simple copy logic
-                                    let codeToCopy = offer.couponCode;
-                                    if (offer.couponMode === 'unique_per_user') {
-                                      // Retrieve or generate
-                                      if (typeof window !== 'undefined') {
-                                        const key = `offer_code_${offer.id}`;
-                                        let stored = localStorage.getItem(key);
-                                        if (!stored) {
-                                          const prefix = offer.title.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'OFF');
-                                          const random = Math.floor(Math.random() * 9000 + 1000);
-                                          stored = `${prefix}${random}`;
-                                          localStorage.setItem(key, stored);
-                                        }
-                                        codeToCopy = stored;
-                                      }
-                                    }
-                                    if (codeToCopy) {
-                                      navigator.clipboard.writeText(codeToCopy);
-                                      alert(`Coupon code copied: ${codeToCopy}`);
-                                    }
-                                  }}
-                                  className="inline-flex items-center text-orange-600 font-semibold hover:text-orange-700"
-                                >
-                                  <span className="mr-2 border border-orange-200 bg-orange-50 px-2 py-0.5 rounded text-sm font-mono">
-                                    {offer.couponMode === 'static' ? offer.couponCode : 'GET CODE'}
-                                  </span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
-                                  </svg>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-6 offer-card-button">
-                          <ContactUsButton
-                            onClick={openModal}
-                            text="Booking Enquiry"
-                            width="w-[170px]"
-                            bgColor="#FF6A00"
-                            shadowColor="#FF6A00"
-                            rounded="rounded-[5px]"
-                            textSize="text-[15px]"
-                            height="h-[41px]"
-                          />
-                        </div>
                       </div>
                     </div>
-                  )
-                })
-              )}
+                  </div>
+                )
+              })
+              }
             </div>
           </div>
         </section>

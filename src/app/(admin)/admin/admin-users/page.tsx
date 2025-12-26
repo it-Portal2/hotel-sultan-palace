@@ -74,9 +74,29 @@ export default function AdminUsersPage() {
 
   const PORTAL_SCHEMA = [
     {
-      key: 'front_office',
+      key: 'front_office', // Operations Portal
       label: 'EHMS / Hotel Operations',
-      sections: ['dashboard', 'reservations', 'front_office', 'rooms', 'night_audit', 'guest_services', 'housekeeping', 'inventory', 'reports']
+      sections: [
+        'dashboard',
+        'reservations',
+        'front_office', // Check-in/Checkout
+        'rooms',
+        'night_audit',
+        'guest_services',
+        'housekeeping',
+        'inventory',
+        'analytics', // Reports -> Analytics
+        'arrival_list',
+        'cancelled',
+        'no_show',
+        'unsettled_folios',
+        'transactions',
+        'travel_agents',
+        'companies',
+        'sales_persons',
+        'incidental_invoice',
+        'net_locks'
+      ]
     },
     {
       key: 'kitchen',
@@ -84,22 +104,77 @@ export default function AdminUsersPage() {
       sections: ['kitchen_dashboard', 'menu_management', 'analytics']
     },
     {
-      key: 'inventory',
-      label: 'Inventory Management',
+      key: 'inventory', // Note: In AdminLayout, Inventory is a group under Operations -> 'inventory' section. 
+      // But there is also a 'Inventory' portal concept in some contexts? 
+      // AdminLayout uses `currentPortal` logic. 
+      // Operations portal has an 'Inventory' group. 
+      // Is there a separate Inventory Portal? 
+      // AdminLayout `getPortalFromPath` says: default is 'operations'. 
+      // So 'inventory' is just a section under operations.
+      // But schema might treating it as separate? 
+      // Let's stick to what AdminLayout essentially defines.
+      // Wait, AdminLayout defines 'inventory' group under 'operations'.
+      // The previous SCHEMA had 'inventory' as a separate key. 
+      // Let's check `hasPortalAccess`. 
+      // AdminRoleContext: `adminUser.permissions[portalKey]`.
+      // If I add separate 'inventory' key to permissions but AdminLayout looks for `hasPortalAccess('operations')` and `hasSectionAccess('operations', 'inventory')`...
+      // CHECK AdminLayout `filteredNavigationGroups`:
+      // `const actualPortalKey = portal === 'operations' ? 'front_office' : portal;`
+      // So 'operations' portal uses 'front_office' permission key.
+      // So 'inventory' section MUST be under 'front_office' perms if we want it controlled there.
+      // BUT, the `hasSectionAccess` function:
+      // `const portal = adminUser.permissions[portalKey];`
+      // So if portalKey is 'front_office', it checks `adminUser.permissions.front_office.sections['inventory']`.
+      // Previous SCHEMA had a separate 'inventory' portal key.
+      // If `defaultPermissions` has a separate 'inventory' key, then maybe `AdminLayout` logic is referencing that?
+      // AdminLayout: `hasSectionAccess(actualPortalKey, item.section)`.
+      // `actualPortalKey` IS 'front_office' for all operations sections.
+      // So `inventory` MUST be a section of `front_office` permission object.
+      // OR I need to change `AdminLayout` to use 'inventory' portal key for the inventory group.
+      // AdminLayout currently: Group: Inventory -> Section: 'inventory'.
+      // So it checks `hasSectionAccess('front_office', 'inventory')`.
+      // So my SCHEMA update above putting 'inventory' in `front_office` sections list is CORRECT.
+      // The separate 'inventory' key in CURRENT SCHEMA was likely wrong or legacy unused.
+      // I will remove the separate 'inventory' key from SCHEMA and rely on the one in 'front_office'.
+
+      // WAIT. `defaultPermissions` in `adminUsers.ts` has `inventory` as a TOP LEVEL key.
+      // `inventory: { enabled: true, sections: { all: { access: 'read_write' } } },`
+      // And `front_office` top level key.
+      // If Permission DB has 'inventory' key, but AdminLayout checks 'front_office' key... mismatch.
+      // Let's Fix this.
+      // AdminLayout: `const actualPortalKey = portal === 'operations' ? 'front_office' : portal;`
+      // If I want to support the separate 'inventory' permission key, I would need to change AdminLayout logic.
+      // But user wants sub-sections.
+      // Simpler to unify everything under 'front_office' (Operations) as per the UI structure.
+      // I will stick to putting everything under `front_office` in the schema.
+      // I will keep the other keys if they map to actual portals.
+
+      // Key: 'accounts' (Finance Portal).
+      // Key: 'settings' (Website Portal).
+      // Key: 'users' (Staff Portal).
+
+      label: 'Inventory Control (Legacy)', // Keeping just in case, or removing?
+      // If I remove it, previous permissions using it won't show up in UI.
+      // I'll comment it out or leave it minimal.
       sections: ['inventory_dashboard', 'suppliers', 'purchase_orders', 'stock']
+      // Actually, looking at AdminLayout again, there is NO 'Inventory' Portal.
+      // It's a group under Operations.
+      // So the previous internal schema was definitely misaligned with AdminLayout or defining a future/past portal.
+      // I will remove it from the PRIMARY list to avoid confusion, or merge it.
+      // Access to "Inventory" group under Ops is logically `front_office -> sections -> inventory`.
     },
     {
-      key: 'accounts',
+      key: 'accounts', // Finance Portal
       label: 'Accounts & Finance',
-      sections: ['finance_dashboard', 'transactions']
+      sections: ['finance_dashboard', 'transactions', 'finance_ops']
     },
     {
-      key: 'settings',
+      key: 'settings', // Website Portal
       label: 'Website Management',
       sections: ['content', 'marketing', 'inquiries']
     },
     {
-      key: 'users',
+      key: 'users', // Staff Portal
       label: 'Staff Management',
       sections: ['directory', 'admin_users']
     },
@@ -376,210 +451,233 @@ export default function AdminUsersPage() {
       {/* Modal for Add/Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 my-8">
-            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all scale-100 my-8 flex flex-col max-h-[90vh]">
+            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{editingUser ? 'Edit User' : 'Create System User'}</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {editingUser ? 'Update user role and permissions.' : 'Create a new user with secure credentials.'}
+                <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{editingUser ? 'Edit Administrator' : 'New Administrator'}</h3>
+                <p className="text-sm text-gray-500 mt-1 font-medium">
+                  {editingUser ? 'Update role, credentials, and access permissions.' : 'Configure a new system user with secure access control.'}
                 </p>
               </div>
-              <button onClick={closeModal} className="p-2 bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
+              <button onClick={closeModal} className="p-2 bg-white rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shadow-sm ring-1 ring-gray-200">
                 <span className="sr-only">Close</span>
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-8 space-y-6" autoComplete="off">
-              {/* Dummy fields to trick browser auto-fill */}
-              <input type="text" name="fakeusernameremembered" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
-              <input type="password" name="fakepasswordremembered" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+            <div className="overflow-y-auto flex-1 p-8">
+              <form id="userForm" onSubmit={handleSave} className="space-y-8" autoComplete="off">
+                {/* Dummy fields to trick browser auto-fill */}
+                <input type="text" name="fakeusernameremembered" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+                <input type="password" name="fakepasswordremembered" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
 
-              {/* Identity Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all"
-                    placeholder="e.g. John Doe"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Employee ID</label>
-                  <input
-                    type="text"
-                    name="employeeId"
-                    required
-                    value={formData.employeeId}
-                    onChange={handleInputChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all font-mono"
-                    placeholder="e.g. EMP-001"
-                  />
-                </div>
-              </div>
-
-              {/* Credentials Section */}
-              <div className="space-y-4 pt-2">
-                <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-2">Credentials</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1 col-span-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address (Login ID)</label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      disabled={!!editingUser}
-                      autoComplete="off"
-                      className={`w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:ring-2 focus:ring-[#FF6A00] outline-none transition-all ${editingUser ? 'bg-gray-100 text-gray-500' : 'bg-gray-50/50 focus:bg-white'}`}
-                      placeholder="john@hotel.com"
-                    />
-                  </div>
-
-                  {!editingUser && (
-                    <div className="space-y-1 col-span-2 relative">
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          name="password"
-                          required
-                          minLength={6}
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          onFocus={(e) => e.target.removeAttribute('readonly')}
-                          readOnly
-                          autoComplete="new-password"
-                          className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all pr-12"
-                          placeholder="Min. 6 characters"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                        >
-                          {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                        </button>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Left Column: Identity & Credentials */}
+                  <div className="lg:col-span-1 space-y-6">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">User Identity</h4>
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold text-gray-500">Full Name</label>
+                          <input
+                            type="text"
+                            name="name"
+                            required
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-gray-900 text-sm focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all"
+                            placeholder="e.g. John Doe"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold text-gray-500">Employee ID</label>
+                          <input
+                            type="text"
+                            name="employeeId"
+                            required
+                            value={formData.employeeId}
+                            onChange={handleInputChange}
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-gray-900 text-sm focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all font-mono"
+                            placeholder="e.g. EMP-001"
+                          />
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">This password will be used for initial login. User can change it later.</p>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Role Section */}
-              <div className="space-y-4 pt-2">
-                <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-2">Access Control</h4>
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Assign Role</label>
-                  <div className="relative">
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleInputChange}
-                      className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all"
-                    >
-                      <option value="receptionist">Front Desk (Receptionist)</option>
-                      <option value="manager">Manager</option>
-                      <option value="chef">Kitchen Staff (Chef)</option>
-                      <option value="housekeeper">Housekeeping</option>
-                      <option value="accountant">Accountant</option>
-                      <option value="auditor">Auditor (Read Only)</option>
-                      <option value="super_admin">System Administrator (Full Access)</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Start with a role template, then customize below for granular access.
-                  </p>
-                </div>
+                    <div className="pt-2">
+                      <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Login Credentials</h4>
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold text-gray-500">Email Address</label>
+                          <input
+                            type="email"
+                            name="email"
+                            required
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            disabled={!!editingUser}
+                            autoComplete="off"
+                            className={`w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 text-sm focus:ring-2 focus:ring-[#FF6A00] outline-none transition-all ${editingUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50/50 focus:bg-white'}`}
+                            placeholder="john@hotel.com"
+                          />
+                        </div>
 
-                {/* Advanced Permissions Matrix */}
-                <div className="mt-6 border rounded-xl overflow-hidden border-gray-200">
-                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                    <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Advanced Permissions</h5>
-                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">Granular Control</span>
-                  </div>
-                  <div className="divide-y divide-gray-100 bg-white max-h-60 overflow-y-auto">
-                    {PORTAL_SCHEMA.map((portal) => {
-                      const isEnabled = permissions[portal.key]?.enabled || false;
-                      const isExpanded = expandedPortals.includes(portal.key);
-
-                      return (
-                        <div key={portal.key} className="group">
-                          <div className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${isEnabled ? 'bg-orange-50/30' : ''}`}>
-                            <div className="flex items-center gap-3">
+                        {!editingUser && (
+                          <div className="space-y-1.5 relative">
+                            <label className="block text-xs font-semibold text-gray-500">Password</label>
+                            <div className="relative">
                               <input
-                                type="checkbox"
-                                checked={isEnabled}
-                                onChange={(e) => handlePermissionToggle(portal.key, undefined, e.target.checked)}
-                                className="h-4 w-4 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded"
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                required
+                                minLength={6}
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                onFocus={(e) => e.target.removeAttribute('readonly')}
+                                readOnly
+                                autoComplete="new-password"
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-2.5 text-gray-900 text-sm focus:bg-white focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent outline-none transition-all pr-10"
+                                placeholder="Min. 6 characters"
                               />
-                              <span className={`text-sm font-medium ${isEnabled ? 'text-gray-900' : 'text-gray-500'}`}>{portal.label}</span>
-                            </div>
-                            {isEnabled && portal.sections[0] !== 'all' && (
                               <button
                                 type="button"
-                                onClick={() => togglePortalExpand(portal.key)}
-                                className="text-gray-400 hover:text-gray-600 p-1"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                               >
-                                {isExpanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                                {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                               </button>
-                            )}
-                          </div>
-
-                          {/* Sections Drill-down */}
-                          {isExpanded && isEnabled && portal.sections[0] !== 'all' && (
-                            <div className="bg-gray-50 px-10 py-3 grid grid-cols-2 gap-2 border-t border-gray-100 animate-in slide-in-from-top-1 duration-200">
-                              {portal.sections.map(section => {
-                                const hasSection = !!permissions[portal.key]?.sections?.[section];
-                                return (
-                                  <label key={section} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={hasSection}
-                                      onChange={(e) => handlePermissionToggle(portal.key, section, e.target.checked)}
-                                      className="h-3.5 w-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <span className="text-xs text-gray-600 capitalize">{section.replace('_', ' ')}</span>
-                                  </label>
-                                );
-                              })}
                             </div>
-                          )}
+                            <p className="text-[10px] text-gray-400">Temporary password for first login.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Roles & Permissions */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Role & Access Control</h4>
+
+                      <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 mb-6">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-blue-800 uppercase tracking-wide">Primary Role Template</label>
+                          <div className="relative">
+                            <select
+                              name="role"
+                              value={formData.role}
+                              onChange={handleInputChange}
+                              className="w-full appearance-none rounded-lg border border-blue-200 bg-white px-4 py-3 text-gray-900 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-sm"
+                            >
+                              <option value="receptionist">Front Desk (Receptionist)</option>
+                              <option value="manager">Manager</option>
+                              <option value="chef">Kitchen Staff (Chef)</option>
+                              <option value="housekeeper">Housekeeping</option>
+                              <option value="accountant">Accountant</option>
+                              <option value="auditor">Auditor (Read Only)</option>
+                              <option value="super_admin">System Administrator (Full Access)</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                              <ChevronDownIcon className="h-4 w-4 text-blue-500" />
+                            </div>
+                          </div>
+                          <p className="text-xs text-blue-600/80 mt-1">
+                            Selecting a role applies a default permission set. You can customize it further below.
+                          </p>
                         </div>
-                      );
-                    })}
+                      </div>
+
+                      {/* Advanced Permissions Matrix */}
+                      <div className="border rounded-xl overflow-hidden border-gray-200 bg-white shadow-sm">
+                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <KeyIcon className="h-4 w-4 text-gray-400" />
+                            <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Granular Permissions</h5>
+                          </div>
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-medium tracking-wide">CUSTOMIZABLE</span>
+                        </div>
+                        <div className="divide-y divide-gray-100 bg-white max-h-[400px] overflow-y-auto">
+                          {PORTAL_SCHEMA.map((portal) => {
+                            const isEnabled = permissions[portal.key]?.enabled || false;
+                            const isExpanded = expandedPortals.includes(portal.key);
+
+                            return (
+                              <div key={portal.key} className="group transition-all duration-200">
+                                <div className={`flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 cursor-pointer ${isEnabled ? 'bg-orange-50/20' : ''}`} onClick={() => togglePortalExpand(portal.key)}>
+                                  <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                                    <div className="relative flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={isEnabled}
+                                        onChange={(e) => handlePermissionToggle(portal.key, undefined, e.target.checked)}
+                                        className="peer h-5 w-5 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded cursor-pointer transition-all"
+                                      />
+                                    </div>
+                                    <span className={`text-sm font-semibold transition-colors ${isEnabled ? 'text-gray-900' : 'text-gray-500'}`}>{portal.label}</span>
+                                  </div>
+
+                                  {isEnabled && portal.sections[0] !== 'all' && (
+                                    <button
+                                      type="button"
+                                      className={`text-gray-400 hover:text-[#FF6A00] p-1 rounded-full hover:bg-orange-50 transition-all ${isExpanded ? 'bg-orange-50 text-[#FF6A00]' : ''}`}
+                                    >
+                                      {isExpanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Sections Drill-down */}
+                                {isExpanded && isEnabled && portal.sections[0] !== 'all' && (
+                                  <div className="bg-gray-50/50 px-12 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-gray-100 shadow-inner">
+                                    {portal.sections.map(section => {
+                                      const hasSection = !!permissions[portal.key]?.sections?.[section];
+                                      return (
+                                        <label key={section} className="flex items-center gap-2.5 cursor-pointer group/item select-none p-1.5 rounded-lg hover:bg-white/50 transition-colors">
+                                          <div className="relative flex items-center">
+                                            <input
+                                              type="checkbox"
+                                              checked={hasSection}
+                                              onChange={(e) => handlePermissionToggle(portal.key, section, e.target.checked)}
+                                              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                                            />
+                                          </div>
+                                          <span className={`text-xs capitalize transition-colors ${hasSection ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
+                                            {section.replace(/_/g, ' ')}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-6 py-3 rounded-xl text-gray-700 font-medium hover:bg-gray-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-3 rounded-xl bg-[#FF6A00] text-white font-medium hover:bg-[#FF6A00]/90 transition-colors shadow-lg shadow-orange-500/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
-                >
-                  {isSubmitting && <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />}
-                  {editingUser ? 'Save Changes' : 'Create User'}
-                </button>
-              </div>
-            </form>
+            <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-6 py-2.5 rounded-xl text-gray-700 font-semibold hover:bg-gray-200/50 hover:text-gray-900 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="userForm"
+                disabled={isSubmitting}
+                className="px-8 py-2.5 rounded-xl bg-[#FF6A00] text-white font-semibold hover:bg-[#FF6A00]/90 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center text-sm transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                {isSubmitting && <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />}
+                {editingUser ? 'Save Updates' : 'Create Administrator'}
+              </button>
+            </div>
           </div>
         </div>
       )}

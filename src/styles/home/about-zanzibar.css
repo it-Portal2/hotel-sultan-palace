@@ -1,12 +1,6 @@
-.about-zanzibar-section {
-  opacity: 0;
-  transition: opacity 1s ease-out;
-}
+/* Container animation removed to prevent white gap/flash */
 
-.about-zanzibar-section.about-zanzibar-visible,
-.about-zanzibar-visible .about-zanzibar-section {
-  opacity: 1;
-}
+/* No opacity change needed */
 
 .about-zanzibar-bg {
   opacity: 0;
@@ -51,4 +45,3 @@
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-

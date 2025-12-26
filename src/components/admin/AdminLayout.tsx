@@ -85,12 +85,16 @@ interface NavigationItem {
 }
 
 // Helper to determine portal from path
+// Helper to determine portal from path
 const getPortalFromPath = (path: string): PortalType => {
-  if (path === '/admin') return 'selection';
-  if (path.startsWith('/admin/kitchen') || path.startsWith('/admin/food-orders') || path.startsWith('/admin/menu') || path.startsWith('/admin/fb-dashboard')) return 'kitchen';
-  if (path.startsWith('/admin/gallery') || path.startsWith('/admin/story-pictures') || path.startsWith('/admin/testimonials') || path.startsWith('/admin/offers') || path.startsWith('/admin/excursions') || path.startsWith('/admin/contacts') || path.startsWith('/admin/reputation-management') || path.startsWith('/admin/booking-enquiries')) return 'website';
-  if (path.startsWith('/admin/accounts')) return 'finance';
-  if (path.startsWith('/admin/staff') || path.startsWith('/admin/admin-users')) return 'staff';
+  // Normalize path by removing trailing slash if present (except for root '/')
+  const normalizedPath = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+
+  if (normalizedPath === '/admin') return 'selection';
+  if (normalizedPath.startsWith('/admin/kitchen') || normalizedPath.startsWith('/admin/food-orders') || normalizedPath.startsWith('/admin/menu') || normalizedPath.startsWith('/admin/fb-dashboard')) return 'kitchen';
+  if (normalizedPath.startsWith('/admin/gallery') || normalizedPath.startsWith('/admin/story-pictures') || normalizedPath.startsWith('/admin/testimonials') || normalizedPath.startsWith('/admin/offers') || normalizedPath.startsWith('/admin/excursions') || normalizedPath.startsWith('/admin/contacts') || normalizedPath.startsWith('/admin/reputation-management') || normalizedPath.startsWith('/admin/booking-enquiries')) return 'website';
+  if (normalizedPath.startsWith('/admin/accounts')) return 'finance';
+  if (normalizedPath.startsWith('/admin/staff') || normalizedPath.startsWith('/admin/admin-users')) return 'staff';
   return 'operations'; // Default to operations for dashboard, bookings, rooms, etc.
 };
 
@@ -629,6 +633,21 @@ function AdminLayoutContent({
     );
   };
 
+  // Check if current route is restricted
+  const isRestricted = useMemo(() => {
+    // If we are on the selection page, never restrict (it handles its own logic/visibility)
+    if (currentPortal === 'selection') return false;
+
+    // Find the active navigation item corresponding to this page
+    for (const group of navigationGroups) {
+      const item = group.items.find(i => isItemActive(i.href));
+      if (item && item.locked) {
+        return true;
+      }
+    }
+    return false;
+  }, [navigationGroups, pathname, currentPortal]);
+
   // Close sidebar when navigation item is clicked
   const handleNavClick = () => {
     setSidebarOpen(false);
@@ -732,16 +751,24 @@ function AdminLayoutContent({
 
             {/* Right Side Icons and Admin Info */}
             <div className="flex items-center gap-x-3 lg:gap-x-4 ml-auto">
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              {/* Notifications - Links to Dashboard/Activity */}
+              <Link
+                href="/admin/dashboard"
+                className="relative p-2 text-gray-400 hover:text-[#FF6A00] transition-colors"
+                title="View Notifications"
+              >
                 <BellIcon className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500"></span>
-              </button>
-              {/* Messages */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              </Link>
+
+              {/* Messages - Links to Contact Messages */}
+              <Link
+                href="/admin/contacts"
+                className="relative p-2 text-gray-400 hover:text-[#FF6A00] transition-colors"
+                title="View Messages"
+              >
                 <EnvelopeIcon className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-blue-500"></span>
-              </button>
+              </Link>
+
               <Link
                 href="/"
                 className="hidden sm:block text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors"
@@ -772,7 +799,11 @@ function AdminLayoutContent({
                           )}
                           <span className="text-xs text-gray-500 truncate max-w-[150px]">{userEmail}</span>
                         </div>
-                        {adminUser && (
+                        {/* Only show role badge if it differs significantly from the name, or just keep it simple. 
+                            User complained about "System Administrator" appearing twice. 
+                            If name IS "System Administrator", don't show the badge. 
+                        */}
+                        {adminUser && adminUser.name !== 'System Administrator' && (
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border rounded bg-gray-100 text-gray-700 border-gray-200`}>
                             {roleLabels[adminUser.role] || adminUser.role}
                           </span>
@@ -785,7 +816,7 @@ function AdminLayoutContent({
                           <div className="px-4 py-2 border-b border-gray-200">
                             <p className="text-sm font-semibold text-gray-900">{adminUser?.name || userEmail.split('@')[0]}</p>
                             <p className="text-xs text-gray-500 truncate">{userEmail}</p>
-                            {adminUser && (
+                            {adminUser && adminUser.name !== 'System Administrator' && (
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold border mt-2 rounded bg-gray-100 text-gray-700 border-gray-200`}>
                                 {roleLabels[adminUser.role] || adminUser.role}
                               </span>
@@ -853,9 +884,30 @@ function AdminLayoutContent({
         </div>
 
         {/* Page content */}
+        {/* Page content */}
         <main className="flex-1 overflow-auto">
           <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
-            {children}
+            {isRestricted ? (
+              <div className="flex flex-col items-center justify-center h-[60vh] text-center animate-fade-in">
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <LockClosedIcon className="h-12 w-12 text-gray-400" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Access Restricted</h2>
+                <p className="text-gray-500 mt-2 max-w-md">
+                  You do not have permission to view this section. Please contact your system administrator if you believe this is an error.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => router.back()}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </main>
       </div>

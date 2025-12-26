@@ -190,10 +190,10 @@ export default function ReportsPage() {
                     </button>
                     <button
                         className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-                        onClick={() => showToast('Exporting PDF...', 'success')}
+                        onClick={() => window.print()}
                     >
                         <ArrowDownTrayIcon className="h-4 w-4" />
-                        Export Report
+                        Print / Export
                     </button>
                 </div>
             </div>

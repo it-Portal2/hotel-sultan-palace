@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
+import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaTwitter, FaInstagram } from 'react-icons/fa';
 import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 
 export default function Footer() {
@@ -13,7 +13,7 @@ export default function Footer() {
     if (footerRef.current) {
       // Mark footer as visible immediately
       footerRef.current.classList.add('footer-visible');
-      
+
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -32,10 +32,10 @@ export default function Footer() {
 
   return (
     <footer ref={footerRef} className="w-full footer-section" style={{ position: 'relative', zIndex: 1 }}>
-      <div className="relative" style={{backgroundImage: 'url(/footer.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', minHeight: 'auto'}}>
+      <div className="relative" style={{ backgroundImage: 'url(/footer.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', minHeight: 'auto' }}>
         {/* contrast overlay for readability */}
         <div className="absolute inset-0 bg-black/60" />
-      
+
         {/* Footer content */}
         <div className="relative z-10 px-4 py-16">
           <div className="container-xl mx-auto">
@@ -47,32 +47,47 @@ export default function Footer() {
                 <div className={`text-white footer-logo ${isVisible ? 'footer-logo-visible' : ''}`}>
                   <Image src="/sultan-logo.png" alt="Sultan Palace" width={48} height={48} className="h-12 w-auto" />
                 </div>
-                
+
                 {/* Description */}
                 <p className={`text-white/90 text-sm leading-relaxed max-w-md footer-description ${isVisible ? 'footer-description-visible' : ''}`}>
                   Corem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et
                 </p>
-                
+
                 {/* Social Media Icons */}
                 <div className={`flex space-x-4 footer-social ${isVisible ? 'footer-social-visible' : ''}`}>
-                  <a 
-                    href="https://wa.me/255684888111" 
-                    target="_blank" 
+                  <a
+                    href="https://wa.me/255684888111"
+                    target="_blank"
                     rel="noopener noreferrer"
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} 
-                    style={{background:'#BE8C53', transitionDelay: '0.1s'}}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#BE8C53', transitionDelay: '0.1s' }}
                     aria-label="Chat on WhatsApp - +255 684 888 111"
                     title="WhatsApp: +255 684 888 111"
                   >
                     <FaWhatsapp className="text-[#C0B194] text-base" />
                   </a>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{background:'#BE8C53', transitionDelay: '0.2s'}}>
+                  <a
+                    href="https://www.facebook.com/sultanpalace.znz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#BE8C53', transitionDelay: '0.2s' }}
+                  >
                     <FaFacebookF className="text-[#C0B194] text-base" />
-                  </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{background:'#BE8C53', transitionDelay: '0.3s'}}>
+                  </a>
+                  <a
+                    href="https://www.instagram.com/sultanpalace.zanzibar"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#BE8C53', transitionDelay: '0.25s' }}
+                  >
+                    <FaInstagram className="text-[#C0B194] text-base" />
+                  </a>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#BE8C53', transitionDelay: '0.3s' }}>
                     <FaLinkedinIn className="text-[#C0B194] text-base" />
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{background:'#BE8C53', transitionDelay: '0.4s'}}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#BE8C53', transitionDelay: '0.4s' }}>
                     <FaTwitter className="text-[#C0B194] text-base" />
                   </div>
                 </div>
@@ -108,7 +123,7 @@ export default function Footer() {
                 <div className="space-y-4">
                   {/* Email */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.1s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
                       <MdEmail className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
@@ -116,10 +131,10 @@ export default function Footer() {
                       <a href="mailto:reservations@sultanpalacehotelznz.com" className="text-white/90 text-sm hover:text-white transition-colors">reservations@sultanpalacehotelznz.com</a>
                     </div>
                   </div>
-                  
+
                   {/* Phone */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.2s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
                       <MdPhone className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col space-y-1">
@@ -128,10 +143,10 @@ export default function Footer() {
                       <a href="tel:+255657269674" className="text-white/90 text-sm hover:text-white transition-colors">+255 657 269 674</a>
                     </div>
                   </div>
-                  
+
                   {/* Address */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.3s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#BE8C53'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
                       <MdLocationOn className="text-white text-sm" />
                     </div>
                     <div className="flex flex-col">

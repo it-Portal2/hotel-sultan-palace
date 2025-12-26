@@ -1,14 +1,4 @@
-.contact-us-section {
-  opacity: 0;
-  transform: translateY(50px);
-  transition: all 1s ease-out;
-}
-
-.contact-us-section.contact-us-visible,
-.contact-us-visible .contact-us-section {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Container animations removed to prevent white gap */
 
 .contact-us-label {
   opacity: 0;
@@ -65,16 +55,7 @@
   transform: translateX(0);
 }
 
-.contact-us-subscribe {
-  opacity: 0;
-  transform: translateY(50px);
-  transition: all 1s ease-out 0.5s;
-}
-
-.contact-us-subscribe-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Container animations removed to prevent white gap */
 
 .contact-us-subscribe-title {
   opacity: 0;
@@ -97,4 +78,3 @@
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-

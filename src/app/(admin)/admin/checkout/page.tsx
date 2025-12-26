@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import RestrictedAction from '@/components/admin/RestrictedAction';
+import { useSearchParams } from 'next/navigation';
 import {
   getAllBookings,
   getBooking,
@@ -15,6 +16,7 @@ import {
   CheckoutBill,
   HousekeepingTask
 } from '@/lib/firestoreService';
+import CheckOutModal, { CheckOutData } from '@/components/admin/front-desk/CheckOutModal';
 import {
   MagnifyingGlassIcon,
   CreditCardIcon,
@@ -25,7 +27,8 @@ import {
   PrinterIcon,
 
   ArrowRightIcon,
-  XCircleIcon
+  XCircleIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 type ViewMode = 'ready' | 'completed';
@@ -33,22 +36,17 @@ type ViewMode = 'ready' | 'completed';
 export default function AdminCheckoutPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('bookingId') || '');
   const [viewMode, setViewMode] = useState<ViewMode>('ready');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [checkoutBill, setCheckoutBill] = useState<CheckoutBill | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [checkOutForm, setCheckOutForm] = useState({
-    staffName: '',
-    depositReturned: false,
-    notes: '',
-    housekeepingPriority: 'high' as HousekeepingTask['priority'],
-    housekeepingAssignee: '',
-  });
+
 
   useEffect(() => {
     loadBookings();
@@ -81,7 +79,7 @@ export default function AdminCheckoutPage() {
         const booking = await getBooking(bookingId);
         setCheckoutBill(bill);
         setSelectedBooking(booking);
-        showToast('Checkout bill generated successfully!', 'success');
+        showToast('Bill updated! Taxes have been cleared.', 'success');
         await loadBookings();
       } else {
         showToast('Failed to generate checkout bill', 'error');
@@ -111,13 +109,8 @@ export default function AdminCheckoutPage() {
     }
   };
 
-  const handleCheckOut = async () => {
+  const handleCheckOut = async (data: CheckOutData) => {
     if (!selectedBooking || isReadOnly) return;
-
-    if (!checkOutForm.staffName) {
-      showToast('Please enter staff name', 'warning');
-      return;
-    }
 
     if (!selectedBooking.checkoutBillId) {
       showToast('Please generate checkout bill first', 'warning');
@@ -142,8 +135,6 @@ export default function AdminCheckoutPage() {
       }
     } catch (err) {
       console.error("Error checking locks:", err);
-      // Optional: block or allow? Safe to allow if check fails? Or Block? Let's log and proceed or block.
-      // Blocking is safer for "Net Lock" concept.
       showToast("Error checking system locks. Please try again.", 'error');
       setProcessing(false);
       return;
@@ -152,12 +143,12 @@ export default function AdminCheckoutPage() {
     try {
       const success = await checkOutGuest(
         selectedBooking.id,
-        checkOutForm.staffName,
-        checkOutForm.depositReturned,
-        checkOutForm.notes || undefined,
+        data.staffName,
+        data.depositReturned,
+        data.notes || undefined,
         {
-          priority: checkOutForm.housekeepingPriority,
-          assignedTo: checkOutForm.housekeepingAssignee || undefined,
+          priority: data.housekeepingPriority,
+          assignedTo: data.housekeepingAssignee || undefined,
           scheduledTime: new Date(), // Defaults to now
         }
       );
@@ -165,13 +156,6 @@ export default function AdminCheckoutPage() {
       if (success) {
         showToast('Guest checked out successfully!', 'success');
         setShowCheckOutModal(false);
-        setCheckOutForm({
-          staffName: '',
-          depositReturned: false,
-          notes: '',
-          housekeepingPriority: 'high',
-          housekeepingAssignee: '',
-        });
         setSelectedBooking(null);
         await loadBookings();
         setViewMode('completed');
@@ -211,7 +195,7 @@ export default function AdminCheckoutPage() {
       const bookingId = booking.bookingId?.toLowerCase() || ''; // Changed from booking.id to booking.bookingId
       const guestName = `${booking.guestDetails?.firstName || ''} ${booking.guestDetails?.lastName || ''}`.toLowerCase(); // Adapted to existing guestDetails structure
       const guestEmail = booking.guestDetails?.email?.toLowerCase() || ''; // Adapted to existing guestDetails structure
-      const roomName = booking.rooms?.[0]?.allocatedRoomType?.toLowerCase() || '';
+      const roomName = (booking.roomNumber || booking.rooms?.[0]?.allocatedRoomType || '').toLowerCase();
       const invoiceId = booking.checkoutBillId?.toLowerCase() || '';
 
       return (
@@ -384,7 +368,7 @@ export default function AdminCheckoutPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-700">
-                          {booking.rooms[0]?.allocatedRoomType || <span className="text-gray-400">Not allocated</span>}
+                          {booking.roomNumber || booking.rooms[0]?.allocatedRoomType || <span className="text-gray-400">Not allocated</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -429,13 +413,26 @@ export default function AdminCheckoutPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {hasBill ? (
-                            <button
-                              onClick={() => handleViewBill(booking.id)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 text-[#FF6A00] hover:text-[#FF6A00]/80 text-xs font-bold border border-[#FF6A00] hover:bg-[#FF6A00]/5 transition-colors"
-                            >
-                              <DocumentTextIcon className="h-4 w-4" />
-                              View Bill
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleViewBill(booking.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-[#FF6A00] hover:text-[#FF6A00]/80 text-xs font-bold border border-[#FF6A00] hover:bg-[#FF6A00]/5 transition-colors"
+                              >
+                                <DocumentTextIcon className="h-4 w-4" />
+                                View Bill
+                              </button>
+                              {!isReadOnly && (
+                                <button
+                                  onClick={() => handleGenerateBill(booking.id)}
+                                  disabled={generating}
+                                  title="Update bill with latest changes"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-blue-600 hover:text-white hover:bg-blue-600 text-xs font-bold border border-blue-600 transition-colors disabled:opacity-50"
+                                >
+                                  <ArrowPathIcon className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
+                                  Regen
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             isReadOnly ? (
                               <RestrictedAction message="You don't have permission to generate bills">
@@ -672,112 +669,12 @@ export default function AdminCheckoutPage() {
 
       {/* Check-out Modal */}
       {showCheckOutModal && selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-transparent" onClick={() => setShowCheckOutModal(false)}></div>
-          <div className="relative bg-white shadow-2xl w-full max-w-md border border-gray-100" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(0, 0, 0, 0.1)' }}>
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900">Check-out Guest</h3>
-              <p className="text-gray-500 text-sm mt-1">
-                {selectedBooking.guestDetails.firstName} {selectedBooking.guestDetails.lastName}
-              </p>
-            </div>
-            <div className="p-6 space-y-4">
-              {!selectedBooking.checkoutBillId && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> Please generate the checkout bill before checking out the guest.
-                  </p>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Staff Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={checkOutForm.staffName}
-                  onChange={(e) => setCheckOutForm({ ...checkOutForm, staffName: e.target.value })}
-                  className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
-                  placeholder="Enter staff name"
-                />
-              </div>
-              <div>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checkOutForm.depositReturned}
-                    onChange={(e) => setCheckOutForm({ ...checkOutForm, depositReturned: e.target.checked })}
-                    className="h-4 w-4 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded-none transform scale-125"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Deposit Returned</span>
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                <textarea
-                  rows={3}
-                  value={checkOutForm.notes}
-                  onChange={(e) => setCheckOutForm({ ...checkOutForm, notes: e.target.value })}
-                  className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none resize-none"
-                  placeholder="Optional notes..."
-                />
-              </div>
-
-              {/* Housekeeping Options */}
-              <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Housekeeping Task</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                    <select
-                      value={checkOutForm.housekeepingPriority}
-                      onChange={(e) => setCheckOutForm({ ...checkOutForm, housekeepingPriority: e.target.value as HousekeepingTask['priority'] })}
-                      className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Assign To (Optional)</label>
-                    <input
-                      type="text"
-                      value={checkOutForm.housekeepingAssignee}
-                      onChange={(e) => setCheckOutForm({ ...checkOutForm, housekeepingAssignee: e.target.value })}
-                      className="w-full px-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
-                      placeholder="Staff name"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    setShowCheckOutModal(false);
-                    setCheckOutForm({
-                      staffName: '',
-                      depositReturned: false,
-                      notes: '',
-                      housekeepingPriority: 'high',
-                      housekeepingAssignee: '',
-                    });
-                  }}
-                  className="flex-1 px-4 py-2 border-b-2 border-gray-200 text-gray-700 hover:border-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCheckOut}
-                  disabled={processing || !checkOutForm.staffName || !selectedBooking.checkoutBillId}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
-                >
-                  {processing ? 'Processing...' : 'Check Out'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CheckOutModal
+          booking={selectedBooking}
+          onClose={() => setShowCheckOutModal(false)}
+          onConfirm={handleCheckOut}
+          processing={processing}
+        />
       )}
     </div>
   );

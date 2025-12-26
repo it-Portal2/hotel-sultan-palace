@@ -16,10 +16,14 @@ import {
 import { db } from './firebase';
 
 // Interfaces
+export type SuiteType = 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite';
+
 export interface Room {
   id: string;
   name: string;
   type: string;
+  roomName?: string;
+  suiteType?: SuiteType;
   price: number;
   description: string;
   amenities: string[];
@@ -300,7 +304,7 @@ export interface GalleryImage {
   updatedAt: Date;
 }
 
-export type SuiteType = 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite';
+
 
 // ==================== EHMS Interfaces ====================
 
@@ -3314,10 +3318,9 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     // Add-ons charges
     const addOnsCharges = (booking.addOns || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
 
-    // Calculate taxes (assume 10% tax)
-    // Note: transactionCharges might already be inclusive or exclusive, assuming exclusive for now to match pattern
+    // Calculate taxes (Removed hardcoded 10% as per user request)
     const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges + transactionCharges;
-    const taxes = subtotal * 0.1;
+    const taxes = 0; // No hardcoded tax
     const totalAmount = subtotal + taxes;
 
     // Total Paid: Booking initial payment + Transaction payments
@@ -3785,6 +3788,7 @@ export const updateCheckInOutRecord = async (id: string, data: Partial<CheckInOu
   }
 };
 
+
 // Helper function to check-in a guest
 export const checkInGuest = async (
   bookingId: string,
@@ -3793,15 +3797,21 @@ export const checkInGuest = async (
   idDocumentNumber?: string,
   roomKeyNumber?: string,
   depositAmount?: number,
-  notes?: string
+  notes?: string,
+  allocatedRoomName?: string // New parameter for specific room assignment
 ): Promise<string | null> => {
   if (!db) return null;
   try {
     const booking = await getBooking(bookingId);
     if (!booking) return null;
 
-    // Get room name from allocated room
-    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
+    // Get room name from allocated room or use the provided one
+    // Fallback order: provided param -> existing allocation -> roomNumber field -> 'Unassigned'
+    const roomName = allocatedRoomName ||
+      booking.rooms[0]?.allocatedRoomType ||
+      booking.roomNumber ||
+      'Unassigned';
+
     const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
 
     // Create check-in record - only include defined values
@@ -4667,16 +4677,18 @@ export const getFolioTransactions = async (bookingId: string): Promise<FolioTran
   try {
     const q = query(
       collection(db, 'folioTransactions'),
-      where('bookingId', '==', bookingId),
-      orderBy('date', 'desc')
+      where('bookingId', '==', bookingId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const transactions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       date: doc.data().date?.toDate(),
       createdAt: doc.data().createdAt?.toDate()
     } as FolioTransaction));
+
+    // Sort by date desc in memory to avoid index requirement
+    return transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
   } catch (error) {
     console.error("Error fetching transactions", error);
     return [];

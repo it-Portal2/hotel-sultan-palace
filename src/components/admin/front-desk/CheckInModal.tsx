@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Booking } from '@/lib/firestoreService';
+import React, { useState, useEffect } from 'react';
+import { Booking, getRoomTypes, getRoomStatuses, RoomType } from '@/lib/firestoreService';
 import { XCircleIcon } from '@heroicons/react/24/outline';
 
 interface CheckInModalProps {
@@ -16,6 +16,7 @@ export interface CheckInData {
     roomKeyNumber?: string;
     depositAmount?: string;
     notes?: string;
+    allocatedRoomName: string;
 }
 
 export default function CheckInModal({ booking, onClose, onConfirm, processing }: CheckInModalProps) {
@@ -26,7 +27,54 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
         roomKeyNumber: '',
         depositAmount: '',
         notes: '',
+        allocatedRoomName: '',
     });
+
+    const [availableRooms, setAvailableRooms] = useState<RoomType[]>([]);
+    const [loadingRooms, setLoadingRooms] = useState(false);
+
+    useEffect(() => {
+        const fetchRooms = async () => {
+            setLoadingRooms(true);
+            try {
+                // Fetch all room types (specific units) and statuses
+                const [allRooms, allStatuses] = await Promise.all([
+                    getRoomTypes(),
+                    getRoomStatuses()
+                ]);
+
+                // Filter rooms by booking's suite type
+                const bookingSuite = booking.rooms[0]?.suiteType || 'Garden Suite';
+                const suiteRooms = allRooms.filter(r => r.suiteType === bookingSuite);
+
+                // Filter for available rooms
+                const available = suiteRooms.filter(room => {
+                    // Check if there is a status record for this room
+                    const status = allStatuses.find(s => s.roomName === room.roomName);
+
+                    // If no status record exists, strictly it might be available, BUT in this system 
+                    // we assume rooms usually have a status. If not, we assume available.
+                    if (!status) return true;
+
+                    // Filter out occupied or maintenance
+                    return status.status !== 'occupied' && status.status !== 'maintenance';
+                });
+
+                setAvailableRooms(available);
+
+                // Auto-select if only one available
+                if (available.length === 1) {
+                    setFormData(prev => ({ ...prev, allocatedRoomName: available[0].roomName }));
+                }
+            } catch (error) {
+                console.error("Error fetching rooms", error);
+            } finally {
+                setLoadingRooms(false);
+            }
+        };
+
+        fetchRooms();
+    }, [booking]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,13 +104,36 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
                             <p className="font-bold text-gray-900 text-lg">{booking.guestDetails.firstName} {booking.guestDetails.lastName}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Room</p>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Suite Type</p>
                             <p className="font-bold text-gray-900 text-lg">{booking.rooms[0].suiteType}</p>
                         </div>
                     </div>
 
                     <form id="checkInForm" onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-4">
+                            {/* Room Assignment */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Assign Room *</label>
+                                {loadingRooms ? (
+                                    <div className="text-sm text-gray-500 animate-pulse">Loading available rooms...</div>
+                                ) : (
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all"
+                                        value={formData.allocatedRoomName}
+                                        onChange={(e) => setFormData({ ...formData, allocatedRoomName: e.target.value })}
+                                    >
+                                        <option value="">-- Select a Room --</option>
+                                        {availableRooms.map(room => (
+                                            <option key={room.id} value={room.roomName}>{room.roomName}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {availableRooms.length === 0 && !loadingRooms && (
+                                    <p className="text-xs text-red-500 mt-1">No rooms available for this suite type!</p>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Processed By (Staff Name) *</label>
                                 <input
@@ -148,7 +219,7 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
                     <button
                         type="submit"
                         form="checkInForm"
-                        disabled={processing || !formData.staffName}
+                        disabled={processing || !formData.staffName || !formData.allocatedRoomName}
                         className="flex-1 py-3 bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:shadow-none"
                     >
                         {processing ? 'Processing...' : 'Confirm Check-in'}

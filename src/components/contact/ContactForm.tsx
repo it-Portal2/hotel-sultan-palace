@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { createContactForm } from '@/lib/firestoreService';
+import { sendContactEmailAction } from '@/app/actions/emailActions';
 
 interface ContactFormProps {
     onSuccess?: () => void;
@@ -51,6 +52,20 @@ export default function ContactForm({ onSuccess, className = "" }: ContactFormPr
             });
 
             if (result) {
+                // Send email notification (fire and forget or await without blocking success UI too much)
+                try {
+                    await sendContactEmailAction({
+                        name: formData.name,
+                        email: formData.email,
+                        phone: formData.phone,
+                        message: formData.message,
+                        subject: 'Website Inquiry'
+                    });
+                } catch (emailError) {
+                    console.error('Failed to send contact email:', emailError);
+                    // Don't fail the form submission if only email fails, as Firestore data is safe
+                }
+
                 setSubmitStatus('success');
                 // Reset form after successful submission
                 setFormData({

@@ -34,6 +34,7 @@ export default function NightAuditPage() {
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'status' | 'history' | 'trail'>('status');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -74,14 +75,16 @@ export default function NightAuditPage() {
         }
     };
 
-    const handleRunAudit = async () => {
+    const handleRunAudit = () => {
         if (blockers.length > 0) {
             showToast('Cannot run audit. Resolve blockers first.', 'error');
             return;
         }
+        setShowConfirmModal(true);
+    };
 
-        if (!confirm('Are you sure you want to run the Night Audit? This will roll the business date.')) return;
-
+    const executeAudit = async () => {
+        setShowConfirmModal(false);
         setStatus('running');
         try {
             // Mock staff info or get from auth context if available
@@ -280,6 +283,40 @@ export default function NightAuditPage() {
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)}></div>
+                    <div className="relative bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-100">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                                <ExclamationTriangleIcon className="h-6 w-6 text-orange-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Run Night Audit?</h3>
+                            <p className="text-gray-500 text-sm mb-6">
+                                This action will close the current business date ({currentDate}) and roll over to the next day.
+                                <br /><br />
+                                <span className="font-semibold text-gray-700">This action cannot be undone.</span>
+                            </p>
+
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    onClick={() => setShowConfirmModal(false)}
+                                    className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={executeAudit}
+                                    className="flex-1 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                                >
+                                    Confirm Audit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -6,6 +6,7 @@ import {
   FaFacebookF,
   FaLinkedinIn,
   FaTwitter,
+  FaInstagram,
 } from "react-icons/fa";
 import {
   Clock,
@@ -107,7 +108,8 @@ export default function Header() {
 
   const socialLinks = [
     { name: "Whatsapp", icon: FaWhatsapp, href: "https://wa.me/255777085630", title: "WhatsApp: +255 777 085 630" },
-    { name: "Facebook", icon: FaFacebookF, href: "#" },
+    { name: "Facebook", icon: FaFacebookF, href: "https://www.facebook.com/sultanpalace.znz" },
+    { name: "Instagram", icon: FaInstagram, href: "https://www.instagram.com/sultanpalace.zanzibar" },
     { name: "LinkedIn", icon: FaLinkedinIn, href: "#" },
     { name: "Twitter", icon: FaTwitter, href: "#" },
   ];
@@ -289,9 +291,9 @@ export default function Header() {
                         <ChevronDown
                           size={14}
                           className={`transition-transform duration-300 ${(item.label === "Activities" && isActivitiesMenuOpen) ||
-                              (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
-                              (item.label === "About Us" && isAboutUsMenuOpen)
-                              ? 'rotate-180' : 'rotate-0'
+                            (item.label === "Wellness & Relaxation" && isWellnessMenuOpen) ||
+                            (item.label === "About Us" && isAboutUsMenuOpen)
+                            ? 'rotate-180' : 'rotate-0'
                             }`}
                         />
                       )}

@@ -58,7 +58,8 @@ export default function FrontDeskPage() {
         data.idDocumentNumber || undefined,
         data.roomKeyNumber || undefined,
         data.depositAmount ? parseFloat(data.depositAmount) : undefined,
-        data.notes || undefined
+        data.notes || undefined,
+        data.allocatedRoomName
       );
 
       if (recordId) {
@@ -77,35 +78,11 @@ export default function FrontDeskPage() {
   };
 
   const handleCheckOut = async (data: CheckOutData) => {
-    if (!selectedBooking || isReadOnly) return;
-    setProcessing(true);
-    try {
-      const success = await checkOutGuest(
-        selectedBooking.id,
-        data.staffName,
-        data.depositReturned,
-        data.notes || undefined,
-        {
-          priority: data.housekeepingPriority,
-          assignedTo: data.housekeepingAssignee || undefined,
-          scheduledTime: new Date(),
-        }
-      );
-
-      if (success) {
-        showToast('Guest checked out successfully!', 'success');
-        setShowCheckOutModal(false);
-        await loadBookings();
-        router.push('/admin/checkout');
-      } else {
-        showToast('Failed to check out guest', 'error');
-      }
-    } catch (error) {
-      console.error('Error checking out guest:', error);
-      showToast('Failed to check out guest', 'error');
-    } finally {
-      setProcessing(false);
-    }
+    // Standardize Checkout Flow: Redirect to Billing/Checkout Page
+    if (!selectedBooking) return;
+    const bookingId = selectedBooking.bookingId || selectedBooking.id;
+    router.push(`/admin/checkout?bookingId=${bookingId}`);
+    setShowCheckOutModal(false);
   };
 
   const filteredBookings = useMemo(() => {
