@@ -51,6 +51,7 @@ interface CartContextProps {
   updateAddOnQuantity: (addOnId: string, quantity: number) => void;
 
   calculateTotal: () => number;
+  calculateTaxes: () => number;
   getNumberOfNights: () => number;
 
   bookingData: BookingData | null;
@@ -230,11 +231,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Calculate taxes
+  const calculateTaxes = () => {
+    const nights = getNumberOfNights();
+    return rooms.reduce((total, room) => total + ((room.taxes || 0) * nights), 0);
+  };
+
   // Calculate total price (rooms + addOns - discount)
   const calculateTotal = () => {
     const baseTotal = calculateBaseTotal();
     const discount = getDiscountAmount();
-    return Math.max(0, baseTotal - discount);
+    const taxes = calculateTaxes();
+    // Taxes are typically added ON TOP of the base price + add-ons, 
+    // but the request implies "taxes and charge" might be separate. 
+    // The previous cart had taxes as $0.00. 
+    // We should ADD taxes to the final total.
+    return Math.max(0, baseTotal - discount) + taxes;
   };
 
   // Apply coupon code
@@ -357,6 +369,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeAddOn,
         updateAddOnQuantity,
         calculateTotal,
+        calculateTaxes,
         getNumberOfNights,
         bookingData,
         setBookingData,

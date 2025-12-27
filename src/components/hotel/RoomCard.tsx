@@ -309,7 +309,10 @@ export default function RoomCard({
             )}
           </div>
 
-          <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[10px] mt-[10px]">+ $50 taxes and charge</span>
+
+          <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[10px] mt-[10px]">
+            + ${(room.taxes || 0) * nights} taxes and charge
+          </span>
 
           <div className="space-y-[6px] md:space-y-[9px] mt-[12px] md:mt-[18px]">
             <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">

@@ -34,7 +34,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     beds: '',
     image: '',
     maxGuests: 1,
-    cancellationFreeDays: 2
+    cancellationFreeDays: 2,
+    taxes: 0
   });
 
   useEffect(() => {
@@ -55,7 +56,8 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
               beds: room.beds,
               image: room.image,
               maxGuests: room.maxGuests,
-              cancellationFreeDays: (room as { cancellationFreeDays?: number }).cancellationFreeDays ?? 2
+              cancellationFreeDays: (room as { cancellationFreeDays?: number }).cancellationFreeDays ?? 2,
+              taxes: (room as { taxes?: number }).taxes ?? 0
             });
           }
         } catch (error) {
@@ -136,6 +138,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         beds: string;
         maxGuests: number;
         cancellationFreeDays: number;
+        taxes: number;
         image: string;
       } = {
         name: formData.name.trim(),
@@ -148,6 +151,7 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
         beds: formData.beds?.trim() || '',
         maxGuests: Number(formData.maxGuests),
         cancellationFreeDays: Number((formData as { cancellationFreeDays?: number }).cancellationFreeDays ?? 0),
+        taxes: Number((formData as { taxes?: number }).taxes ?? 0),
         image: formData.image?.trim() || '',
       };
 
@@ -321,6 +325,21 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     name="cancellationFreeDays"
                     id="cancellationFreeDays"
                     value={(formData as { cancellationFreeDays?: number }).cancellationFreeDays || ''}
+                    onChange={handleInputChange}
+                    min={0}
+                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                  />
+                </div>
+
+                <div className="col-span-6 sm:col-span-3">
+                  <label htmlFor="taxes" className="block text-sm font-medium text-gray-700">
+                    Taxes & Fees (per night)
+                  </label>
+                  <input
+                    type="number"
+                    name="taxes"
+                    id="taxes"
+                    value={(formData as { taxes?: number }).taxes || ''}
                     onChange={handleInputChange}
                     min={0}
                     className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"

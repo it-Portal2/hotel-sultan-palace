@@ -24,6 +24,7 @@ export default function CartSummary({
     rooms,
     addOns,
     calculateTotal,
+    calculateTaxes,
     bookingData,
     removeRoom,
     removeAddOn,
@@ -194,7 +195,7 @@ export default function CartSummary({
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
-                    <div className="text-[#1D2A3A] text-[16px] font-semibold">$0.00</div>
+                    <div className="text-[#1D2A3A] text-[16px] font-semibold">${((room.taxes || 0) * nights * quantity).toFixed(2)}</div>
                   </div>
                 </div>
 
@@ -359,6 +360,16 @@ export default function CartSummary({
                 <span>-${getDiscountAmount().toFixed(2)}</span>
               </div>
             )}
+            {appliedCoupon && (
+              <div className="flex items-center justify-between text-[16px] text-green-600">
+                <span>Discount ({appliedCoupon.code})</span>
+                <span>-${getDiscountAmount().toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-[16px] text-[#655D4E]">
+              <span>Taxes and Fees (Total)</span>
+              <span>${calculateTaxes().toFixed(2)}</span>
+            </div>
           </div>
 
           <div className="w-full border-t border-dashed border-[#AFAFAF] my-4" />
@@ -434,7 +445,7 @@ export default function CartSummary({
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
-                <div className="text-[#1D2A3A] text-[16px] font-semibold">$0.00</div>
+                <div className="text-[#1D2A3A] text-[16px] font-semibold">${((room.taxes || 0) * nights * quantity).toFixed(2)}</div>
               </div>
             </div>
 
@@ -581,6 +592,10 @@ export default function CartSummary({
               <span>-${getDiscountAmount().toFixed(2)}</span>
             </div>
           )}
+          <div className="flex items-center justify-between text-[16px] text-[#655D4E]">
+            <span>Taxes and Fees (Total)</span>
+            <span>${calculateTaxes().toFixed(2)}</span>
+          </div>
         </div>
 
         <div className="mt-6 pt-4">

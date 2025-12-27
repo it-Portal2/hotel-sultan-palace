@@ -34,6 +34,7 @@ export interface Room {
   maxGuests: number;
   // Number of days before check-in when cancellation is free
   cancellationFreeDays?: number;
+  taxes?: number;
   createdAt: Date;
   updatedAt: Date;
 }

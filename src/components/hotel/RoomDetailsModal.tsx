@@ -208,8 +208,8 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
                     key={index}
                     onClick={() => setSelectedImageIndex(index + 1)}
                     className={`relative aspect-square overflow-hidden rounded border-2 transition-all ${selectedImageIndex === index + 1
-                        ? 'border-[#1D69F9] ring-1 ring-[#1D69F9] ring-offset-0.5'
-                        : 'border-transparent hover:border-gray-300'
+                      ? 'border-[#1D69F9] ring-1 ring-[#1D69F9] ring-offset-0.5'
+                      : 'border-transparent hover:border-gray-300'
                       }`}
                     aria-label={`View image ${index + 2}`}
                   >
