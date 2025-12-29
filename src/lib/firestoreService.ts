@@ -600,6 +600,7 @@ export interface RoomType {
   id: string;
   suiteType: SuiteType;
   roomName: string; // e.g., "DESERT ROSE", "EUCALYPTUS", "BOUGAINVILLEA"
+  amenities?: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -18,7 +18,9 @@ import {
   CreditCardIcon
 
 } from '@heroicons/react/24/outline';
-import { FaBed, FaUserCheck, FaUserSlash } from 'react-icons/fa';
+import { FaBed, FaUserCheck, FaUserSlash, FaSmoking, FaSmokingBan, FaBroom, FaSprayCan } from 'react-icons/fa';
+import LegendPopover from '@/components/admin/stayview/LegendPopover';
+
 
 const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
 
@@ -68,6 +70,13 @@ interface BookingBar {
 
 const toLocalISOString = (date: Date) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+// Start of Day helper
+const startOfDay = (d: Date) => {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  return date;
 };
 
 export default function RoomAvailabilityPage() {
@@ -169,6 +178,8 @@ export default function RoomAvailabilityPage() {
     reason: '',
     customReason: ''
   });
+  const [hoveredBooking, setHoveredBooking] = useState<Booking | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -680,111 +691,91 @@ export default function RoomAvailabilityPage() {
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col bg-white overflow-hidden">
-      {/* Summary Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4 text-xs flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">All:</span>
-          <span className="font-semibold text-gray-900">{summaryStats.totalRooms}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Vacant:</span>
-          <span className="font-semibold text-green-600">{summaryStats.vacant}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Occupied:</span>
-          <span className="font-semibold text-blue-600">{summaryStats.occupied}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Reserved:</span>
-          <span className="font-semibold text-yellow-600">{summaryStats.reserved}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Blocked:</span>
-          <span className="font-semibold text-red-600">{summaryStats.blocked}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Dirty:</span>
-          <span className="font-semibold text-gray-600">{summaryStats.dirty}</span>
-        </div>
-      </div>
-
-      {/* Controls Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between gap-3 flex-shrink-0">
+      {/* Unified Controls Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0 z-30 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+
+          {/* Date Picker */}
+          <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1.5 shadow-sm">
             <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
             <input
               type="date"
               value={currentDate.toISOString().split('T')[0]}
               onChange={(e) => setCurrentDate(new Date(e.target.value))}
-              className="border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00]"
+              className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer p-0"
             />
           </div>
+
+          <div className="h-6 w-px bg-gray-200"></div>
+
+          {/* Stats Pills - Compact */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded">
+              All: {summaryStats.totalRooms}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              <span className="text-gray-600">Vacant:</span>
+              <span className="font-bold text-gray-900">{summaryStats.vacant}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span className="text-gray-600">Occupied:</span>
+              <span className="font-bold text-gray-900">{summaryStats.occupied}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+              <span className="text-gray-600">Reserved:</span>
+              <span className="font-bold text-gray-900">{summaryStats.reserved}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              <span className="text-gray-600">Blocked:</span>
+              <span className="font-bold text-gray-900">{summaryStats.blocked}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-600">Dirty:</span>
+              <span className={`font-bold ${summaryStats.dirty > 0 ? 'text-red-600' : 'text-gray-900'}`}>{summaryStats.dirty}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Room Type Filter */}
           <select
             value={selectedSuite}
             onChange={(e) => setSelectedSuite(e.target.value as SuiteType | 'all')}
-            className="border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00]"
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
           >
             <option value="all">All Room Types</option>
             {SUITE_TYPES.map(suite => (
               <option key={suite} value={suite}>{suite}</option>
             ))}
           </select>
+
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Room Type, Room, Reservation No, Guest Name..."
-              className="pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none text-sm w-96"
+              placeholder="Search bookings..."
+              className="pl-9 pr-4 py-1.5 border border-gray-300 rounded-md focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] text-sm w-48 transition-all"
             />
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Legend Popover */}
-          <div className="relative group">
-            <InformationCircleIcon className="h-6 w-6 text-gray-400 hover:text-gray-600 cursor-help" />
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-3 z-50 hidden group-hover:block">
-              <h4 className="text-xs font-bold text-gray-700 mb-2 border-b pb-1">Status Legend</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white bg-green-500 rounded-full p-0.5">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs text-gray-600">Checked In (White)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-red-500 bg-green-500 rounded-full p-0.5">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs text-gray-600">Checked Out (Red)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-200 bg-green-500 rounded-full p-0.5">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs text-gray-600">Future/Conf (Blue)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-300 bg-green-500 rounded-full p-0.5">
-                    <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs text-gray-600">Pending (Yellow)</span>
-                </div>
-              </div>
-            </div>
-          </div>
+
+          <LegendPopover />
 
           <button
             onClick={() => {
-              // Show calendar view of walk-in bookings
               setAssignRoomView('calendar');
               setShowAssignRoom(true);
             }}
-            className="px-4 py-1.5 bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
           >
+            <UserIcon className="h-4 w-4" />
             Assign Room
           </button>
         </div>
@@ -794,42 +785,46 @@ export default function RoomAvailabilityPage() {
       <div className="flex-1 overflow-auto relative">
         <div className="min-w-full">
           {/* Date Header */}
-          <div className="sticky top-0 z-20 bg-white border-b-2 border-gray-300">
+          <div className="sticky top-0 z-20 bg-white border-b-2 border-gray-300 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.05)]">
             <div className="flex">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-gray-50 p-2">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => navigateDate('prev')}
-                    className="p-1 hover:bg-gray-200"
-                  >
-                    <ChevronLeftIcon className="h-5 w-5" />
-                  </button>
-                  <span className="text-sm font-semibold text-gray-700">
-                    {dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                  <button
-                    onClick={() => navigateDate('next')}
-                    className="p-1 hover:bg-gray-200"
-                  >
-                    <ChevronRightIcon className="h-5 w-5" />
-                  </button>
-                </div>
+              <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-gray-50 p-2 flex items-center justify-between">
+                <button
+                  onClick={() => navigateDate('prev')}
+                  className="p-1 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <span className="text-sm font-semibold text-gray-700">
+                  Room Type
+                </span>
+                <button
+                  onClick={() => navigateDate('next')}
+                  className="p-1 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
               </div>
               <div className="flex-1 flex">
                 {dateRange.dates.map((date, idx) => {
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                   const isToday = date.toDateString() === new Date().toDateString();
                   const isHovered = hoveredDateIndex === idx;
+
+                  // use #FFFBE6 for a distinct warm yellow that matches typical PMS styles
+                  const bgColor = isWeekend ? 'bg-[#FFFBE6]' : 'bg-white';
+
                   return (
                     <div
                       key={idx}
-                      className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50' : 'bg-white'
-                        } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHovered ? 'bg-red-50 ring-1 ring-red-300 shadow-inner' : ''}`}
+                      className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors flex flex-col justify-center h-14 ${bgColor} ${isToday ? 'bg-blue-50' : ''} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
                     >
-                      <div className={`text-[10px] font-semibold leading-tight ${isHovered ? 'text-red-700' : 'text-gray-600'}`}>
+                      <div className={`text-[11px] font-medium uppercase leading-tight ${isWeekend ? 'text-gray-800' : 'text-gray-500'}`}>
                         {date.toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
-                      <div className={`text-xs font-bold leading-tight ${isHovered ? 'text-red-700' : 'text-gray-900'}`}>
+                      <div className="text-[10px] text-gray-400 font-medium leading-tight">
+                        {date.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                      <div className={`text-sm font-bold leading-tight ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
                         {date.getDate()}
                       </div>
                     </div>
@@ -846,17 +841,13 @@ export default function RoomAvailabilityPage() {
               if (suiteRooms.length === 0) return null;
 
               return (
-                <div key={suiteType} className={suiteIdx > 0 ? 'border-t-2 border-gray-300' : ''}>
-                  {/* Suite Header */}
-                  <div className="sticky top-[40px] z-10 bg-gray-100 border-b border-gray-300">
+                <div key={suiteType} className="">
+                  {/* Suite Header Row - Collapsible style appearance */}
+                  <div className="sticky top-[58px] z-10 bg-[#F9FAFB] border-b border-gray-200">
                     <div className="flex">
-                      <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1.5 bg-gray-100 flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-bold text-gray-900 leading-tight">{suiteType}</div>
-                          <div className="text-[10px] text-gray-600 leading-tight">
-                            {suiteRooms.length} room{suiteRooms.length !== 1 ? 's' : ''}
-                          </div>
-                        </div>
+                      <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1 bg-[#F3F4F6] flex items-center">
+                        <span className="text-gray-500 mr-2">-</span>
+                        <span className="text-sm font-bold text-gray-800">{suiteType}</span>
                       </div>
                       <div className="flex-1 flex">
                         {dateRange.dates.map((date, dateIdx) => {
@@ -869,18 +860,21 @@ export default function RoomAvailabilityPage() {
                           }).length;
                           const priceKey = suiteRooms[0]?.roomName;
                           const price = (priceKey && roomPriceMap[priceKey]) || 0;
+
+                          const bgColor = 'bg-[#F3F4F6]';
+
                           return (
                             <div
                               key={dateIdx}
-                              className={`flex-1 min-w-[80px] border-r border-[#d1d5db] py-1 px-1 text-center transition-colors ${isWeekend ? 'bg-yellow-50/50' : 'bg-white'
-                                } ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}
-                              style={{ borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}
+                              className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
                             >
-                              <div className={`text-xs font-semibold border border-red-300 rounded px-1 py-0.5 inline-block mb-0.5 leading-tight ${isHovered ? 'text-red-700 bg-red-50' : 'text-red-600'}`}>
-                                {availableCount} left
-                              </div>
-                              <div className={`text-[10px] leading-tight ${isHovered ? 'text-red-700' : 'text-gray-500'}`}>
-                                {price ? `$${price.toFixed(0)}` : 'N/A'}
+                              <div className="flex flex-col items-center justify-center h-full gap-0.5">
+                                <span className={`text-sm font-bold ${availableCount === 0 ? 'text-red-300' : 'text-red-500'}`}>
+                                  {availableCount}
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                  {price ? price.toFixed(2) : '-'}
+                                </span>
                               </div>
                             </div>
                           );
@@ -896,41 +890,28 @@ export default function RoomAvailabilityPage() {
 
                     return (
                       <div key={room.id} className="border-b border-gray-200">
-                        <div className="flex relative" style={{ minHeight: '32px' }}>
-                          {/* Room Name Column */}
-                          <div className={`w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1 bg-white flex items-center gap-2 transition-colors ${isHoveredRoom ? 'bg-red-50' : ''
+                        <div className="flex relative" style={{ minHeight: '34px' }}>
+                          {/* Room Name Column - Simplified with Indicators */}
+                          <div className={`w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1 bg-white flex items-center justify-between transition-colors ${isHoveredRoom ? 'bg-blue-50' : ''
                             }`}>
-                            <div className={`font-medium text-xs leading-tight ${isHoveredRoom ? 'text-red-700 font-semibold' : 'text-gray-900'}`}>{room.roomName}</div>
-                            <div className="flex items-center gap-2 ml-auto pr-2">
-                              {(() => {
-                                const roomStatus = getRoomStatus(room.roomName);
-                                const housekeepingStatus = roomStatus?.housekeepingStatus || 'clean';
-                                const isClean = housekeepingStatus === 'clean' || housekeepingStatus === 'inspected';
-                                const statusText = housekeepingStatus === 'clean' ? 'Clean' :
-                                  housekeepingStatus === 'dirty' ? 'Dirty' :
-                                    housekeepingStatus === 'inspected' ? 'Inspected' :
-                                      'Needs Attention';
+                            <div className={`font-medium text-xs leading-tight uppercase ${isHoveredRoom ? 'text-blue-700' : 'text-gray-700'}`}>{room.roomName}</div>
 
-                                return (
-                                  <>
-                                    <div className="relative group">
-                                      {isClean ? (
-                                        <FaUserCheck className="h-4 w-4 text-green-600" />
-                                      ) : (
-                                        <FaUserSlash className="h-4 w-4 text-red-600" />
-                                      )}
-                                      {/* Tooltip */}
-                                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50">
-                                        <div className="bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
-                                          Room Status : {statusText}
-                                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black"></div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <FaBed className="h-4 w-4 text-gray-600" />
-                                  </>
-                                );
+                            <div className="flex items-center gap-1.5">
+                              {/* Housekeeping Status */}
+                              {(() => {
+                                const status = getRoomStatus(room.roomName)?.housekeepingStatus || 'clean'; // Default to clean
+                                if (status === 'dirty' || status === 'needs_attention') {
+                                  return <FaBroom className="w-3 h-3 text-orange-500" title="Dirty / Needs Attention" />;
+                                }
+                                return <FaSprayCan className="w-3 h-3 text-green-500" title="Clean" />;
                               })()}
+
+                              {/* Smoking Status - Check amenities or default to No Smoking */}
+                              {room.amenities?.some(a => a.toLowerCase().includes('smoking') && !a.toLowerCase().includes('no smoking')) ? (
+                                <FaSmoking className="w-3 h-3 text-gray-600" title="Smoking Allowed" />
+                              ) : (
+                                <FaSmokingBan className="w-3 h-3 text-red-400" title="No Smoking" />
+                              )}
                             </div>
                           </div>
 
@@ -940,7 +921,10 @@ export default function RoomAvailabilityPage() {
                               const dateStr = date.toISOString().split('T')[0];
                               const avail = roomAvailability[room.roomName]?.[dateStr];
                               const isToday = date.toDateString() === new Date().toDateString();
+                              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                               const isHoveredDate = hoveredDateIndex === dateIdx;
+
+                              const bgColor = 'bg-white';
 
                               // Find booking bar for this date
                               const bookingBar = roomBars.find(bar =>
@@ -948,9 +932,6 @@ export default function RoomAvailabilityPage() {
                               );
 
                               // Logic to determine if we should render the start of a booking bar here
-                              // Render if:
-                              // 1. This is the booking start date
-                              // 2. OR this is the first visible date (index 0) AND the booking started before this date AND ends after this date
                               const shouldRenderBar = bookingBar && (
                                 date.toDateString() === bookingBar.startDate.toDateString() ||
                                 (dateIdx === 0 && bookingBar.startDate < date && bookingBar.endDate > date)
@@ -973,9 +954,9 @@ export default function RoomAvailabilityPage() {
                                     setHoveredDateIndex(null);
                                     setHoveredRoomId(null);
                                   }}
-                                  className={`flex-1 min-w-[80px] border-r border-gray-200 relative transition-colors ${avail?.blocked ? 'bg-red-100' : 'bg-white hover:bg-blue-50'
-                                    } ${isToday ? 'ring-1 ring-[#FF6A00]' : ''} ${isHoveredDate ? 'bg-red-50 ring-1 ring-red-200' : ''}`}
-                                  style={{ minHeight: '32px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}
+                                  className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] relative transition-colors ${avail?.blocked ? 'bg-[#FEE2E2]' : bgColor
+                                    } ${isToday ? 'bg-blue-50' : ''} ${isHoveredDate ? 'bg-[#FFF0F0]' : ''}`}
+                                  style={{ minHeight: '34px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default', borderRight: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB' }}
                                 >
                                   {shouldRenderBar && (
                                     <div
@@ -983,36 +964,41 @@ export default function RoomAvailabilityPage() {
                                         e.stopPropagation();
                                         handleBookingClick(bookingBar.booking);
                                       }}
-                                      onMouseEnter={() => {
+                                      onMouseEnter={(e) => {
                                         setHoveredDateIndex(dateIdx);
                                         setHoveredRoomId(room.roomName);
+                                        setHoveredBooking(bookingBar.booking);
+                                        setMousePosition({ x: e.clientX, y: e.clientY });
+                                      }}
+                                      onMouseMove={(e) => {
+                                        setMousePosition({ x: e.clientX, y: e.clientY });
                                       }}
                                       onMouseLeave={() => {
                                         setHoveredDateIndex(null);
                                         setHoveredRoomId(null);
+                                        setHoveredBooking(null);
+                                        setMousePosition(null);
                                       }}
-                                      className="absolute top-0 left-0.5 bg-green-500 text-white text-[10px] py-1.5 px-2 z-10 cursor-pointer hover:bg-green-600 transition-all shadow-sm rounded-sm flex items-center gap-1.5 overflow-hidden"
+                                      className={`absolute top-[2px] bottom-[2px] left-[2px] rounded-sm text-[10px] bg-blue-600 text-white shadow-sm flex items-center px-1.5 overflow-hidden z-10 cursor-pointer hover:bg-blue-700 transition-colors
+                                        ${(() => {
+                                          const b = bookingBar.booking;
+                                          const today = startOfDay(new Date());
+                                          const checkIn = startOfDay(new Date(b.checkIn));
+                                          const checkOut = startOfDay(new Date(b.checkOut));
+
+                                          if (b.status === 'checked_out') return '!bg-gray-500 !text-gray-100';
+                                          if (b.status === 'checked_in') {
+                                            if (checkOut.getTime() === today.getTime()) return '!bg-red-500'; // Due out
+                                            return '!bg-green-600'; // Stayover / Arrived
+                                          }
+                                          if (b.status === 'confirmed') return '!bg-[#3B82F6]';
+                                          return '!bg-gray-400';
+                                        })()}
+                                      `}
                                       style={{
-                                        // Calculate width: 
-                                        // If starts here: (endDate - startDate)
-                                        // If continues from left: (endDate - currentViewStart)
-                                        // BUT formatted to days count.
-                                        // Min width ensures small snippets are visible.
                                         width: (() => {
-                                          const viewStart = date; // This is either start date or current cell date
+                                          const viewStart = date;
                                           const effectiveEnd = bookingBar.endDate;
-                                          // const diffTime = Math.abs(effectiveEnd.getTime() - viewStart.getTime());
-                                          // const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                                          // Fix width calculation to not overflow the row if it goes beyond visible range
-                                          // But for now, simple css overflow hidden on parent or let it scroll is fine.
-                                          // Actually, we need to respect the daysToShow. 
-                                          // Let's just draw it as long as it needs to be, parent overflow-hidden clips it? 
-                                          // No, parent is 'flex-1 flex relative' (row). It might overflow the row container if super long.
-                                          // Better to span only visible days if we want strict clipping, but usually absolute positioning lets it flow.
-                                          // Let's stick to days difference.
-
-                                          // Calculate effective end date for this view
                                           const viewLimit = new Date(dateRange.end);
                                           viewLimit.setDate(viewLimit.getDate() + 1);
                                           viewLimit.setHours(0, 0, 0, 0);
@@ -1020,34 +1006,16 @@ export default function RoomAvailabilityPage() {
                                           const clampedEnd = effectiveEnd < viewLimit ? effectiveEnd : viewLimit;
                                           const diff = Math.ceil((clampedEnd.getTime() - viewStart.getTime()) / (1000 * 60 * 60 * 24));
                                           return `calc(${Math.max(0, diff)} * 80px - 4px)`;
-                                        })(),
-                                        minWidth: '76px',
-                                        minHeight: '26px',
-                                        top: '3px'
+                                        })()
                                       }}
-                                      title={`Click to view details: ${bookingBar.booking.guestDetails?.firstName} ${bookingBar.booking.guestDetails?.lastName}`}
                                     >
-                                      {/* Icon based on status */}
-                                      {(() => {
-                                        const status = bookingBar.booking.status;
-                                        const iconColor =
-                                          status === 'checked_in' ? 'text-white' :
-                                            status === 'checked_out' ? 'text-red-500' :
-                                              status === 'confirmed' ? 'text-blue-200' :
-                                                'text-yellow-300';
-
-                                        return (
-                                          <div className="bg-green-600/30 p-0.5 rounded-full">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-3 h-3 ${iconColor}`}>
-                                              <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                                            </svg>
-                                          </div>
-                                        );
-                                      })()}
-
-                                      <div className="font-semibold truncate leading-tight text-white/90">
-                                        {bookingBar.booking.guestDetails?.firstName} {bookingBar.booking.guestDetails?.lastName}
-                                      </div>
+                                      <span className="font-semibold truncate mr-1">
+                                        {bookingBar.booking.guestDetails.firstName} {bookingBar.booking.guestDetails.lastName}
+                                      </span>
+                                      {/* Payment Pending Indicator */}
+                                      {(bookingBar.booking.paymentStatus === 'pending' || (bookingBar.booking.totalAmount > (bookingBar.booking.paidAmount || 0))) && (
+                                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-400 ml-auto" title="Payment Pending" />
+                                      )}
                                     </div>
                                   )}
                                   {!bookingBar && avail?.blocked && (() => {
@@ -1055,8 +1023,8 @@ export default function RoomAvailabilityPage() {
                                     const isInMaintenance = roomStatus?.status === 'maintenance';
 
                                     return (
-                                      <div className="absolute inset-1 bg-red-200/70 border border-red-300 text-[10px] text-red-800 flex items-center justify-center font-semibold group">
-                                        <span className="group-hover:hidden">Blocked</span>
+                                      <div className="absolute inset-0 bg-[#1A1A1A] flex items-center justify-center group overflow-hidden border border-black">
+                                        <span className="text-[10px] font-bold text-white tracking-wider group-hover:hidden">MAINTENANCE</span>
                                         {isInMaintenance && (
                                           <button
                                             onClick={async (e) => {
@@ -1069,12 +1037,9 @@ export default function RoomAvailabilityPage() {
                                                 showToast('Failed to complete maintenance', 'error');
                                               }
                                             }}
-                                            className="hidden group-hover:flex items-center gap-1 px-2 py-1 bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                            className="hidden group-hover:flex items-center gap-1 px-2 py-0.5 bg-green-600 text-white text-[10px] rounded hover:bg-green-700 transition-colors shadow-sm"
                                           >
-                                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            End Maintenance
+                                            Complete
                                           </button>
                                         )}
                                       </div>
@@ -1093,10 +1058,10 @@ export default function RoomAvailabilityPage() {
             })}
           </div>
           {/* Bottom Summary (aligned with grid and scroll) */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200">
-            <div className="flex">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
-                <div className="text-[10px] font-semibold text-gray-600 leading-tight">Room Availability</div>
+          <div className="sticky bottom-0 bg-white border-t border-gray-300 shadow-[0_-2px_4px_-2px_rgba(0,0,0,0.05)]">
+            <div className="flex bg-[#F9FAFB]">
+              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center">
+                <div className="text-xs font-bold text-gray-700 uppercase tracking-wide">Room Availability</div>
               </div>
               <div className="flex-1 flex">
                 {dateRange.dates.map((date, idx) => {
@@ -1107,17 +1072,20 @@ export default function RoomAvailabilityPage() {
                     if (avail?.available) totalAvailable++;
                   });
                   const isHovered = hoveredDateIndex === idx;
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const bgColor = 'bg-[#F9FAFB]';
+
                   return (
-                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
-                      <div className="text-xs font-semibold text-gray-900 leading-tight">{totalAvailable}</div>
+                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
+                      <div className="text-xs font-bold text-gray-800">{totalAvailable}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
-            <div className="flex">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-2 py-1">
-                <div className="text-[10px] font-semibold text-gray-600 leading-tight">Occupancy(%)</div>
+            <div className="flex bg-[#F9FAFB] border-t border-gray-200 border-b border-gray-300">
+              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center">
+                <div className="text-xs font-bold text-gray-700 uppercase tracking-wide">Occupancy (%)</div>
               </div>
               <div className="flex-1 flex">
                 {dateRange.dates.map((date, idx) => {
@@ -1129,12 +1097,14 @@ export default function RoomAvailabilityPage() {
                     if (avail?.available) totalAvailable++;
                   });
                   const occupancy = totalRooms > 0 ? Math.round(((totalRooms - totalAvailable) / totalRooms) * 100) : 0;
-                  // Fix: ensure correct percentage even if totalRooms is small (3 bookings / 15 rooms = 20%)
                   const realOccupancy = Math.min(100, Math.max(0, occupancy));
                   const isHovered = hoveredDateIndex === idx;
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const bgColor = 'bg-[#F9FAFB]';
+
                   return (
-                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-gray-200 py-1 px-1 text-center transition-colors ${isHovered ? 'bg-red-50 ring-1 ring-red-200 shadow-inner' : ''}`}>
-                      <div className="text-xs font-semibold text-gray-900 leading-tight">{occupancy}%</div>
+                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
+                      <div className="text-xs font-bold text-gray-800">{realOccupancy}%</div>
                     </div>
                   );
                 })}
@@ -1453,12 +1423,16 @@ export default function RoomAvailabilityPage() {
         </div>
       )}
 
-      {/* Maintenance Block Modal */}
-      {showMaintenanceBlock && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="bg-white shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
-              <h3 className="text-xl font-bold text-gray-900">Block Room</h3>
+      {/* Booking Tooltip */}
+      {hoveredBooking && mousePosition && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowMaintenanceBlock(false)}>
+          <div className="bg-white shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col transform transition-all" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-white border-b border-gray-100 p-6 flex justify-between items-center sticky top-0 z-10 flex-shrink-0">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FaBed className="h-5 w-5 text-red-500" />
+                Block Room
+              </h3>
               <button
                 onClick={() => {
                   setShowMaintenanceBlock(false);
@@ -1471,170 +1445,174 @@ export default function RoomAvailabilityPage() {
                     customReason: ''
                   });
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors rounded-full"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
               {/* Date Range */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <div className="bg-gray-50/50 p-5 border border-gray-100">
+                <label className="block text-sm font-bold text-gray-900 mb-2">Select Dates</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={maintenanceBlockForm.startDate}
                     onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, startDate: e.target.value })}
-                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
                   />
-                  <span className="text-gray-500">→</span>
+                  <span className="text-gray-400">to</span>
                   <input
                     type="date"
                     value={maintenanceBlockForm.endDate}
                     onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, endDate: e.target.value })}
                     min={maintenanceBlockForm.startDate}
-                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
                   />
-                  <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
                 </div>
-                <button className="mt-2 w-full px-4 py-2 bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition-colors">
-                  Add Range
-                </button>
               </div>
 
-              {/* Room Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-                <select
-                  value={maintenanceBlockForm.suiteType}
-                  onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, suiteType: e.target.value as SuiteType, roomName: '' })}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                >
-                  {SUITE_TYPES.map(suite => (
-                    <option key={suite} value={suite}>{suite}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Room */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Room</label>
-                <select
-                  value={maintenanceBlockForm.roomName}
-                  onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, roomName: e.target.value })}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                >
-                  <option value="">Select Room</option>
-                  {roomsBySuite[maintenanceBlockForm.suiteType]?.map(room => (
-                    <option key={room.id} value={room.roomName}>{room.roomName}</option>
-                  ))}
-                </select>
+              {/* Room Selection */}
+              <div className="bg-gray-50/50 p-5 border border-gray-100 space-y-4">
+                <label className="block text-sm font-bold text-gray-900">Room Details</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">Type</label>
+                    <select
+                      value={maintenanceBlockForm.suiteType}
+                      onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, suiteType: e.target.value as SuiteType, roomName: '' })}
+                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
+                    >
+                      {SUITE_TYPES.map(suite => (
+                        <option key={suite} value={suite}>{suite}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">Room</label>
+                    <select
+                      value={maintenanceBlockForm.roomName}
+                      onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, roomName: e.target.value })}
+                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
+                    >
+                      <option value="">Select Room</option>
+                      {roomsBySuite[maintenanceBlockForm.suiteType]?.map(room => (
+                        <option key={room.id} value={room.roomName}>{room.roomName}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+              <div className="bg-gray-50/50 p-5 border border-gray-100 space-y-4">
+                <label className="block text-sm font-bold text-gray-900">Maintenance Reason</label>
                 <select
                   value={maintenanceBlockForm.reason}
                   onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, reason: e.target.value })}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
                 >
-                  <option value="">Select Reason</option>
-                  <optgroup label="BLOCKED">
+                  <option value="">Select Issue...</option>
+                  <optgroup label="Common Issues">
                     <option value="Bathroom Ceiling is fallen off">Bathroom Ceiling is fallen off</option>
-                    <option value="ceiling has fallen down">ceiling has fallen down</option>
-                    <option value="ELECTRICITY ISSUE">ELECTRICITY ISSUE</option>
+                    <option value="ceiling has fallen down">Ceiling has fallen down</option>
+                    <option value="ELECTRICITY ISSUE">Electricity Issue</option>
                     <option value="Room floor damage">Room floor damage</option>
-                    <option value="Room has no AC">Room has no AC</option>
-                    <option value="Request from the guest">Request from the guest</option>
+                    <option value="Room has no AC">AC Not Working</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="Request from the guest">Guest Request</option>
+                    <option value="Scheduled Maintenance">Scheduled Maintenance</option>
                   </optgroup>
                 </select>
-              </div>
 
-              {/* Custom Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Add Custom Reason</label>
+                <div className="flex gap-2 items-center">
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-xs text-gray-400 font-medium uppercase">Or Custom</span>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={maintenanceBlockForm.customReason}
                     onChange={(e) => setMaintenanceBlockForm({ ...maintenanceBlockForm, customReason: e.target.value })}
-                    placeholder="Enter custom reason"
-                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
+                    placeholder="Type custom reason here..."
+                    className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent rounded"
                   />
                   <button
                     onClick={() => {
                       if (maintenanceBlockForm.customReason.trim()) {
-                        // Add custom reason to the list (you can store this in state or database)
                         setMaintenanceBlockForm({ ...maintenanceBlockForm, reason: maintenanceBlockForm.customReason, customReason: '' });
                       }
                     }}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
+                    className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors rounded"
                   >
-                    Add
+                    Apply
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    setShowMaintenanceBlock(false);
-                    setMaintenanceBlockForm({
-                      startDate: '',
-                      endDate: '',
-                      suiteType: 'Garden Suite',
-                      roomName: '',
-                      reason: '',
-                      customReason: ''
-                    });
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason) {
-                      showToast('Please fill in all required fields', 'warning');
-                      return;
-                    }
+            {/* Footer */}
+            <div className="bg-white border-t border-gray-100 p-6 flex gap-3 sticky bottom-0 z-10">
+              <button
+                onClick={() => {
+                  setShowMaintenanceBlock(false);
+                  setMaintenanceBlockForm({
+                    startDate: '',
+                    endDate: '',
+                    suiteType: 'Garden Suite',
+                    roomName: '',
+                    reason: '',
+                    customReason: ''
+                  });
+                }}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-colors rounded shadow-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason) {
+                    showToast('Please fill in all required fields', 'warning');
+                    return;
+                  }
 
-                    try {
-                      const success = await markRoomForMaintenance(
-                        maintenanceBlockForm.roomName,
-                        new Date(maintenanceBlockForm.startDate),
-                        new Date(maintenanceBlockForm.endDate),
-                        maintenanceBlockForm.reason
-                      );
+                  try {
+                    const success = await markRoomForMaintenance(
+                      maintenanceBlockForm.roomName,
+                      new Date(maintenanceBlockForm.startDate),
+                      new Date(maintenanceBlockForm.endDate),
+                      maintenanceBlockForm.reason
+                    );
 
-                      if (success) {
-                        showToast('Room marked for maintenance', 'success');
-                        setShowMaintenanceBlock(false);
-                        setMaintenanceBlockForm({
-                          startDate: '',
-                          endDate: '',
-                          suiteType: 'Garden Suite',
-                          roomName: '',
-                          reason: '',
-                          customReason: ''
-                        });
-                        await loadData();
-                      } else {
-                        showToast('Failed to mark room for maintenance', 'error');
-                      }
-                    } catch (error) {
-                      console.error('Error marking room for maintenance:', error);
+                    if (success) {
+                      showToast('Room marked for maintenance', 'success');
+                      setShowMaintenanceBlock(false);
+                      setMaintenanceBlockForm({
+                        startDate: '',
+                        endDate: '',
+                        suiteType: 'Garden Suite',
+                        roomName: '',
+                        reason: '',
+                        customReason: ''
+                      });
+                      await loadData();
+                    } else {
                       showToast('Failed to mark room for maintenance', 'error');
                     }
-                  }}
-                  disabled={!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Block Room
-                </button>
-              </div>
+                  } catch (error) {
+                    console.error('Error marking room for maintenance:', error);
+                    showToast('Failed to mark room for maintenance', 'error');
+                  }
+                }}
+                disabled={!maintenanceBlockForm.roomName || !maintenanceBlockForm.startDate || !maintenanceBlockForm.endDate || !maintenanceBlockForm.reason}
+                className="flex-1 px-4 py-3 bg-red-600 text-white font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded shadow-lg shadow-red-100"
+              >
+                Confirm Block
+              </button>
             </div>
           </div>
         </div>
