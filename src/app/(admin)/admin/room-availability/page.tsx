@@ -772,11 +772,11 @@ export default function RoomAvailabilityPage() {
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col bg-white overflow-hidden">
       {/* Unified Controls Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0 z-30 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 flex-shrink-0 z-30 shadow-sm h-auto">
+        <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
 
           {/* Date Picker */}
-          <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1.5 shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1.5 shadow-sm flex-shrink-0">
             <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
             <input
               type="date"
@@ -786,47 +786,47 @@ export default function RoomAvailabilityPage() {
             />
           </div>
 
-          <div className="h-6 w-px bg-gray-200"></div>
+          <div className="h-6 w-px bg-gray-200 flex-shrink-0"></div>
 
           {/* Stats Pills - Oval Style */}
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1 text-gray-600 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-4 text-sm font-medium flex-nowrap">
+            <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1 text-gray-600 border border-gray-200 shadow-sm whitespace-nowrap">
               <span>All</span>
               <span className="font-bold text-gray-900">{summaryStats.totalRooms}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-green-50 rounded-full px-3 py-1 text-green-700 border border-green-100 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-green-50 rounded-full px-3 py-1 text-green-700 border border-green-100 shadow-sm whitespace-nowrap">
               <span>Vacant</span>
               <span className="font-bold text-green-900">{summaryStats.vacant}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-blue-50 rounded-full px-3 py-1 text-blue-700 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-blue-50 rounded-full px-3 py-1 text-blue-700 border border-blue-100 shadow-sm whitespace-nowrap">
               <span>Occupied</span>
               <span className="font-bold text-blue-900">{summaryStats.occupied}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-yellow-50 rounded-full px-3 py-1 text-yellow-700 border border-yellow-100 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-yellow-50 rounded-full px-3 py-1 text-yellow-700 border border-yellow-100 shadow-sm whitespace-nowrap">
               <span>Reserved</span>
               <span className="font-bold text-yellow-900">{summaryStats.reserved}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1 text-gray-700 border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1 text-gray-700 border border-gray-200 shadow-sm whitespace-nowrap">
               <span>Blocked</span>
               <span className="font-bold text-gray-900">{summaryStats.blocked}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-red-50 rounded-full px-3 py-1 text-red-700 border border-red-100 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-red-50 rounded-full px-3 py-1 text-red-700 border border-red-100 shadow-sm whitespace-nowrap">
               <span>Due Out</span>
               <span className="font-bold text-red-900">{summaryStats.dueOut}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-orange-50 rounded-full px-3 py-1 text-orange-700 border border-orange-100 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-orange-50 rounded-full px-3 py-1 text-orange-700 border border-orange-100 shadow-sm whitespace-nowrap">
               <span>Dirty</span>
               <span className="font-bold text-orange-900">{summaryStats.dirty}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           {/* Room Type Filter */}
           <select
             value={selectedSuite}
             onChange={(e) => setSelectedSuite(e.target.value as SuiteType | 'all')}
-            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00]"
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] flex-grow md:flex-grow-0"
           >
             <option value="all">All Room Types</option>
             {SUITE_TYPES.map(suite => (
@@ -866,16 +866,16 @@ export default function RoomAvailabilityPage() {
       <div className="flex-1 overflow-auto relative">
         <div className="min-w-full">
           {/* Date Header */}
-          <div className="sticky top-0 z-20 bg-white border-b-2 border-gray-300 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.05)]">
-            <div className="flex">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-gray-50 p-2 flex items-center justify-between">
+          <div className="sticky top-0 z-40 bg-white border-b-2 border-gray-300 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.05)]">
+            <div className="flex w-max min-w-full">
+              <div className="sticky left-0 z-50 w-40 md:w-64 flex-shrink-0 border-r-2 border-gray-300 bg-gray-50 p-2 flex items-center justify-between shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                 <button
                   onClick={() => navigateDate('prev')}
                   className="p-1 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded"
                 >
                   <ChevronLeftIcon className="h-5 w-5" />
                 </button>
-                <span className="text-sm font-semibold text-gray-700">
+                <span className="text-xs md:text-sm font-semibold text-gray-700 truncate px-1">
                   Room Type
                 </span>
                 <button
@@ -897,15 +897,15 @@ export default function RoomAvailabilityPage() {
                   return (
                     <div
                       key={idx}
-                      className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors flex flex-col justify-center h-14 ${bgColor} ${isToday ? 'bg-blue-50' : ''} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
+                      className={`flex-1 min-w-[60px] md:min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors flex flex-col justify-center h-14 ${bgColor} ${isToday ? 'bg-blue-50' : ''} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
                     >
-                      <div className={`text-[11px] font-medium uppercase leading-tight ${isWeekend ? 'text-gray-800' : 'text-gray-500'}`}>
+                      <div className={`text-[10px] md:text-[11px] font-medium uppercase leading-tight ${isWeekend ? 'text-gray-800' : 'text-gray-500'}`}>
                         {date.toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
-                      <div className="text-[10px] text-gray-400 font-medium leading-tight">
+                      <div className="text-[9px] md:text-[10px] text-gray-400 font-medium leading-tight">
                         {date.toLocaleDateString('en-US', { month: 'short' })}
                       </div>
-                      <div className={`text-sm font-bold leading-tight ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                      <div className={`text-xs md:text-sm font-bold leading-tight ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
                         {date.getDate()}
                       </div>
                     </div>
@@ -924,11 +924,11 @@ export default function RoomAvailabilityPage() {
               return (
                 <div key={suiteType} className="">
                   {/* Suite Header Row - Collapsible style appearance */}
-                  <div className="sticky top-[58px] z-10 bg-[#F9FAFB] border-b border-gray-200">
-                    <div className="flex">
-                      <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1 bg-[#F3F4F6] flex items-center">
+                  <div className="sticky top-[58px] z-30 bg-[#F9FAFB] border-b border-gray-200">
+                    <div className="flex w-max min-w-full">
+                      <div className="sticky left-0 z-40 w-40 md:w-64 flex-shrink-0 border-r-2 border-gray-300 px-3 py-1 bg-[#F3F4F6] flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                         <span className="text-gray-500 mr-2">-</span>
-                        <span className="text-sm font-bold text-gray-800">{suiteType}</span>
+                        <span className="text-xs md:text-sm font-bold text-gray-800 truncate">{suiteType}</span>
                       </div>
                       <div className="flex-1 flex">
                         {dateRange.dates.map((date, dateIdx) => {
@@ -947,13 +947,13 @@ export default function RoomAvailabilityPage() {
                           return (
                             <div
                               key={dateIdx}
-                              className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
+                              className={`flex-1 min-w-[60px] md:min-w-[80px] border-r border-[#E5E7EB] py-1 px-1 text-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`}
                             >
                               <div className="flex flex-col items-center justify-center h-full gap-0.5">
-                                <span className={`text-sm font-bold ${availableCount === 0 ? 'text-red-300' : 'text-red-500'}`}>
+                                <span className={`text-xs md:text-sm font-bold ${availableCount === 0 ? 'text-red-300' : 'text-red-500'}`}>
                                   {availableCount}
                                 </span>
-                                <span className="text-[10px] text-gray-500 font-medium">
+                                <span className="text-[9px] md:text-[10px] text-gray-500 font-medium">
                                   {price ? price.toFixed(2) : '-'}
                                 </span>
                               </div>
@@ -971,27 +971,27 @@ export default function RoomAvailabilityPage() {
 
                     return (
                       <div key={room.id} className="border-b border-gray-200">
-                        <div className="flex relative" style={{ minHeight: '34px' }}>
+                        <div className="flex relative w-max min-w-full" style={{ minHeight: '34px' }}>
                           {/* Room Name Column - Simplified with Indicators */}
-                          <div className={`w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1 bg-white flex items-center justify-between transition-colors ${isHoveredRoom ? 'bg-blue-50' : ''
+                          <div className={`sticky left-0 z-20 w-40 md:w-64 flex-shrink-0 border-r-2 border-gray-300 px-2 md:px-3 py-1 bg-white flex items-center justify-between transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHoveredRoom ? 'bg-blue-50' : ''
                             }`}>
-                            <div className={`font-medium text-xs leading-tight uppercase ${isHoveredRoom ? 'text-blue-700' : 'text-gray-700'}`}>{room.roomName}</div>
+                            <div className={`font-medium text-[10px] md:text-xs leading-tight uppercase truncate mr-2 ${isHoveredRoom ? 'text-blue-700' : 'text-gray-700'}`}>{room.roomName}</div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 flex-shrink-0">
                               {/* Housekeeping Status */}
                               {(() => {
                                 const status = getRoomStatus(room.roomName)?.housekeepingStatus || 'clean';
                                 if (status === 'dirty' || status === 'needs_attention') {
-                                  return <FaBroom className="w-3.5 h-3.5 text-gray-600" title="Dirty / Needs Attention" />;
+                                  return <FaBroom className="w-3 md:w-3.5 h-3 md:h-3.5 text-gray-600" title="Dirty / Needs Attention" />;
                                 }
-                                return <FaBed className="w-3.5 h-3.5 text-gray-600" title="Clean" />;
+                                return <FaBed className="w-3 md:w-3.5 h-3 md:h-3.5 text-gray-600" title="Clean" />;
                               })()}
 
                               {/* Smoking Status */}
                               {room.amenities?.some(a => a.toLowerCase().includes('smoking') && !a.toLowerCase().includes('no smoking')) ? (
-                                <FaSmoking className="w-3.5 h-3.5 text-gray-600" title="Smoking Allowed" />
+                                <FaSmoking className="w-3 md:w-3.5 h-3 md:h-3.5 text-gray-600" title="Smoking Allowed" />
                               ) : (
-                                <FaSmokingBan className="w-3.5 h-3.5 text-gray-600" title="No Smoking" />
+                                <FaSmokingBan className="w-3 md:w-3.5 h-3 md:h-3.5 text-gray-600" title="No Smoking" />
                               )}
                             </div>
                           </div>
@@ -1057,7 +1057,7 @@ export default function RoomAvailabilityPage() {
                                     setHoveredDateIndex(null);
                                     setHoveredRoomId(null);
                                   }}
-                                  className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] relative transition-colors ${avail?.blocked ? 'bg-[#FEE2E2]' : bgColor
+                                  className={`flex-1 min-w-[60px] md:min-w-[80px] border-r border-[#E5E7EB] relative transition-colors ${avail?.blocked ? 'bg-[#FEE2E2]' : bgColor
                                     } ${isToday ? 'bg-blue-50' : ''} ${isHoveredDate ? 'bg-[#FFF0F0]' : ''}`}
                                   style={{ minHeight: '34px', cursor: !bookingBar && avail?.available && !avail?.blocked ? 'pointer' : 'default', borderRight: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB' }}
                                 >
@@ -1180,10 +1180,10 @@ export default function RoomAvailabilityPage() {
             })}
           </div>
           {/* Bottom Summary (aligned with grid and scroll) */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-300 shadow-[0_-2px_4px_-2px_rgba(0,0,0,0.05)]">
+          <div className="sticky bottom-0 z-40 bg-white border-t border-gray-300 shadow-[0_-2px_4px_-2px_rgba(0,0,0,0.05)]">
             <div className="flex bg-[#F9FAFB]">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center">
-                <div className="text-xs font-bold text-gray-700 uppercase tracking-wide">Room Availability</div>
+              <div className="sticky left-0 z-50 w-40 md:w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center bg-[#F9FAFB] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <div className="text-[10px] md:text-xs font-bold text-gray-700 uppercase tracking-wide">Room Availability</div>
               </div>
               <div className="flex-1 flex">
                 {dateRange.dates.map((date, idx) => {
@@ -1198,16 +1198,16 @@ export default function RoomAvailabilityPage() {
                   const bgColor = 'bg-[#F9FAFB]';
 
                   return (
-                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
-                      <div className="text-xs font-bold text-gray-800">{totalAvailable}</div>
+                    <div key={idx} className={`flex-1 min-w-[60px] md:min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
+                      <div className="text-[10px] md:text-xs font-bold text-gray-800">{totalAvailable}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
             <div className="flex bg-[#F9FAFB] border-t border-gray-200 border-b border-gray-300">
-              <div className="w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center">
-                <div className="text-xs font-bold text-gray-700 uppercase tracking-wide">Occupancy (%)</div>
+              <div className="sticky left-0 z-50 w-40 md:w-64 flex-shrink-0 border-r border-gray-200 px-3 py-1.5 flex items-center bg-[#F9FAFB] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <div className="text-[10px] md:text-xs font-bold text-gray-700 uppercase tracking-wide">Occupancy (%)</div>
               </div>
               <div className="flex-1 flex">
                 {dateRange.dates.map((date, idx) => {
@@ -1225,8 +1225,8 @@ export default function RoomAvailabilityPage() {
                   const bgColor = 'bg-[#F9FAFB]';
 
                   return (
-                    <div key={idx} className={`flex-1 min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
-                      <div className="text-xs font-bold text-gray-800">{realOccupancy}%</div>
+                    <div key={idx} className={`flex-1 min-w-[60px] md:min-w-[80px] border-r border-[#E5E7EB] px-1 text-center flex items-center justify-center transition-colors ${bgColor} ${isHovered ? 'bg-[#FFF0F0]' : ''}`} style={{ height: '34px' }}>
+                      <div className="text-[10px] md:text-xs font-bold text-gray-800">{realOccupancy}%</div>
                     </div>
                   );
                 })}
