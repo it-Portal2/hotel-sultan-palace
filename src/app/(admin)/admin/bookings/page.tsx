@@ -23,6 +23,8 @@ export default function AdminBookingsPage() {
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [processing, setProcessing] = useState(false);
 
+  const [selectedRoomIndex, setSelectedRoomIndex] = useState<number>(0);
+
   // Filters
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -148,7 +150,7 @@ export default function AdminBookingsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleStatusUpdate = async (type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out', booking: Booking) => {
+  const handleStatusUpdate = async (type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out', booking: Booking, roomIndex?: number) => {
     try {
       if (type === 'cancel') {
         await cancelBooking(booking.id);
@@ -160,12 +162,18 @@ export default function AdminBookingsPage() {
         await updateBooking(booking.id, { status: 'pending' });
         showToast('Booking marked as pending', 'success');
       } else if (type === 'check_in') {
+        setSelected(booking);
+        setSelectedRoomIndex(roomIndex ?? 0);
         setShowCheckInModal(true);
-        return; // Handled by modal
+        return;
       } else if (type === 'check_out') {
-        // Redirection to Unified Checkout Flow
-        const bookingId = booking.bookingId || booking.id;
-        router.push(`/admin/checkout?bookingId=${bookingId}`);
+        // Redirection to Unified Checkout Flow if no roomIndex? Or use modal?
+        // Using modal for now to align with "Front Desk" and per-room actions
+        // If roomIndex is present, assume partial check-out via modal.
+        // If not, allow modal too.
+        setSelected(booking);
+        setSelectedRoomIndex(roomIndex ?? 0);
+        setShowCheckOutModal(true);
         return;
       }
 
@@ -197,14 +205,19 @@ export default function AdminBookingsPage() {
         data.roomKeyNumber || undefined,
         data.depositAmount ? parseFloat(data.depositAmount) : undefined,
         data.notes || undefined,
-        data.allocatedRoomName
+        data.allocatedRoomName,
+        selectedRoomIndex // Pass the room index
       );
 
       if (recordId) {
         showToast('Guest checked in successfully!', 'success');
         setShowCheckInModal(false);
-        setSelected(null); // Close details modal too
+        // Do not close details modal, just refresh data
         await refreshData();
+        // Update selected object
+        const updated = await getAllBookings();
+        const newItem = updated.find(b => b.id === selected.id);
+        if (newItem) setSelected(newItem);
       } else {
         showToast('Failed to check in guest', 'error');
       }
@@ -223,7 +236,10 @@ export default function AdminBookingsPage() {
     // Lock check before checkout
     try {
       const locks = await getSystemLocks();
-      const roomNum = selected.roomNumber || selected.rooms[0]?.allocatedRoomType;
+      const rIndex = selectedRoomIndex ?? 0;
+      const targetRoom = selected.rooms[rIndex];
+      const roomNum = targetRoom?.allocatedRoomType || selected.roomNumber;
+
       const activeLock = locks.find(lock =>
         (lock.resourceType === 'folio' && lock.resourceId === selected.id) ||
         (roomNum && lock.resourceType === 'room' && lock.resourceId === roomNum)
@@ -248,14 +264,19 @@ export default function AdminBookingsPage() {
           priority: data.housekeepingPriority,
           assignedTo: data.housekeepingAssignee || undefined,
           scheduledTime: new Date(),
-        }
+        },
+        selectedRoomIndex // Pass the room index
       );
 
       if (success) {
         showToast('Guest checked out successfully!', 'success');
         setShowCheckOutModal(false);
-        setSelected(null);
+        // Do not close details modal, just refresh data
         await refreshData();
+        // Update selected object
+        const updated = await getAllBookings();
+        const newItem = updated.find(b => b.id === selected.id);
+        if (newItem) setSelected(newItem);
       } else {
         showToast('Failed to check out guest', 'error');
       }
@@ -314,6 +335,7 @@ export default function AdminBookingsPage() {
       {selected && showCheckInModal && (
         <CheckInModal
           booking={selected}
+          roomIndex={selectedRoomIndex}
           onClose={() => setShowCheckInModal(false)}
           onConfirm={handleCheckInConfirm}
           processing={processing}
@@ -323,6 +345,7 @@ export default function AdminBookingsPage() {
       {selected && showCheckOutModal && (
         <CheckOutModal
           booking={selected}
+          roomIndex={selectedRoomIndex}
           onClose={() => setShowCheckOutModal(false)}
           onConfirm={handleCheckOutConfirm}
           processing={processing}

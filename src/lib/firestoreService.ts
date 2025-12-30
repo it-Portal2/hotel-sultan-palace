@@ -87,6 +87,7 @@ export interface Booking {
     firstName: string;
     lastName: string;
     specialNeeds: string;
+    idDocumentName?: string;
   }>;
 
   // Essential room information only
@@ -95,6 +96,8 @@ export interface Booking {
     price: number;
     allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show';
+    ratePlan?: string;
   }>;
 
   // Essential add-ons information
@@ -112,6 +115,7 @@ export interface Booking {
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
   checkInTime?: Date; // Actual check-in time
+  checkInStaff?: string; // Staff member who performed check-in
   checkOutTime?: Date; // Actual check-out time
   foodOrderIds?: string[]; // Array of FoodOrder IDs
   guestServiceIds?: string[]; // Array of GuestService IDs
@@ -3800,21 +3804,31 @@ export const checkInGuest = async (
   roomKeyNumber?: string,
   depositAmount?: number,
   notes?: string,
-  allocatedRoomName?: string // New parameter for specific room assignment
+  allocatedRoomName?: string, // New parameter for specific room assignment
+  roomIndex?: number // Index of the specific room in booking.rooms
 ): Promise<string | null> => {
   if (!db) return null;
   try {
     const booking = await getBooking(bookingId);
     if (!booking) return null;
 
+    // Use provided room index or default to 0
+    const rIndex = roomIndex !== undefined ? roomIndex : 0;
+    const targetRoom = booking.rooms[rIndex];
+
+    if (!targetRoom) {
+      console.error('Target room not found at index:', rIndex);
+      return null;
+    }
+
     // Get room name from allocated room or use the provided one
     // Fallback order: provided param -> existing allocation -> roomNumber field -> 'Unassigned'
     const roomName = allocatedRoomName ||
-      booking.rooms[0]?.allocatedRoomType ||
+      targetRoom.allocatedRoomType ||
       booking.roomNumber ||
       'Unassigned';
 
-    const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+    const suiteType = targetRoom.suiteType || 'Garden Suite';
 
     // Create check-in record - only include defined values
     const recordData: Omit<CheckInOutRecord, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -3838,11 +3852,24 @@ export const checkInGuest = async (
 
     const record = await createCheckInOutRecord(recordData);
 
+    // Update specific room status and potentially the booking status
+    const updatedRooms = [...booking.rooms];
+    updatedRooms[rIndex] = {
+      ...updatedRooms[rIndex],
+      status: 'checked_in'
+    };
+
+    // Determine overall booking status
+    // If ANY room is checked in, set booking to 'checked_in'
+    // Unless all are checked out (unlikely here)
+    const overallStatus = 'checked_in';
+
     // Update booking status
     await updateBooking(bookingId, {
-      status: 'checked_in',
+      status: overallStatus,
       checkInTime: new Date(),
-      roomNumber: roomName,
+      roomNumber: roomName, // This might need to be a list if multiple rooms, but keeping compatible
+      rooms: updatedRooms
     });
 
     // Update room status
@@ -3885,7 +3912,8 @@ export const checkOutGuest = async (
     priority?: HousekeepingTask['priority'];
     assignedTo?: string;
     scheduledTime?: Date;
-  }
+  },
+  roomIndex?: number
 ): Promise<boolean> => {
   if (!db) return false;
   try {
@@ -3895,15 +3923,25 @@ export const checkOutGuest = async (
       return false;
     }
 
+    const rIndex = roomIndex !== undefined ? roomIndex : 0;
+    const targetRoom = booking.rooms[rIndex];
+    if (!targetRoom) {
+      console.error('Target room not found at index:', rIndex);
+      return false;
+    }
+
     // Get or create check-in record
+    // We try to find a record that matches the roomName
+    const roomName = targetRoom.allocatedRoomType || booking.roomNumber || 'Unknown';
     let records = await getCheckInOutRecords(bookingId);
-    let checkInRecord = records[0];
+
+    // Find record for this specific room
+    let checkInRecord = records.find(r => r.roomName === roomName);
 
     // If no check-in record exists, create one (for backward compatibility)
     if (!checkInRecord) {
-      console.warn('No check-in record found, creating one...');
-      const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber || 'Unknown';
-      const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+      console.warn('No check-in record found for room, creating one...', roomName);
+      const suiteType = targetRoom.suiteType || 'Garden Suite';
       const checkInRecordId = await createCheckInOutRecord({
         bookingId,
         guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
@@ -3913,12 +3951,13 @@ export const checkOutGuest = async (
         checkInStaff: 'System',
         idVerified: false,
         roomKeyIssued: false,
-        roomKeyNumber: booking.rooms[0]?.allocatedRoomType || booking.roomNumber || undefined,
+        roomKeyNumber: targetRoom.allocatedRoomType || undefined,
       });
 
       if (checkInRecordId) {
         records = await getCheckInOutRecords(bookingId);
-        checkInRecord = records[0];
+        // Try to find again or just take the first one if we just created it
+        checkInRecord = records.find(r => r.id === checkInRecordId) || records[0];
       }
     }
 
@@ -3939,11 +3978,22 @@ export const checkOutGuest = async (
       }
     }
 
+    // Update rooms status
+    const updatedRooms = [...booking.rooms];
+    updatedRooms[rIndex] = {
+      ...updatedRooms[rIndex],
+      status: 'checked_out'
+    };
+
+    // Check if ALL rooms are checked out
+    const allCheckedOut = updatedRooms.every(r => r.status === 'checked_out' || r.status === 'cancelled');
+
     // Update booking status (this is critical)
     try {
       await updateBooking(bookingId, {
-        status: 'checked_out',
-        checkOutTime: new Date(),
+        status: allCheckedOut ? 'checked_out' : booking.status,
+        checkOutTime: allCheckedOut ? new Date() : undefined,
+        rooms: updatedRooms
       });
     } catch (e) {
       console.error('Error updating booking status:', e);
@@ -3951,9 +4001,8 @@ export const checkOutGuest = async (
     }
 
     // Update room status and create housekeeping task (optional steps)
-    const roomName = booking.rooms[0]?.allocatedRoomType || booking.roomNumber;
     if (roomName && roomName !== 'Unknown') {
-      const suiteType = booking.rooms[0]?.suiteType || 'Garden Suite';
+      const suiteType = targetRoom.suiteType || 'Garden Suite';
 
       // Try to update room status
       try {

@@ -302,7 +302,7 @@ function HotelContent() {
     });
   };
 
-  const addToCart = async (room: Room, roomCount: number = 1) => {
+  const addToCart = async (room: Room, roomCount: number = 1, guestsInput?: { adults: number; children: number; rooms: number }) => {
     if (!tempCheckIn || !tempCheckOut) {
       return;
     }
@@ -335,11 +335,11 @@ function HotelContent() {
       if (suiteType) {
         const checkIn = bookingData ? bookingData.checkIn : tempCheckIn.toISOString();
         const checkOut = bookingData ? bookingData.checkOut : tempCheckOut.toISOString();
-        const baseGuests = bookingData ? bookingData.guests : tempGuests;
+        const baseGuests = guestsInput || (bookingData ? bookingData.guests : tempGuests);
         // Use the roomCount (total desired) for availability check
         const guests = { ...baseGuests, rooms: roomCount };
 
-        if (!bookingData) {
+        if (!bookingData || guestsInput) {
           updateBookingData({
             checkIn,
             checkOut,

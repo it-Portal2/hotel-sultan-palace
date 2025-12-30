@@ -4,6 +4,7 @@ import { XCircleIcon } from '@heroicons/react/24/outline';
 
 interface CheckInModalProps {
     booking: Booking;
+    roomIndex?: number; // Optional specific room index
     onClose: () => void;
     onConfirm: (data: CheckInData) => Promise<void>;
     processing: boolean;
@@ -19,7 +20,7 @@ export interface CheckInData {
     allocatedRoomName: string;
 }
 
-export default function CheckInModal({ booking, onClose, onConfirm, processing }: CheckInModalProps) {
+export default function CheckInModal({ booking, roomIndex, onClose, onConfirm, processing }: CheckInModalProps) {
     const [formData, setFormData] = useState<CheckInData>({
         staffName: '',
         idDocumentType: 'passport',
@@ -33,6 +34,10 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
     const [availableRooms, setAvailableRooms] = useState<RoomType[]>([]);
     const [loadingRooms, setLoadingRooms] = useState(false);
 
+    // Determine target room for context
+    const rIndex = roomIndex !== undefined ? roomIndex : 0;
+    const targetRoom = booking.rooms[rIndex] || booking.rooms[0];
+
     useEffect(() => {
         const fetchRooms = async () => {
             setLoadingRooms(true);
@@ -43,8 +48,8 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
                     getRoomStatuses()
                 ]);
 
-                // Filter rooms by booking's suite type
-                const bookingSuite = booking.rooms[0]?.suiteType || 'Garden Suite';
+                // Filter rooms by specific room's suite type
+                const bookingSuite = targetRoom.suiteType || 'Garden Suite';
                 const suiteRooms = allRooms.filter(r => r.suiteType === bookingSuite);
 
                 // Filter for available rooms
@@ -62,8 +67,10 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
 
                 setAvailableRooms(available);
 
-                // Auto-select if only one available
-                if (available.length === 1) {
+                // Auto-select if allocated or only one available
+                if (targetRoom.allocatedRoomType) {
+                    setFormData(prev => ({ ...prev, allocatedRoomName: targetRoom.allocatedRoomType! }));
+                } else if (available.length === 1) {
                     setFormData(prev => ({ ...prev, allocatedRoomName: available[0].roomName }));
                 }
             } catch (error) {
@@ -74,7 +81,7 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
         };
 
         fetchRooms();
-    }, [booking]);
+    }, [booking, targetRoom]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,7 +112,7 @@ export default function CheckInModal({ booking, onClose, onConfirm, processing }
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Suite Type</p>
-                            <p className="font-bold text-gray-900 text-lg">{booking.rooms[0].suiteType}</p>
+                            <p className="font-bold text-gray-900 text-lg">{targetRoom.suiteType}</p>
                         </div>
                     </div>
 

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, Messaging } from 'firebase/messaging';
@@ -23,7 +23,11 @@ let messaging: Messaging | null = null;
 if (typeof window !== 'undefined') {
   try {
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    // Use initializeFirestore with experimentalForceLongPolling to prevent timeout errors
+    // "Backend didn't respond within 10 seconds"
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
     auth = getAuth(app);
     storage = getStorage(app);
     // Initialize messaging only if service worker is supported
@@ -45,26 +49,26 @@ export { db, auth, storage, messaging };
 if (typeof window !== 'undefined') {
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
-  
+
   console.error = (...args) => {
     const message = args[0]?.toString() || '';
     // Suppress Firestore connection timeout errors
-    if (message.includes('@firebase/firestore') && 
-        (message.includes('Could not reach Cloud Firestore backend') || 
-         message.includes('Backend didn\'t respond within') ||
-         message.includes('operate in offline mode'))) {
+    if (message.includes('@firebase/firestore') &&
+      (message.includes('Could not reach Cloud Firestore backend') ||
+        message.includes('Backend didn\'t respond within') ||
+        message.includes('operate in offline mode'))) {
       return; // Suppress this specific error
     }
     originalConsoleError.apply(console, args);
   };
-  
+
   console.warn = (...args) => {
     const message = args[0]?.toString() || '';
     // Suppress Firestore connection warnings
-    if (message.includes('@firebase/firestore') && 
-        (message.includes('Could not reach Cloud Firestore backend') || 
-         message.includes('Backend didn\'t respond within') ||
-         message.includes('operate in offline mode'))) {
+    if (message.includes('@firebase/firestore') &&
+      (message.includes('Could not reach Cloud Firestore backend') ||
+        message.includes('Backend didn\'t respond within') ||
+        message.includes('operate in offline mode'))) {
       return; // Suppress these warnings
     }
     originalConsoleWarn.apply(console, args);

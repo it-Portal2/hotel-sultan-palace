@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Room } from '@/lib/firestoreService';
 import RoomDetailsModal from './RoomDetailsModal';
@@ -31,19 +31,20 @@ interface RoomCardProps {
   checkOut: Date | null;
   guests: { adults: number; children: number; rooms: number };
   onGuestChange: (key: 'adults' | 'children' | 'rooms', delta: number) => void;
-  onReserve: (room: Room, roomCount: number) => void;
+  onReserve: (room: Room, roomCount: number, guests: { adults: number; children: number; rooms: number }) => void;
   formatDate: (date: Date | null) => string;
   availableRoomCount?: number;
   activeOffer?: AppliedOfferInfo | null;
   nights: number;
 }
 
-const GuestControl = ({ label, value, onIncrease, onDecrease, min }: {
+const GuestControl = ({ label, value, onIncrease, onDecrease, min, max }: {
   label: string;
   value: number;
   onIncrease: () => void;
   onDecrease: () => void;
   min: number;
+  max?: number;
 }) => (
   <div className="flex items-center justify-between">
     <span className="text-[12px] md:text-[14px] text-[#383838]">{label}</span>
@@ -59,7 +60,8 @@ const GuestControl = ({ label, value, onIncrease, onDecrease, min }: {
       <span className="text-[12px] md:text-[14px] text-[#383838] w-4 md:w-5 text-center">{value}</span>
       <button
         onClick={onIncrease}
-        className="text-[#383838] w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
+        disabled={max !== undefined && value >= max}
+        className="text-[#383838] disabled:opacity-50 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center transition-colors hover:bg-gray-100 rounded"
         aria-label={`Increase ${label}`}
       >
         <AddIcon className="text-[16px] md:text-[18px]" />
@@ -73,7 +75,7 @@ export default function RoomCard({
   room,
   checkIn,
   checkOut,
-  guests,
+  guests: globalGuests,
   onGuestChange,
   onReserve,
   formatDate,
@@ -83,8 +85,69 @@ export default function RoomCard({
 }: RoomCardProps) {
   const router = useRouter();
   const [localRoomCount, setLocalRoomCount] = useState(1);
+  const [localGuests, setLocalGuests] = useState(globalGuests); // Local state for independent control
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
+
+  // Calculate max capacity based on room details and local room count
+  const maxGuestsPerRoom = room.maxGuests;
+  const totalCapacity = maxGuestsPerRoom * localRoomCount;
+
+  // Sync effect to clamp guests if room count decreases
+  useEffect(() => {
+    const currentTotal = localGuests.adults + localGuests.children;
+    if (currentTotal > totalCapacity) {
+      // Need to reduce guests. We prioritize reducing children first, then adults.
+      const excess = currentTotal - totalCapacity;
+      const newChildren = Math.max(0, localGuests.children - excess);
+      const remainingExcess = excess - (localGuests.children - newChildren);
+      const newAdults = Math.max(1, localGuests.adults - remainingExcess);
+
+      setLocalGuests(prev => ({
+        ...prev,
+        adults: newAdults,
+        children: newChildren
+      }));
+    }
+  }, [localRoomCount, totalCapacity, localGuests.adults, localGuests.children]);
+
+  // Sync local state with global search params when they change (Top-down sync)
+  useEffect(() => {
+    const totalGuests = globalGuests.adults + globalGuests.children;
+    // Calculate how many rooms are needed for these guests
+    const requiredRooms = Math.ceil(totalGuests / room.maxGuests);
+
+    // New room count should be the max of:
+    // 1. What the user asked for globally (globalGuests.rooms)
+    // 2. What is needed to fit the people (requiredRooms)
+    // 3. At least 1 room
+    let newRoomCount = Math.max(globalGuests.rooms, requiredRooms, 1);
+
+    // If we know available rooms, cap it.
+    if (availableRoomCount !== undefined && availableRoomCount > 0) {
+      newRoomCount = Math.min(newRoomCount, availableRoomCount);
+    }
+
+    setLocalRoomCount(newRoomCount);
+    setLocalGuests(globalGuests);
+
+  }, [globalGuests, room.maxGuests, availableRoomCount]);
+
+  const handleGuestChange = (key: 'adults' | 'children' | 'rooms', delta: number) => {
+    setLocalGuests(prev => {
+      // Optimistic check to prevent going over capacity in the first place
+      // This is a double-check in addition to the button disabled state
+      if (delta > 0) {
+        const currentTotal = prev.adults + prev.children;
+        if (currentTotal >= totalCapacity) return prev;
+      }
+
+      return {
+        ...prev,
+        [key]: Math.max(key === 'children' ? 0 : 1, prev[key] + delta)
+      };
+    });
+  };
 
   const nightsText = nights > 1 ? `${nights} nights` : '1 night';
 
@@ -99,6 +162,8 @@ export default function RoomCard({
     )
     : 0;
   const discountedPrice = Math.max(0, originalPrice - discountAmount);
+
+  const currentTotalGuests = localGuests.adults + localGuests.children;
 
   const getCancellationText = (): string => {
     const daysBefore = room.cancellationFreeDays ?? 2;
@@ -190,6 +255,11 @@ export default function RoomCard({
                 <CotIcon className="text-[#363636] text-[16px] md:text-[18px]" />
                 <span className="text-[13px] md:text-[14px]">Cot available on request</span>
               </div>
+              <div className="flex items-center gap-[7px]">
+                <span className="text-[13px] md:text-[14px] font-medium text-[#1D69F9]">
+                  Max Guests: {room.maxGuests} per room
+                </span>
+              </div>
             </div>
 
             <p className="text-[13px] md:text-[14px] text-[#373737] leading-[1.6] mb-[20px] line-clamp-3 md:line-clamp-none">{room.description}</p>
@@ -232,7 +302,7 @@ export default function RoomCard({
 
           <div className="flex flex-col">
             <p className="text-[12px] md:text-[14px] font-semibold text-[#000000] mb-[10px] pr-16 bg-transparent">
-              Price for {nights} {nights > 1 ? 'nights' : 'night'}, {guests.adults} {guests.adults > 1 ? 'adults' : 'adult'}
+              Price for {nights} {nights > 1 ? 'nights' : 'night'}, {localGuests.adults} {localGuests.adults > 1 ? 'adults' : 'adult'}
               {localRoomCount > 1 && `, ${localRoomCount} rooms`}
             </p>
             <div className="flex items-baseline gap-[5px] mb-[10px] relative">
@@ -360,20 +430,37 @@ export default function RoomCard({
               onIncrease={() => setLocalRoomCount(prev => prev + 1)}
               onDecrease={() => setLocalRoomCount(prev => Math.max(1, prev - 1))}
               min={1}
+              max={availableRoomCount}
             />
-            <GuestControl
-              label="Number of Guests"
-              value={guests.adults}
-              onIncrease={() => onGuestChange('adults', 1)}
-              onDecrease={() => onGuestChange('adults', -1)}
-              min={1}
-            />
+            <div className="flex flex-col">
+              <GuestControl
+                label="Number of Guests"
+                value={localGuests.adults}
+                onIncrease={() => {
+                  if (currentTotalGuests < totalCapacity) {
+                    handleGuestChange('adults', 1);
+                  }
+                }}
+                onDecrease={() => handleGuestChange('adults', -1)}
+                min={1}
+                max={totalCapacity - localGuests.children}
+              />
+              {currentTotalGuests >= totalCapacity && (
+                <span className="text-[10px] text-red-500 mt-1 pl-1">Max capacity reached for selected rooms</span>
+              )}
+            </div>
+
             <GuestControl
               label="Child"
-              value={guests.children}
-              onIncrease={() => onGuestChange('children', 1)}
-              onDecrease={() => onGuestChange('children', -1)}
+              value={localGuests.children}
+              onIncrease={() => {
+                if (currentTotalGuests < totalCapacity) {
+                  handleGuestChange('children', 1);
+                }
+              }}
+              onDecrease={() => handleGuestChange('children', -1)}
               min={0}
+              max={totalCapacity - localGuests.adults}
             />
           </div>
 
@@ -383,8 +470,7 @@ export default function RoomCard({
                 alert('No rooms available for the selected dates. Please choose different dates.');
                 return;
               }
-              await onReserve(room, localRoomCount);
-              router.push('/add-ons');
+              await onReserve(room, localRoomCount, localGuests);
             }}
             disabled={availableRoomCount !== undefined && availableRoomCount === 0}
             className={`w-full font-medium py-2 md:py-[10px] rounded-[7px] transition-colors text-[16px] md:text-[20px] mt-auto ${availableRoomCount !== undefined && availableRoomCount === 0
@@ -396,7 +482,6 @@ export default function RoomCard({
           </button>
         </div>
       </div>
-
       <RoomDetailsModal
         room={room}
         isOpen={isModalOpen}

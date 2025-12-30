@@ -4,6 +4,7 @@ import { XCircleIcon } from '@heroicons/react/24/outline';
 
 interface CheckOutModalProps {
     booking: Booking;
+    roomIndex?: number;
     onClose: () => void;
     onConfirm: (data: CheckOutData) => Promise<void>;
     processing: boolean;
@@ -17,7 +18,7 @@ export interface CheckOutData {
     housekeepingAssignee?: string;
 }
 
-export default function CheckOutModal({ booking, onClose, onConfirm, processing }: CheckOutModalProps) {
+export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, processing }: CheckOutModalProps) {
     const [formData, setFormData] = useState<CheckOutData>({
         staffName: '',
         depositReturned: false,
@@ -25,6 +26,10 @@ export default function CheckOutModal({ booking, onClose, onConfirm, processing 
         housekeepingPriority: 'high',
         housekeepingAssignee: '',
     });
+
+    const rIndex = roomIndex !== undefined ? roomIndex : 0;
+    const targetRoom = booking.rooms[rIndex] || booking.rooms[0];
+    const roomName = targetRoom.allocatedRoomType || 'Unassigned';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,7 +63,7 @@ export default function CheckOutModal({ booking, onClose, onConfirm, processing 
                         <div>
                             <p className="text-sm font-semibold text-gray-900">Automation Enabled</p>
                             <p className="text-sm text-gray-500 mt-0.5">
-                                A housekeeping task will be automatically created for <strong>Room {booking.rooms[0].allocatedRoomType}</strong> upon check-out.
+                                A housekeeping task will be automatically created for <strong>Room {roomName}</strong> upon check-out.
                             </p>
                         </div>
                     </div>

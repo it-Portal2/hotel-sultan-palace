@@ -277,6 +277,17 @@ export default function CheckoutPage() {
   };
 
   const addReservationGuest = () => {
+    // Basic limit check
+    // The primary guest (Contact Person) counts as 1
+    // Extra guests can satisfy the remaining count
+    const totalBookedGuests = (bookingData?.guests.adults || 0) + (bookingData?.guests.children || 0);
+    const existingCount = reservationGuests.length + 1; // +1 for the main Guest 1 (Contact Person)
+
+    if (existingCount >= totalBookedGuests) {
+      showToast(`You have booked for ${totalBookedGuests} guests. You cannot add more details.`, "error");
+      return;
+    }
+
     const newGuest: ReservationGuest = {
       id: Date.now().toString(),
       firstName: "",
@@ -356,10 +367,16 @@ export default function CheckoutPage() {
           firstName: guest.firstName,
           lastName: guest.lastName,
           specialNeeds: guest.specialNeeds,
+          // Storing the file name as a string for now since we don't have a storage uploader ready in this context
+          // In a full implementation, this should be the download URL after uploading to Firebase Storage
+          idDocumentName: guest.idDocument?.name
         })),
-        rooms: rooms.length
-          ? [{ type: rooms[0].type || "Standard Room", price: rooms[0].price }]
-          : [{ type: "Standard Room", price: 0 }],
+        rooms: rooms.map((room) => ({
+          name: room.name,
+          type: room.type || "Standard Room",
+          price: room.price,
+          suiteType: room.suiteType || (room.name.includes('Imperial') ? 'Imperial Suite' : room.name.includes('Garden') ? 'Garden Suite' : 'Ocean Suite')
+        })),
         addOns: addOns.map((addon) => ({
           name: addon.name,
           price: addon.price,
@@ -513,6 +530,30 @@ export default function CheckoutPage() {
                             ? rooms[0].name
                             : "No room selected"}
                         </h3>
+                        {bookingData && (
+                          <div className="flex gap-4 text-[14px] text-[#423B2D] font-medium bg-[#F0F6FF] p-2 rounded w-fit">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                              </svg>
+                              {bookingData.guests.rooms} Room{bookingData.guests.rooms > 1 ? 's' : ''}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                              </svg>
+                              {bookingData.guests.adults} Adult{bookingData.guests.adults > 1 ? 's' : ''}
+                            </span>
+                            {bookingData.guests.children > 0 && (
+                              <span className="flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                </svg>
+                                {bookingData.guests.children} Child{bookingData.guests.children > 1 ? 'ren' : ''}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <p className="text-[15px] font-bold text-[#1D69F9]">
                           Total Stay: {getNumberOfNights()} Night
                           {getNumberOfNights() > 1 ? "s" : ""}
@@ -971,14 +1012,20 @@ export default function CheckoutPage() {
                       </div>
                     ))}
 
-                    <button
-                      type="button"
-                      onClick={addReservationGuest}
-                      className="w-full flex items-center justify-center gap-1 py-2 bg-[rgba(255,106,0,0.1)] border border-[#676767] text-[12px] font-semibold text-[#434343]"
-                    >
-                      <PlusIcon className="w-6 h-6" />
-                      Add Guest
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[12px] text-gray-500 italic text-center">
+                        Note: You have booked for {(bookingData?.guests.adults || 0) + (bookingData?.guests.children || 0)} guests.
+                        Added keys must match your booking selection.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={addReservationGuest}
+                        className="w-full flex items-center justify-center gap-1 py-2 bg-[rgba(255,106,0,0.1)] border border-[#676767] text-[12px] font-semibold text-[#434343]"
+                      >
+                        <PlusIcon className="w-6 h-6" />
+                        Add Guest
+                      </button>
+                    </div>
                   </div>
                 </div>
 

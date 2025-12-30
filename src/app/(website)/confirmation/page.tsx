@@ -14,12 +14,18 @@ interface BookingDetails {
     children: number;
     rooms: number;
   };
-  guestDetails: Array<{
+  guestDetails: {
     prefix: string;
     firstName: string;
     lastName: string;
     mobile: string;
     email: string;
+  };
+  reservationGuests: Array<{
+    firstName: string;
+    lastName: string;
+    specialNeeds: string;
+    idDocumentName?: string;
   }>;
   address: {
     country: string;
@@ -28,14 +34,13 @@ interface BookingDetails {
     address1: string;
     address2: string;
   };
-  room: {
-    id: string;
+  rooms: Array<{
     name: string;
     price: number;
     type: string;
     allocatedRoomType?: string;
     suiteType?: string;
-  };
+  }>;
   addOns: Array<{
     id: string;
     name: string;
@@ -54,7 +59,7 @@ export default function ConfirmationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedBooking = localStorage.getItem("bookingDetails");
+    const storedBooking = localStorage.getItem("pendingBooking") || localStorage.getItem("bookingDetails");
     if (storedBooking) {
       try {
         const parsed = JSON.parse(storedBooking);
@@ -116,9 +121,9 @@ export default function ConfirmationPage() {
           color: white !important;
         }
       `}</style>
-            
+
       {/* Main Content */}
-      <div className="pt-50 pb-16">
+      <div className="pt-24 pb-16">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Success Header */}
           <div className="text-center mb-12">
@@ -139,7 +144,7 @@ export default function ConfirmationPage() {
             {/* Booking Summary */}
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Booking Summary</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Dates */}
                 <div>
@@ -182,44 +187,48 @@ export default function ConfirmationPage() {
                     <p className="text-sm text-gray-600">
                       {bookingDetails.guests.rooms} Room{bookingDetails.guests.rooms > 1 ? 's' : ''}
                     </p>
-                   
+
                   </div>
                 </div>
               </div>
 
               {/* Room Details */}
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Room</h3>
-                <div className=" border border-gray-200  p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-gray-900 text-lg">
-                        {bookingDetails.room?.name || 'Standard Room'}
-                      </h4>
-                      <p className="text-gray-600">
-                        {bookingDetails.room?.type || 'Standard'}
-                      </p>
-                      {bookingDetails.room?.allocatedRoomType && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500">Allocated Room:</p>
-                          <p className="text-sm font-semibold text-green-700 mt-1">
-                            {bookingDetails.room.allocatedRoomType}
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Room{bookingDetails.rooms?.length > 1 ? 's' : ''}</h3>
+                <div className="space-y-4">
+                  {bookingDetails.rooms?.map((room, index) => (
+                    <div key={index} className="border border-gray-200 p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900 text-lg">
+                            {room.name || 'Standard Room'}
+                          </h4>
+                          <p className="text-gray-600">
+                            {room.type || 'Standard'}
                           </p>
-                          {bookingDetails.room.suiteType && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {bookingDetails.room.suiteType}
-                            </p>
+                          {room.allocatedRoomType && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <p className="text-xs text-gray-500">Allocated Room:</p>
+                              <p className="text-sm font-semibold text-green-700 mt-1">
+                                {room.allocatedRoomType}
+                              </p>
+                              {room.suiteType && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {room.suiteType}
+                                </p>
+                              )}
+                            </div>
                           )}
+                          <p className="text-sm text-gray-500 mt-2">
+                            ${(room.price || 0).toLocaleString()} per night × {getNumberOfNights()} night{getNumberOfNights() > 1 ? 's' : ''}
+                          </p>
                         </div>
-                      )}
-                      <p className="text-sm text-gray-500 mt-2">
-                        ${(bookingDetails.room?.price || 0).toLocaleString()} per night × {getNumberOfNights()} night{getNumberOfNights() > 1 ? 's' : ''}
-                      </p>
+                        <p className="text-xl font-semibold text-orange-600">
+                          ${((room.price || 0) * getNumberOfNights()).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xl font-semibold text-orange-600">
-                      ${((bookingDetails.room?.price || 0) * getNumberOfNights()).toLocaleString()}
-                    </p>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -259,35 +268,59 @@ export default function ConfirmationPage() {
             {/* Guest Information */}
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Guest Information</h2>
-              
-              {bookingDetails.guestDetails && bookingDetails.guestDetails.length > 0 ? (
-                bookingDetails.guestDetails.map((guest, index) => (
-                  <div key={index} className=" border border-gray-200 p-6 mb-4">
+
+              <div className="border border-gray-200 p-6 mb-4 bg-white">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Primary Contact (Guest 1)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="font-medium text-gray-900">
+                      {bookingDetails.guestDetails?.prefix || ''} {bookingDetails.guestDetails?.firstName || ''} {bookingDetails.guestDetails?.lastName || ''}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="font-medium text-gray-900">{bookingDetails.guestDetails?.email || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Mobile</p>
+                    <p className="font-medium text-gray-900">{bookingDetails.guestDetails?.mobile || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {bookingDetails.reservationGuests && bookingDetails.reservationGuests.length > 0 && (
+                bookingDetails.reservationGuests.map((guest, index) => (
+                  <div key={index} className="border border-gray-200 p-6 mb-4 bg-white">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Guest {index + 1}
+                      Guest {index + 2}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">Name</p>
                         <p className="font-medium text-gray-900">
-                          {guest.prefix || ''} {guest.firstName || ''} {guest.lastName || ''}
+                          {guest.firstName} {guest.lastName}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-medium text-gray-900">{guest.email || 'Not provided'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Mobile</p>
-                        <p className="font-medium text-gray-900">{guest.mobile || 'Not provided'}</p>
-                      </div>
+                      {guest.idDocumentName && (
+                        <div>
+                          <p className="text-sm text-gray-600">ID Document</p>
+                          <p className="font-medium text-green-700 flex items-center gap-1">
+                            ✓ {guest.idDocumentName}
+                          </p>
+                        </div>
+                      )}
+                      {guest.specialNeeds && (
+                        <div className="col-span-1 md:col-span-2">
+                          <p className="text-sm text-gray-600">Special Request / Needs</p>
+                          <p className="font-medium text-gray-900">{guest.specialNeeds}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
-              ) : (
-                <div className=" border border-gray-200 p-6">
-                  <p className="text-gray-600">No guest information available</p>
-                </div>
               )}
             </div>
 
@@ -297,7 +330,7 @@ export default function ConfirmationPage() {
                 <MapPinIcon className="w-6 h-6 text-orange-600 mr-3" />
                 <h2 className="text-2xl font-semibold text-gray-900">Billing Address</h2>
               </div>
-              
+
               <div className=" p-6">
                 <p className="font-medium text-gray-900 mb-2">
                   {bookingDetails.address?.address1 || 'Not provided'}
@@ -317,7 +350,7 @@ export default function ConfirmationPage() {
           <div className="bg-orange-50 rounded-2xl p-8 text-center">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">What&apos;s Next?</h2>
             <p className="text-gray-600 mb-6">
-              You will receive a confirmation email with all the details of your booking. 
+              You will receive a confirmation email with all the details of your booking.
               Please check your email for further instructions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -337,8 +370,7 @@ export default function ConfirmationPage() {
           </div>
         </div>
       </div>
-      
-          </div>
+
+    </div>
   );
 }
-

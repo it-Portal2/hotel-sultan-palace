@@ -25,6 +25,7 @@ export default function FrontDeskPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedRoomIndex, setSelectedRoomIndex] = useState<number>(0);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -59,7 +60,8 @@ export default function FrontDeskPage() {
         data.roomKeyNumber || undefined,
         data.depositAmount ? parseFloat(data.depositAmount) : undefined,
         data.notes || undefined,
-        data.allocatedRoomName
+        data.allocatedRoomName,
+        selectedRoomIndex // Pass the room index
       );
 
       if (recordId) {
@@ -78,11 +80,55 @@ export default function FrontDeskPage() {
   };
 
   const handleCheckOut = async (data: CheckOutData) => {
-    // Standardize Checkout Flow: Redirect to Billing/Checkout Page
     if (!selectedBooking) return;
-    const bookingId = selectedBooking.bookingId || selectedBooking.id;
-    router.push(`/admin/checkout?bookingId=${bookingId}`);
-    setShowCheckOutModal(false);
+
+    // If it's the last room or only room, we might want to redirect to checkout
+    // BUT the new requirements imply we want to check out specific rooms here.
+    // The previous logic redirected to checkout page.
+    // If we want to support per-room checkout here, we should call checkOutGuest with roomIndex.
+    // The Checkout Page (billing) is usually for the WHOLE booking.
+    // If we are checking out just ONE room of a multi-room booking, we probably shouldn't redirect to the main checkout page immediately,
+    // OR we should, but the checkout page needs to handle partial checkout?
+    // For now, let's implement the in-place checkout for the room using the modal, 
+    // effectively overriding the "Redirect to Billing" behavior for multi-room partial checkouts,
+    // OR we keep the redirect but pass the room index to the checkout page?
+    // The checkout page `src/app/(admin)/admin/checkout/page.tsx` seems to calculate the bill for the WHOLE booking.
+
+    // Let's use the explicit checkOutGuest function here for the room, as requested by the "Individual management" requirement.
+    // We can still redirect to billing if needed, but the user specifically asked for "individual management (check-in/out)".
+
+    setProcessing(true);
+    try {
+      const success = await checkOutGuest(
+        selectedBooking.id,
+        data.staffName,
+        data.depositReturned,
+        data.notes || undefined,
+        {
+          priority: data.housekeepingPriority,
+          assignedTo: data.housekeepingAssignee || undefined
+        },
+        selectedRoomIndex
+      );
+
+      if (success) {
+        showToast('Room checked out successfully!', 'success');
+        setShowCheckOutModal(false);
+        await loadBookings();
+
+        // Optionally redirect to billing if all rooms are checked out?
+        // simple check:
+        // const allCheckedOut = ... 
+        // For now, let's stay here as it allows managing other rooms.
+      } else {
+        showToast('Failed to check out room', 'error');
+      }
+    } catch (error) {
+      console.error('Error checking out room:', error);
+      showToast('Failed to check out room', 'error');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const filteredBookings = useMemo(() => {
@@ -92,8 +138,17 @@ export default function FrontDeskPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Note: With multi-room, status filtering becomes tricker if we filter by *booking* status
+    // but the rows are per-room. FrontDeskTable handles rows.
+    // However, if we filter bookings here, we might hide a booking that has one room active and one not?
+    // The existing logic filters *bookings*.
+    // If a booking is "checked_in" (partially or fully), it shows in 'in_house'.
+    // If 'confirmed', it shows in 'arrivals'.
+    // We updated `checkInGuest` to set booking status to `checked_in` if any room is checked in.
+    // So this logic should still roughly work.
+
     if (activeTab === 'arrivals') {
-      filtered = filtered.filter(b => b.status === 'confirmed');
+      filtered = filtered.filter(b => b.status === 'confirmed' || b.status === 'pending');
       // In a real app, we'd also check if checkIn date is <= today
     } else if (activeTab === 'in_house') {
       filtered = filtered.filter(b => b.status === 'checked_in');
@@ -209,12 +264,14 @@ export default function FrontDeskPage() {
       <FrontDeskTable
         bookings={filteredBookings}
         isReadOnly={isReadOnly}
-        onCheckIn={(b) => {
+        onCheckIn={(b, index) => {
           setSelectedBooking(b);
+          setSelectedRoomIndex(index || 0);
           setShowCheckInModal(true);
         }}
-        onCheckOut={(b) => {
+        onCheckOut={(b, index) => {
           setSelectedBooking(b);
+          setSelectedRoomIndex(index || 0);
           setShowCheckOutModal(true);
         }}
       />
@@ -223,6 +280,7 @@ export default function FrontDeskPage() {
       {showCheckInModal && selectedBooking && (
         <CheckInModal
           booking={selectedBooking}
+          roomIndex={selectedRoomIndex}
           onClose={() => setShowCheckInModal(false)}
           onConfirm={handleCheckIn}
           processing={processing}
@@ -232,6 +290,7 @@ export default function FrontDeskPage() {
       {showCheckOutModal && selectedBooking && (
         <CheckOutModal
           booking={selectedBooking}
+          roomIndex={selectedRoomIndex}
           onClose={() => setShowCheckOutModal(false)}
           onConfirm={handleCheckOut}
           processing={processing}

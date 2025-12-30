@@ -7,15 +7,15 @@ interface BookingDetailsModalProps {
     booking: Booking;
     onClose: () => void;
     isReadOnly: boolean;
-    onStatusUpdate: (type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out', booking: Booking) => void;
+    onStatusUpdate: (type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out', booking: Booking, roomIndex?: number) => void;
 }
 
 export default function BookingDetailsModal({ booking, onClose, isReadOnly, onStatusUpdate }: BookingDetailsModalProps) {
-    const [showConfirm, setShowConfirm] = useState<{ type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out' } | null>(null);
+    const [showConfirm, setShowConfirm] = useState<{ type: 'cancel' | 'confirm' | 'pending' | 'check_in' | 'check_out', roomIndex?: number } | null>(null);
 
     const confirmAction = async () => {
         if (showConfirm) {
-            await onStatusUpdate(showConfirm.type, booking);
+            await onStatusUpdate(showConfirm.type, booking, showConfirm.roomIndex);
             setShowConfirm(null);
         }
     };
@@ -23,6 +23,41 @@ export default function BookingDetailsModal({ booking, onClose, isReadOnly, onSt
     const guests = booking.guests || { adults: 0, children: 0, rooms: 1 };
     const rooms = booking.rooms || [];
     const addOns = booking.addOns || [];
+
+    // Helper to determine available actions for a room
+    const getRoomActions = (room: any, index: number) => {
+        if (isReadOnly) return null;
+
+        // Use individual room status if available, otherwise fallback to booking status (but careful with fallback)
+        // If room status is undefined, and booking is confirmed, room is confirmed.
+        const rStatus = room.status || (booking.status === 'confirmed' ? 'confirmed' : 'pending');
+        // Actually, if booking is checked_in, room might be checked_in (if status undefined).
+        // But with our new logic, rooms should have status.
+
+        const actions = [];
+        if (rStatus === 'confirmed') {
+            actions.push(
+                <button
+                    key="check_in"
+                    onClick={() => setShowConfirm({ type: 'check_in', roomIndex: index })}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200"
+                >
+                    Check In
+                </button>
+            );
+        } else if (rStatus === 'checked_in') {
+            actions.push(
+                <button
+                    key="check_out"
+                    onClick={() => setShowConfirm({ type: 'check_out', roomIndex: index })}
+                    className="text-xs font-bold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded border border-gray-300"
+                >
+                    Check Out
+                </button>
+            );
+        }
+        return actions;
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 cursor-pointer" onClick={onClose}>
@@ -119,24 +154,60 @@ export default function BookingDetailsModal({ booking, onClose, isReadOnly, onSt
                     {/* Room & Addons */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="border border-gray-100 p-5">
-                            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Rooms Selected</h4>
-                            <div className="space-y-3">
-                                {rooms.map((r, i) => (
-                                    <div key={i} className="flex justify-between items-center p-3 bg-gray-50">
-                                        <div>
-                                            <div className="font-medium text-gray-900">{r.type}</div>
-                                            <div className="text-xs text-gray-500">{r.suiteType || 'Standard'}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-gray-900">${r.price}</div>
-                                            {r.allocatedRoomType ? (
-                                                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5">Room {r.allocatedRoomType}</span>
-                                            ) : (
-                                                <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5">Unassigned</span>
-                                            )}
-                                        </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Rooms Selected</h4>
+                                {/* Group Actions */}
+                                {!isReadOnly && rooms.length > 1 && (
+                                    <div className="flex gap-2">
+                                        {rooms.some(r => !r.status || r.status === 'confirmed' || r.status === 'pending') && (
+                                            <button
+                                                onClick={() => setShowConfirm({ type: 'check_in', roomIndex: -2 })} // -2 for Group Check In
+                                                className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded transition-colors"
+                                            >
+                                                Check In Remaining
+                                            </button>
+                                        )}
+                                        {rooms.some(r => r.status === 'checked_in') && (
+                                            <button
+                                                onClick={() => setShowConfirm({ type: 'check_out', roomIndex: -2 })} // -2 for Group Check Out
+                                                className="text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-2 py-1 rounded transition-colors"
+                                            >
+                                                Check Out Remaining
+                                            </button>
+                                        )}
                                     </div>
-                                ))}
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                {rooms.map((r, i) => {
+                                    const rStatus = r.status || booking.status;
+                                    return (
+                                        <div key={i} className="flex justify-between items-center p-3 bg-gray-50">
+                                            <div>
+                                                <div className="font-medium text-gray-900">{r.type}</div>
+                                                <div className="text-xs text-gray-500 mb-1">{r.suiteType || 'Standard'}</div>
+                                                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${rStatus === 'checked_in' ? 'bg-emerald-100 text-emerald-800' :
+                                                    rStatus === 'checked_out' ? 'bg-gray-100 text-gray-600' :
+                                                        'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {rStatus.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end gap-1">
+                                                <div className="font-bold text-gray-900">${r.price}</div>
+                                                {r.allocatedRoomType ? (
+                                                    <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5">Room {r.allocatedRoomType}</span>
+                                                ) : (
+                                                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5">Unassigned</span>
+                                                )}
+                                                {/* Individual Actions */}
+                                                <div className="mt-1">
+                                                    {getRoomActions(r, i)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -173,7 +244,7 @@ export default function BookingDetailsModal({ booking, onClose, isReadOnly, onSt
                                 </RestrictedAction>
                             ) : (
                                 <>
-                                    {/* Status Actions */}
+                                    {/* Status Actions - kept for backward compatibility/global actions, but can be confusing for multi-room checks if not careful */}
                                     {booking.status === 'pending' && (
                                         <div className="flex gap-3 w-full">
                                             <button
@@ -199,6 +270,10 @@ export default function BookingDetailsModal({ booking, onClose, isReadOnly, onSt
                                             >
                                                 Cancel
                                             </button>
+                                            {/* Hide global Check In if multiple rooms to encourage individual check-in? 
+                                                Or keep it for "Check In All" or "Check In First Available"
+                                                For now keeping it but user has individual actions in the list.
+                                            */}
                                             <button
                                                 onClick={() => setShowConfirm({ type: 'check_in' })}
                                                 className="flex-1 md:flex-none px-6 py-2.5 bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
@@ -240,8 +315,8 @@ export default function BookingDetailsModal({ booking, onClose, isReadOnly, onSt
                         <h3 className="text-lg font-bold text-gray-900 mb-2">
                             {showConfirm.type === 'confirm' ? 'Confirm Booking?' :
                                 showConfirm.type === 'cancel' ? 'Cancel Booking?' :
-                                    showConfirm.type === 'check_in' ? 'Check In Guest?' :
-                                        showConfirm.type === 'check_out' ? 'Check Out Guest?' : 'Reopen Booking?'}
+                                    showConfirm.type === 'check_in' ? (showConfirm.roomIndex !== undefined ? 'Check In Room?' : 'Check In Guest?') :
+                                        showConfirm.type === 'check_out' ? (showConfirm.roomIndex !== undefined ? 'Check Out Room?' : 'Check Out Guest?') : 'Reopen Booking?'}
                         </h3>
                         <p className="text-gray-600 mb-6 text-sm">
                             {showConfirm.type === 'cancel'
