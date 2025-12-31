@@ -96,7 +96,7 @@ export interface Booking {
     price: number;
     allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
-    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show';
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance';
     ratePlan?: string;
   }>;
 
@@ -110,7 +110,7 @@ export interface Booking {
   // Financial details
   totalAmount: number;
   bookingId: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance';
 
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
