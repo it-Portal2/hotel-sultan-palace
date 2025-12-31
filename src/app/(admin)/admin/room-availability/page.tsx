@@ -1431,13 +1431,23 @@ export default function RoomAvailabilityPage() {
                             <p className="font-semibold text-gray-900 text-xs">{selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString() : 'N/A'}</p>
                           </div>
 
-                          <div>
-                            <p className="text-gray-500 text-xs mb-0.5">Room Type</p>
-                            <p className="font-semibold text-gray-900">{selectedBooking.rooms[0]?.suiteType}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs mb-0.5">Room Number</p>
-                            <p className="font-bold text-gray-900 tracking-wide uppercase">{selectedBooking.rooms[0]?.allocatedRoomType || 'Unassigned'}</p>
+                          <div className="col-span-2">
+                            <p className="text-gray-500 text-xs mb-1">Rooms & Suites</p>
+                            <div className="space-y-1">
+                              {selectedBooking.rooms.map((room, idx) => (
+                                <div key={idx} className="flex justify-between items-center bg-gray-50 p-1.5 rounded border border-gray-100">
+                                  <div>
+                                    <p className="font-semibold text-gray-900 text-xs">{room.suiteType}</p>
+                                    <p className="text-[10px] text-gray-500">{room.ratePlan || 'Standard Rate'}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-bold text-gray-900 tracking-wide uppercase text-xs">
+                                      {room.allocatedRoomType || 'Unassigned'}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
 
                           <div>

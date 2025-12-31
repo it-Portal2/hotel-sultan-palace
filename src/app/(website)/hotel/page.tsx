@@ -127,8 +127,14 @@ function HotelContent() {
     const fetchAvailableCounts = async () => {
       if (!tempCheckIn || !tempCheckOut || rooms.length === 0) return;
 
-      const checkInStr = tempCheckIn.toISOString().split('T')[0];
-      const checkOutStr = tempCheckOut.toISOString().split('T')[0];
+      const toLocalISOString = (date: Date) => {
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+        return localDate.toISOString().split('T')[0];
+      };
+
+      const checkInStr = toLocalISOString(tempCheckIn);
+      const checkOutStr = toLocalISOString(tempCheckOut);
 
       const counts: Record<string, number> = {};
 

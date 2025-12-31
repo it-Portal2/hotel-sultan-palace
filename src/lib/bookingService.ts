@@ -43,6 +43,23 @@ export const getAvailableRoomTypes = async (
       });
     });
 
+    // Check for maintenance blocks
+    const { getRoomStatuses } = await import('./firestoreService');
+    const roomStatuses = await getRoomStatuses(suiteType);
+
+    roomStatuses.forEach(status => {
+      if (status.status === 'maintenance' && status.maintenanceStartDate && status.maintenanceEndDate) {
+        // Check if maintenance period overlaps with requested dates
+        const maintenanceStart = status.maintenanceStartDate.toISOString();
+        const maintenanceEnd = status.maintenanceEndDate.toISOString();
+
+        if (datesOverlap(maintenanceStart, maintenanceEnd, checkIn, checkOut)) {
+          console.log(`Room ${status.roomName} is under maintenance from ${maintenanceStart} to ${maintenanceEnd}`);
+          bookedRoomTypes.add(status.roomName);
+        }
+      }
+    });
+
     // Return available room types
     return allRoomTypes
       .filter(rt => !bookedRoomTypes.has(rt.roomName))
@@ -126,10 +143,10 @@ export const allocateRoomTypes = async (
       // This prevents the same room type from being booked repeatedly across different bookings
       const randomIndex = Math.floor(Math.random() * roomsToChooseFrom.length);
       const allocatedRoomType = roomsToChooseFrom[randomIndex];
-      
+
       // Track this allocation to avoid duplicates in the same booking
       allocatedPerSuite[suiteType].add(allocatedRoomType);
-      
+
       allocatedRooms.push({
         ...room,
         suiteType,
@@ -217,7 +234,7 @@ export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'cr
 
     // Auto-allocate room types before creating booking
     const bookingWithAllocatedRooms = await allocateRoomTypes(bookingData);
-    
+
     const bookingId = await createBooking(bookingWithAllocatedRooms);
     if (!bookingId) {
       throw new Error('Failed to create booking');
@@ -226,7 +243,7 @@ export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'cr
     // Update room status to "reserved" for allocated rooms
     if (bookingWithAllocatedRooms.rooms && bookingWithAllocatedRooms.rooms.length > 0) {
       const { getRoomStatus, updateRoomStatus, createRoomStatus } = await import('./firestoreService');
-      
+
       for (const room of bookingWithAllocatedRooms.rooms) {
         if (room.allocatedRoomType && room.suiteType) {
           try {
@@ -311,7 +328,7 @@ export const cancelBooking = async (id: string): Promise<void> => {
     // If room was allocated, free it up
     if (booking.rooms && booking.rooms.length > 0) {
       const { getRoomStatus, updateRoomStatus, createRoomStatus } = await import('./firestoreService');
-      
+
       for (const room of booking.rooms) {
         if (room.allocatedRoomType) {
           try {
