@@ -305,6 +305,7 @@ export default function RoomAvailabilityPage() {
   const [showBlockRoomModal, setShowBlockRoomModal] = useState(false);
   const [blockRoomInitialData, setBlockRoomInitialData] = useState<Partial<BlockRoomData>>({});
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [registrationPopupPos, setRegistrationPopupPos] = useState<{ top: number; left: number } | null>(null);
 
 
   const [hoveredBooking, setHoveredBooking] = useState<Booking | null>(null);
@@ -706,14 +707,17 @@ export default function RoomAvailabilityPage() {
           ratePlan: r.rateType
         })),
         addOns: [],
-        status: formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending',
+        status: formData.reservationType === 'Walk In' ? 'checked_in' : (formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending'),
         totalAmount: formData.totalAmount,
         bookingId: `WALKIN-${Date.now()}`, // Or generate a better ID
-        paymentStatus: formData.paymentMode ? 'paid' : 'pending',
-        paidAmount: formData.paymentMode ? formData.totalAmount : 0,
-        paymentMethod: formData.paymentMode ? 'Cash' : '', // simplified
+        paymentStatus: formData.paidAmount >= formData.totalAmount ? 'paid' : (formData.paidAmount > 0 ? 'partial' : 'pending'),
+        paidAmount: formData.paidAmount || 0,
+        paymentMethod: formData.paidAmount > 0 ? 'Cash' : '', // simplified, assume Cash for walk-in/quick entry
         paymentDate: new Date(),
-        source: formData.businessSource.toLowerCase().replace(' ', '_'),
+        // Update source if Walk In, otherwise default or from form
+        source: formData.reservationType === 'Walk In' ? 'walk_in' : (formData.businessSource ? formData.businessSource.toLowerCase().replace(' ', '_') : 'direct'),
+        // Set checkInTime if Walk In
+        checkInTime: formData.reservationType === 'Walk In' ? new Date() : undefined,
         notes: '',
       };
 
@@ -1365,8 +1369,19 @@ export default function RoomAvailabilityPage() {
                           : 'bg-white border border-blue-500 text-blue-600 hover:bg-blue-50'
                           }`}
                         disabled={selectedBooking.status === 'confirmed'}
-                        onClick={() => {
+                        onClick={(e) => {
                           if (selectedBooking.status !== 'confirmed') {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            // Position to the left of the panel (since panel is on right)
+                            // or just slightly offset. Since panel is fixed right, we want modal to be visibly near.
+                            // Let's settle for centered in viewport relative to click is hard if modal is large. 
+                            // User wants it "near the button". 
+                            // Let's pass the button rect tops/left and let Modal decide constraints.
+                            setRegistrationPopupPos({ top: rect.top, left: rect.left - 400 }); // Roughly shift left by width of modal? Or just pass top/left.
+                            // Better: Pass Top/Left and let Modal use Fixed positioning.
+                            // If we want it "side-by-side" with the panel which is on the right, we should put it to the LEFT of the button.
+                            // We will pass the rect.
+                            setRegistrationPopupPos({ top: rect.top, left: rect.left });
                             setShowRegistrationModal(true);
                           }
                         }}
@@ -1608,6 +1623,7 @@ export default function RoomAvailabilityPage() {
           <RegistrationCardModal
             booking={selectedBooking}
             onClose={() => setShowRegistrationModal(false)}
+            position={registrationPopupPos || undefined}
           />
         )
       }

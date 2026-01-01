@@ -28,6 +28,7 @@ export default function FrontDeskPage() {
   const [selectedRoomIndex, setSelectedRoomIndex] = useState<number>(0);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
+  const [checkInModalPos, setCheckInModalPos] = useState<{ top: number, left: number } | undefined>(undefined);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'arrivals' | 'in_house' | 'departures' | 'all'>('arrivals');
 
@@ -264,9 +265,10 @@ export default function FrontDeskPage() {
       <FrontDeskTable
         bookings={filteredBookings}
         isReadOnly={isReadOnly}
-        onCheckIn={(b, index) => {
+        onCheckIn={(b, index, pos) => {
           setSelectedBooking(b);
           setSelectedRoomIndex(index || 0);
+          setCheckInModalPos(pos);
           setShowCheckInModal(true);
         }}
         onCheckOut={(b, index) => {
@@ -281,6 +283,7 @@ export default function FrontDeskPage() {
         <CheckInModal
           booking={selectedBooking}
           roomIndex={selectedRoomIndex}
+          position={checkInModalPos}
           onClose={() => setShowCheckInModal(false)}
           onConfirm={handleCheckIn}
           processing={processing}

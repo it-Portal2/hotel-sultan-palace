@@ -34,7 +34,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     initialDate,
     initialSuiteType,
     initialRoomName,
-    roomTypes,
     availableRooms,
     bookings = [],
     loading = false
@@ -93,7 +92,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         const initialRoomEntry = {
             id: Date.now().toString(),
             roomType: initialSuite,
-            rateType: 'Standard Rate',
+            rateType: '',
             roomName: roomNameArg || '',
             adults: 2,
             children: 0,
@@ -108,7 +107,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             nights: 1,
 
             // Advanced Fields
-            reservationType: 'Confirm Booking',
+            reservationType: 'Walk In',
             businessSource: 'Direct',
             bookingSource: 'Direct',
             marketCode: 'Direct',
@@ -136,13 +135,14 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             guestCountry: '',
 
             // Options
-            emailBookingVouchers: true,
+            emailBookingVouchers: false,
             sendEmailAtCheckout: true,
-            accessToGuestPortal: true,
+            accessToGuestPortal: false,
             // Billing
             billTo: 'Guest',
             taxExempt: false,
             paymentMode: false,
+            paidAmount: 0,
             totalAmount: initialPrice
         };
     };
@@ -473,6 +473,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                                     <option>Confirm Booking</option>
                                                     <option>Tentative</option>
                                                     <option>Waitlist</option>
+                                                    <option>Walk In</option>
                                                 </select>
                                                 <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
                                             </div>
@@ -489,9 +490,10 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                                 onChange={e => setFormData({ ...formData, reservationType: e.target.value })}
                                                 className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
                                             >
+                                                <option>Walk In</option>
                                                 <option>Confirm Booking</option>
                                                 <option>Tentative</option>
-                                                <option>Waitlist</option>
+
                                             </select>
                                             <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
                                         </div>
@@ -770,6 +772,30 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                 <div className="text-right flex gap-4 items-center">
                                     <span className="text-xs font-bold text-gray-600">Total</span>
                                     <span className="text-sm font-bold text-red-500">${formData.totalAmount.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            {/* Payment & Balance Row */}
+                            <div className="flex justify-end items-center gap-6 pt-2 pb-1 px-1 border-t border-gray-100 mt-2">
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-bold text-gray-600">Total Bill:</label>
+                                    <span className="text-sm font-bold text-gray-800">${formData.totalAmount.toFixed(2)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-bold text-gray-600">Paid Amount ($):</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={formData.paidAmount}
+                                        onChange={e => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })}
+                                        className="w-24 px-2 py-1 bg-white border border-gray-300 rounded-sm text-xs text-right font-bold focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs font-bold text-gray-600">Balance ($):</label>
+                                    <span className={`text-sm font-bold ${(formData.totalAmount - formData.paidAmount) > 0.01 ? 'text-red-600' : 'text-green-600'}`}>
+                                        ${(formData.totalAmount - formData.paidAmount).toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
                         </div>

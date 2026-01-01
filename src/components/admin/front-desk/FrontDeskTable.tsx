@@ -5,7 +5,7 @@ import { UserPlusIcon, UserMinusIcon } from '@heroicons/react/24/outline';
 interface FrontDeskTableProps {
     bookings: Booking[];
     isReadOnly: boolean;
-    onCheckIn: (booking: Booking, roomIndex?: number) => void;
+    onCheckIn: (booking: Booking, roomIndex?: number, position?: { top: number, left: number }) => void;
     onCheckOut: (booking: Booking, roomIndex?: number) => void;
 }
 
@@ -98,7 +98,10 @@ export default function FrontDeskTable({ bookings, isReadOnly, onCheckIn, onChec
                                                     <div className="flex justify-end gap-2">
                                                         {(roomStatus === 'confirmed' || roomStatus === 'pending') && (
                                                             <button
-                                                                onClick={() => onCheckIn(booking, index)}
+                                                                onClick={(e) => {
+                                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                                    onCheckIn(booking, index, { top: rect.top, left: rect.left });
+                                                                }}
                                                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold transition-all shadow-sm shadow-blue-200"
                                                             >
                                                                 <UserPlusIcon className="h-4 w-4" />
