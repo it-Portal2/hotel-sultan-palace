@@ -3,24 +3,50 @@ import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import {
     getRoomStatus,
-    markRoomForMaintenance,
     completeRoomMaintenance,
     getHousekeepingTasks,
     getCheckInOutRecords,
+    markRoomForMaintenance,
     RoomStatus,
     HousekeepingTask,
-    CheckInOutRecord
+    CheckInOutRecord,
+    Room,
+    Booking,
+    RoomType
 } from '@/lib/firestoreService';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import {
+    XMarkIcon,
+    UserIcon,
+    CalendarDaysIcon,
+    CreditCardIcon,
+    UsersIcon,
+    PhoneIcon,
+    EnvelopeIcon
+} from '@heroicons/react/24/outline';
+import BlockRoomModal, { BlockRoomData } from '@/components/admin/stayview/BlockRoomModal';
+import { FaBed, FaWifi, FaTv, FaSnowflake, FaConciergeBell, FaBroom, FaTools, FaBan } from 'react-icons/fa';
 
 interface RoomDetailsModalProps {
     roomName: string;
     isOpen: boolean;
     onClose: () => void;
     onUpdate: () => void;
+
+    // New Props for Rich Data
+    activeBooking?: Booking;
+    roomMetadata?: RoomType;
+    hideActions?: boolean;
 }
 
-export default function RoomDetailsModal({ roomName, isOpen, onClose, onUpdate }: RoomDetailsModalProps) {
+export default function RoomDetailsModal({
+    roomName,
+    isOpen,
+    onClose,
+    onUpdate,
+    activeBooking,
+    roomMetadata,
+    hideActions = false
+}: RoomDetailsModalProps) {
     const { isReadOnly } = useAdminRole();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -28,14 +54,8 @@ export default function RoomDetailsModal({ roomName, isOpen, onClose, onUpdate }
     const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
     const [checkInOutRecords, setCheckInOutRecords] = useState<CheckInOutRecord[]>([]);
 
-    // Maintenance Form State
-    const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-    const [maintenanceForm, setMaintenanceForm] = useState({
-        startDate: '',
-        endDate: '',
-        reason: '',
-        notes: '',
-    });
+    // Block / Maintenance Modal State
+    const [showBlockModal, setShowBlockModal] = useState(false);
 
     useEffect(() => {
         if (isOpen && roomName) {
@@ -63,37 +83,6 @@ export default function RoomDetailsModal({ roomName, isOpen, onClose, onUpdate }
         }
     };
 
-    const handleMarkMaintenance = async () => {
-        if (!roomStatus || isReadOnly) return;
-
-        if (!maintenanceForm.reason || !maintenanceForm.startDate || !maintenanceForm.endDate) {
-            showToast('Please fill in all required fields', 'warning');
-            return;
-        }
-
-        try {
-            const success = await markRoomForMaintenance(
-                roomName,
-                new Date(maintenanceForm.startDate),
-                new Date(maintenanceForm.endDate),
-                maintenanceForm.reason + (maintenanceForm.notes ? ` - ${maintenanceForm.notes}` : '')
-            );
-
-            if (success) {
-                setShowMaintenanceForm(false);
-                setMaintenanceForm({ startDate: '', endDate: '', reason: '', notes: '' });
-                await loadData();
-                onUpdate();
-                showToast('Room marked for maintenance', 'success');
-            } else {
-                showToast('Failed to mark room for maintenance', 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to update room status', 'error');
-        }
-    };
-
     const handleMarkAvailable = async () => {
         if (!roomStatus || isReadOnly) return;
         try {
@@ -111,222 +100,281 @@ export default function RoomDetailsModal({ roomName, isOpen, onClose, onUpdate }
         }
     };
 
+    const handleBlockSuccess = async () => {
+        await loadData();
+        onUpdate();
+        setShowBlockModal(false);
+        showToast('Room blocked for maintenance', 'success');
+    };
+
     if (!isOpen) return null;
 
+    // Helper to format dates
+    const formatDate = (dateStr?: string | Date) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    // Helper for Status Badge
+    const renderStatusBadge = () => {
+        if (!roomStatus) return null;
+        let colorClass = 'bg-gray-100 text-gray-800 border-gray-200';
+        let label = roomStatus.status.replace('_', ' ');
+
+        if (roomStatus.status === 'available') {
+            colorClass = 'bg-green-100 text-green-800 border-green-200';
+        } else if (roomStatus.status === 'occupied') {
+            colorClass = 'bg-blue-100 text-blue-800 border-blue-200';
+        } else if (roomStatus.status === 'maintenance') {
+            colorClass = 'bg-gray-100 text-gray-800 border-gray-200';
+            label = 'Maintenance Block';
+        } else if (roomStatus.housekeepingStatus === 'dirty') {
+            // Priority override for badge if needed, though status usually takes precedence
+            // label += ' (Dirty)';
+        }
+
+        return (
+            <span className={`px-3 py-1 text-sm font-bold capitalize rounded-full border ${colorClass} shadow-sm`}>
+                {label}
+            </span>
+        );
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-50 flex justify-end">
+            {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity animate-fade-in"
                 onClick={onClose}
             />
 
-            <div className="relative bg-white shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
-                {/* Header */}
-                <div className="flex items-start justify-between p-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 backdrop-blur-xl z-10">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{roomName} Details</h2>
-                        {roomStatus && <p className="text-sm text-gray-500 mt-1">{roomStatus.suiteType}</p>}
+            {/* Right Side Drawer */}
+            <div className="relative w-full max-w-lg bg-white shadow-2xl h-full overflow-y-auto flex flex-col animate-slide-in-right transform transition-transform">
+
+                {/* 1. Header Section */}
+                <div className="flex flex-col p-6 border-b border-gray-100 bg-white sticky top-0 z-20 shadow-sm">
+                    <div className="flex items-start justify-between mb-2">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">{roomName}</h2>
+                                {renderStatusBadge()}
+                            </div>
+                            <p className="text-sm text-gray-500 font-medium">{roomMetadata?.suiteType || roomStatus?.suiteType}</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <XMarkIcon className="w-6 h-6 text-gray-500" />
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 transition-colors">
-                        <XMarkIcon className="w-6 h-6 text-gray-500" />
-                    </button>
+
+                    {/* Quick Room Stats / Metadata */}
+                    {roomMetadata && (
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+                            <span className="flex items-center gap-1"><FaBed className="text-gray-400" /> {roomMetadata.suiteType}</span>
+                        </div>
+                    )}
                 </div>
 
-                <div className="p-6 space-y-8">
+                <div className="p-6 space-y-8 flex-1 bg-gray-50/50">
                     {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]"></div>
+                        <div className="flex justify-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6A00]"></div>
                         </div>
                     ) : !roomStatus ? (
-                        <p className="text-center text-gray-500 py-12">Room data not found.</p>
+                        <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
+                            <p className="text-gray-500">Room data unavailable.</p>
+                        </div>
                     ) : (
                         <>
-                            {/* Status & Actions */}
-                            <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50 p-4 border border-gray-200 gap-4">
-                                <div className="flex flex-col gap-1 w-full sm:w-auto">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Current Status</span>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-3 py-1 text-sm font-bold capitalize border ${roomStatus.status === 'available' ? 'bg-green-100 text-green-800 border-green-200' :
-                                            roomStatus.status === 'occupied' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                                roomStatus.status === 'maintenance' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                    'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                            }`}>
-                                            {roomStatus.status.replace('_', ' ')}
-                                        </span>
-                                        <span className={`px-3 py-1 text-sm font-bold capitalize border ${(roomStatus.housekeepingStatus === 'clean' || roomStatus.housekeepingStatus === 'inspected') ? 'bg-green-50 text-green-700 border-green-200' :
-                                            'bg-red-50 text-red-700 border-red-200'
-                                            }`}>
-                                            {roomStatus.housekeepingStatus?.replace('_', ' ') || 'Clean'}
+                            {/* 2. ACTIVE BOOKING SECTION (If Occupied/Reserved) */}
+                            {activeBooking && (
+                                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-blue-100 ring-1 ring-blue-50">
+                                    <div className="bg-blue-50/50 px-5 py-3 border-b border-blue-100 flex justify-between items-center">
+                                        <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide flex items-center gap-2">
+                                            <UserIcon className="w-4 h-4" /> Current Guest
+                                        </h3>
+                                        <span className="text-xs font-mono text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                                            #{activeBooking.bookingId?.slice(-6) || 'N/A'}
                                         </span>
                                     </div>
-                                </div>
+                                    <div className="p-5">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-md">
+                                                {activeBooking.guestDetails.firstName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-bold text-gray-900 leading-tight">
+                                                    {activeBooking.guestDetails.firstName} {activeBooking.guestDetails.lastName}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                                                    <span className="flex items-center gap-1"><PhoneIcon className="w-3.5 h-3.5" /> {activeBooking.guestDetails.phone}</span>
+                                                    {/* Email can be added here if needed */}
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                {!isReadOnly && (
-                                    <div className="flex gap-2 w-full sm:w-auto">
-                                        {roomStatus.status === 'maintenance' ? (
-                                            <button
-                                                onClick={handleMarkAvailable}
-                                                className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 font-medium text-sm flex-1 sm:flex-none justify-center"
-                                            >
-                                                End Maintenance
-                                            </button>
-                                        ) : (
-                                            <>
-                                                {roomStatus.status === 'cleaning' && (
-                                                    <button
-                                                        onClick={handleMarkAvailable}
-                                                        className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 font-medium text-sm flex-1 sm:flex-none justify-center"
-                                                    >
-                                                        Mark Clean
-                                                    </button>
-                                                )}
-                                                {!showMaintenanceForm && (
-                                                    <button
-                                                        onClick={() => setShowMaintenanceForm(true)}
-                                                        className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 font-medium text-sm flex-1 sm:flex-none justify-center"
-                                                    >
-                                                        Start Maintenance
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Maintenance Form */}
-                            {showMaintenanceForm && (
-                                <div className="bg-white border border-red-200 p-5 animate-fade-in shadow-sm">
-                                    <h3 className="font-bold text-red-900 mb-4">Maintenance Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-red-800 mb-1">Start Date</label>
-                                            <input
-                                                type="date"
-                                                value={maintenanceForm.startDate}
-                                                onChange={(e) => setMaintenanceForm({ ...maintenanceForm, startDate: e.target.value })}
-                                                className="w-full text-sm p-2 border border-red-300 focus:outline-none focus:border-red-600 focus:ring-0"
-                                            />
+                                        <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Check In</div>
+                                                <div className="font-medium text-gray-900 flex items-center gap-1.5">
+                                                    <CalendarDaysIcon className="w-4 h-4 text-green-600" />
+                                                    {formatDate(activeBooking.checkIn)}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Check Out</div>
+                                                <div className="font-medium text-gray-900 flex items-center gap-1.5">
+                                                    <CalendarDaysIcon className="w-4 h-4 text-red-500" />
+                                                    {formatDate(activeBooking.checkOut)}
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-200 mt-2 col-span-2 flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <UsersIcon className="w-4 h-4 text-gray-400" />
+                                                    <span className="text-sm font-medium text-gray-700">{activeBooking.guests.adults} Adults, {activeBooking.guests.children} Kids</span>
+                                                </div>
+                                                <div className="text-sm font-bold text-gray-900">
+                                                    Balance: ₹{activeBooking.totalAmount || 0}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-red-800 mb-1">End Date</label>
-                                            <input
-                                                type="date"
-                                                value={maintenanceForm.endDate}
-                                                onChange={(e) => setMaintenanceForm({ ...maintenanceForm, endDate: e.target.value })}
-                                                className="w-full text-sm p-2 border border-red-300 focus:outline-none focus:border-red-600 focus:ring-0"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs font-semibold text-red-800 mb-1">Reason</label>
-                                            <select
-                                                value={maintenanceForm.reason}
-                                                onChange={(e) => setMaintenanceForm({ ...maintenanceForm, reason: e.target.value })}
-                                                className="w-full text-sm p-2 border border-red-300 focus:outline-none focus:border-red-600 focus:ring-0"
-                                            >
-                                                <option value="">Select a reason...</option>
-                                                <option value="AC Repair">AC Repair</option>
-                                                <option value="Plumbing Issue">Plumbing Issue</option>
-                                                <option value="Electrical Work">Electrical Work</option>
-                                                <option value="Furniture Repair">Furniture Repair</option>
-                                                <option value="Deep Cleaning">Deep Cleaning</option>
-                                                <option value="Renovation">Renovation</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs font-semibold text-red-800 mb-1">Notes</label>
-                                            <textarea
-                                                value={maintenanceForm.notes}
-                                                onChange={(e) => setMaintenanceForm({ ...maintenanceForm, notes: e.target.value })}
-                                                className="w-full text-sm p-2 border border-red-300 focus:outline-none focus:border-red-600 focus:ring-0"
-                                                placeholder="Additional details..."
-                                                rows={2}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end gap-3 mt-4">
-                                        <button
-                                            onClick={() => setShowMaintenanceForm(false)}
-                                            className="px-4 py-2 text-sm text-red-700 hover:bg-red-100 rounded-lg transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleMarkMaintenance}
-                                            className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm transition-colors"
-                                        >
-                                            Confirm Maintenance
-                                        </button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Cleaning History */}
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                        Cleaning History
-                                    </h3>
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm h-64 overflow-y-auto">
-                                        {roomStatus.cleaningHistory && roomStatus.cleaningHistory.length > 0 ? (
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-gray-50 text-gray-500 font-medium">
-                                                    <tr>
-                                                        <th className="px-4 py-2">Date</th>
-                                                        <th className="px-4 py-2">Type</th>
-                                                        <th className="px-4 py-2">Staff</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {[...roomStatus.cleaningHistory].reverse().map((h, i) => (
-                                                        <tr key={i} className="hover:bg-gray-50">
-                                                            <td className="px-4 py-3 text-gray-600">
-                                                                {h.date ? new Date(h.date).toLocaleDateString() : 'N/A'}
-                                                            </td>
-                                                            <td className="px-4 py-3 capitalize">{h.type.replace('_', ' ')}</td>
-                                                            <td className="px-4 py-3 text-gray-500">
-                                                                {h.staffName}
-                                                                {h.notes && <div className="text-xs text-gray-400 italic mt-0.5">{h.notes}</div>}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-gray-400 text-sm">No cleaning history</div>
-                                        )}
+                            {/* 3. HOUSEKEEPING & STATUS */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-3 opacity-5">
+                                    <FaBroom className="w-24 h-24" />
+                                </div>
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 flex items-center gap-2 relative z-10">
+                                    <FaBroom className="w-4 h-4 text-orange-500" /> Housekeeping Status
+                                </h3>
+
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div>
+                                        <div className="text-xs text-gray-500 mb-1">Condition</div>
+                                        <div className={`
+                                            inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-bold capitalize
+                                            ${(roomStatus.housekeepingStatus === 'clean' || roomStatus.housekeepingStatus === 'inspected')
+                                                ? 'bg-green-50 text-green-700 border-green-200'
+                                                : 'bg-orange-50 text-orange-800 border-orange-200'}
+                                        `}>
+                                            <span className={`w-2 h-2 rounded-full ${(roomStatus.housekeepingStatus === 'clean' || roomStatus.housekeepingStatus === 'inspected') ? 'bg-green-500' : 'bg-orange-500'}`}></span>
+                                            {roomStatus.housekeepingStatus?.replace('_', ' ') || 'Clean'}
+                                        </div>
                                     </div>
+
+                                    {!hideActions && !isReadOnly && (
+                                        <div className="flex gap-2">
+                                            {/* Action Buttons are HIDDEN by default in Room View per requirements */}
+                                            {/* If hideActions is FALSE (e.g. from Housekeeping module), show buttons */}
+                                            {(roomStatus.status === 'cleaning' || roomStatus.housekeepingStatus === 'dirty') && (
+                                                <button
+                                                    onClick={handleMarkAvailable}
+                                                    className="px-4 py-2 bg-white border border-green-200 text-green-700 hover:bg-green-50 font-medium text-xs rounded-lg shadow-sm transition-all"
+                                                >
+                                                    Mark Clean
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Booking / Check-in History */}
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                        Guest History
-                                    </h3>
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm h-64 overflow-y-auto">
-                                        {checkInOutRecords.length > 0 ? (
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-gray-50 text-gray-500 font-medium">
-                                                    <tr>
-                                                        <th className="px-4 py-2">Guest</th>
-                                                        <th className="px-4 py-2">In/Out</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {checkInOutRecords.map(rec => (
-                                                        <tr key={rec.id} className="hover:bg-gray-50">
-                                                            <td className="px-4 py-3 font-medium text-gray-900">{rec.guestName}</td>
-                                                            <td className="px-4 py-3 text-xs text-gray-500 space-y-1">
-                                                                <div>In: {rec.checkInTime ? new Date(rec.checkInTime).toLocaleDateString() : 'N/A'}</div>
-                                                                {rec.checkOutTime && <div>Out: {new Date(rec.checkOutTime).toLocaleDateString()}</div>}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-gray-400 text-sm">No guest history</div>
+                                {/* Maintenance Alert */}
+                                {roomStatus.status === 'maintenance' && (
+                                    <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 flex items-start gap-3">
+                                        <FaTools className="w-5 h-5 text-gray-500 mt-0.5" />
+                                        <div>
+                                            <div className="text-sm font-bold text-gray-800">Under Maintenance</div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                This room is currently blocked for maintenance.
+                                                {roomStatus.maintenanceStartDate && (
+                                                    <span className="block mt-0.5">
+                                                        Until: {new Date(roomStatus.maintenanceEndDate as any).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+
+                            {/* 4. Action Buttons (Only if NOT hidden) */}
+                            {!hideActions && !isReadOnly && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {roomStatus.status === 'maintenance' ? (
+                                        <button
+                                            onClick={handleMarkAvailable}
+                                            className="col-span-2 py-3 bg-green-600 text-white hover:bg-green-700 font-bold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <FaTools className="w-4 h-4" /> Unblock Room
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowBlockModal(true)}
+                                            className="col-span-2 py-3 bg-gray-800 text-white hover:bg-gray-900 font-bold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <FaBan className="w-4 h-4 text-gray-400" /> Block / Maintenance
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 5. HISTORY TABS / LISTS */}
+                            <div className="space-y-6">
+                                {/* Cleaning History */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">Recent Activity</h3>
+                                    <div className="relative border-l border-gray-200 ml-3 space-y-6 pb-2">
+                                        {/* Cleaning Events */}
+                                        {roomStatus.cleaningHistory && roomStatus.cleaningHistory.length > 0 &&
+                                            [...roomStatus.cleaningHistory].reverse().slice(0, 3).map((h, i) => (
+                                                <div key={`clean-${i}`} className="ml-6 relative group">
+                                                    <div className="absolute -left-[31px] top-1 h-2.5 w-2.5 rounded-full bg-gray-300 border-2 border-white group-hover:bg-[#FF6A00] transition-colors"></div>
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="text-sm font-bold text-gray-800 capitalize">{h.type.replace('_', ' ')}</div>
+                                                            <div className="text-xs text-gray-500 mt-0.5">by {h.staffName || 'Staff'}</div>
+                                                        </div>
+                                                        <div className="text-xs text-gray-400 font-mono">
+                                                            {h.date ? new Date(h.date).toLocaleDateString() : 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        }
+
+                                        {/* Guest History Interleaved? Keeping separate for now as per original logic but cleaner */}
+                                    </div>
+
+                                    {(!roomStatus.cleaningHistory || roomStatus.cleaningHistory.length === 0) && (
+                                        <div className="text-sm text-gray-400 italic pl-2">No recent cleaner activity.</div>
+                                    )}
+                                </div>
+
+                                {/* Previous Guests */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">Previous Guests</h3>
+                                    <div className="space-y-2">
+                                        {checkInOutRecords.slice(0, 3).map(rec => (
+                                            <div key={rec.id} className="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg hover:border-gray-200 transition-colors shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                        {rec.guestName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-800">{rec.guestName}</div>
+                                                        <div className="text-[10px] text-gray-400">Checked Out</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right text-xs text-gray-500">
+                                                    {rec.checkOutTime ? new Date(rec.checkOutTime).toLocaleDateString() : '-'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {checkInOutRecords.length === 0 && (
+                                            <div className="text-sm text-gray-400 italic pl-2">No guest history.</div>
                                         )}
                                     </div>
                                 </div>
@@ -335,6 +383,53 @@ export default function RoomDetailsModal({ roomName, isOpen, onClose, onUpdate }
                     )}
                 </div>
             </div>
+
+            {/* Block Room Modal - Only shown if actions allowed and triggered */}
+            {showBlockModal && roomStatus && !hideActions && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowBlockModal(false)}></div>
+                    <div className="relative z-10 w-full max-w-lg">
+                        <BlockRoomModal
+                            isOpen={true}
+                            onClose={() => setShowBlockModal(false)}
+                            rooms={[{
+                                id: roomStatus.id || 'temp-id',
+                                name: roomName,
+                                roomName: roomName,
+                                suiteType: roomStatus.suiteType,
+                                status: roomStatus.status,
+                                // @ts-ignore - satisfying minimal Room interface for the modal
+                                type: roomStatus.suiteType,
+                                price: 0
+                            } as unknown as Room]}
+                            suiteTypes={[roomStatus.suiteType]}
+                            initialData={{
+                                roomName: roomName,
+                                suiteType: roomStatus.suiteType,
+                                selectedRooms: [roomName]
+                            }}
+                            onSave={async (data: BlockRoomData) => {
+                                try {
+                                    for (const range of data.ranges) {
+                                        if (range.startDate && range.endDate) {
+                                            await markRoomForMaintenance(
+                                                roomName,
+                                                new Date(range.startDate),
+                                                new Date(range.endDate),
+                                                data.reason
+                                            );
+                                        }
+                                    }
+                                    handleBlockSuccess();
+                                } catch (error) {
+                                    console.error('Error blocking room:', error);
+                                    showToast('Failed to block room', 'error');
+                                }
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

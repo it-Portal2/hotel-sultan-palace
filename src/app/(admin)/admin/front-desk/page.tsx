@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -11,15 +11,26 @@ import {
   Booking
 } from '@/lib/firestoreService';
 import Link from 'next/link';
-import { MagnifyingGlassIcon, ClockIcon } from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  ClockIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  CurrencyDollarIcon,
+  PlusCircleIcon
+} from '@heroicons/react/24/outline'; // Updated imports
 import FrontDeskStats from '@/components/admin/front-desk/FrontDeskStats';
 import FrontDeskTable from '@/components/admin/front-desk/FrontDeskTable';
 import CheckInModal, { CheckInData } from '@/components/admin/front-desk/CheckInModal';
 import CheckOutModal, { CheckOutData } from '@/components/admin/front-desk/CheckOutModal';
+import RoomViewGrid from '@/components/admin/front-desk/RoomViewGrid';
+import UnsettledFolios from '@/components/admin/front-desk/UnsettledFolios';
+import InsertTransaction from '@/components/admin/front-desk/InsertTransaction';
 
 export default function FrontDeskPage() {
   const { isReadOnly } = useAdminRole();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +41,9 @@ export default function FrontDeskPage() {
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [checkInModalPos, setCheckInModalPos] = useState<{ top: number, left: number } | undefined>(undefined);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'arrivals' | 'in_house' | 'departures' | 'all'>('arrivals');
+
+  const initialTab = (searchParams.get('tab') as any) || 'arrivals';
+  const [activeTab, setActiveTab] = useState<'arrivals' | 'in_house' | 'departures' | 'room_view' | 'unsettled' | 'transactions' | 'all'>(initialTab);
 
   useEffect(() => {
     loadBookings();
@@ -82,22 +95,6 @@ export default function FrontDeskPage() {
 
   const handleCheckOut = async (data: CheckOutData) => {
     if (!selectedBooking) return;
-
-    // If it's the last room or only room, we might want to redirect to checkout
-    // BUT the new requirements imply we want to check out specific rooms here.
-    // The previous logic redirected to checkout page.
-    // If we want to support per-room checkout here, we should call checkOutGuest with roomIndex.
-    // The Checkout Page (billing) is usually for the WHOLE booking.
-    // If we are checking out just ONE room of a multi-room booking, we probably shouldn't redirect to the main checkout page immediately,
-    // OR we should, but the checkout page needs to handle partial checkout?
-    // For now, let's implement the in-place checkout for the room using the modal, 
-    // effectively overriding the "Redirect to Billing" behavior for multi-room partial checkouts,
-    // OR we keep the redirect but pass the room index to the checkout page?
-    // The checkout page `src/app/(admin)/admin/checkout/page.tsx` seems to calculate the bill for the WHOLE booking.
-
-    // Let's use the explicit checkOutGuest function here for the room, as requested by the "Individual management" requirement.
-    // We can still redirect to billing if needed, but the user specifically asked for "individual management (check-in/out)".
-
     setProcessing(true);
     try {
       const success = await checkOutGuest(
@@ -116,11 +113,6 @@ export default function FrontDeskPage() {
         showToast('Room checked out successfully!', 'success');
         setShowCheckOutModal(false);
         await loadBookings();
-
-        // Optionally redirect to billing if all rooms are checked out?
-        // simple check:
-        // const allCheckedOut = ... 
-        // For now, let's stay here as it allows managing other rooms.
       } else {
         showToast('Failed to check out room', 'error');
       }
@@ -135,22 +127,12 @@ export default function FrontDeskPage() {
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
 
-    // Tab Filtering
+    // Tab Filtering (Only for Overview modes)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Note: With multi-room, status filtering becomes tricker if we filter by *booking* status
-    // but the rows are per-room. FrontDeskTable handles rows.
-    // However, if we filter bookings here, we might hide a booking that has one room active and one not?
-    // The existing logic filters *bookings*.
-    // If a booking is "checked_in" (partially or fully), it shows in 'in_house'.
-    // If 'confirmed', it shows in 'arrivals'.
-    // We updated `checkInGuest` to set booking status to `checked_in` if any room is checked in.
-    // So this logic should still roughly work.
-
     if (activeTab === 'arrivals') {
       filtered = filtered.filter(b => b.status === 'confirmed' || b.status === 'pending');
-      // In a real app, we'd also check if checkIn date is <= today
     } else if (activeTab === 'in_house') {
       filtered = filtered.filter(b => b.status === 'checked_in');
     } else if (activeTab === 'departures') {
@@ -195,88 +177,49 @@ export default function FrontDeskPage() {
     );
   }
 
-  const tabs = [
-    { id: 'arrivals', label: 'Arrivals' },
-    { id: 'in_house', label: 'In House' },
-    { id: 'all', label: 'All Bookings' },
-  ];
-
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Front Desk Operations</h1>
-          <p className="text-sm text-gray-500 mt-1">Daily operations: Arrivals, Departures, and In-House Guests.</p>
-        </div>
+    <div className="space-y-6 animate-fade-in pb-12 h-[calc(100vh-100px)] flex flex-col">
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/front-desk/night-audit"
-            className="flex items-center gap-2 bg-[#FF6A00] text-white px-4 py-2 text-sm font-medium hover:bg-[#FF6A00]/90 transition-colors shadow-sm"
-          >
-            <ClockIcon className="h-4 w-4" />
-            Night Audit
-          </Link>
-          <button
-            onClick={loadBookings}
-            className="bg-white border border-gray-200 text-gray-600 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            Refresh Data
-          </button>
-        </div>
+
+
+      {/* Content */}
+      <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+        {activeTab === 'room_view' ? (
+          <RoomViewGrid isReadOnly={isReadOnly} />
+        ) : activeTab === 'unsettled' ? (
+          <div className="h-full p-4 overflow-auto">
+            <UnsettledFolios />
+          </div>
+        ) : activeTab === 'transactions' ? (
+          <div className="h-full p-4 overflow-auto">
+            <InsertTransaction />
+          </div>
+        ) : (
+          /* Table View Logic */
+          <div className="h-full flex flex-col space-y-6 overflow-hidden p-6">
+            <FrontDeskStats stats={stats} />
+
+
+            <div className="flex-1 overflow-auto">
+              <FrontDeskTable
+                bookings={filteredBookings}
+                isReadOnly={isReadOnly}
+                onCheckIn={(b, index, pos) => {
+                  setSelectedBooking(b);
+                  setSelectedRoomIndex(index || 0);
+                  setCheckInModalPos(pos);
+                  setShowCheckInModal(true);
+                }}
+                onCheckOut={(b, index) => {
+                  setSelectedBooking(b);
+                  setSelectedRoomIndex(index || 0);
+                  setShowCheckOutModal(true);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Stats */}
-      <FrontDeskStats stats={stats} />
-
-      {/* Controls & Tabs */}
-      <div className="flex flex-col gap-4">
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id
-                ? 'border-[#FF6A00] text-[#FF6A00]'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search guest, ID, or room number..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none shadow-sm transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      <FrontDeskTable
-        bookings={filteredBookings}
-        isReadOnly={isReadOnly}
-        onCheckIn={(b, index, pos) => {
-          setSelectedBooking(b);
-          setSelectedRoomIndex(index || 0);
-          setCheckInModalPos(pos);
-          setShowCheckInModal(true);
-        }}
-        onCheckOut={(b, index) => {
-          setSelectedBooking(b);
-          setSelectedRoomIndex(index || 0);
-          setShowCheckOutModal(true);
-        }}
-      />
 
       {/* Modals */}
       {showCheckInModal && selectedBooking && (
@@ -294,6 +237,7 @@ export default function FrontDeskPage() {
         <CheckOutModal
           booking={selectedBooking}
           roomIndex={selectedRoomIndex}
+          position={checkInModalPos}
           onClose={() => setShowCheckOutModal(false)}
           onConfirm={handleCheckOut}
           processing={processing}

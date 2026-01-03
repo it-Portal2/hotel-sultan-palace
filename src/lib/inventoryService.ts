@@ -92,6 +92,24 @@ export const createPurchaseOrder = async (poData: Partial<PurchaseOrder>): Promi
     return docRef.id;
 };
 
+export const getPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'purchaseOrders'), where('status', 'not-in', ['received', 'cancelled']));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({
+            id: d.id,
+            ...d.data(),
+            createdAt: d.data().createdAt?.toDate() || new Date(),
+            updatedAt: d.data().updatedAt?.toDate() || new Date(),
+            // Map items if needed, but for count simple mapping is enough
+        } as PurchaseOrder));
+    } catch (e) {
+        console.error("Error fetching pending POs:", e);
+        return [];
+    }
+};
+
 export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId: string, quantity: number }[], receivedBy: string) => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;

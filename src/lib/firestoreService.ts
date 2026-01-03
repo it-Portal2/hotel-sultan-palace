@@ -600,6 +600,19 @@ export interface CheckInOutRecord {
   updatedAt: Date;
 }
 
+
+export interface WorkOrder {
+  id: string;
+  maintenanceType: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  description: string;
+  location: string;
+  assignedTo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface RoomType {
   id: string;
   suiteType: SuiteType;
@@ -925,7 +938,7 @@ export interface LedgerEntry {
   id: string;
   date: Date;
   entryType: 'income' | 'expense';
-  category: 'room_booking' | 'food_beverage' | 'services' | 'facilities' | 'salary' | 'utilities' | 'maintenance' | 'supplies' | 'marketing' | 'other';
+  category: 'room_booking' | 'food_beverage' | 'services' | 'facilities' | 'salary' | 'utilities' | 'maintenance' | 'supplies' | 'marketing' | 'other' | 'Payment' | 'Room Charge' | 'room_charge' | 'Tax' | 'tax' | 'Food' | 'Beverage' | 'Restaurant' | 'Bar';
   subcategory?: string;
   amount: number;
   description: string;
@@ -1621,6 +1634,9 @@ export const getAllContactForms = async (): Promise<ContactForm[]> => {
     return [];
   }
 };
+
+
+
 
 export const updateContactFormStatus = async (
   id: string,
@@ -4743,6 +4759,172 @@ export const getFolioTransactions = async (bookingId: string): Promise<FolioTran
   } catch (error) {
     console.error("Error fetching transactions", error);
     return [];
+  }
+};
+
+// ==================== NEW MODULES: Guest Database & Lost Found ====================
+
+export interface GuestProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  nationality?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  idDocumentType?: string;
+  idDocumentNumber?: string;
+
+  // Stats
+  totalStays: number;
+  totalRevenue: number;
+  lastStayDate?: Date;
+
+  preferences?: string;
+  notes?: string;
+  isBlacklisted?: boolean;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LostFoundItem {
+  id: string;
+  // Item Info
+  lostDate: string; // YYYY-MM-DD
+  itemName: string;
+  itemColor?: string;
+  lostLocation?: string; // Room number or area
+  itemValue?: string;
+
+  // Guest Info (Complaint)
+  guestName?: string;
+  guestPhone?: string;
+  guestAddress?: string;
+  guestCity?: string;
+  guestState?: string;
+  guestZip?: string;
+  guestCountry?: string;
+
+  // Found Info
+  foundBy?: string; // Staff Name
+  currentLocation?: string; // e.g. "Front Desk Safe"
+
+  // Status
+  status: 'lost' | 'found' | 'returned' | 'discarded';
+  remark?: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Guest Services
+export const getGuests = async (): Promise<GuestProfile[]> => {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, 'guests'), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate(),
+      lastStayDate: doc.data().lastStayDate?.toDate(),
+    } as GuestProfile));
+  } catch (error) {
+    console.error("Error fetching guests:", error);
+    return [];
+  }
+};
+
+export const addGuest = async (guest: Omit<GuestProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
+  if (!db) return;
+  try {
+    await addDoc(collection(db, 'guests'), {
+      ...guest,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error adding guest:", error);
+    throw error;
+  }
+};
+
+export const updateGuest = async (id: string, data: Partial<GuestProfile>) => {
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'guests', id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error updating guest:", error);
+    throw error;
+  }
+};
+
+
+// Lost & Found Services
+export const getLostFoundItems = async (): Promise<LostFoundItem[]> => {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, 'lostFoundItems'), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    } as LostFoundItem));
+  } catch (error) {
+    console.error("Error fetching lost & found items:", error);
+    return [];
+  }
+};
+
+export const addLostFoundItem = async (item: Omit<LostFoundItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  if (!db) return;
+  try {
+    await addDoc(collection(db, 'lostFoundItems'), {
+      ...item,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error adding lost & found item:", error);
+    throw error;
+  }
+};
+
+export const updateLostFoundItem = async (id: string, data: Partial<LostFoundItem>) => {
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'lostFoundItems', id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error updating lost & found item:", error);
+    throw error;
+  }
+};
+
+export const deleteLostFoundItem = async (id: string) => {
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, 'lostFoundItems', id));
+  } catch (error) {
+    console.error("Error deleting lost & found item:", error);
+    throw error;
   }
 };
 

@@ -41,8 +41,12 @@ const LegendPopover = () => {
                                 <span className="text-xs text-gray-700">Checked Out</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 bg-[#1f2937] rounded-sm"></span> {/* Maintenance - Dark */}
+                                <span className="w-3 h-3 bg-[#1A1A40] rounded-sm"></span> {/* Maintenance - Dark */}
                                 <span className="text-xs text-gray-700">Maintenance</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 bg-[#7c3aed] rounded-sm"></span> {/* Stay Over - Purple */}
+                                <span className="text-xs text-gray-700">Stay Over</span>
                             </div>
                         </div>
                     </div>

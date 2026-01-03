@@ -66,84 +66,86 @@ export default function ActivitySection({ notifications, activities }: ActivityS
         : activities.filter(a => a.status === activityFilter);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Notifications */}
-            <div className="bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
-                <h3 className="text-lg font-semibold text-gray-800 mb-6">Notifications</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-10 gap-x-6">
-                    {activeNotifications.map((item) => (
-                        <div key={item.key} className="flex items-start group">
-                            <div className="mr-3 mt-1 p-2 bg-gray-50 group-hover:bg-[#FF6A00]/10 transition-colors">
-                                <item.icon className="h-5 w-5 text-gray-500 group-hover:text-[#FF6A00] transition-colors" />
-                            </div>
-                            <div>
-                                <div className="text-xl font-bold text-gray-800 leading-none group-hover:text-[#FF6A00] transition-colors">{item.count}</div>
-                                <div className="text-xs text-gray-500 mt-1">{item.label}</div>
-                            </div>
+        <div className="flex flex-col gap-6 h-full">
+
+            {/* Top: Critical Alerts Grid */}
+            <div className="grid grid-cols-2 gap-3 flex-shrink-0">
+                {activeNotifications.slice(0, 4).map((item) => (
+                    <div key={item.key} className="bg-white p-3 rounded-xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex items-center gap-2 group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="p-2 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg flex-shrink-0">
+                            <item.icon className="h-4 w-4 text-[#FF6A00]" />
                         </div>
-                    ))}
-                    {activeNotifications.length === 0 && (
-                        <div className="col-span-3 text-center text-gray-400 text-sm py-8">
-                            No new notifications
+                        <div className="min-w-0">
+                            <div className="text-xl font-bold text-gray-800 leading-none mb-0.5">{item.count}</div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider truncate">{item.label}</div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                ))}
             </div>
 
-            {/* Activity Feeds */}
-            <div className="bg-white p-6 shadow-sm border border-gray-100 flex flex-col min-h-[350px]">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800">Activity Feed</h3>
+            {/* Bottom: Activity Feed */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+                    <h3 className="text-lg font-bold text-gray-800 font-display">Live Activity Feed</h3>
                     <div className="flex items-center gap-3">
-                        <div className="relative">
+                        <div className="relative group">
                             <select
-                                className="appearance-none bg-gray-50 border border-transparent hover:border-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 transition-all cursor-pointer"
+                                className="appearance-none bg-white border border-gray-200 text-gray-600 text-xs font-semibold px-4 py-2 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/10 hover:border-[#FF6A00]/30 transition-all cursor-pointer shadow-sm"
                                 value={activityFilter}
                                 onChange={(e) => setActivityFilter(e.target.value)}
                             >
                                 <option value="All">All Activities</option>
-                                <option value="New Booking">New Bookings</option>
-                                <option value="Modification">Modifications</option>
+                                <option value="New Booking">Bookings</option>
                                 <option value="Cancellation">Cancellations</option>
-                                <option value="User Action">User Actions</option>
+                                <option value="User Action">System</option>
                             </select>
-                            <ChevronDownIcon className="w-3 h-3 text-gray-500 absolute right-2.5 top-2.5 pointer-events-none" />
+                            <ChevronDownIcon className="w-3 h-3 text-gray-400 absolute right-3 top-2.5 pointer-events-none group-hover:text-[#FF6A00]" />
                         </div>
-                        <button className="p-1.5 text-gray-400 hover:text-[#FF6A00] hover:bg-[#FF6A00]/10 transition-colors">
-                            <ArrowPathIcon className="h-4 w-4" />
-                        </button>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+                <div className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
                     {filteredActivities.length > 0 ? (
-                        filteredActivities.map((activity, index) => (
-                            <div key={index} className="flex gap-4 p-3 hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
-                                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${activity.status === 'Cancellation' ? 'bg-red-500' :
-                                    activity.status === 'New Booking' ? 'bg-emerald-500' :
-                                        activity.status === 'User Action' ? 'bg-blue-500' : 'bg-gray-400'
-                                    }`} />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-gray-700 leading-snug break-words">
-                                        {activity.message}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1.5">
-                                        <span className="text-[10px] text-gray-400 bg-white border border-gray-100 px-2 py-0.5">
-                                            {activity.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400">
-                                            {activity.time.toLocaleDateString()}
-                                        </span>
+                        <div className="divide-y divide-gray-50">
+                            {filteredActivities.map((activity, index) => (
+                                <div key={index} className="p-4 hover:bg-orange-50/30 transition-colors flex gap-4 group">
+                                    <div className="flex-shrink-0 mt-1">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.status === 'Cancellation' ? 'bg-red-50 text-red-500' :
+                                            activity.status === 'New Booking' ? 'bg-emerald-50 text-emerald-500' :
+                                                'bg-blue-50 text-blue-500'
+                                            }`}>
+                                            {activity.status === 'Cancellation' ? <ExclamationTriangleIcon className="w-5 h-5" /> :
+                                                activity.status === 'New Booking' ? <CheckCircleIcon className="w-5 h-5" /> :
+                                                    <ClipboardDocumentIcon className="w-5 h-5" />}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-sm font-medium text-gray-900 group-hover:text-[#FF6A00] transition-colors">{activity.message}</p>
+                                            <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                                                {activity.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider ${activity.status === 'Cancellation' ? 'bg-red-100 text-red-700' :
+                                                activity.status === 'New Booking' ? 'bg-emerald-100 text-emerald-700' :
+                                                    'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                {activity.status || 'Info'}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400">• {activity.time.toLocaleDateString()}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            ))}
+                        </div>
                     ) : (
-                        <div className="text-center text-gray-400 text-sm py-12 flex flex-col items-center">
-                            <div className="w-12 h-12 bg-gray-50 flex items-center justify-center mb-3">
-                                <ClipboardDocumentIcon className="h-6 w-6 text-gray-300" />
+                        <div className="text-center py-20">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ArchiveBoxIcon className="w-8 h-8 text-gray-300" />
                             </div>
-                            No activities found
+                            <p className="text-gray-500 font-medium">No recent activity</p>
+                            <p className="text-xs text-gray-400 mt-1">Check back later for updates</p>
                         </div>
                     )}
                 </div>

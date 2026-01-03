@@ -225,21 +225,9 @@ export default function HousekeepingPage() {
               <ListBulletIcon className="w-4 h-4" />
               Tasks List
             </div>
-          </Tab>
-          <Tab
-            className={({ selected }) =>
-              classNames(
-                'w-32 py-2.5 text-sm font-medium leading-5 transition-all duration-200',
-                'focus:outline-none focus:ring-0',
-                selected
-                  ? 'bg-white shadow-sm text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-              )
-            }
-          >
             <div className="flex items-center justify-center gap-2">
-              <Squares2X2Icon className="w-4 h-4" />
-              Room Grid
+              <ListBulletIcon className="w-4 h-4" />
+              Tasks List
             </div>
           </Tab>
         </Tab.List>
@@ -265,58 +253,8 @@ export default function HousekeepingPage() {
               />
             )}
           </Tab.Panel>
-
-          <Tab.Panel className="focus:outline-none">
-            {/* Room Grid View (Consolidated from Room Status Page) */}
-            <div className="bg-white p-6 border border-gray-200 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between mb-6 gap-4">
-                <h2 className="text-lg font-semibold text-gray-900">Live Room Status</h2>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedSuite}
-                    onChange={(e) => setSelectedSuite(e.target.value as any)}
-                    className="border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-0"
-                  >
-                    <option value="all">All Suites</option>
-                    <option value="Garden Suite">Garden Suite</option>
-                    <option value="Imperial Suite">Imperial Suite</option>
-                    <option value="Ocean Suite">Ocean Suite</option>
-                  </select>
-                </div>
-              </div>
-
-              {roomLoading ? (
-                <div className="text-center py-10">Loading Rooms...</div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                  {filteredRooms.map(room => {
-                    const status = roomStatuses.find(s => s.roomName === room.roomName);
-                    const housekeepingStatus = status?.housekeepingStatus || 'clean';
-                    const isClean = housekeepingStatus === 'clean' || housekeepingStatus === 'inspected';
-
-                    return (
-                      <div
-                        key={room.id}
-                        className={`p-3 border-2 text-center cursor-pointer hover:shadow-md transition-all ${isClean ? 'border-green-100 bg-green-50' : 'border-red-100 bg-red-50'
-                          }`}
-                        onClick={() => setSelectedRoomName(room.roomName)}
-                      >
-                        <div className="font-bold text-gray-900">{room.roomName}</div>
-                        <div className={`text-xs mt-1 font-medium ${isClean ? 'text-green-700' : 'text-red-700'}`}>
-                          {housekeepingStatus.replace('_', ' ')}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-1 capitalize">
-                          {status?.status || 'Available'}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </Tab.Panel>
         </Tab.Panels>
-      </Tab.Group>
+      </Tab.Group >
 
       {/* Room Details Modal */}
       {

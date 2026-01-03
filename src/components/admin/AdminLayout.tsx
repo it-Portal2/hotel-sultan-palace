@@ -48,7 +48,8 @@ import {
   ChartPieIcon,
   GlobeAltIcon,
   XCircleIcon,
-  UserIcon
+  UserIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 import { UserIcon as UserIconSolid } from '@heroicons/react/24/solid';
 import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
@@ -126,35 +127,33 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         isSingleItem: true
       },
       {
-        name: 'Reservations',
+        name: 'Front Office',
         icon: ClipboardDocumentListIcon,
         items: [
           { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'reservations' },
           { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'reservations' },
+          { name: 'Room View', href: '/admin/front-desk?tab=room_view', icon: Squares2X2Icon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'reservations' },
+          { name: 'Unsettled Folios', href: '/admin/front-desk?tab=unsettled', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
+          { name: 'Insert Transaction', href: '/admin/front-desk?tab=transactions', icon: PlusIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
+          { name: 'Guest Database', href: '/admin/guest-database', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'guest_database' },
+          { name: 'Lost & Found', href: '/admin/lost-and-found', icon: ArchiveBoxIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'lost_found' },
+        ],
+        defaultOpen: true
+      },
+      {
+        name: 'Cashiering',
+        icon: CurrencyDollarIcon,
+        items: [
+          { name: 'Business Sources', href: '/admin/cashiering?tab=business-sources', icon: ClipboardDocumentCheckIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', section: 'cashiering' },
+          { name: 'Companies', href: '/admin/cashiering?tab=companies', icon: BuildingOffice2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'companies' },
+          { name: 'Market Segments', href: '/admin/cashiering?tab=market-segments', icon: GlobeAltIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'cashiering' },
+          { name: 'Sales Persons', href: '/admin/cashiering?tab=sales-persons', icon: UserIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'sales_persons' },
+          { name: 'Travel Agents', href: '/admin/cashiering?tab=travel-agents', icon: UserGroupIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'travel_agents' },
+          { name: 'Incidental Invoice', href: '/admin/cashiering/incidental-invoice', icon: ReceiptPercentIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'incidental_invoice' },
         ],
         defaultOpen: true
       },
 
-      {
-        name: 'Front Office',
-        icon: KeyIcon,
-        items: [
-          { name: 'Check-in', href: '/admin/front-desk', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'front_office' },
-          { name: 'Checkout', href: '/admin/checkout', icon: CreditCardIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'front_office' },
-        ],
-        defaultOpen: true
-      },
-
-      {
-        name: 'Rooms',
-        icon: BuildingOfficeIcon,
-        items: [
-          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
-          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
-          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
-        ],
-        defaultOpen: true
-      },
 
       {
         name: 'Reports',
@@ -168,18 +167,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         defaultOpen: true
       },
 
+
       {
-        name: 'Cashiering',
-        icon: CurrencyDollarIcon,
+        name: 'Housekeeping',
+        icon: CleaningIcon,
         items: [
-          { name: 'Unsettled Folios', href: '/admin/cashiering/unsettled-folios', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
-          { name: 'Insert Transaction', href: '/admin/cashiering/transactions', icon: CurrencyDollarIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
-          { name: 'Travel Agents Database', href: '/admin/cashiering/travel-agents', icon: UserGroupIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'travel_agents' },
-          { name: 'Companies Database', href: '/admin/cashiering/companies', icon: BuildingOffice2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'companies' },
-          { name: 'Sales Persons Database', href: '/admin/cashiering/sales-persons', icon: UserIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'sales_persons' },
-          { name: 'Incidental Invoice', href: '/admin/cashiering/incidental-invoice', icon: ReceiptPercentIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'incidental_invoice' },
+          { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
         ],
-        defaultOpen: true
+        defaultOpen: true,
+        isSingleItem: true
       },
 
       {
@@ -212,15 +208,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         isSingleItem: true
       },
 
-      {
-        name: 'Housekeeping',
-        icon: CleaningIcon,
-        items: [
-          { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
+
 
       {
         name: 'Inventory',
@@ -266,6 +254,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       },
     ],
     website: [
+
+      {
+        name: 'Rooms',
+        icon: BuildingOfficeIcon,
+        items: [
+          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
+          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
+          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
+        ],
+        defaultOpen: true
+      },
       {
         name: 'Content',
         icon: PhotoIcon,
@@ -658,14 +657,14 @@ function AdminLayoutContent({
       {/* Mobile Backdrop */}
       {sidebarOpen && currentPortal !== 'selection' && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar - Responsive: Overlay on mobile, Push on Desktop */}
       {currentPortal !== 'selection' && (
-        <div className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-xl md:shadow-sm ${sidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-0'
+        <div className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-xl md:shadow-sm print:hidden ${sidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-0'
           } overflow-hidden`}>
           <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gradient-to-r from-[#FF6A00] to-[#be8c53] flex-shrink-0">
             <div className="flex items-center gap-3 w-full">
@@ -690,10 +689,10 @@ function AdminLayoutContent({
       )}
 
       {/* Main content - Responsive Margin */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen && currentPortal !== 'selection' ? 'md:ml-72' : ''
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 print:ml-0 print:w-full ${sidebarOpen && currentPortal !== 'selection' ? 'md:ml-72' : ''
         }`}>
         {/* Top bar */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm">
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm print:hidden">
           <div className="flex items-center gap-x-4 w-full px-4 sm:px-6 lg:px-8">
             {currentPortal !== 'selection' && (
               <button

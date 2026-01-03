@@ -1173,7 +1173,8 @@ export default function RoomAvailabilityPage() {
                                       className={`absolute top-[2px] bottom-[2px] left-[2px] rounded-sm text-[10px] text-white shadow-sm flex items-center px-1.5 overflow-hidden z-10 cursor-pointer hover:opacity-90 transition-opacity
                                           ${(() => {
                                           const b = bookingBar.booking;
-                                          const status = bookingBar.roomStatus || b.status;
+                                          // Prioritize booking status if it is 'stay_over' to override room status (e.g. 'checked_in')
+                                          const status = (b.status as any) === 'stay_over' ? 'stay_over' : (bookingBar.roomStatus || b.status);
 
                                           // Confirmed = Green (Tailwind green-600)
                                           if (status === 'confirmed') return '!bg-[#22c55e]';
@@ -1183,6 +1184,10 @@ export default function RoomAvailabilityPage() {
 
                                           // Checked Out = Blue (Tailwind blue-600)
                                           if (status === 'checked_out') return '!bg-[#2563eb]';
+
+                                          // Stay Over = Purple (Tailwind violet-600)
+                                          // @ts-ignore
+                                          if (status === 'stay_over') return '!bg-[#7c3aed]';
 
                                           // Maintenance = Dark Blue (#1A1A40)
                                           // @ts-ignore

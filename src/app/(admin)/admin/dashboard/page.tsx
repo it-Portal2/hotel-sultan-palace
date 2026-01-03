@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { InformationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import {
   getAllBookings,
   Booking,
@@ -12,289 +12,201 @@ import {
   getPendingWorkOrders,
   getLowStockInventory,
   getPendingPurchaseOrders,
-  getBusinessDay,
   getSpecialOffers
 } from '@/lib/firestoreService';
-import StatsOverview from '@/components/admin/dashboard/StatsOverview';
-import OccupancyCharts from '@/components/admin/dashboard/OccupancyCharts';
-import StatusCharts from '@/components/admin/dashboard/StatusCharts';
+import TodaysOperations from '@/components/admin/dashboard/TodaysOperations';
+import RoomStatusChart from '@/components/admin/dashboard/RoomStatusChart';
+import OccupancyDonut from '@/components/admin/dashboard/OccupancyDonut';
 import ActivitySection from '@/components/admin/dashboard/ActivitySection';
-
-// --- Types ---
-type NotificationKey = 'bookingInquiry' | 'guestMessage' | 'walkInGuest' | 'onlineBooking' | 'activeOffers' | string;
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     arrivals: { pending: 0, arrived: 0 },
     departures: { pending: 0, checkedOut: 0 },
     guestsInHouse: { adults: 0, children: 0 },
-    roomStatus: {
-      vacant: 15,
-      sold: 0,
-      dayUse: 0,
-      complimentary: 0,
-      blocked: 0
-    },
-    housekeeping: {
-      clean: 10,
-      hkAssign: 0,
-      dirty: 5,
-      block: 0
-    },
+    roomStatus: { vacant: 0, sold: 0, dayUse: 0, complimentary: 0, blocked: 0 },
+    housekeeping: { clean: 0, hkAssign: 0, dirty: 0, block: 0 },
     notifications: {
-      workOrder: 0,
-      bookingInquiry: 0,
-      paymentFailed: 0,
-      overbooking: 0,
-      guestPortal: 0,
-      guestMessage: 0,
-      cardVerificationFailed: 0,
-      tasks: 0,
-      review: 0,
-      inventoryAlert: 0,
-      walkInGuest: 0,
-      onlineBooking: 0,
-      activeOffers: 0,
-      lowStock: 0,
-      pendingPOs: 0,
-      dirtyRooms: 0,
-      auditAlert: 0
+      bookingInquiry: 0, guestMessage: 0, walkInGuest: 0, onlineBooking: 0, activeOffers: 0,
+      workOrder: 0, paymentFailed: 0, overbooking: 0, guestPortal: 0, cardVerificationFailed: 0,
+      tasks: 0, review: 0, inventoryAlert: 0, lowStock: 0, pendingPOs: 0, dirtyRooms: 0, auditAlert: 0
     },
-    activities: [] as Array<{ type: string; message: string; time: Date; status?: string }>,
-    totalRooms: 0,
-    totalBookings: 0,
-    revenueThisMonth: 0,
-    revenueTotal: 0,
-    recentBookings: [] as Booking[]
+    activities: [] as any[],
+    totalRooms: 0, totalBookings: 0, revenueThisMonth: 0, recentBookings: [] as any[], revenueTotal: 0
   });
 
   const fetchDashboardData = async () => {
-    setLoading(true);
     try {
-      const [bookings, contacts, enquiries, roomStatuses, rooms, workOrders, lowStockItems, pendingPOs, businessDay, offers] = await Promise.all([
-        getAllBookings(),
-        getAllContactForms(),
-        getAllBookingEnquiries(),
-        getRoomStatuses(),
-        getRooms(),
-        getPendingWorkOrders(),
-        getLowStockInventory(),
-        getPendingPurchaseOrders(),
-        getBusinessDay(),
-        getSpecialOffers()
+      setLoading(true);
+      const [bookings, rooms, roomStatuses, contacts, enquiries, offers, workOrders, lowStockItems, pendingPOs] = await Promise.all([
+        getAllBookings(), getRooms(), getRoomStatuses(), getAllContactForms(), getAllBookingEnquiries(), getSpecialOffers(), getPendingWorkOrders(), getLowStockInventory(), getPendingPurchaseOrders()
       ]);
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toDateString();
 
       // --- Calculations ---
-
-      // Arrivals
       const arrivalsPending = bookings.filter(b => {
-        const checkIn = new Date(b.checkIn);
-        checkIn.setHours(0, 0, 0, 0);
-        return checkIn.getTime() === today.getTime() && b.status === 'confirmed';
+        const d = (b.checkIn as any) instanceof Date ? (b.checkIn as any) : new Date(b.checkIn);
+        return d.toDateString() === todayStr && b.status === 'confirmed';
       }).length;
+      const arrivalsArrived = bookings.filter(b => {
+        const d = (b.checkIn as any) instanceof Date ? (b.checkIn as any) : new Date(b.checkIn);
+        return d.toDateString() === todayStr && b.status === 'checked_in';
+      }).length; // Simplification: Arrived today
 
-      const arrivalsArrived = bookings.filter(b => b.status === 'checked_in').length;
-
-      // Departures
       const departuresPending = bookings.filter(b => {
-        const checkOut = new Date(b.checkOut);
-        checkOut.setHours(0, 0, 0, 0);
-        return checkOut.getTime() === today.getTime() && (b.status === 'confirmed' || b.status === 'checked_in');
+        const d = (b.checkOut as any) instanceof Date ? (b.checkOut as any) : new Date(b.checkOut);
+        return d.toDateString() === todayStr && (b.status === 'confirmed' || b.status === 'checked_in');
+      }).length;
+      const departuresCheckedOut = bookings.filter(b => {
+        const d = (b.checkOut as any) instanceof Date ? (b.checkOut as any) : new Date(b.checkOut);
+        return d.toDateString() === todayStr && b.status === 'checked_out';
       }).length;
 
-      const departuresCheckedOut = bookings.filter(b => b.status === 'checked_out').length;
-
-      // Guests
       const checkedInBookings = bookings.filter(b => b.status === 'checked_in');
-      const adultsInHouse = checkedInBookings.reduce((sum, b) => sum + (b.guests?.adults || 0), 0);
-      const childrenInHouse = checkedInBookings.reduce((sum, b) => sum + (b.guests?.children || 0), 0);
+      const adultsInHouse = checkedInBookings.reduce((sum, b) => sum + (Number(b.guests?.adults) || 0), 0);
+      const childrenInHouse = checkedInBookings.reduce((sum, b) => sum + (Number(b.guests?.children) || 0), 0);
 
-      // Rooms
       const dbTotalRooms = rooms.length || 0;
-      const totalRooms = Math.max(15, dbTotalRooms);
       const occupiedRooms = checkedInBookings.length;
-      const reservedRooms = bookings.filter(b => b.status === 'confirmed' && new Date(b.checkIn) > today).length;
       const blockedRooms = roomStatuses.filter(rs => rs.status === 'maintenance').length;
-      const vacantRooms = Math.max(0, totalRooms - occupiedRooms - blockedRooms);
-
-      const roomStatusData = {
-        vacant: vacantRooms,
-        sold: occupiedRooms,
-        dayUse: 0,
-        complimentary: 0,
-        blocked: blockedRooms
-      };
+      const vacantRooms = Math.max(0, dbTotalRooms - occupiedRooms - blockedRooms);
 
       // Housekeeping
-      const cleanRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'clean' || rs.housekeepingStatus === 'inspected').length;
+      const cleanRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'clean').length;
       const dirtyRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty').length;
-      const hkAssignRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'needs_attention').length;
+      const inspectedRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'inspected').length;
+      const attentionRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'needs_attention').length;
 
-      const housekeepingData = {
-        clean: cleanRooms,
-        hkAssign: hkAssignRooms,
-        dirty: dirtyRooms,
-        block: blockedRooms
-      };
-
-      // Revenue Calculations
+      // Revenue
       const validBookings = bookings.filter(b => b.status !== 'cancelled');
       const totalRevenue = validBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
-      const revenueThisMonth = validBookings
-        .filter(b => {
-          const bookingDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-          return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
-        })
-        .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+      const revenueThisMonth = validBookings.filter(b => {
+        const d = (b.createdAt as any) instanceof Date ? (b.createdAt as any) : new Date(b.createdAt);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
-      // Notifications
-      const isToday = (date: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      // Notifications & Activities
+      const isToday = (date: any) => {
         const d = date instanceof Date ? date : new Date(date);
-        const t = new Date();
-        return d.getDate() === t.getDate() &&
-          d.getMonth() === t.getMonth() &&
-          d.getFullYear() === t.getFullYear();
+        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
       };
 
       const notificationsData = {
         bookingInquiry: enquiries.filter(e => isToday(e.createdAt)).length,
         guestMessage: contacts.filter(c => isToday(c.createdAt)).length,
-        walkInGuest: bookings.filter(b => {
-          const isWalkIn = b.source === 'walk_in' || (typeof b.bookingId === 'string' && b.bookingId.startsWith('WALKIN-'));
-          return isWalkIn && isToday(b.createdAt);
-        }).length,
-        onlineBooking: bookings.filter(b => {
-          const isWalkIn = b.source === 'walk_in' || (typeof b.bookingId === 'string' && b.bookingId.startsWith('WALKIN-'));
-          return !isWalkIn && isToday(b.createdAt);
-        }).length,
+        walkInGuest: bookings.filter(b => (b.source === 'walk_in' || (b.bookingId || '').startsWith('WALKIN')) && isToday(b.createdAt)).length,
+        onlineBooking: bookings.filter(b => !(b.source === 'walk_in' || (b.bookingId || '').startsWith('WALKIN')) && isToday(b.createdAt)).length,
         activeOffers: offers.filter(o => o.isActive).length,
-
-        // Wired up real counts
         workOrder: workOrders.length,
-        paymentFailed: 0,
-        overbooking: 0,
-        guestPortal: 0,
-        cardVerificationFailed: 0,
-        tasks: 0, // Could link to housekeeping tasks if needed
-        review: 0,
-        inventoryAlert: 0,
-        lowStock: lowStockItems.length,
-        pendingPOs: pendingPOs.length,
-        dirtyRooms: 0,
-        auditAlert: 0
+        paymentFailed: 0, overbooking: 0, guestPortal: 0, cardVerificationFailed: 0, tasks: 0, review: 0,
+        inventoryAlert: 0, lowStock: lowStockItems.length, pendingPOs: pendingPOs.length, dirtyRooms: 0, auditAlert: 0
       };
 
-      // Activities
       const realActivities = [
         ...bookings.map(b => ({
           type: 'booking',
-          message: `Booking ${b.status === 'cancelled' ? 'was cancelled' : 'received'} - ${b.rooms?.[0]?.type || 'Room'}`,
-          time: b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt),
+          message: `Booking ${b.status === 'cancelled' ? 'cancelled' : 'received'} - ${b.guestDetails?.firstName} ${b.guestDetails?.lastName}`,
+          time: (b.createdAt as any) instanceof Date ? b.createdAt : new Date(b.createdAt),
           status: b.status === 'cancelled' ? 'Cancellation' : 'New Booking'
         })),
         ...contacts.map(c => ({
           type: 'contact',
-          message: `New message from ${c.name}`,
-          time: c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt),
-          status: 'User Action'
+          message: `Message from ${c.name}`,
+          time: (c.createdAt as any) instanceof Date ? c.createdAt : new Date(c.createdAt),
+          status: 'Inquiry'
         }))
-      ];
-
-      const activities = realActivities.sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 15);
+      ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 15);
 
       setDashboardData({
         arrivals: { pending: arrivalsPending, arrived: arrivalsArrived },
         departures: { pending: departuresPending, checkedOut: departuresCheckedOut },
         guestsInHouse: { adults: adultsInHouse, children: childrenInHouse },
-        roomStatus: roomStatusData,
-        housekeeping: housekeepingData,
+        roomStatus: { vacant: vacantRooms, sold: occupiedRooms, dayUse: 0, complimentary: 0, blocked: blockedRooms },
+        housekeeping: { clean: cleanRooms + inspectedRooms, hkAssign: attentionRooms, dirty: dirtyRooms, block: blockedRooms },
         notifications: notificationsData,
-        activities,
-        totalRooms,
-        totalBookings: validBookings.length,
-        revenueThisMonth,
-        recentBookings: bookings.slice(0, 5),
-        revenueTotal: totalRevenue
+        activities: realActivities,
+        totalRooms: dbTotalRooms, totalBookings: validBookings.length, revenueThisMonth, recentBookings: bookings.slice(0, 5), revenueTotal: totalRevenue
       });
 
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50/50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]"></div>
-          <p className="text-sm text-gray-500 font-medium">Loading Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>;
 
   return (
-    <div className="h-full bg-gray-50/50 p-6 font-sans text-gray-800 overflow-x-hidden animate-fade-in">
+    <div className="h-screen overflow-hidden bg-gray-50/50 flex flex-col font-sans text-gray-800">
 
-      {/* Header Area */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      {/* 1. Compact Header */}
+      <div className="px-6 py-2 flex items-center justify-between shrink-0 z-10">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Overview</h1>
-          <p className="text-sm text-gray-500 mt-1">Welcome back, here's what's happening at Sultan Palace today.</p>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight font-display">Dashboard</h1>
+          <p className="text-xs text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
-          <button
-            onClick={fetchDashboardData}
-            className="p-2 text-gray-500 hover:text-[#FF6A00] bg-white rounded-full border border-gray-200 shadow-sm transition-all hover:shadow-md"
-            title="Refresh Data"
-          >
-            <ArrowPathIcon className="h-4 w-4" />
-          </button>
-        </div>
+        <button onClick={fetchDashboardData} className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-full transition-colors">
+          <ArrowPathIcon className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* 1. Key Metrics Summary Row */}
-      <StatsOverview
-        totalRooms={dashboardData.totalRooms}
-        totalBookings={dashboardData.totalBookings}
-        revenueThisMonth={dashboardData.revenueThisMonth}
-        revenueTotal={dashboardData.revenueTotal}
-      />
+      {/* Scrollable Content Container (if screen is too small) or Fixed Flex (if managed well) */}
+      <div className="flex-1 overflow-hidden p-6 flex flex-col gap-6">
 
-      {/* 2. Top Stats Row - Occupancy (Arrivals, Departures, Guests) */}
-      <OccupancyCharts
-        arrivals={dashboardData.arrivals}
-        departures={dashboardData.departures}
-        guestsInHouse={dashboardData.guestsInHouse}
-      />
+        {/* 2. Top Stats Row - Fixed Height */}
+        <div className="shrink-0">
+          <TodaysOperations
+            arrivals={dashboardData.arrivals}
+            departures={dashboardData.departures}
+            guestsInHouse={dashboardData.guestsInHouse}
+            occupiedRooms={dashboardData.roomStatus.sold}
+            revenue={{ total: dashboardData.revenueTotal, month: dashboardData.revenueThisMonth }}
+          />
+        </div>
 
-      {/* 3. Status Charts (Room Status & Housekeeping) */}
-      <StatusCharts
-        roomStatus={dashboardData.roomStatus}
-        housekeeping={dashboardData.housekeeping}
-      />
+        {/* 3. Main Operational View - Fill Remaining Space */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      {/* 4. Notifications & Activity Feeds Row */}
-      <ActivitySection
-        notifications={dashboardData.notifications}
-        activities={dashboardData.activities}
-      />
+          {/* Col 1: Room Status */}
+          <div className="h-full flex flex-col overflow-hidden">
+            <RoomStatusChart
+              roomStatus={dashboardData.roomStatus}
+              housekeeping={dashboardData.housekeeping}
+            />
+          </div>
+
+          {/* Col 2: Occupancy */}
+          <div className="h-full flex flex-col overflow-hidden">
+            <OccupancyDonut
+              occupied={dashboardData.roomStatus.sold}
+              vacant={dashboardData.roomStatus.vacant}
+              maintenance={dashboardData.roomStatus.blocked}
+            />
+          </div>
+
+          {/* Col 3: Activity Feed */}
+          <div className="h-full flex flex-col overflow-hidden relative">
+            <div className="absolute inset-0">
+              <ActivitySection
+                notifications={dashboardData.notifications}
+                activities={dashboardData.activities}
+              />
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 }
