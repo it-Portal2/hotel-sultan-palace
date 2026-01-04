@@ -5313,4 +5313,37 @@ export const deleteLostFoundItem = async (id: string) => {
     throw error;
   }
 };
+// Rate Type Helpers
+export const ensureDefaultRateTypes = async () => {
+  if (!db) return;
+  try {
+    const querySnapshot = await getDocs(collection(db, 'rateTypes'));
+    if (querySnapshot.empty) {
+      const defaults = ['Room Only', 'Bed and Breakfast', 'Half Board', 'Full Board'];
+      for (const name of defaults) {
+        await addDoc(collection(db, 'rateTypes'), {
+          name,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      console.log("Seeded default rate types.");
+      return true; // Indicates seeded
+    }
+  } catch (error) {
+    console.error("Error seeding rate types:", error);
+  }
+  return false;
+};
+
+export const addRateType = async (name: string) => {
+  if (!db) throw new Error("DB not initialized");
+  await addDoc(collection(db, "rateTypes"), {
+    name,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+};
 // End of file

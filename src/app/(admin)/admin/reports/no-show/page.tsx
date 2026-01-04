@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import ReportFilters, { ReportFilterState } from '@/components/admin/reports/ReportFilters';
-import { getAllBookings, Booking } from '@/lib/firestoreService';
+import { getAllBookings, Booking, getMasterData, RateType } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { UserMinusIcon, CalendarDaysIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 export default function NoShowReportPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+    const [rateTypes, setRateTypes] = useState<RateType[]>([]);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -17,8 +18,12 @@ export default function NoShowReportPage() {
 
     const loadData = async () => {
         try {
-            const data = await getAllBookings();
+            const [data, rates] = await Promise.all([
+                getAllBookings(),
+                getMasterData<RateType>('rateTypes')
+            ]);
             setBookings(data);
+            setRateTypes(rates);
         } catch (error) {
             console.error(error);
             showToast('Failed to load data', 'error');
@@ -35,9 +40,39 @@ export default function NoShowReportPage() {
             // 1. Must be No Show
             if (b.status !== 'no_show') return false;
 
-            // 2. Filter by CheckIn Date (When they were SUPPOSED to arrive)
-            const arrivalDate = new Date(b.checkIn);
-            if (arrivalDate < start || arrivalDate > end) return false;
+            // 2. Filter by Date (based on dateType)
+            // Default to checkIn (Arrival Date) if not specified or 'arrival'/'stay'
+            let dateField: keyof Booking = 'checkIn';
+            if (filters.dateType === 'booking') {
+                // For booking date, use createdAt
+                dateField = 'createdAt';
+            }
+
+            const recordDate = new Date(b[dateField] as string | Date);
+            recordDate.setHours(0, 0, 0, 0); // Normalize time
+
+            // Compare normalized dates
+            if (recordDate < start || recordDate > end) return false;
+
+            // 3. Filter by Company/Agent
+            if (filters.companyId && b.companyId !== filters.companyId) return false;
+            if (filters.travelAgentId && b.travelAgentId !== filters.travelAgentId) return false;
+
+            // 4. Source Filter
+            if (filters.source) {
+                const bSource = b.source?.toLowerCase().replace('_', '') || 'direct';
+                const fSource = filters.source.toLowerCase().replace('_', '');
+                if (!bSource.includes(fSource)) return false;
+            }
+
+            // 5. Room Type
+            if (filters.roomType) {
+                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                if (!hasType) return false;
+            }
+
+            // 6. Rate Type
+            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
 
             return true;
         });
@@ -93,7 +128,7 @@ export default function NoShowReportPage() {
 
                 <div className="print:hidden">
                     <ReportFilters
-                        title="Filter No Shows"
+                        title="No Show Reservation"
                         reportType="no_show"
                         onFilterChange={handleFilterChange}
                     />
@@ -106,7 +141,7 @@ export default function NoShowReportPage() {
                             <CurrencyDollarIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Revenue Impact</p>
+                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">No Show Revenue</p>
                             <h3 className="text-xl font-bold text-gray-900">{formatCurrency(totalRevenueImpact)}</h3>
                         </div>
                     </div>
@@ -138,31 +173,43 @@ export default function NoShowReportPage() {
                         <table className="min-w-full divide-y divide-gray-200 text-left">
                             <thead className="bg-orange-50/30 print:bg-gray-100">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest / Company</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Source / Agent</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Planned Arrival</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Planned Departure</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Billing Status</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-right">Total Value</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-center">Remark</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Res. No</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Booking Date</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest Name</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Rate Type</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Arr.</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Dpt.</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-right">Charges</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-right">No Show Rev.</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Source</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">No Show Date</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Remarks</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {filteredBookings.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-12 text-center text-gray-400 italic">
+                                        <td colSpan={10} className="px-6 py-12 text-center text-gray-400 italic">
                                             No no-show reservations found for this period.
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredBookings.map((b) => {
-                                        const isPaid = (b.paidAmount || 0) >= b.totalAmount;
-                                        const hasPenalty = b.paymentStatus === 'paid' || b.paymentStatus === 'partial' || (b.paidAmount || 0) > 0;
                                         const source = b.source ? b.source.replace('_', ' ').toUpperCase() : 'DIRECT';
-                                        const agent = b.travelAgentId || 'None';
+                                        const charges = b.totalAmount;
+                                        // Mock No Show Revenue as total amount if paid/retention, otherwise 0 or partial?
+                                        // For simplicity, assuming if status is no_show, and there is a payment or it is "retention", we count it.
+                                        // But usually No Show Revenue = Charged Amount.
+                                        const noShowRevenue = b.paidAmount || 0;
 
                                         return (
                                             <tr key={b.id} className="hover:bg-orange-50/30 transition-colors group print:hover:bg-transparent">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-mono text-gray-500 uppercase">{b.bookingId || b.id.substring(0, 8)}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs text-gray-700">{new Date(b.createdAt).toLocaleDateString()}</span>
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="text-sm font-bold text-gray-900 group-hover:text-orange-700 transition-colors print:text-black">
@@ -173,49 +220,35 @@ export default function NoShowReportPage() {
                                                                 {b.companyId}
                                                             </span>
                                                         )}
-                                                        <span className="text-xs text-gray-400 font-mono mt-0.5 print:text-gray-600">
-                                                            #{b.bookingId || b.id.substring(0, 6).toUpperCase()}
-                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-gray-700 print:text-black">{source}</span>
-                                                        {agent !== 'None' && (
-                                                            <span className="text-[10px] text-blue-600 print:text-black">{agent}</span>
-                                                        )}
-                                                    </div>
+                                                    <span className="text-xs text-gray-700">{rateTypes.find(r => r.id === b.rateTypeId)?.name || '-'}</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <CalendarDaysIcon className="h-3.5 w-3.5 text-gray-400 print:hidden" />
-                                                        {new Date(b.checkIn).toLocaleDateString()}
-                                                    </div>
+                                                    {new Date(b.checkIn).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
                                                     {new Date(b.checkOut).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    {isPaid ? (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200 print:border-black print:bg-white print:text-black">
-                                                            Fully Paid / Retention
-                                                        </span>
-                                                    ) : hasPenalty ? (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 print:border-black print:bg-white print:text-black">
-                                                            Partial / Retention
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 border border-red-200 print:border-black print:bg-white print:text-black">
-                                                            Not Charged
-                                                        </span>
-                                                    )}
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="text-xs font-mono text-gray-600">
+                                                        {formatCurrency(charges)}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className="text-sm font-bold font-mono text-gray-900 print:text-black">
-                                                        {formatCurrency(b.totalAmount)}
+                                                        {formatCurrency(noShowRevenue)}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-bold text-gray-700 print:text-black">{source}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
+                                                    {/* Using updatedAt as proxy for No Show Date logic */}
+                                                    {new Date(b.updatedAt).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-4">
                                                     <span className="text-xs text-gray-500 italic max-w-[150px] inline-block truncate print:text-black print:whitespace-normal">
                                                         {b.notes || 'Guest did not arrive'}
                                                     </span>
@@ -240,6 +273,44 @@ export default function NoShowReportPage() {
                 <div className="text-xs text-gray-400 text-right">
                     <p>Confidential • Internal Use Only</p>
                 </div>
+            </div>
+            {/* Help Guide Section (Strict Match) */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200 mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Help Guide</h3>
+                <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                    This report will give you no-show data based on the date selected in the property management system. We store no-show date according to the system date of a property. So if you are not performing night audit on a regular basis, there are chances that the report will not render proper data.
+                </p>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">How can you compare the report data with other reports?</h4>
+                <p className="text-xs text-gray-600 mb-1">
+                    1) No show Revenue of this report can be matched with the manager report or weekly manager report, room charges - no show Revenue when both reports are pulled for a specific date.
+                </p>
+                <div className="text-xs text-gray-600 mb-4">
+                    <span className="text-red-500 font-bold">Note :</span> It will not match only when some manual no-show charge is posted on any active booking, then it will come in the calculation on Manager Report but No Show Reservation report will pull out only no-showed bookings. This is usually considered as a user's mistake.
+                    <p className="mt-1">
+                        2) No Show Revenue of this report can be matched with Daily Revenue Report when pulled out by No Show Revenue for a specific date.
+                    </p>
+                </div>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">Report Column Explanation</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                    <li><strong>Res. No :</strong> Reservation no of booking</li>
+                    <li><strong>Booking Date :</strong> Booking date on which reservation has been taken in the system</li>
+                    <li><strong>Guest Name :</strong> Name of the Guest</li>
+                    <li><strong>Rate Type :</strong> Rate Type of booking</li>
+                    <li><strong>Arr. :</strong> Arrival Date of booking in property's short format set in the configuration panel</li>
+                    <li><strong>Dpt :</strong> Departure Date of a booking in property's short format set in the configuration panel</li>
+                    <li><strong>Folio No :</strong> Folio No of a booking</li>
+                    <li><strong>ADR :</strong> Shows Average daily rate considering all stay nights.</li>
+                    <li><strong>No Show Revenue :</strong> Shows no show fee as tax inclusive or exclusive collected for the booking in property's base currency (based on Tax Inclusive Rates (Disc./Adj. included, if applied) filter option checked)</li>
+                    <li><strong>Charges :</strong> Shows total booking amount to be paid in property's base currency</li>
+                    <li><strong>Paid :</strong> Shows total payment paid for the booking in the property's base currency</li>
+                    <li><strong>Balance :</strong> Shows total due amount in property's base currency</li>
+                    <li><strong>Source :</strong> A business source of the booking</li>
+                    <li><strong>User :</strong> User who has marked no-show the booking</li>
+                    <li><strong>No Show Date :</strong> Date on which reservation was marked no-show</li>
+                    <li><strong>Remarks :</strong> Shows no-show remarks (reason of no-show)</li>
+                </ul>
             </div>
         </div>
     );

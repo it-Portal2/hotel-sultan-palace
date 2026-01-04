@@ -96,57 +96,85 @@ export default function ReportsPage() {
             // === 2. Fetch Data ===
 
             // A. Get Total Rooms Dynamically from PHYSICAL Inventory
-            // First try roomStates (Physical Rooms)
-            let totalRoomCount = 15; // Fallback default as per user request (Garden:6, Imp:5, Occ:4)
+            let totalRoomCount = 0;
 
             if (db) {
                 try {
-                    const roomStatesSnap = await getDocs(collection(db, 'roomStates'));
-                    if (!roomStatesSnap.empty) {
-                        totalRoomCount = roomStatesSnap.size;
-                    } else {
-                        // If roomStates empty, consider falling back to default 15
-                        console.warn('roomStates collection empty, falling back to default 15');
-                        totalRoomCount = 15;
-                    }
+                    const roomsSnap = await getDocs(collection(db, 'rooms'));
+                    totalRoomCount = roomsSnap.size; // 0 if empty
                 } catch (e) {
-                    console.warn('Failed to fetch roomStates', e);
+                    console.warn('Failed to fetch rooms', e);
                 }
             }
 
             // B. Ledger Entries (Revenue)
             const ledgerEntries = await getLedgerEntries(targetDateStart, targetDateEnd);
 
-            // C. Bookings (Occupancy)
+            // C. Bookings (Occupancy) - Fetching all for client-side processing
+            // Note: For production with large data, this should be server-side aggregated or constrained by date range
             let bookingsSnap: any = [];
+            let allBookings: any[] = [];
             if (db) {
                 const bookingsRef = collection(db, 'bookings');
                 const q = query(bookingsRef);
                 bookingsSnap = await getDocs(q);
+                allBookings = bookingsSnap.docs.map((d: any) => d.data());
             }
 
-            // === 3. Process Daily Report Data ===
+            // === 3. Process Daily Report Data (Selected Date) ===
+            const calculateDailyStats = (date: Date, roomsCount: number, bookings: any[]) => {
+                let stats = {
+                    rented: 0,
+                    ood: 0,
+                    guests: { adults: 0, children: 0, walkIn: 0, arrivals: 0, departures: 0, inHouse: 0 }
+                };
+
+                const targetStart = new Date(date); targetStart.setHours(0, 0, 0, 0);
+                const targetTimestamp = targetStart.getTime();
+
+                bookings.forEach(b => {
+                    let checkIn = b.checkInDate?.seconds ? b.checkInDate.toDate() : new Date(b.checkInDate || Date.now());
+                    let checkOut = b.checkOutDate?.seconds ? b.checkOutDate.toDate() : new Date(b.checkOutDate || Date.now());
+                    checkIn.setHours(0, 0, 0, 0);
+                    checkOut.setHours(0, 0, 0, 0);
+
+                    const isOccupying = targetTimestamp >= checkIn.getTime() && targetTimestamp < checkOut.getTime();
+                    const isArrival = targetTimestamp === checkIn.getTime();
+                    const isDeparture = targetTimestamp === checkOut.getTime();
+                    const isMaintenance = b.status === 'maintenance' || b.type === 'maintenance';
+
+                    if (isOccupying) {
+                        if (isMaintenance) stats.ood++;
+                        else if (b.status !== 'cancelled' && b.status !== 'no_show') {
+                            stats.rented++;
+                            stats.guests.adults += Number(b.adults || 0);
+                            stats.guests.children += Number(b.children || 0);
+                            stats.guests.inHouse += (Number(b.adults || 0) + Number(b.children || 0));
+                            if ((b.source || '').toLowerCase().includes('walk')) stats.guests.walkIn++;
+                        }
+                    }
+                    if (isArrival && b.status !== 'cancelled') stats.guests.arrivals++;
+                    if (isDeparture && b.status !== 'cancelled') stats.guests.departures++;
+                });
+                return stats;
+            };
+
+            const todayStats = calculateDailyStats(targetDate, totalRoomCount, allBookings);
 
             let dailyRooms = {
                 total: totalRoomCount,
-                ood: 0,
-                rented: 0,
-                comp: 0,
+                ood: todayStats.ood,
+                rented: todayStats.rented,
+                comp: 0, // Logic for comp needed if field exists
                 houseUse: 0,
-                available: 0,
-                vacant: 0,
+                available: totalRoomCount - todayStats.ood,
+                vacant: (totalRoomCount - todayStats.ood) - todayStats.rented,
                 dayUse: 0,
-                occupancyPercentage: 0
+                occupancyPercentage: totalRoomCount > 0 ? (todayStats.rented / totalRoomCount) * 100 : 0
             };
-            let dailyGuests = {
-                adults: 0,
-                children: 0,
-                arrivals: 0,
-                departures: 0,
-                walkIn: 0,
-                inHouse: 0,
-                dayUse: 0
-            };
+
+            let dailyGuests = { ...todayStats.guests, dayUse: 0 };
+
             let dailyRevenue = {
                 roomRevenue: 0,
                 tax: 0,
@@ -158,91 +186,25 @@ export default function ReportsPage() {
                 revPar: 0
             };
 
-            // -- Process Bookings --
-            bookingsSnap.forEach((doc: any) => {
-                const booking = doc.data();
-
-                // Parse Dates
-                let checkIn: Date;
-                let checkOut: Date;
-                const data = booking as any;
-
-                if (data.checkInDate?.seconds) {
-                    checkIn = (data.checkInDate as Timestamp).toDate();
-                } else if (data.checkInDate) {
-                    checkIn = new Date(data.checkInDate);
-                } else {
-                    checkIn = new Date();
-                }
-
-                if (data.checkOutDate?.seconds) {
-                    checkOut = (data.checkOutDate as Timestamp).toDate();
-                } else if (data.checkOutDate) {
-                    checkOut = new Date(data.checkOutDate);
-                } else {
-                    checkOut = new Date();
-                }
-
-                // Set times to boundary for comparison
-                checkIn.setHours(0, 0, 0, 0);
-                checkOut.setHours(0, 0, 0, 0);
-                const target = new Date(selectedDate);
-                target.setHours(0, 0, 0, 0);
-
-                // Check Overlap
-                const isOccupying = target >= checkIn && target < checkOut;
-                const isArrival = target.getTime() === checkIn.getTime();
-                const isDeparture = target.getTime() === checkOut.getTime();
-                const isMaintenance = booking.status === 'maintenance' || booking.type === 'maintenance';
-
-                if (isOccupying) {
-                    if (isMaintenance) {
-                        dailyRooms.ood++;
-                    } else if (booking.status !== 'cancelled' && booking.status !== 'no_show') {
-                        dailyRooms.rented++;
-                        // Add Guests
-                        dailyGuests.adults += Number(booking.adults || 0);
-                        dailyGuests.children += Number(booking.children || 0);
-                        dailyGuests.inHouse += (Number(booking.adults || 0) + Number(booking.children || 0));
-
-                        // Guest Source logic (mock)
-                        if (booking.source === 'walk_in') dailyGuests.walkIn++;
-                    }
-                }
-
-                if (isArrival && booking.status !== 'cancelled') dailyGuests.arrivals++;
-                if (isDeparture && booking.status !== 'cancelled') dailyGuests.departures++;
-            });
-
             // -- Process Revenue (Ledger) --
-            // Sum per category
             ledgerEntries.forEach(entry => {
                 if (entry.entryType === 'income') {
-                    const category = entry.category as string;
-
-                    if (category === 'Room Charge' || category === 'room_booking' || category === 'room_charge') {
+                    const category = (entry.category || '').toLowerCase();
+                    const desc = (entry.description || '').toLowerCase();
+                    if (category.includes('room') || category.includes('accommodation') || desc.includes('room charge')) {
                         dailyRevenue.roomRevenue += entry.amount;
-                    } else if (category === 'Tax' || category === 'tax') {
+                    } else if (category.includes('tax') || category.includes('vat') || category.includes('gst')) {
                         dailyRevenue.tax += entry.amount;
-                    } else if (category === 'food_beverage' || ['Food', 'Beverage', 'Restaurant', 'Bar'].includes(category)) {
+                    } else if (category.includes('food') || category.includes('beverage') || category.includes('restaurant')) {
                         dailyRevenue.fb += entry.amount;
                     } else {
-                        dailyRevenue.other += entry.amount; // Services, Laundry etc
+                        dailyRevenue.other += entry.amount;
                     }
-
-                    // Count payments roughly
-                    if (entry.category === 'Payment' || entry.description?.toLowerCase().includes('payment')) {
-                        dailyRevenue.payments += entry.amount;
-                    }
+                    if (category === 'payment' || desc.includes('payment')) dailyRevenue.payments += entry.amount;
                 }
             });
 
-            // Calculate Totals
             dailyRevenue.totalRevenue = dailyRevenue.roomRevenue + dailyRevenue.tax + dailyRevenue.fb + dailyRevenue.other;
-            dailyRooms.available = dailyRooms.total - dailyRooms.ood;
-            dailyRooms.vacant = dailyRooms.available - dailyRooms.rented;
-            dailyRooms.occupancyPercentage = dailyRooms.total > 0 ? (dailyRooms.rented / dailyRooms.total) * 100 : 0;
-
             dailyRevenue.adr = dailyRooms.rented > 0 ? dailyRevenue.roomRevenue / dailyRooms.rented : 0;
             dailyRevenue.revPar = dailyRooms.total > 0 ? dailyRevenue.roomRevenue / dailyRooms.total : 0;
 
@@ -252,17 +214,22 @@ export default function ReportsPage() {
                 revenue: dailyRevenue
             });
 
-
             // === 4. Chart Data ===
             const chartLedger = await getLedgerEntries(chartStartDate, chartEndDate);
             const dailyRevenueMap = new Map<string, { income: number; expenses: number }>();
+            const dailyOccupancyMap = new Map<string, number>();
 
-            // Initialize map for last 7 days to ensure x-axis continuity
-            for (let i = 0; i < 7; i++) {
+            // Initialize last 7 days
+            for (let i = 6; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
                 const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-                if (!dailyRevenueMap.has(dayName)) dailyRevenueMap.set(dayName, { income: 0, expenses: 0 });
+                dailyRevenueMap.set(dayName, { income: 0, expenses: 0 });
+
+                // Calculate Historial Occupancy
+                const stats = calculateDailyStats(d, totalRoomCount, allBookings);
+                const occ = totalRoomCount > 0 ? (stats.rented / totalRoomCount) * 100 : 0;
+                dailyOccupancyMap.set(dayName, occ);
             }
 
             chartLedger.forEach(entry => {
@@ -276,10 +243,14 @@ export default function ReportsPage() {
 
             const processedRevenueData = Array.from(dailyRevenueMap.entries()).map(([name, data]) => ({
                 name, income: data.income, expenses: data.expenses, date: name
-            })).reverse();
+            }));
+
+            const processedOccupancyData = Array.from(dailyOccupancyMap.entries()).map(([name, rate]) => ({
+                name, occupancyRate: Number(rate.toFixed(1)), date: name
+            }));
 
             setRevenueData(processedRevenueData);
-            setOccupancyData([]); // Todo: Implement Occupancy history
+            setOccupancyData(processedOccupancyData);
 
         } catch (error) {
             console.error('Error loading reports:', error);

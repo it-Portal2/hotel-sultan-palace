@@ -35,9 +35,43 @@ export default function CancelledReportPage() {
             // 1. Must be cancelled
             if (b.status !== 'cancelled') return false;
 
-            // 2. Filter by Updated At (Cancellation Date)
-            const cancelledDate = b.updatedAt instanceof Date ? b.updatedAt : new Date(b.updatedAt);
-            if (cancelledDate < start || cancelledDate > end) return false;
+            // 2. Filter by Date Type (Cancellation Date vs Arrival Date)
+            let targetDate: Date;
+
+            if (filters.dateType === 'arrival') {
+                targetDate = new Date(b.checkIn);
+            } else {
+                // Default to Cancellation Date (updatedAt)
+                targetDate = b.updatedAt instanceof Date ? b.updatedAt : new Date(b.updatedAt);
+            }
+
+            if (targetDate < start || targetDate > end) return false;
+
+            // 3. Filter by Company/Agent
+            if (filters.companyId && b.companyId !== filters.companyId) return false;
+            if (filters.travelAgentId && b.travelAgentId !== filters.travelAgentId) return false;
+
+            // 4. Source Filter
+            if (filters.source) {
+                const bSource = b.source?.toLowerCase().replace('_', '') || 'direct';
+                const fSource = filters.source.toLowerCase().replace('_', '');
+                if (!bSource.includes(fSource)) return false;
+            }
+
+            // 5. Reason Filter
+            if (filters.cancellationReason && b.notes) {
+                // partial match since we store reasons in notes usually
+                if (!b.notes.toLowerCase().includes(filters.cancellationReason.toLowerCase())) return false;
+            }
+
+            // 6. Room Type
+            if (filters.roomType) {
+                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                if (!hasType) return false;
+            }
+
+            // 7. Rate Type
+            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
 
             return true;
         });
@@ -93,7 +127,7 @@ export default function CancelledReportPage() {
 
                 <div className="print:hidden">
                     <ReportFilters
-                        title="Filter Cancellations"
+                        title="Cancelled Reservation"
                         reportType="cancellation"
                         onFilterChange={handleFilterChange}
                     />
@@ -230,6 +264,44 @@ export default function CancelledReportPage() {
                 <div className="text-xs text-gray-400 text-right">
                     <p>Confidential • Internal Use Only</p>
                 </div>
+            </div>
+            {/* Help Guide Section (Strict Match) */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200 mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Help Guide</h3>
+                <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                    This report will give you cancellations based on the date selected in the property management system. We store the cancellation date according to the system date of a property. So if you are not performing night audit on a regular basis, there are chances that the report will not render proper data.
+                </p>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">How can you compare the report data with other reports?</h4>
+                <p className="text-xs text-gray-600 mb-1">
+                    1) Cancellation Revenue of this report can be matched with the manager report or weekly manager report, room charges - Cancellation Revenue when both reports are pulled for a specific date.
+                </p>
+                <div className="text-xs text-gray-600 mb-4">
+                    <span className="text-red-500 font-bold">Note :</span> It will not match only when some manual cancellation charge is posted on any active booking, then it will come in the calculation on Manager Report but Cancelled Reservation report will pull out only canceled bookings. This is usually considered as a user's mistake.
+                    <p className="mt-1">
+                        2) Cancellation Revenue of this report can be matched with the Daily Revenue Report when pulled out by Cancellation Revenue for a specific date.
+                    </p>
+                </div>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">Report Column Explanation</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                    <li><strong>Res. No :</strong> Reservation no of booking</li>
+                    <li><strong>Booking Date :</strong> Booking date on which reservation has been taken in the system</li>
+                    <li><strong>Guest Name :</strong> Name of the Guest</li>
+                    <li><strong>Rate Type :</strong> Rate Type of booking</li>
+                    <li><strong>Arr. :</strong> Arrival Date of booking in property's short format set in the configuration panel</li>
+                    <li><strong>Dpt :</strong> Departure Date of a booking in property's short format set in the configuration panel</li>
+                    <li><strong>Folio No :</strong> Folio No of a booking</li>
+                    <li><strong>ADR :</strong> Shows Average daily rate considering all stay nights.</li>
+                    <li><strong>Can. Revenue :</strong> Shows cancellation fee as tax inclusive or exclusive collected for the booking in property's base currency (based on Tax Inclusive Rates (Disc./Adj. included, if applied) filter option checked)</li>
+                    <li><strong>Charges :</strong> Shows total booking amount to be paid in property's base currency</li>
+                    <li><strong>Paid :</strong> Shows total payment paid for the booking in the property's base currency</li>
+                    <li><strong>Balance :</strong> Shows total due amount in property's base currency</li>
+                    <li><strong>Source :</strong> A business source of the booking</li>
+                    <li><strong>Can. By :</strong> User who has canceled the booking</li>
+                    <li><strong>Can Date :</strong> Date on which reservation was canceled</li>
+                    <li><strong>Remarks :</strong> Shows cancellation remarks (reason of cancellation)</li>
+                </ul>
             </div>
         </div>
     );

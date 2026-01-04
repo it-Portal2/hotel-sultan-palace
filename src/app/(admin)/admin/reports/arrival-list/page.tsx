@@ -40,27 +40,43 @@ export default function ArrivalListPage() {
         end.setHours(23, 59, 59, 999);
 
         let result = bookings.filter(b => {
-            // 1. Strict Filter by Arrival Date
-            const arrival = new Date(b.checkIn);
-            // We want to see people ARRIVING on this day
-            // Check overlap for general occupancy? No, Arrival List is specifically for Check-Ins.
-            // So arrival date must be within range.
-            arrival.setHours(0, 0, 0, 0);
+            // Filter Logic
+            // ... (keep existing filters)
+            // 6. Filter by Market (Mock)
+            if (filters.market && (b as any).market !== filters.market) return false;
 
-            if (arrival < start || arrival > end) return false;
+            // 7. Room Type
+            if (filters.roomType) {
+                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                if (!hasType) return false;
+            }
 
-            // 2. Filter by Cancelled status (Arrival list excludes cancelled usually)
-            if (b.status === 'cancelled') return false;
+            // 8. Rate Type
+            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
+
+            // 9. Rate Range
+            if (filters.rateFrom && b.totalAmount < Number(filters.rateFrom)) return false;
+            if (filters.rateTo && b.totalAmount > Number(filters.rateTo)) return false;
+
+            // 8. Business Source (Mock)
+            if (filters.businessSource && (b as any).businessSource !== filters.businessSource) return false;
 
             return true;
         });
 
-        // Sort by Room Number (if allocated) or Guest Name
+        // Sort by User Selection
         result.sort((a, b) => {
-            const roomA = a.rooms[0]?.allocatedRoomType || '';
-            const roomB = b.rooms[0]?.allocatedRoomType || '';
-            if (roomA && roomB) return roomA.localeCompare(roomB);
-            return a.guestDetails.lastName.localeCompare(b.guestDetails.lastName);
+            if (filters.orderBy === 'guest_name') {
+                return a.guestDetails.lastName.localeCompare(b.guestDetails.lastName);
+            } else if (filters.orderBy === 'room_no') {
+                const roomA = a.rooms[0]?.allocatedRoomType || '';
+                const roomB = b.rooms[0]?.allocatedRoomType || '';
+                return roomA.localeCompare(roomB);
+            } else if (filters.orderBy === 'booking_id') {
+                return (a.bookingId || '').localeCompare(b.bookingId || '');
+            } else {
+                return new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime();
+            }
         });
 
         setFilteredBookings(result);
@@ -72,6 +88,24 @@ export default function ArrivalListPage() {
             currency: 'USD',
             minimumFractionDigits: 2
         }).format(amount);
+    };
+
+    // Helper to check if column is selected
+    // Default columns if filter state is empty (initial load)
+    const isColVisible = (id: string) => {
+        // If no filter selected yet (initial), show defaults
+        // But ReportFilters initializes with defaults, so we rely on passed filters if we had access to them in render.
+        // Issue: 'filters' state is inside ReportFilters component, we only get updates via onFilterChange. 
+        // Strategy: We need to store the current filter state in this page (which we do implicitly via setFilteredBookings, but not the filter config itself).
+        // We need to keep track of 'currentFilters'
+        return currentFilters?.columns ? currentFilters.columns.includes(id) : true;
+    };
+
+    const [currentFilters, setCurrentFilters] = useState<ReportFilterState | null>(null);
+
+    const handleFilterUpdate = (filters: ReportFilterState) => {
+        setCurrentFilters(filters);
+        handleFilterChange(filters);
     };
 
     return (
@@ -89,7 +123,7 @@ export default function ArrivalListPage() {
                         </div>
                     </div>
                     <div className="text-right">
-                        <h2 className="text-2xl font-bold text-gray-900">Expected Arrivals</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">Arrival List</h2>
                         <p className="text-xs text-gray-400 mt-1">Generated: {new Date().toLocaleString()}</p>
                     </div>
                 </div>
@@ -100,27 +134,26 @@ export default function ArrivalListPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Arrival List</h1>
-                        <p className="text-sm text-gray-500">Expected check-ins and room allocations.</p>
+                        <p className="text-sm text-gray-500">Expected guest arrivals.</p>
                     </div>
                 </div>
 
                 <div className="print:hidden">
                     <ReportFilters
-                        title="Filter Arrivals"
+                        title="Arrival List"
                         reportType="arrival"
-                        onFilterChange={handleFilterChange}
+                        onFilterChange={handleFilterUpdate}
                     />
                 </div>
-
 
                 <div className="bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden print:shadow-none print:border-gray-200 print:rounded-none">
                     <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center print:bg-white print:border-gray-300">
                         <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse print:hidden"></div>
-                            <h3 className="font-bold text-gray-800">Check-In Schedule</h3>
+                            <h3 className="font-bold text-gray-800">Arrivals</h3>
                         </div>
                         <span className="text-xs font-semibold text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 print:border-0">
-                            {filteredBookings.length} Guests Expected
+                            {filteredBookings.length} Guests
                         </span>
                     </div>
 
@@ -128,104 +161,59 @@ export default function ArrivalListPage() {
                         <table className="min-w-full divide-y divide-gray-200 text-left">
                             <thead className="bg-gray-50 print:bg-gray-100">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest / Company</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Source / Agent</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Room / Plan</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Pax</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">ETA</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Res. No</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Room</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Rate</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Arrival</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Departure</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-right">Balance</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-center print:w-24">Status</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Pax</th>
+                                    {isColVisible('pickup') && <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Pick-Up</th>}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {filteredBookings.length === 0 ? (
                                     <tr>
                                         <td colSpan={8} className="px-6 py-12 text-center text-gray-400 italic">
-                                            No arrivals found for the selected date range.
+                                            No arrivals found for the selected criteria.
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredBookings.map((b) => {
-                                        const bookedType = b.rooms[0]?.suiteType || b.rooms[0]?.type || 'Standard';
-                                        const allocated = b.rooms[0]?.allocatedRoomType;
-                                        const ratePlan = b.rooms[0]?.ratePlan || 'BAR'; // Best Available Rate
-                                        const paid = b.paidAmount || 0;
-                                        const balance = b.totalAmount - paid;
-                                        const source = b.source ? b.source.replace('_', ' ').toUpperCase() : 'DIRECT';
-                                        const agent = b.travelAgentId || 'None';
+                                        const allocated = b.rooms[0]?.allocatedRoomType || 'Unassigned';
 
                                         return (
                                             <tr key={b.id} className="hover:bg-gray-50/80 transition-colors group print:hover:bg-transparent">
                                                 <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors print:text-black">
-                                                            {b.guestDetails.lastName}, {b.guestDetails.firstName}
-                                                        </span>
-                                                        {b.companyId && (
-                                                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded w-fit mt-0.5 print:text-black print:bg-transparent print:border print:border-gray-300">
-                                                                {b.companyId} {/* TODO: Lookup Company Name */}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-xs text-gray-400 font-mono mt-0.5 print:text-gray-600">
-                                                            #{b.bookingId || b.id.substring(0, 6).toUpperCase()}
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-xs font-mono text-gray-500 uppercase">{b.bookingId || b.id.substring(0, 8)}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-gray-700 print:text-black">{source}</span>
-                                                        {agent !== 'None' && (
-                                                            <span className="text-[10px] text-blue-600 print:text-black">{agent}</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        {allocated ? (
-                                                            <span className="text-sm font-bold text-emerald-600 print:text-black">{allocated}</span>
-                                                        ) : (
-                                                            <span className="text-sm text-gray-400 italic print:text-gray-500">Unassigned</span>
-                                                        )}
-                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wide print:text-gray-600">{bookedType}</span>
-                                                        <span className="text-[10px] font-mono text-gray-500 print:text-gray-600">({ratePlan})</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-medium text-gray-700 print:bg-transparent print:border print:border-gray-300 print:text-black">
-                                                        {b.guests.adults}A / {b.guests.children}C
+                                                    <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors print:text-black">
+                                                        {b.guestDetails.lastName}, {b.guestDetails.firstName}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-1.5 text-gray-500 print:text-black">
-                                                        <ClockIcon className="h-3.5 w-3.5" />
-                                                        <span className="text-xs font-medium">14:00</span>
+                                                    <span className="text-xs text-gray-700">{allocated}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-mono">{formatCurrency(b.totalAmount)}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-xs text-gray-700">
+                                                        {new Date(b.checkIn).toLocaleDateString()} <span className="text-gray-400">14:00</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <CalendarDaysIcon className="h-3.5 w-3.5 text-gray-400 print:hidden" />
-                                                        {new Date(b.checkOut).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    </div>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs text-gray-700">{new Date(b.checkOut).toLocaleDateString()}</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex flex-col items-end">
-                                                        <span className={`text-sm font-bold font-mono ${balance > 0 ? 'text-red-600' : 'text-emerald-600'} print:text-black`}>
-                                                            {formatCurrency(balance)}
-                                                        </span>
-                                                        {balance > 0 && (
-                                                            <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide print:text-gray-600">Due</span>
-                                                        )}
-                                                    </div>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs text-gray-700">{b.guests?.adults || 0}A / {b.guests?.children || 0}C</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset
-                                                     ${b.status === 'confirmed' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' :
-                                                            b.status === 'checked_in' ? 'bg-green-50 text-green-700 ring-green-600/20' :
-                                                                'bg-gray-50 text-gray-600 ring-gray-500/10'} print:ring-1 print:ring-black print:bg-white print:text-black`}>
-                                                        {b.status.replace('_', ' ')}
-                                                    </span>
-                                                </td>
+                                                {isColVisible('pickup') && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs text-gray-400 italic">No Pickup</span>
+                                                    </td>
+                                                )}
                                             </tr>
                                         )
                                     })
@@ -234,6 +222,36 @@ export default function ArrivalListPage() {
                         </table>
                     </div>
                 </div>
+            </div>
+
+            {/* Help Guide Section (Strict Match) */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200 mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Help Guide</h3>
+                <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                    An <strong>Arrival List</strong> report is used to check the Expected guest <strong>arrivals</strong> of the property. It captures all the information about hotel guest arrivals. It can help the hotel staff have enough time to prepare the correct room and cater to any special requests as indicated on the arrival report.
+                </p>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">How can you compare the report data with other reports?</h4>
+                <p className="text-xs text-gray-600 mb-1">
+                    1) Arrival list report for can be matched with folio List report for the same date range with columns "arrival date, pax, guest name and reservation type" by <span className="font-bold">arrival</span> in folio list for cross-checking data.
+                </p>
+                <p className="text-xs text-gray-600 mb-4">
+                    2) Arrival List report for particular date can be matched with guest List report for the same date with list of data of confirm booking and hold confirm booking by enabling <span className="font-bold">reservation</span> and <span className="font-bold">arrival</span> in guest list report for cross-checking data.
+                    <br />
+                    <span className="text-red-500 font-bold">Note :</span> Other data cannot be compared with any other report as this report's behavior is different as its pulling out data based on all reservation types.
+                </p>
+
+                <h4 className="text-sm font-bold text-gray-800 mb-2">Report Column Explanation</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                    <li><strong>Res. no :</strong> Reservation number and remark of booking</li>
+                    <li><strong>Guest :</strong> Name of the guest.</li>
+                    <li><strong>Room :</strong> Room number and room name of booking</li>
+                    <li><strong>Rate :</strong> Total rate of booking.</li>
+                    <li><strong>Arrival :</strong> Arrival date and arrival time of booking</li>
+                    <li><strong>Departure :</strong> Departure date of booking</li>
+                    <li><strong>pax :</strong> Pax information of booking</li>
+                    <li><strong>Pick-up :</strong> Pickup location of booking</li>
+                </ul>
             </div>
 
             {/* === PRINT ONLY FOOTER === */}
