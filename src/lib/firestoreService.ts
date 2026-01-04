@@ -4958,7 +4958,7 @@ export interface InvoiceItem {
   comments?: string;
   amount: number;
   qty: number;
-  discountType?: 'Percentage' | 'Amount';
+  discountType?: 'Percentage' | 'Amount' | null;
   discountValue?: number;
   isTaxInclusive: boolean;
 }
@@ -4978,6 +4978,8 @@ export interface IncidentalInvoice {
   date: string; // ISO Date String
   contactType: 'Guest' | 'City Ledger' | 'Walk-in';
   guestName: string;
+  bookingId?: string;
+  companyId?: string;
   paymentType: 'Cash/Bank' | 'City Ledger';
   paymentMethod?: string;
   charges: InvoiceItem[];
@@ -4990,6 +4992,7 @@ export interface IncidentalInvoice {
   preparedBy: string;
   status: 'active' | 'void';
   createdAt: any;
+  updatedAt?: Date;
 }
 
 export const getIncidentalInvoices = async (): Promise<IncidentalInvoice[]> => {
@@ -5025,11 +5028,30 @@ export const addIncidentalInvoice = async (invoice: Omit<IncidentalInvoice, 'id'
   }
 };
 
-export const updateIncidentalInvoice = async (id: string, data: Partial<IncidentalInvoice>) => {
+export const updateIncidentalInvoice = async (id: string, data: Partial<IncidentalInvoice>, userInfo?: { user: string; ip?: string }): Promise<boolean> => {
   if (!db) throw new Error("Firestore unavailable");
   try {
     const docRef = doc(db, 'incidentalInvoices', id);
     await updateDoc(docRef, data);
+
+    if (userInfo) {
+      // Determine action details based on data
+      let actionDetails = `Invoice updated: ${id}`;
+      if (data.status === 'void') {
+        actionDetails = `Invoice voided: ${id}`;
+      }
+
+      await createAuditLog({
+        businessDate: new Date().toISOString().split('T')[0],
+        timestamp: new Date(),
+        action: data.status === 'void' ? 'Void Invoice' : 'Edit Invoice',
+        details: actionDetails,
+        category: 'incidentalInvoices',
+        user: userInfo.user,
+        ip: userInfo.ip || '127.0.0.1'
+      });
+    }
+    return true;
   } catch (error) {
     console.error("Error updating invoice:", error);
     throw error;

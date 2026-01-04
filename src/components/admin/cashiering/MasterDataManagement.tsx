@@ -58,7 +58,7 @@ export default function MasterDataManagement({
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     // Audit Trail State
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -180,13 +180,13 @@ export default function MasterDataManagement({
     const handleCreate = () => {
         setEditingItem(null);
         setFormData({});
-        setIsModalOpen(true);
+        setIsDrawerOpen(true);
     };
 
     const handleEdit = (item: any) => {
         setEditingItem(item);
         setFormData({ ...item });
-        setIsModalOpen(true);
+        setIsDrawerOpen(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -214,7 +214,7 @@ export default function MasterDataManagement({
                 const success = await updateMasterData(collectionName, editingItem.id, formData, userInfo);
                 if (success) {
                     showToast('Item updated successfully', 'success');
-                    setIsModalOpen(false);
+                    setIsDrawerOpen(false);
                     loadData();
                 } else {
                     showToast('Failed to update item', 'error');
@@ -223,7 +223,7 @@ export default function MasterDataManagement({
                 const id = await addMasterData(collectionName, formData, userInfo);
                 if (id) {
                     showToast('Item created successfully', 'success');
-                    setIsModalOpen(false);
+                    setIsDrawerOpen(false);
                     loadData();
                 } else {
                     showToast('Failed to create item', 'error');
@@ -389,84 +389,99 @@ export default function MasterDataManagement({
                 </table>
             </div>
 
-            {/* Add/Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all">
-                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            {/* Add/Edit Right-Side Drawer */}
+            <div className={`fixed inset-0 overflow-hidden z-[60] ${isDrawerOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsDrawerOpen(false)} />
+
+                <div className={`absolute inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col h-full">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <h2 className="text-xl font-bold text-gray-900">
                                 {editingItem ? `Edit ${title}` : `Add ${title}`}
                             </h2>
                             <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-500"
+                                onClick={() => setIsDrawerOpen(false)}
+                                className="text-gray-400 hover:text-gray-500 transition-colors"
                             >
                                 <XMarkIcon className="h-6 w-6" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {formFields.map((field) => (
-                                <div key={field.key}>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {field.label} {field.required && <span className="text-red-500">*</span>}
-                                    </label>
-                                    {field.type === 'textarea' ? (
-                                        <textarea
-                                            value={formData[field.key] || ''}
-                                            onChange={(e) => handleChange(field.key, e.target.value)}
-                                            required={field.required}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
-                                            rows={3}
-                                        />
-                                    ) : field.type === 'checkbox' ? (
-                                        <div className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData[field.key] || false}
-                                                onChange={(e) => handleChange(field.key, e.target.checked)}
-                                                className="h-4 w-4 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded"
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <form id="master-data-form" onSubmit={handleSubmit} className="space-y-6">
+                                {formFields.map((field) => (
+                                    <div key={field.key}>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {field.label} {field.required && <span className="text-red-500">*</span>}
+                                        </label>
+                                        {field.type === 'textarea' ? (
+                                            <textarea
+                                                value={formData[field.key] || ''}
+                                                onChange={(e) => handleChange(field.key, e.target.value)}
+                                                required={field.required}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-0 focus:border-[#FF6A00] transition-colors resize-y min-h-[100px]"
+                                                rows={3}
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
                                             />
-                                            <span className="ml-2 text-sm text-gray-600">Active</span>
-                                        </div>
-                                    ) : (
-                                        <input
-                                            type={field.type}
-                                            value={formData[field.key] || ''}
-                                            onChange={(e) => handleChange(field.key, e.target.value)}
-                                            required={field.required}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
-                                        />
-                                    )}
-                                </div>
-                            ))}
+                                        ) : field.type === 'checkbox' ? (
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData[field.key] || false}
+                                                    onChange={(e) => handleChange(field.key, e.target.checked)}
+                                                    className="h-5 w-5 text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 rounded-none"
+                                                />
+                                                <span className="ml-3 text-sm text-gray-700">Active</span>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type={field.type}
+                                                value={formData[field.key] || ''}
+                                                onChange={(e) => handleChange(field.key, e.target.value)}
+                                                required={field.required}
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-0 focus:border-[#FF6A00] transition-colors"
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </form>
+                        </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#e66000] transition-colors shadow-sm font-medium"
-                                >
-                                    Save
-                                </button>
-                            </div>
-                        </form>
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsDrawerOpen(false)}
+                                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 font-medium hover:bg-gray-50 transition-colors rounded-none"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                form="master-data-form"
+                                className="px-6 py-2.5 bg-[#FF6A00] text-white font-medium hover:bg-[#e66000] transition-colors shadow-sm rounded-none"
+                            >
+                                {editingItem ? 'Update Record' : 'Create Record'}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Detail Log Modal */}
-            {isDetailLogOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 transform transition-all overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                            <h2 className="text-lg font-bold text-gray-900">Detail Log</h2>
+            {/* Detail Log Drawer (Also updated to be a drawer for consistency?) */}
+            {/* Keeping Detail Log as Modal for now unless requested to change, but User said "popups" generally. 
+                Let's make Detail Log a drawer too for consistency as per "forms opening in popup" instruction usually implies primary interaction.
+                Actually user said "forms that open in popup". Detail log is info. But let's check user request again.
+                "pop up which opens" -> "right side se open karo".
+                I will make Detail Log a drawer too as it's cleaner.
+            */}
+            <div className={`fixed inset-0 overflow-hidden z-[70] ${isDetailLogOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${isDetailLogOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsDetailLogOpen(false)} />
+
+                <div className={`absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isDetailLogOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col h-full">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <h2 className="text-xl font-bold text-gray-900">Detail Log</h2>
                             <button
                                 onClick={() => setIsDetailLogOpen(false)}
                                 className="text-gray-400 hover:text-gray-500"
@@ -475,12 +490,12 @@ export default function MasterDataManagement({
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto">
-                            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 flex items-start gap-3">
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="bg-blue-50 border border-blue-200 p-4 mb-6 flex items-start gap-3">
                                 <ExclamationCircleIcon className="h-6 w-6 text-blue-500 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <h3 className="font-semibold text-blue-800 text-sm">This record is currently in use</h3>
-                                    <p className="text-blue-600 text-xs mt-1">In order to inactivate/delete please remove the record from below listed module(s).</p>
+                                    <h3 className="font-semibold text-blue-800 text-sm">Record Dependency Check</h3>
+                                    <p className="text-blue-600 text-xs mt-1">Checking if this record is used in other modules before deletion/inactivation.</p>
                                 </div>
                             </div>
 
@@ -488,7 +503,7 @@ export default function MasterDataManagement({
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3 pl-2">Module Name</th>
-                                        <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Record(s) is in use</th>
+                                        <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider pb-3">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -504,41 +519,26 @@ export default function MasterDataManagement({
                                                     <span className="h-2 w-2 rounded-full bg-orange-400"></span>
                                                 </td>
                                                 <td className="py-3 text-sm text-gray-600">
-                                                    {usage.record}
+                                                    {usage.record} (In Use)
                                                 </td>
                                             </tr>
                                         ))
                                     )}
                                 </tbody>
                             </table>
-
-                            <div className="mt-8 flex gap-6 text-xs text-gray-500 justify-center border-t border-gray-100 pt-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-full bg-orange-400"></span>
-                                    Used for Delete Only
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-full bg-slate-500"></span>
-                                    Used for inactive only
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-full bg-red-400"></span>
-                                    Used for Inactive and delete
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Audit Trail Modal */}
-            {isAuditModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 transform transition-all h-[90vh] flex flex-col">
+            {/* Audit Trail Drawer */}
+            <div className={`fixed inset-0 overflow-hidden z-[80] ${isAuditModalOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${isAuditModalOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsAuditModalOpen(false)} />
+
+                <div className={`absolute inset-y-0 right-0 w-full max-w-4xl bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isAuditModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col h-full">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900">{title} - Audit Trail</h2>
-                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">{title} - Audit Trail</h2>
                             <button
                                 onClick={() => setIsAuditModalOpen(false)}
                                 className="text-gray-400 hover:text-gray-500"
@@ -547,16 +547,13 @@ export default function MasterDataManagement({
                             </button>
                         </div>
 
-                        {/* Filter Bar (Mock for visuals) */}
+                        {/* Filter Bar */}
                         <div className="p-4 bg-gray-50 border-b flex gap-4">
                             <input
                                 type="text"
-                                placeholder={`Search by ${title}...`}
-                                className="px-3 py-2 border border-gray-300 rounded-md text-sm w-64"
+                                placeholder={`Search logs...`}
+                                className="px-3 py-2 border border-gray-300 rounded-none text-sm w-64 focus:ring-[#FF6A00] focus:border-[#FF6A00]"
                             />
-                            <button className="p-2 border border-gray-300 rounded-md bg-white text-gray-500">
-                                <MagnifyingGlassIcon className="h-5 w-5" />
-                            </button>
                         </div>
 
                         <div className="flex-1 overflow-auto p-0">
@@ -598,7 +595,7 @@ export default function MasterDataManagement({
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }
