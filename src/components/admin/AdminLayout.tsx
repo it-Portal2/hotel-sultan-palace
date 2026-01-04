@@ -133,10 +133,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'reservations' },
           { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'reservations' },
           { name: 'Room View', href: '/admin/front-desk?tab=room_view', icon: Squares2X2Icon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'reservations' },
-          { name: 'Unsettled Folios', href: '/admin/front-desk?tab=unsettled', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
-          { name: 'Insert Transaction', href: '/admin/front-desk?tab=transactions', icon: PlusIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
+          { name: 'Unsettled Folios', href: '/admin/unsettled-folios', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
+          { name: 'Insert Transaction', href: '/admin/insert-transaction', icon: PlusIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
           { name: 'Guest Database', href: '/admin/guest-database', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'guest_database' },
           { name: 'Lost & Found', href: '/admin/lost-and-found', icon: ArchiveBoxIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'lost_found' },
+        ],
+        defaultOpen: true
+      },
+
+      {
+        name: 'Rooms',
+        icon: BuildingOfficeIcon,
+        items: [
+          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
+          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
+          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
         ],
         defaultOpen: true
       },
@@ -255,16 +266,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     ],
     website: [
 
-      {
-        name: 'Rooms',
-        icon: BuildingOfficeIcon,
-        items: [
-          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
-          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
-          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
-        ],
-        defaultOpen: true
-      },
       {
         name: 'Content',
         icon: PhotoIcon,
@@ -537,10 +538,14 @@ function AdminLayoutContent({
   };
 
   const isItemActive = (href: string) => {
-    if (href === '/admin') {
+    // Strip query parameters for comparison
+    const hrefPath = href.split('?')[0];
+
+    if (hrefPath === '/admin') {
       return pathname === '/admin';
     }
-    return pathname.startsWith(href);
+    // Check if pathname starts with the clean href path
+    return pathname.startsWith(hrefPath);
   };
 
   const renderNavigation = (onNavClick?: () => void) => {
@@ -655,32 +660,27 @@ function AdminLayoutContent({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile Backdrop */}
-      {sidebarOpen && currentPortal !== 'selection' && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden print:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Overlay Backdrop - Visible on all screen sizes when sidebar is open */}
+      {/* Backdrop Removed as per user request */}
 
       {/* Sidebar - Responsive: Overlay on mobile, Push on Desktop */}
       {currentPortal !== 'selection' && (
         <div className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-xl md:shadow-sm print:hidden ${sidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-0'
           } overflow-hidden`}>
-          <div className="flex h-16 items-center px-6 border-b border-gray-200 bg-gradient-to-r from-[#FF6A00] to-[#be8c53] flex-shrink-0">
+          <div className="flex h-16 items-center px-6 border-b border-gray-100 bg-white flex-shrink-0">
             <div className="flex items-center gap-3 w-full">
-              <div className="p-2 bg-white/20">
-                <BuildingOfficeIcon className="h-6 w-6 text-white" />
+              <div className="flex justify-center items-center w-8 h-8 rounded-lg bg-orange-50 text-[#FF6A00]">
+                <BuildingOfficeIcon className="h-5 w-5" />
               </div>
               <div className={`transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-                <h1 className="text-lg font-bold text-white whitespace-nowrap">{portalTitles[currentPortal]}</h1>
-                <p className="text-xs text-white/80 whitespace-nowrap">Sultan Palace</p>
+                <h1 className="text-sm font-bold text-gray-900 tracking-tight whitespace-nowrap">{portalTitles[currentPortal]}</h1>
               </div>
-              {/* Mobile Close Button inside Sidebar Header */}
+              {/* Close Button - Visible on all devices */}
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="ml-auto text-white md:hidden"
+                className="ml-auto p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -688,9 +688,8 @@ function AdminLayoutContent({
         </div>
       )}
 
-      {/* Main content - Responsive Margin */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 print:ml-0 print:w-full ${sidebarOpen && currentPortal !== 'selection' ? 'md:ml-72' : ''
-        }`}>
+      {/* Main content - No margin shift (Overlay mode) */}
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 print:ml-0 print:w-full">
         {/* Top bar */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm print:hidden">
           <div className="flex items-center gap-x-4 w-full px-4 sm:px-6 lg:px-8">

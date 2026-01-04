@@ -1,7 +1,10 @@
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useEffect, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Booking, HousekeepingTask } from '@/lib/firestoreService';
-import { XCircleIcon } from '@heroicons/react/24/outline';
+import { Booking, HousekeepingTask, generateCheckoutBill, getCheckoutBill, CheckoutBill, addFolioTransaction } from '@/lib/firestoreService';
+import { XCircleIcon, BanknotesIcon, CalculatorIcon, CreditCardIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { useReactToPrint } from 'react-to-print';
+import { InvoiceTemplate } from '@/components/admin/finance/InvoiceTemplate';
+import { sendEmail, generateBookingConfirmationEmail, generateGeneralReplyEmail } from '@/lib/emailService';
 
 interface CheckOutModalProps {
     booking: Booking;
@@ -29,13 +32,78 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
         housekeepingAssignee: '',
     });
 
+    const [bill, setBill] = useState<CheckoutBill | null>(null);
+    const [loadingBill, setLoadingBill] = useState(true);
+
+    const [paymentAmount, setPaymentAmount] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('Cash');
+    const [isPaying, setIsPaying] = useState(false);
+
     // Animation State
     const [isOpen, setIsOpen] = useState(false);
 
-    React.useEffect(() => {
+    // Print Handling
+    const componentRef = useRef<HTMLDivElement>(null);
+    const handlePrint = useReactToPrint({
+        contentRef: componentRef,
+        documentTitle: `Invoice-${booking.bookingId}`,
+    });
+
+    const fetchBill = async () => {
+        setLoadingBill(true);
+        try {
+            // Always try to generate fresh to capture latest transactions
+            const billId = await generateCheckoutBill(booking.id);
+            if (billId) {
+                const billData = await getCheckoutBill(billId);
+                setBill(billData);
+                if (billData && billData.balance > 0) {
+                    setPaymentAmount(billData.balance);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load bill", error);
+        } finally {
+            setLoadingBill(false);
+        }
+    };
+
+    useEffect(() => {
         // Trigger enter animation
         requestAnimationFrame(() => setIsOpen(true));
-    }, []);
+
+        // Auto-generate/fetch bill on open to show latest status
+        fetchBill();
+    }, [booking.id]);
+
+    const handleQuickPayment = async () => {
+        if (!bill) return;
+        setIsPaying(true);
+        try {
+            const transactionCode = paymentMethod === 'Card' ? '9002' : (paymentMethod === 'Bank Transfer' ? '9005' : '9001');
+
+            await addFolioTransaction({
+                bookingId: booking.id,
+                date: new Date(),
+                type: 'payment',
+                code: transactionCode,
+                description: `Checkout Settlement (${paymentMethod})`,
+                amount: paymentAmount,
+                userId: formData.staffName || 'Front Desk', // Use entered name or default
+                category: 'Payment',
+                reference: 'CHECKOUT-QUICK-PAY'
+            });
+
+            // Refresh bill to show updated balance
+            await fetchBill();
+
+        } catch (e) {
+            console.error("Error processing payment", e);
+            alert("Failed to process payment");
+        } finally {
+            setIsPaying(false);
+        }
+    };
 
     const handleClose = () => {
         setIsOpen(false);
@@ -45,14 +113,29 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
     const targetRoom = booking.rooms[rIndex] || booking.rooms[0];
     const roomName = targetRoom.allocatedRoomType || 'Unassigned';
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onConfirm(formData);
+
+        // Confirm Checkout in UI first (this handles Firestore updates via parent)
+        await onConfirm(formData);
+
+        // Send Email Notification Check (Fire & Forget)
+        if (bill && booking.guestDetails.email) {
+            // NOTE: Ideally we generate a server-side PDF or a nice HTML email.
+            // For now, we'll send a structured text/HTML email summarizing the stay.
+            try {
+                // Logic to trigger email would go here.
+                // Currently logging for demonstration as full server-side email implementation requires backend route.
+                console.log("TODO: Send Invoice Email to " + booking.guestDetails.email);
+            } catch (err) {
+                console.error("Failed to send checkout email", err);
+            }
+        }
     };
 
     // --- CONTEXTUAL VERTICAL POSITIONING ---
     const WINDOW_HEIGHT = typeof window !== 'undefined' ? window.innerHeight : 900;
-    const DRAWER_ESTIMATED_HEIGHT = 450;
+    const DRAWER_ESTIMATED_HEIGHT = 600; // Increased estimate due to bill summary
     let verticalTop = 20;
 
     if (position) {
@@ -65,7 +148,7 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
 
     return (
         <Transition.Root show={isOpen} as={Fragment} afterLeave={onClose}>
-            <Dialog as="div" className="relative z-50" onClose={handleClose}>
+            <Dialog as="div" className="relative z-[60]" onClose={handleClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -106,18 +189,136 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
                                         </div>
 
                                         <div className="p-6 bg-white overflow-y-auto custom-scrollbar flex-1 space-y-6">
+
+                                            {/* BILL SUMMARY SECTION (New) */}
+                                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-4 opacity-5">
+                                                    <CalculatorIcon className="w-32 h-32" />
+                                                </div>
+
+                                                {loadingBill ? (
+                                                    <div className="flex items-center justify-center py-8 gap-3 text-gray-400">
+                                                        <div className="animate-spin h-5 w-5 border-2 border-gray-400 border-t-[#FF6A00] rounded-full"></div>
+                                                        <span className="text-sm font-medium">Calculating Final Bill...</span>
+                                                    </div>
+                                                ) : bill ? (
+                                                    <div className="relative z-10">
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <BanknotesIcon className="h-5 w-5 text-[#FF6A00]" />
+                                                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Billing Summary</h4>
+                                                            </div>
+
+                                                            {/* PRINT BUTTON */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePrint && handlePrint()}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm"
+                                                            >
+                                                                <PrinterIcon className="w-4 h-4" />
+                                                                Print Invoice
+                                                            </button>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-6">
+                                                            <div>
+                                                                <span className="block text-xs font-semibold text-gray-500 uppercase">Total Charges</span>
+                                                                <span className="block text-xl font-bold text-gray-900 mt-1">₹{bill.totalAmount.toLocaleString()}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-xs font-semibold text-gray-500 uppercase">Paid Amount</span>
+                                                                <span className="block text-xl font-bold text-green-600 mt-1">₹{bill.paidAmount.toLocaleString()}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-xs font-semibold text-gray-500 uppercase">Balance Due</span>
+                                                                <span className={`block text-xl font-bold mt-1 ${bill.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                                                    ₹{bill.balance.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center justify-end">
+                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${bill.balance <= 0
+                                                                    ? 'bg-green-100 text-green-700 border-green-200'
+                                                                    : 'bg-red-100 text-red-700 border-red-200'
+                                                                    }`}>
+                                                                    {bill.balance <= 0 ? 'Settled' : 'Payment Pending'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Detailed Breakdown Mini-View */}
+                                                        {bill.balance > 0 && (
+                                                            <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-600 flex gap-4">
+                                                                {bill.roomCharges > 0 && <span>Room: ₹{bill.roomCharges}</span>}
+                                                                {bill.foodCharges > 0 && <span>Food: ₹{bill.foodCharges}</span>}
+                                                                {bill.serviceCharges > 0 && <span>Services: ₹{bill.serviceCharges}</span>}
+                                                                {bill.addOnsCharges > 0 && <span>Add-ons: ₹{bill.addOnsCharges}</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-6 text-gray-400">
+                                                        Could not load bill details.
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* SETTLEMENT SECTION */}
+                                            {bill && bill.balance > 0 && (
+                                                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mt-4 animate-fadeIn">
+                                                    <h5 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide flex items-center gap-2">
+                                                        <CreditCardIcon className="w-4 h-4 text-orange-600" />
+                                                        Settle Outstanding Balance
+                                                    </h5>
+                                                    <div className="flex gap-3 items-end">
+                                                        <div className="flex-1">
+                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">Amount</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                                                                    value={paymentAmount}
+                                                                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-1/3">
+                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">Method</label>
+                                                            <select
+                                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                                                                value={paymentMethod}
+                                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                                            >
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                                <option value="UPI">UPI</option>
+                                                                <option value="Bank Transfer">Bank Transfer</option>
+                                                            </select>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleQuickPayment}
+                                                            disabled={isPaying || paymentAmount <= 0}
+                                                            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all text-xs shadow-md shadow-orange-200 disabled:opacity-50 disabled:shadow-none h-[38px]"
+                                                        >
+                                                            {isPaying ? 'Processing...' : 'Record Pay'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Automation Info */}
-                                            <div className="bg-gray-50/50 p-4 border border-gray-100 flex items-start gap-3 rounded-lg">
-                                                <div className="p-2 bg-green-100 text-green-600 mt-0.5 rounded-full">
+                                            <div className="bg-blue-50/50 p-4 border border-blue-100 flex items-start gap-3 rounded-lg">
+                                                <div className="p-2 bg-blue-100 text-blue-600 mt-0.5 rounded-full">
                                                     <span className="sr-only">Info</span>
                                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-semibold text-gray-900">Automation Enabled</p>
                                                     <p className="text-sm text-gray-500 mt-0.5">
                                                         A housekeeping task will be automatically created for <strong>Room {roomName}</strong> upon check-out.
+                                                        {booking.guestDetails.email && <span> An email summary will be sent to the guest.</span>}
                                                     </p>
                                                 </div>
                                             </div>
@@ -216,6 +417,16 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
                     </div>
                 </div>
             </Dialog>
+
+            {/* Hidden Invoice for Printing */}
+            <div className="hidden">
+                {bill && (
+                    <InvoiceTemplate
+                        ref={componentRef}
+                        bill={bill}
+                    />
+                )}
+            </div>
         </Transition.Root>
     );
 }

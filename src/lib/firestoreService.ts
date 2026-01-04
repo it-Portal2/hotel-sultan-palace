@@ -68,6 +68,13 @@ export interface Booking {
     email: string;
     phone: string;
     prefix: string;
+    nationality?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    zipCode?: string;
+    idType?: string;
+    idNumber?: string;
   };
 
   // Booking Source
@@ -96,7 +103,7 @@ export interface Booking {
     price: number;
     allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
-    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance';
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance' | 'stay_over';
     ratePlan?: string;
   }>;
 
@@ -110,7 +117,7 @@ export interface Booking {
   // Financial details
   totalAmount: number;
   bookingId: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance' | 'stay_over';
 
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
@@ -475,6 +482,7 @@ export interface CheckoutBill {
   id: string;
   bookingId: string;
   guestName: string;
+  guestEmail?: string;
   roomNumber?: string;
   checkInDate: Date;
   checkOutDate: Date;
@@ -522,6 +530,16 @@ export interface CheckoutBill {
     quantity: number;
     price: number;
     total: number;
+  }>;
+  // Custom/Manual Transactions
+  customCharges: number;
+  transactions: Array<{
+    id: string;
+    date: Date;
+    description: string;
+    amount: number;
+    type: 'charge' | 'payment' | 'allowance' | 'adjustment';
+    category: string;
   }>;
   createdAt: Date;
   updatedAt: Date;
@@ -1488,6 +1506,61 @@ export const createBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt
   try {
     console.log('Creating booking in Firestore:', bookingData);
 
+    // Sync Guest Profile
+    try {
+      const { guestDetails } = bookingData;
+      if (guestDetails && (guestDetails.email || guestDetails.phone)) {
+        const guestsRef = collection(db, 'guests');
+        let q;
+
+        // Priority to email match, then phone
+        if (guestDetails.email) {
+          q = query(guestsRef, where('email', '==', guestDetails.email));
+        } else {
+          q = query(guestsRef, where('phone', '==', guestDetails.phone));
+        }
+
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          // Update existing guest
+          const guestDoc = snapshot.docs[0];
+          const guestData = guestDoc.data() as GuestProfile;
+          await updateDoc(guestDoc.ref, {
+            totalStays: (guestData.totalStays || 0) + 1,
+            totalRevenue: (guestData.totalRevenue || 0) + (bookingData.totalAmount || 0),
+            lastStayDate: new Date(),
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          // Create new guest
+          await addDoc(guestsRef, {
+            firstName: guestDetails.firstName,
+            lastName: guestDetails.lastName,
+            email: guestDetails.email || '',
+            phone: guestDetails.phone || '',
+            nationality: guestDetails.nationality || '',
+            address: {
+              street: guestDetails.address || '',
+              city: guestDetails.city || '',
+              country: guestDetails.country || '',
+              zipCode: guestDetails.zipCode || ''
+            },
+            idDocumentType: guestDetails.idType || '',
+            idDocumentNumber: guestDetails.idNumber || '',
+            totalStays: 1,
+            totalRevenue: bookingData.totalAmount || 0,
+            lastStayDate: new Date(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    } catch (guestError) {
+      console.error('Error syncing guest profile:', guestError);
+      // Continue with booking creation even if guest sync fails
+    }
+
     const bookingsRef = collection(db, 'bookings');
     const docRef = await addDoc(bookingsRef, {
       ...bookingData,
@@ -1555,6 +1628,85 @@ export const getAllBookings = async (): Promise<Booking[]> => {
   }
 };
 
+export const syncGuestProfile = async (guestDetails: Booking['guestDetails'], additionalData: { totalAmount?: number, isCheckIn?: boolean } = {}) => {
+  if (!db || !guestDetails) return;
+
+  try {
+    const guestsRef = collection(db, 'guests');
+    let q;
+
+    // Priority to email match, then phone
+    if (guestDetails.email) {
+      q = query(guestsRef, where('email', '==', guestDetails.email));
+    } else if (guestDetails.phone) {
+      q = query(guestsRef, where('phone', '==', guestDetails.phone));
+    } else {
+      return; // Cannot sync without email or phone
+    }
+
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      // Update existing guest
+      const guestDoc = snapshot.docs[0];
+      const guestData = guestDoc.data();
+
+      const updatePayload: any = {
+        updatedAt: serverTimestamp(),
+        // Always update latest contact info if provided
+        firstName: guestDetails.firstName,
+        lastName: guestDetails.lastName,
+        phone: guestDetails.phone,
+        email: guestDetails.email,
+        nationality: guestDetails.nationality || guestData.nationality,
+        address: guestDetails.address ? {
+          street: guestDetails.address,
+          city: guestDetails.city,
+          country: guestDetails.country,
+          zipCode: guestDetails.zipCode
+        } : guestData.address,
+        idDocumentType: guestDetails.idType || guestData.idDocumentType,
+        idDocumentNumber: guestDetails.idNumber || guestData.idDocumentNumber,
+      };
+
+      if (additionalData.isCheckIn) {
+        updatePayload.totalStays = (guestData.totalStays || 0) + 1;
+        updatePayload.lastStayDate = new Date();
+      }
+
+      if (additionalData.totalAmount) {
+        updatePayload.totalRevenue = (guestData.totalRevenue || 0) + additionalData.totalAmount;
+      }
+
+      await updateDoc(guestDoc.ref, updatePayload);
+    } else {
+      // Create new guest
+      await addDoc(guestsRef, {
+        firstName: guestDetails.firstName,
+        lastName: guestDetails.lastName,
+        email: guestDetails.email || '',
+        phone: guestDetails.phone || '',
+        nationality: guestDetails.nationality || '',
+        address: {
+          street: guestDetails.address || '',
+          city: guestDetails.city || '',
+          country: guestDetails.country || '',
+          zipCode: guestDetails.zipCode || ''
+        },
+        idDocumentType: guestDetails.idType || '',
+        idDocumentNumber: guestDetails.idNumber || '',
+        totalStays: additionalData.isCheckIn ? 1 : 0,
+        totalRevenue: additionalData.totalAmount || 0,
+        lastStayDate: additionalData.isCheckIn ? new Date() : null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error('Error syncing guest profile:', error);
+  }
+};
+
 export const updateBooking = async (bookingId: string, bookingData: Partial<Booking>): Promise<boolean> => {
   if (!db) {
     console.warn('Firestore not available, cannot update booking');
@@ -1576,6 +1728,31 @@ export const updateBooking = async (bookingId: string, bookingData: Partial<Book
       ...cleanData,
       updatedAt: new Date(),
     });
+
+    // Check if we need to sync guest profile
+    // 1. If checking in
+    if (bookingData.status === 'checked_in') {
+      // We might not have the full guest details in bookingData (it might be partial), so we might need to fetch the booking
+      // However, often check-in modal passes updated details.
+      // For safety, let's fetch the full booking to get complete Guest Details if not in payload
+      try {
+        const fullBookingSnap = await getDoc(bookingRef);
+        if (fullBookingSnap.exists()) {
+          const fullBooking = fullBookingSnap.data() as Booking;
+          await syncGuestProfile(fullBooking.guestDetails, {
+            isCheckIn: true,
+            totalAmount: fullBooking.totalAmount
+          });
+        }
+      } catch (err) {
+        console.error("Failed to sync guest on checkin", err);
+      }
+    }
+    // 2. If guest details are updated explicitly (e.g. from booking details)
+    else if (bookingData.guestDetails) {
+      await syncGuestProfile(bookingData.guestDetails);
+    }
+
     return true;
   } catch (error) {
     console.error('Error updating booking:', error);
@@ -3403,6 +3580,15 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         price: addon.price || 0,
         total: (addon.price || 0) * (addon.quantity || 0),
       })),
+      customCharges: transactionCharges,
+      transactions: transactions.map(t => ({
+        id: t.id,
+        date: t.date || new Date(),
+        description: t.description || '',
+        amount: t.amount || 0,
+        type: t.type,
+        category: t.category || 'General'
+      })),
     };
 
     // Remove undefined values before saving to Firestore
@@ -3821,7 +4007,8 @@ export const checkInGuest = async (
   depositAmount?: number,
   notes?: string,
   allocatedRoomName?: string, // New parameter for specific room assignment
-  roomIndex?: number // Index of the specific room in booking.rooms
+  roomIndex?: number, // Index of the specific room in booking.rooms
+  paymentMethod?: string // New parameter for payment method
 ): Promise<string | null> => {
   if (!db) return null;
   try {
@@ -3866,7 +4053,40 @@ export const checkInGuest = async (
     if (depositAmount !== undefined && depositAmount !== null) recordData.depositAmount = depositAmount;
     if (notes) recordData.notes = notes;
 
-    const record = await createCheckInOutRecord(recordData);
+    const recordId = await createCheckInOutRecord(recordData);
+
+    // PROCESS PAYMENT IF APPLICABLE
+    let newPaidAmount = booking.paidAmount || 0;
+    let newPaymentStatus = booking.paymentStatus;
+
+    if (depositAmount && depositAmount > 0) {
+      // 1. Create Folio Transaction
+      const transactionCode = paymentMethod === 'Card' ? '9002' : (paymentMethod === 'Bank Transfer' ? '9005' : '9001'); // Simple mapping
+
+      const transactionData: Omit<FolioTransaction, 'id' | 'createdAt'> = {
+        bookingId,
+        date: new Date(),
+        type: 'payment',
+        code: transactionCode,
+        description: `Check-in Audit: Payment/Deposit (${paymentMethod || 'Cash'})`,
+        amount: depositAmount,
+        userId: staffName, // Staff who checked in
+        category: 'Payment',
+        reference: `CHECKIN-${recordId}`
+      };
+
+      await addFolioTransaction(transactionData);
+
+      // 2. Update accumulated paid amount
+      newPaidAmount += depositAmount;
+
+      // 3. Update payment status
+      if (newPaidAmount >= booking.totalAmount) {
+        newPaymentStatus = 'paid';
+      } else if (newPaidAmount > 0) {
+        newPaymentStatus = 'partial';
+      }
+    }
 
     // Update specific room status and potentially the booking status
     const updatedRooms = [...booking.rooms];
@@ -3880,12 +4100,16 @@ export const checkInGuest = async (
     // Unless all are checked out (unlikely here)
     const overallStatus = 'checked_in';
 
+
     // Update booking status
     await updateBooking(bookingId, {
       status: overallStatus,
       checkInTime: new Date(),
       roomNumber: roomName, // This might need to be a list if multiple rooms, but keeping compatible
-      rooms: updatedRooms
+      rooms: updatedRooms,
+      paidAmount: newPaidAmount,
+      paymentStatus: newPaymentStatus,
+      paymentMethod: paymentMethod || booking.paymentMethod // Update with latest method
     });
 
     // Update room status
@@ -3911,11 +4135,114 @@ export const checkInGuest = async (
       });
     }
 
-    return record;
+    // UPSERT GUEST PROFILE
+    // We do this asynchronously to not block UI if it's slow, or await it if critical. Awaiting is safer.
+    try {
+      await upsertGuestProfile({
+        firstName: booking.guestDetails.firstName,
+        lastName: booking.guestDetails.lastName,
+        email: booking.guestDetails.email,
+        phone: booking.guestDetails.phone,
+        nationality: booking.guestDetails.nationality,
+        address: {
+          street: booking.guestDetails.address,
+          city: booking.guestDetails.city,
+          country: booking.guestDetails.country,
+          zipCode: booking.guestDetails.zipCode
+        },
+        idDocumentType: idDocumentType || booking.guestDetails.idType,
+        idDocumentNumber: idDocumentNumber || booking.guestDetails.idNumber,
+        newRevenue: 0 // Revenue is usually calculated at checkout, but we record the stay start
+      });
+    } catch (guestError) {
+      console.error("Failed to upsert guest profile:", guestError);
+      // Don't fail the whole check-in for this
+    }
+
+    return recordId;
   } catch (e) {
     console.error('Error checking in guest:', e);
     return null;
   }
+};
+
+// Helper to upsert Guest Profile
+export const upsertGuestProfile = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  nationality?: string;
+  address?: any;
+  idDocumentType?: string;
+  idDocumentNumber?: string;
+  newRevenue?: number;
+}) => {
+  if (!db) return;
+
+  // Try to find existing guest by Email first, then Phone
+  let existingId: string | null = null;
+  let existingData: any = null;
+
+  // Priority 1: Email
+  if (data.email) {
+    const qEmail = query(collection(db, 'guests'), where('email', '==', data.email), limit(1));
+    const snapEmail = await getDocs(qEmail);
+    if (!snapEmail.empty) {
+      existingId = snapEmail.docs[0].id;
+      existingData = snapEmail.docs[0].data();
+    }
+  }
+
+  // Priority 2: Phone (if not found by email)
+  if (!existingId && data.phone) {
+    const qPhone = query(collection(db, 'guests'), where('phone', '==', data.phone), limit(1));
+    const snapPhone = await getDocs(qPhone);
+    if (!snapPhone.empty) {
+      existingId = snapPhone.docs[0].id;
+      existingData = snapPhone.docs[0].data();
+    }
+  }
+
+  const now = new Date();
+
+  if (existingId && existingData) {
+    // Update existing
+    await updateDoc(doc(db, 'guests', existingId), {
+      firstName: data.firstName || existingData.firstName,
+      lastName: data.lastName || existingData.lastName,
+      phone: data.phone || existingData.phone, // Update contact if provided
+      email: data.email || existingData.email,
+      nationality: data.nationality || existingData.nationality,
+      address: data.address ? { ...existingData.address, ...data.address } : existingData.address,
+      idDocumentType: data.idDocumentType || existingData.idDocumentType,
+      idDocumentNumber: data.idDocumentNumber || existingData.idDocumentNumber,
+
+      totalStays: (existingData.totalStays || 0) + 1,
+      lastStayDate: now, // Check-in date acts as last interaction
+      updatedAt: now
+      // We don't update revenue here unless explicitly passed (e.g. at checkout)
+    });
+  } else {
+    // Create new
+    await addDoc(collection(db, 'guests'), {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phone: data.phone,
+      nationality: data.nationality || '',
+      address: data.address || {},
+      idDocumentType: data.idDocumentType || '',
+      idDocumentNumber: data.idDocumentNumber || '',
+
+      totalStays: 1,
+      totalRevenue: 0,
+      lastStayDate: now,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+
 };
 
 // Helper function to check-out a guest
@@ -4723,6 +5050,7 @@ export interface FolioTransaction {
   amount: number;
   reference?: string;
   userId: string; // Staff
+  category: string;
   createdAt: Date;
 }
 
@@ -4759,6 +5087,38 @@ export const getFolioTransactions = async (bookingId: string): Promise<FolioTran
   } catch (error) {
     console.error("Error fetching transactions", error);
     return [];
+  }
+};
+
+export const addTransaction = async (data: Omit<FolioTransaction, 'id' | 'createdAt'>): Promise<string | null> => {
+  if (!db) return null;
+  try {
+    const c = collection(db, 'folioTransactions');
+    const docRef = await addDoc(c, {
+      ...data,
+      date: data.date || serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+
+    // If it's a payment, update the booking's paidAmount and payment status
+    if (data.type === 'payment') {
+      const booking = await getBooking(data.bookingId);
+      if (booking) {
+        const currentPaid = booking.paidAmount || 0;
+        const newPaid = currentPaid + data.amount;
+        // Optionally update payment status if balance is cleared (simple logic)
+        // We defer complex status logic to the bill generation or periodic checks
+        await updateBooking(data.bookingId, {
+          paidAmount: newPaid,
+          updatedAt: new Date()
+        });
+      }
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error("Error adding transaction", error);
+    return null;
   }
 };
 
@@ -4799,13 +5159,16 @@ export interface LostFoundItem {
   // Item Info
   lostDate: string; // YYYY-MM-DD
   itemName: string;
+  category?: 'electronics' | 'clothing' | 'personal' | 'documents' | 'other';
   itemColor?: string;
   lostLocation?: string; // Room number or area
   itemValue?: string;
+  currency?: string;
 
   // Guest Info (Complaint)
   guestName?: string;
   guestPhone?: string;
+  guestEmail?: string;
   guestAddress?: string;
   guestCity?: string;
   guestState?: string;
@@ -4815,6 +5178,7 @@ export interface LostFoundItem {
   // Found Info
   foundBy?: string; // Staff Name
   currentLocation?: string; // e.g. "Front Desk Safe"
+  roomName?: string; // Room number if applicable
 
   // Status
   status: 'lost' | 'found' | 'returned' | 'discarded';
@@ -4927,4 +5291,4 @@ export const deleteLostFoundItem = async (id: string) => {
     throw error;
   }
 };
-
+// End of file

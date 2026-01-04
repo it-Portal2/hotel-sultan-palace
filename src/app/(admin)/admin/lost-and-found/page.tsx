@@ -4,9 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
     ArchiveBoxIcon,
     PlusIcon,
-    MagnifyingGlassIcon,
-    CheckCircleIcon,
-    XCircleIcon
+    MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { LostFoundItem, getLostFoundItems } from '@/lib/firestoreService';
 import LostFoundDrawer from '@/components/admin/lost-found/LostFoundDrawer';
@@ -25,6 +23,7 @@ export default function LostFoundPage() {
     const loadData = async () => {
         setLoading(true);
         try {
+            // Seed rooms if needed
             const data = await getLostFoundItems();
             setItems(data);
         } catch (error) {
@@ -62,12 +61,12 @@ export default function LostFoundPage() {
     };
 
     return (
-        <div className="space-y-6 pb-20 p-6 max-w-[1600px] mx-auto animate-fade-in">
+        <div className="space-y-6 pb-20 p-6 w-full animate-fade-in">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                        <ArchiveBoxIcon className="h-8 w-8 text-amber-600" />
+                        <ArchiveBoxIcon className="h-8 w-8 text-[#FF6A00]" />
                         Lost & Found
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">Manage lost and found items, status, and returns.</p>
@@ -75,14 +74,14 @@ export default function LostFoundPage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleCreateLost}
-                        className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg hover:bg-red-700 transition-all"
+                        className="flex items-center gap-2 bg-white text-red-600 border border-red-200 px-5 py-2.5 text-sm font-bold shadow-sm hover:bg-red-50 transition-all rounded-sm uppercase tracking-wide"
                     >
                         <PlusIcon className="h-5 w-5" />
                         Add Lost Item
                     </button>
                     <button
                         onClick={handleCreateFound}
-                        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg hover:bg-green-700 transition-all"
+                        className="flex items-center gap-2 bg-[#FF6A00] text-white px-5 py-2.5 text-sm font-bold shadow hover:shadow-md hover:bg-[#E55F00] transition-all rounded-sm uppercase tracking-wide"
                     >
                         <PlusIcon className="h-5 w-5" />
                         Add Found Item
@@ -90,16 +89,16 @@ export default function LostFoundPage() {
                 </div>
             </div>
 
-            {/* Filters & Search */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 justify-between">
+            {/* Filters & Search - Sharp */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-200 pb-4">
                 <div className="flex items-center gap-2 overflow-x-auto">
                     {['all', 'lost', 'found', 'returned', 'discarded'].map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status as any)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${filter === status
-                                    ? 'bg-gray-900 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            className={`px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${filter === status
+                                ? 'border-gray-900 text-gray-900'
+                                : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
                                 }`}
                         >
                             {status}
@@ -112,61 +111,68 @@ export default function LostFoundPage() {
                         placeholder="Search items..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                        className="w-full pl-10 pr-4 py-2 bg-transparent border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-gray-900 placeholder:text-gray-400 font-medium transition-colors rounded-none focus:ring-0"
                     />
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-2 top-2.5" />
                 </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[500px]">
+            <div className="bg-white border border-gray-200 shadow-sm overflow-x-auto min-h-[500px] rounded-none">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Details</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location / Room</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Found By / Guest</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Item Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Color</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Location</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Room</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Found By / Guest</th>
+                            <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">Loading items...</td>
+                                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">Loading items...</td>
                             </tr>
                         ) : filteredItems.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No items found.</td>
+                                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">No items found.</td>
                             </tr>
                         ) : (
                             filteredItems.map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                                ${item.status === 'lost' ? 'bg-red-100 text-red-800' :
-                                                item.status === 'found' ? 'bg-green-100 text-green-800' :
-                                                    item.status === 'returned' ? 'bg-blue-100 text-blue-800' :
-                                                        'bg-gray-100 text-gray-800'}`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-bold uppercase tracking-wide border
+                                                ${item.status === 'lost' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                item.status === 'found' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                    item.status === 'returned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        'bg-gray-50 text-gray-700 border-gray-200'}`}>
                                             {item.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
                                         {item.lostDate}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-bold text-gray-900">{item.itemName}</div>
-                                        <div className="text-xs text-gray-500">{item.itemColor} • {item.itemValue ? `$${item.itemValue}` : '-'}</div>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                        {item.itemName}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {item.lostLocation || item.currentLocation}
+                                        {item.itemColor || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.lostLocation || item.currentLocation || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.roomName || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {item.status === 'lost' ? (
                                             <span className="flex flex-col">
                                                 <span className="font-medium text-gray-900">{item.guestName}</span>
-                                                <span>{item.guestPhone}</span>
+                                                <span className="text-xs text-gray-400">{item.guestPhone}</span>
                                             </span>
                                         ) : (
                                             <span className="font-medium text-gray-900">{item.foundBy}</span>
@@ -175,7 +181,7 @@ export default function LostFoundPage() {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => handleEdit(item)}
-                                            className="text-indigo-600 hover:text-indigo-900"
+                                            className="text-[#FF6A00] hover:text-[#E55F00] font-bold uppercase text-xs tracking-wide"
                                         >
                                             Edit
                                         </button>

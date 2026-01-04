@@ -4,11 +4,7 @@ import {
     CalendarIcon,
     UserIcon,
     EllipsisVerticalIcon,
-    ArrowRightIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    CurrencyDollarIcon,
-    MapPinIcon
+
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 
@@ -59,7 +55,7 @@ export default function BookingCard({
 
     return (
         <div
-            className="bg-white rounded shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group/card relative"
+            className={`bg-white rounded shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full group/card relative ${booking.status === 'stay_over' ? 'ring-2 ring-purple-500 bg-purple-50/10' : ''}`}
             onClick={() => onSelect(booking)}
         >
             {/* Header: Blue Icon + Name + ID */}
@@ -76,8 +72,10 @@ export default function BookingCard({
                             <h3 className="text-sm font-bold text-[#0f172a] uppercase truncate">
                                 {booking.guestDetails.firstName} {booking.guestDetails.lastName}
                             </h3>
-                            {booking.guestDetails.phone && (
-                                <UserIcon className="h-3 w-3 text-gray-400" />
+                            {booking.status === 'stay_over' && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wide">
+                                    Stay Over
+                                </span>
                             )}
                         </div>
 

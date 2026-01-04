@@ -118,7 +118,7 @@ export default function CheckInModal({ booking, roomIndex, onClose, onConfirm, p
 
     return (
         <Transition.Root show={isOpen} as={Fragment} afterLeave={onClose}>
-            <Dialog as="div" className="relative z-50" onClose={handleClose}>
+            <Dialog as="div" className="relative z-[60]" onClose={handleClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"

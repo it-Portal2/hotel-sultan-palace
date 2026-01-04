@@ -141,7 +141,7 @@ export default function RoomDetailsModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-[60] flex justify-end">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity animate-fade-in"

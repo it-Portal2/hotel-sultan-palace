@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import RestrictedAction from '@/components/admin/RestrictedAction';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 interface RoomTableProps {
     rooms: Room[];
@@ -93,7 +94,7 @@ export default function RoomTable({ rooms, isReadOnly, onDelete, deletingId }: R
                                                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                                 >
                                                     {deletingId === room.id ? (
-                                                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent animate-spin"></div>
+                                                        <PremiumLoader size="small" />
                                                     ) : (
                                                         <TrashIcon className="w-4 h-4" />
                                                     )}

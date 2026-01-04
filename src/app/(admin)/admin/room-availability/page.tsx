@@ -20,6 +20,7 @@ import {
 import { FaBed, FaUserCheck, FaUserSlash, FaSmoking, FaSmokingBan, FaBroom, FaSprayCan } from 'react-icons/fa';
 import LegendPopover from '@/components/admin/stayview/LegendPopover';
 import RegistrationCardModal from '@/components/admin/stayview/RegistrationCardModal';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 
 const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
@@ -842,7 +843,7 @@ export default function RoomAvailabilityPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
+        <PremiumLoader />
       </div>
     );
   }
@@ -1408,13 +1409,15 @@ export default function RoomAvailabilityPage() {
                       selectedBooking.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' :
                         selectedBooking.status === 'checked_in' ? 'bg-pink-100 text-pink-700 border-pink-200' :
                           selectedBooking.status === 'checked_out' ? 'bg-gray-100 text-gray-700 border-gray-200' :
-                            'bg-yellow-100 text-yellow-700 border-yellow-200';
+                            selectedBooking.status === 'stay_over' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                              'bg-yellow-100 text-yellow-700 border-yellow-200';
 
                     // Status Display Name
                     const statusName =
                       selectedBooking.status === 'checked_in' ? 'Occupied' : // Or Stayover
-                        selectedBooking.status === 'confirmed' ? 'Confirmed Reservation' :
-                          selectedBooking.status.replace('_', ' ');
+                        selectedBooking.status === 'stay_over' ? 'Stay Over' :
+                          selectedBooking.status === 'confirmed' ? 'Confirmed Reservation' :
+                            selectedBooking.status.replace('_', ' ');
 
                     return (
                       <div className="space-y-6">

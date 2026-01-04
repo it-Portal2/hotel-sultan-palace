@@ -15,6 +15,8 @@ import StayOverModal from '@/components/admin/bookings/StayOverModal';
 import BookingCard from '@/components/admin/bookings/BookingCard';
 import { ListBulletIcon, Squares2X2Icon, MagnifyingGlassIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
+import PremiumLoader from '@/components/ui/PremiumLoader';
+
 export default function AdminBookingsPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
@@ -83,11 +85,11 @@ export default function AdminBookingsPage() {
       // Bookings checking out today (Expected & Departed)
       list = list.filter(b => {
         const checkOutDate = new Date(b.checkOut).toISOString().slice(0, 10);
-        return checkOutDate === todayStr && b.status !== 'cancelled';
+        return checkOutDate === todayStr && (b.status === 'checked_in');
       });
     } else if (activeTab === 'in_house') {
-      // Currently checked_in guests
-      list = list.filter(b => b.status === 'checked_in');
+      // Currently checked_in guests + stay_over
+      list = list.filter(b => b.status === 'checked_in' || b.status === 'stay_over');
     }
 
 
@@ -162,9 +164,9 @@ export default function AdminBookingsPage() {
       confirmed: bookings.filter(b => b.status === 'confirmed').length,
       cancelled: bookings.filter(b => b.status === 'cancelled').length,
       walk_in: bookings.filter(b => b.source === 'walk_in').length,
-      arrivals: bookings.filter(b => new Date(b.checkIn).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status === 'confirmed').length,
+      arrivals: bookings.filter(b => new Date(b.checkIn).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) && (b.status === 'confirmed' || b.status === 'pending')).length,
       departures: bookings.filter(b => new Date(b.checkOut).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status === 'checked_in').length,
-      in_house: bookings.filter(b => b.status === 'checked_in').length,
+      in_house: bookings.filter(b => b.status === 'checked_in' || b.status === 'stay_over').length,
     };
   }, [bookings]);
 
@@ -258,7 +260,8 @@ export default function AdminBookingsPage() {
         data.depositAmount ? parseFloat(data.depositAmount) : undefined,
         data.notes || undefined,
         data.allocatedRoomName,
-        selectedRoomIndex
+        selectedRoomIndex,
+        data.paymentMethod
       );
 
       if (recordId) {
@@ -369,7 +372,7 @@ export default function AdminBookingsPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="flex flex-col xl:flex-row items-center justify-between px-6 w-full">
           {/* Left: Tabs */}
-          <nav className="-mb-px flex space-x-6 overflow-x-auto shrink-0" aria-label="Tabs">
+          <nav className="-mb-px flex space-x-6 overflow-x-auto shrink-0 max-w-[calc(100vw-3rem)] xl:max-w-none" aria-label="Tabs">
             {[
               { id: 'all', name: 'Reservations', count: stats.total },
               { id: 'arrivals', name: 'Arrivals', count: stats.arrivals },
@@ -502,7 +505,7 @@ export default function AdminBookingsPage() {
           <div className="min-h-[400px]">
             {loading ? (
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                <PremiumLoader />
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-20 bg-gray-50 rounded-lg border border-dashed border-gray-200 mt-4">
@@ -535,47 +538,55 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Drawer */}
-      {selected && showDetailsDrawer && (
-        <BookingDetailsDrawer
-          booking={selected}
-          onClose={() => {
-            setShowDetailsDrawer(false);
-            // We keep 'selected' for a moment for animation or just clear it
-            setTimeout(() => setSelected(null), 300);
-          }}
-          isOpen={showDetailsDrawer}
-        />
-      )}
+      {
+        selected && showDetailsDrawer && (
+          <BookingDetailsDrawer
+            booking={selected}
+            onClose={() => {
+              setShowDetailsDrawer(false);
+              // We keep 'selected' for a moment for animation or just clear it
+              setTimeout(() => setSelected(null), 300);
+            }}
+            isOpen={showDetailsDrawer}
+          />
+        )
+      }
 
-      {selected && showCheckInModal && (
-        <CheckInModal
-          booking={selected}
-          roomIndex={selectedRoomIndex}
-          onClose={() => setShowCheckInModal(false)}
-          onConfirm={handleCheckInConfirm}
-          processing={processing}
-          position={checkInPosition}
-        />
-      )}
+      {
+        selected && showCheckInModal && (
+          <CheckInModal
+            booking={selected}
+            roomIndex={selectedRoomIndex}
+            onClose={() => setShowCheckInModal(false)}
+            onConfirm={handleCheckInConfirm}
+            processing={processing}
+            position={undefined}
+          />
+        )
+      }
 
-      {selected && showCheckOutModal && (
-        <CheckOutModal
-          booking={selected}
-          roomIndex={selectedRoomIndex}
-          onClose={() => setShowCheckOutModal(false)}
-          onConfirm={handleCheckOutConfirm}
-          processing={processing}
-        />
-      )}
+      {
+        selected && showCheckOutModal && (
+          <CheckOutModal
+            booking={selected}
+            roomIndex={selectedRoomIndex}
+            onClose={() => setShowCheckOutModal(false)}
+            onConfirm={handleCheckOutConfirm}
+            processing={processing}
+          />
+        )
+      }
 
-      {selected && showStayOverModal && (
-        <StayOverModal
-          booking={selected}
-          isOpen={showStayOverModal}
-          onClose={() => setShowStayOverModal(false)}
-          onConfirm={handleStayOverConfirm}
-        />
-      )}
-    </div>
+      {
+        selected && showStayOverModal && (
+          <StayOverModal
+            booking={selected}
+            isOpen={showStayOverModal}
+            onClose={() => setShowStayOverModal(false)}
+            onConfirm={handleStayOverConfirm}
+          />
+        )
+      }
+    </div >
   );
 }

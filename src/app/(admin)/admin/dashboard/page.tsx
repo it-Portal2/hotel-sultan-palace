@@ -19,6 +19,7 @@ import RoomStatusChart from '@/components/admin/dashboard/RoomStatusChart';
 import OccupancyDonut from '@/components/admin/dashboard/OccupancyDonut';
 import ActivitySection from '@/components/admin/dashboard/ActivitySection';
 import { useAuth } from '@/components/auth/AuthProvider';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -144,7 +145,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchDashboardData(); }, []);
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-gray-50"><PremiumLoader /></div>;
 
   return (
     <div className="h-screen overflow-hidden bg-gray-50/50 flex flex-col font-sans text-gray-800">
@@ -161,7 +162,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Scrollable Content Container (if screen is too small) or Fixed Flex (if managed well) */}
-      <div className="flex-1 overflow-hidden p-6 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
 
         {/* 2. Top Stats Row - Fixed Height */}
         <div className="shrink-0">
@@ -175,7 +176,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* 3. Main Operational View - Fill Remaining Space */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex-none h-auto lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12 lg:pb-0">
 
           {/* Col 1: Room Status */}
           <div className="h-full flex flex-col overflow-hidden">

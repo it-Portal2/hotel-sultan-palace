@@ -112,11 +112,17 @@ export default function StayOverModal({ isOpen, onClose, booking, onConfirm }: S
             const addedAmount = parseFloat(manualCost) || 0;
             const newTotal = (booking.totalAmount || 0) + addedAmount;
 
+            // Create updated rooms array with 'stay_over' status
+            const updatedRooms = booking.rooms.map(room => ({
+                ...room,
+                status: 'stay_over' as any
+            }));
+
             await updateBooking(booking.id, {
                 checkOut: newCheckOut,
                 totalAmount: newTotal,
-                status: 'stay_over' as any, // Cast as any if 'stay_over' not in type yet, to be fixed in type def if strictly typed
-                // We might want to add a note or log this extension
+                status: 'stay_over' as any,
+                rooms: updatedRooms
             });
 
             onConfirm();

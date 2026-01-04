@@ -52,7 +52,7 @@ export default function GuestDatabasePage() {
     };
 
     return (
-        <div className="space-y-6 pb-20 p-6 max-w-[1600px] mx-auto animate-fade-in">
+        <div className="space-y-6 pb-20 p-6 w-full animate-fade-in">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
@@ -65,7 +65,7 @@ export default function GuestDatabasePage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleCreate}
-                        className="flex items-center gap-2 bg-[#FF6A00] text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-md hover:shadow-lg hover:bg-[#ff5500] transition-all"
+                        className="flex items-center gap-2 bg-[#FF6A00] text-white px-5 py-2.5 text-sm font-bold shadow hover:shadow-md hover:bg-[#e55f00] transition-all rounded-sm uppercase tracking-wide"
                     >
                         <PlusIcon className="h-5 w-5" />
                         Add New Guest
@@ -73,22 +73,20 @@ export default function GuestDatabasePage() {
                 </div>
             </div>
 
-            {/* Search */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <div className="relative max-w-md">
-                    <input
-                        type="text"
-                        placeholder="Search guests by name, email, or phone..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
-                    />
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
-                </div>
+            {/* Search - Sharp & Minimal */}
+            <div className="max-w-md w-full relative">
+                <input
+                    type="text"
+                    placeholder="Search guests by name, email, or phone..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-transparent border-b-2 border-gray-300 focus:border-[#FF6A00] outline-none text-gray-900 placeholder:text-gray-400 font-medium transition-colors rounded-none focus:ring-0"
+                />
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-2 top-3.5" />
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[500px]">
+            <div className="bg-white border border-gray-200 shadow-sm overflow-hidden min-h-[500px] border-t-2 border-t-gray-100 rounded-none">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">

@@ -226,6 +226,11 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 colorClass = 'bg-gray-100 text-gray-600 border-gray-200';
                 label = 'Blocked';
                 icon = <FaTools className="w-5 h-5 mx-auto opacity-50" />;
+            } else if (booking.status === 'stay_over') {
+                status = 'occupied'; // Treat as occupied for filters
+                colorClass = 'bg-purple-50 text-purple-700 border-purple-200';
+                label = 'Stay Over';
+                icon = <FaUser className="w-5 h-5 mx-auto" />;
             } else {
                 const checkOutDate = normalizeDate(booking.checkOut);
                 const isDueOut = checkOutDate.getTime() === today.getTime();
@@ -304,7 +309,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
     return (
         <div className="space-y-4 font-sans">
             {/* Unified Controls Bar */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 flex-shrink-0 z-30 shadow-sm rounded-lg border">
+            <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 flex-shrink-0 z-30 shadow-sm rounded-lg border sticky top-0">
                 <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
 
                     <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1.5 shadow-sm flex-shrink-0">

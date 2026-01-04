@@ -121,69 +121,72 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
             <div className="fixed inset-0 flex justify-end">
                 <Dialog.Panel className="w-full max-w-2xl bg-white h-full shadow-xl flex flex-col animate-slide-in-right">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
-                        <Dialog.Title className="text-lg font-bold text-gray-900">
+                    <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+                        <Dialog.Title className="text-xl font-bold text-gray-900 tracking-tight">
                             {guest ? 'Edit Guest Profile' : 'New Guest Profile'}
                         </Dialog.Title>
                         <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                            <XMarkIcon className="h-5 w-5 text-gray-500" />
+                            <XMarkIcon className="h-6 w-6 text-gray-400" />
                         </button>
                     </div>
 
                     {/* Form */}
-                    <div className="flex-1 overflow-y-auto p-6">
-                        <form id="guest-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="flex-1 overflow-y-auto p-8 bg-white">
+                        <form id="guest-form" onSubmit={handleSubmit} className="space-y-8">
                             {/* Basic Info */}
                             <section>
-                                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">Personal Information</h4>
-                                <div className="grid grid-cols-2 gap-4">
+                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6 border-b border-gray-100 pb-3 flex items-center gap-2">
+                                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs">01</span> Personal Information
+                                </h4>
+                                <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">First Name</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
                                         <input
                                             type="text"
                                             required
                                             value={formData.firstName}
                                             onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
                                         <input
                                             type="text"
                                             required
                                             value={formData.lastName}
                                             onChange={e => setFormData({ ...formData, lastName: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
                                         <input
                                             type="email"
                                             required
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Phone</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number</label>
                                         <input
                                             type="tel"
                                             required
                                             value={formData.phone}
                                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Nationality</label>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Nationality</label>
                                         <input
                                             type="text"
                                             value={formData.nationality}
                                             onChange={e => setFormData({ ...formData, nationality: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
+                                            placeholder="e.g. Indian, American..."
                                         />
                                     </div>
                                 </div>
@@ -191,51 +194,53 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
 
                             {/* Address */}
                             <section>
-                                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">Address</h4>
-                                <div className="grid grid-cols-2 gap-4">
+                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6 border-b border-gray-100 pb-3 flex items-center gap-2">
+                                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">02</span> Address Details
+                                </h4>
+                                <div className="grid grid-cols-2 gap-6">
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700">Street Address</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Street Address</label>
                                         <input
                                             type="text"
                                             value={formData.street}
                                             onChange={e => setFormData({ ...formData, street: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">City</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">City</label>
                                         <input
                                             type="text"
                                             value={formData.city}
                                             onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">State / Province</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">State / Province</label>
                                         <input
                                             type="text"
                                             value={formData.state}
                                             onChange={e => setFormData({ ...formData, state: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Zip / Postal Code</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Zip / Postal Code</label>
                                         <input
                                             type="text"
                                             value={formData.zipCode}
                                             onChange={e => setFormData({ ...formData, zipCode: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Country</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Country</label>
                                         <input
                                             type="text"
                                             value={formData.country}
                                             onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                 </div>
@@ -243,46 +248,52 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
 
                             {/* ID & Preferences */}
                             <section>
-                                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">Identification & Preferences</h4>
-                                <div className="grid grid-cols-2 gap-4">
+                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6 border-b border-gray-100 pb-3 flex items-center gap-2">
+                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs">03</span> ID & Preferences
+                                </h4>
+                                <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">ID Type</label>
-                                        <select
-                                            value={formData.idDocumentType}
-                                            onChange={e => setFormData({ ...formData, idDocumentType: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
-                                        >
-                                            <option>Passport</option>
-                                            <option>National ID</option>
-                                            <option>Driving License</option>
-                                            <option>Other</option>
-                                        </select>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">ID Type</label>
+                                        <div className="relative">
+                                            <select
+                                                value={formData.idDocumentType}
+                                                onChange={e => setFormData({ ...formData, idDocumentType: e.target.value })}
+                                                className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none appearance-none"
+                                            >
+                                                <option>Passport</option>
+                                                <option>National ID</option>
+                                                <option>Driving License</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">ID Number</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">ID Document Number</label>
                                         <input
                                             type="text"
                                             value={formData.idDocumentNumber}
                                             onChange={e => setFormData({ ...formData, idDocumentNumber: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
                                         />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700">Preferences / Special Requests</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Preferences / Special Requests</label>
                                         <textarea
-                                            rows={2}
+                                            rows={3}
                                             value={formData.preferences}
                                             onChange={e => setFormData({ ...formData, preferences: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            placeholder="e.g. Vegetarian meal, Extra pillows, Room near elevator..."
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none resize-none"
                                         />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700">Notes (Internal)</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Internal Notes</label>
                                         <textarea
                                             rows={2}
                                             value={formData.notes}
                                             onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] sm:text-sm"
+                                            placeholder="Staff only notes..."
+                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none resize-none"
                                         />
                                     </div>
                                 </div>
@@ -291,12 +302,12 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                     </div>
 
                     {/* Footer */}
-                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                    <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 sticky bottom-0 z-10 backdrop-blur-sm">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                            className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all uppercase tracking-wide"
                         >
                             Cancel
                         </button>
@@ -304,7 +315,7 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                             type="submit"
                             form="guest-form"
                             disabled={isSubmitting}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#FF6A00] border border-transparent rounded-md hover:bg-[#ff5500] shadow-sm disabled:opacity-70"
+                            className="px-8 py-3 text-sm font-bold text-white bg-gray-900 border border-transparent rounded-xl hover:bg-black shadow-lg shadow-gray-200 hover:shadow-gray-300 transition-all uppercase tracking-wide disabled:opacity-70 transform active:scale-95"
                         >
                             {isSubmitting ? 'Saving...' : 'Save Profile'}
                         </button>

@@ -1,5 +1,6 @@
 import React, { Fragment } from 'react';
 import { Booking } from '@/lib/firestoreService';
+import PremiumLoader from '@/components/ui/PremiumLoader';
 import {
     CalendarDaysIcon,
     UserIcon,
@@ -63,10 +64,7 @@ export default function BookingTable({
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 flex justify-center items-center h-64">
-                <div className="flex flex-col items-center">
-                    <div className="animate-spin h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full mb-4"></div>
-                    <p className="text-gray-500 font-medium">Loading bookings...</p>
-                </div>
+                <PremiumLoader />
             </div>
         );
     }
