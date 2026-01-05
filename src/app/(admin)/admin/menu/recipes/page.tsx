@@ -218,52 +218,71 @@ export default function RecipesPage() {
     const filteredItems = menuItems.filter(m => m.name.toLowerCase().includes(filter.toLowerCase()));
 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Recipe Management</h1>
-                <p className="text-gray-500">Map menu items to ingredients for automatic cost tracking.</p>
-            </div>
+        <div className="flex flex-col h-screen bg-gray-50 font-sans">
+            {/* CLEAN WHITE HEADER */}
+            <header className="bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between z-10 w-full shadow-sm flex-shrink-0">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        Recipe Management
+                    </h1>
+                    <p className="text-sm text-gray-500">Map menu items to ingredients for automatic cost tracking.</p>
+                </div>
 
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex">
+                {/* Search - Full width on mobile, auto on desktop */}
+                <div className="w-full md:w-auto relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <BeakerIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search Menu Items..."
+                        value={filter}
+                        onChange={e => setFilter(e.target.value)}
+                        className="w-full md:w-72 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] bg-gray-50 focus:bg-white transition-all text-sm"
+                    />
+                </div>
+            </header>
+
+            <div className="flex-1 overflow-hidden flex w-full">
                 {/* Left: Menu List */}
-                <div className="w-1/3 border-r border-gray-200 flex flex-col">
-                    <div className="p-4 border-b border-gray-200">
-                        <input
-                            type="text"
-                            placeholder="Search Menu..."
-                            value={filter}
-                            onChange={e => setFilter(e.target.value)}
-                            className="w-full px-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-[#FF6A00] outline-none"
-                        />
+                <div className="w-1/3 md:w-80 border-r border-gray-200 flex flex-col bg-white h-full z-0 shadow-sm">
+                    <div className="p-3 bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Select Item
                     </div>
                     <div className="flex-1 overflow-y-auto">
-                        {filteredItems.map(item => (
-                            <div
-                                key={item.id}
-                                onClick={() => setSelectedItem(item)}
-                                className={`p-4 border-b border-gray-50 cursor-pointer hover:bg-orange-50 transition-colors flex justify-between items-center group ${selectedItem?.id === item.id ? 'bg-orange-50 border-l-4 border-l-[#FF6A00]' : 'border-l-4 border-l-transparent'}`}
-                            >
-                                <div>
-                                    <h4 className="font-medium text-gray-900 group-hover:text-[#FF6A00] transition-colors">{item.name}</h4>
-                                    <p className="text-xs text-gray-500">{item.category}</p>
+                        {loading ? (
+                            <div className="p-8 text-center text-gray-400">Loading...</div>
+                        ) : filteredItems.length === 0 ? (
+                            <div className="p-8 text-center text-gray-400 text-sm">No items found</div>
+                        ) : (
+                            filteredItems.map(item => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => setSelectedItem(item)}
+                                    className={`p-4 border-b border-gray-50 cursor-pointer hover:bg-orange-50 transition-colors flex justify-between items-center group ${selectedItem?.id === item.id ? 'bg-orange-50 border-l-4 border-l-[#FF6A00]' : 'border-l-4 border-l-transparent'}`}
+                                >
+                                    <div>
+                                        <h4 className="font-bold text-gray-800 text-sm group-hover:text-[#FF6A00] transition-colors">{item.name}</h4>
+                                        <p className="text-xs text-gray-400">{item.category}</p>
+                                    </div>
+                                    <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-[#FF6A00]" />
                                 </div>
-                                <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-[#FF6A00]" />
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
 
                 {/* Right: Recipe Editor */}
-                <div className="flex-1 bg-gray-50/50 p-8 overflow-y-auto">
+                <div className="flex-1 bg-gray-50 p-6 md:p-8 overflow-y-auto h-full w-full">
                     {selectedItem ? (
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-2xl mx-auto">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-4">
+                                <div className="w-12 h-12 rounded-full bg-[#FF6A00]/10 flex items-center justify-center text-[#FF6A00]">
                                     <BeakerIcon className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900">Configure Recipe</h2>
-                                    <p className="text-sm text-gray-500">Define ingredients for {selectedItem.name}</p>
+                                    <p className="text-sm text-gray-500">Define ingredients for <span className="font-bold text-gray-800">{selectedItem.name}</span></p>
                                 </div>
                             </div>
 
@@ -275,8 +294,11 @@ export default function RecipesPage() {
                         </div>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <BeakerIcon className="w-16 h-16 mb-4 opacity-20" />
-                            <p>Select a menu item to configure its recipe</p>
+                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                                <BeakerIcon className="w-10 h-10" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-600">No Item Selected</h3>
+                            <p className="text-sm">Select a menu item from the list to configure its recipe</p>
                         </div>
                     )}
                 </div>

@@ -286,8 +286,8 @@ export default function ReportsPage() {
             </div>
 
             {/* Compact Header (Screen Only) */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-3 shadow-sm/50 backdrop-blur-md bg-white/95 print:hidden">
-                <div className="max-w-[1920px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-3 shadow-sm/50 backdrop-blur-md bg-white/95 print:hidden w-full">
+                <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                             Reports & Analytics
@@ -327,7 +327,7 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            <div className="max-w-[1920px] mx-auto px-6 mt-6 print:px-0 print:m-0 print:max-w-none">
+            <div className="w-full px-6 mt-6 print:px-0 print:m-0 print:max-w-none">
 
                 {/* Dashboard Grid - Stacked Layout */}
                 {loading ? (

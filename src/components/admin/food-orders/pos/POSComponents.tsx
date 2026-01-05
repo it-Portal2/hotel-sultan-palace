@@ -19,15 +19,44 @@ interface POSCartProps {
     total: number;
     isSubmitting: boolean;
     canSubmit: boolean;
+    guestName: string;
+    setGuestName: (val: string) => void;
+    roomNumber: string;
+    setRoomNumber: (val: string) => void;
 }
 
 export function POSCart({
     cart, onRemove, onUpdateQty, onSubmit,
-    subtotal, tax, total, isSubmitting, canSubmit
+    subtotal, tax, total, isSubmitting, canSubmit,
+    guestName, setGuestName, roomNumber, setRoomNumber
 }: POSCartProps) {
     return (
         <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-full md:w-96 fixed right-0 top-0 bottom-0 z-50 pt-[64px] md:pt-[72px] transition-transform duration-300">
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+
+                {/* GUEST DETAILS INPUTS */}
+                <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Order Details</h3>
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="Guest Name (e.g. John Doe)"
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="Room # (Optional)"
+                            value={roomNumber}
+                            onChange={(e) => setRoomNumber(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
+                        />
+                    </div>
+                </div>
+
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                         <ShoppingCartIcon className="h-6 w-6 text-[#FF6A00]" />
@@ -37,7 +66,7 @@ export function POSCart({
                 </div>
 
                 {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <div className="flex flex-col items-center justify-center h-48 text-center p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                         <div className="bg-white p-4 rounded-full shadow-sm mb-3">
                             <ShoppingCartIcon className="h-8 w-8 text-gray-300" />
                         </div>
@@ -147,7 +176,7 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
                     <button
                         onClick={() => setSelectedCategory('all')}
                         className={`whitespace-nowrap px-6 py-3 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${selectedCategory === 'all'
-                            ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                            ? 'bg-[#FF6A00] text-white shadow-lg shadow-orange-500/20'
                             : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-slate-300'
                             }`}
                     >
@@ -158,7 +187,7 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.name)}
                             className={`whitespace-nowrap px-6 py-3 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${selectedCategory === cat.name
-                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                ? 'bg-[#FF6A00] text-white shadow-lg shadow-orange-500/20'
                                 : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-slate-300'
                                 }`}
                         >

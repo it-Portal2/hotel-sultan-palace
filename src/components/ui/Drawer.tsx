@@ -42,7 +42,7 @@ export default function Drawer({ isOpen, onClose, title, children, size = 'md', 
         <div className="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'
+                className={`fixed inset-0 bg-transparent transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'
                     }`}
                 onClick={onClose}
             />

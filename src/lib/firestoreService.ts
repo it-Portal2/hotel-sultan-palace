@@ -364,6 +364,20 @@ export interface MenuItem {
   availableFrom?: Date;
   availableTo?: Date;
   dayparts?: ('breakfast' | 'lunch' | 'dinner')[];
+
+  // New Additions for Multi-Size & Modifiers
+  hasVariants?: boolean;
+  variants?: Array<{
+    name: string; // e.g. "Small", "Large"
+    price: number;
+  }>;
+  modifiers?: Array<{
+    name: string; // e.g. "Extra Cheese", "No Onions", "Choice of Sauce"
+    price: number; // 0 if free, or extra cost
+    type: 'optional' | 'required' | 'multiple'; // UI Hint
+    options?: string[]; // For 'choice' modifiers e.g. ["BBQ", "Ranch"]
+  }>;
+
   isArchived?: boolean;
   deletedAt?: Date;
   createdAt: Date;
@@ -399,6 +413,9 @@ export interface FoodOrder {
     price: number;
     quantity: number;
     specialInstructions?: string;
+    // New: Selected Variant & Modifiers
+    variant?: { name: string; price: number };
+    selectedModifiers?: Array<{ name: string; price: number }>;
   }>;
   subtotal: number;
   tax?: number;
@@ -418,7 +435,11 @@ export interface FoodOrder {
   createdAt: Date;
   updatedAt: Date;
   orderTime?: Date; // Time when order was placed
+  revenueRecorded?: boolean; // Track if revenue was added to daily stats
 }
+
+// ... (Rest of interfaces)
+
 
 // F&B Revenue and Sales Interfaces
 export interface FBRevenue {
@@ -3129,6 +3150,20 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
     const orderCount = ordersSnap.size;
     const orderNumber = `ORD-${String(orderCount + 1).padStart(4, '0')}`;
 
+    // AUTOMATIC BOOKING LINKING
+    // If roomNumber is provided but no bookingId, try to find the active booking
+    if (data.roomNumber && !data.bookingId) {
+      try {
+        const roomStatus = await getRoomStatus(data.roomNumber);
+        if (roomStatus && roomStatus.status === 'occupied' && roomStatus.currentBookingId) {
+          data.bookingId = roomStatus.currentBookingId;
+          console.log(`Auto-linked Order to Booking: ${roomStatus.currentBookingId} for Room ${data.roomNumber}`);
+        }
+      } catch (err) {
+        console.warn("Failed to auto-link booking:", err);
+      }
+    }
+
     // Remove undefined values - Firestore doesn't accept undefined
     const cleanData: any = { orderNumber };
     Object.keys(data).forEach(key => {
@@ -3143,6 +3178,7 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
       ...cleanData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      revenueRecorded: false // Default to false
     });
 
     // Update booking if bookingId exists
@@ -3168,6 +3204,17 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
 export const updateFoodOrder = async (id: string, data: Partial<FoodOrder>): Promise<boolean> => {
   if (!db) return false;
   try {
+    // Check if we need to record revenue (Status changed to delivered/paid)
+    if ((data.status === 'delivered' || data.paymentStatus === 'paid')) {
+      const currentOrder = await getFoodOrder(id);
+      if (currentOrder && !currentOrder.revenueRecorded) {
+        // Record Revenue
+        await updateDailyFBRevenue(new Date(), { ...currentOrder, ...data } as FoodOrder);
+        data.revenueRecorded = true;
+        console.log("Revenue Recorded for Order:", id);
+      }
+    }
+
     // Remove undefined values - Firestore doesn't accept undefined
     const cleanData: any = {};
     Object.keys(data).forEach(key => {
