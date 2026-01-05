@@ -50,6 +50,25 @@ export interface AddOn {
   updatedAt: Date;
 }
 
+export type WorkOrderPriority = 'low' | 'medium' | 'high' | 'critical';
+export type WorkOrderStatus = 'open' | 'in_progress' | 'resolved' | 'cancelled';
+
+export interface WorkOrder {
+  id: string;
+  roomName: string;
+  issueType: string; // 'Plumbing', 'Electrical', 'AC', 'Furniture', 'Other'
+  priority: WorkOrderPriority;
+  description: string;
+  status: WorkOrderStatus;
+  reportedBy: string;
+  assignedTo?: string;
+  createdAt: any; // Timestamp
+  updatedAt: any;
+  resolvedAt?: any;
+  images?: string[];
+  isBlockRequired?: boolean; // If true, room should be blocked
+}
+
 export interface Booking {
   id: string;
   // Essential booking dates and guest count
@@ -619,17 +638,7 @@ export interface CheckInOutRecord {
 }
 
 
-export interface WorkOrder {
-  id: string;
-  maintenanceType: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  description: string;
-  location: string;
-  assignedTo?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 export interface RoomType {
   id: string;
@@ -5347,3 +5356,198 @@ export const addRateType = async (name: string) => {
   });
 };
 // End of file
+
+
+
+
+// ==================== Maintenance & Blocking Operations ====================
+
+export const setRoomMaintenance = async (
+  roomName: string,
+  startDate: Date,
+  endDate: Date,
+  reason: string
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // 1. Get Room Status & Room Reference
+    const statusQuery = query(collection(db, 'roomStatuses'), where('roomName', '==', roomName));
+    const statusSnap = await getDocs(statusQuery);
+
+    // Check if occupied
+    if (!statusSnap.empty) {
+      const statusData = statusSnap.docs[0].data();
+      if (statusData.status === 'occupied') {
+        throw new Error(`Room ${roomName} is currently occupied.`);
+      }
+    }
+
+    // 2. Update Room Status (Housekeeping)
+    if (!statusSnap.empty) {
+      const statusDoc = statusSnap.docs[0];
+      await updateDoc(statusDoc.ref, {
+        status: 'maintenance',
+        maintenanceReason: reason,
+        maintenanceStartDate: startDate,
+        maintenanceEndDate: endDate,
+        housekeepingStatus: 'needs_attention',
+        updatedAt: serverTimestamp()
+      });
+    } else {
+      // Create if missing (Robust fallback matching markRoomForMaintenance)
+      await addDoc(collection(db, 'roomStatuses'), {
+        roomName,
+        status: 'maintenance',
+        maintenanceReason: reason,
+        maintenanceStartDate: startDate,
+        maintenanceEndDate: endDate,
+        housekeepingStatus: 'needs_attention',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    // 3. Update Room (Availability / Front Office)
+    // Find room by name (Room collection might use 'name' or 'roomName' depending on seed)
+    const roomsRef = collection(db, 'rooms');
+    // Try both field names potentially, but usually 'roomName' or 'name'
+    const q1 = query(roomsRef, where('roomName', '==', roomName));
+    const snap1 = await getDocs(q1);
+
+    let roomDoc = snap1.empty ? null : snap1.docs[0];
+    if (!roomDoc) {
+      const q2 = query(roomsRef, where('name', '==', roomName));
+      const snap2 = await getDocs(q2);
+      roomDoc = snap2.empty ? null : snap2.docs[0];
+    }
+
+    if (roomDoc) {
+      await updateDoc(roomDoc.ref, {
+        status: 'maintenance',
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error setting room maintenance:", error);
+    throw error;
+  }
+};
+
+export const resolveRoomMaintenance = async (roomStatusId: string): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    // 1. Get Room Status by ID
+    const statusRef = doc(db, 'roomStatuses', roomStatusId);
+    const statusSnap = await getDoc(statusRef);
+
+    if (!statusSnap.exists()) {
+      console.error("Room status not found for ID:", roomStatusId);
+      return false;
+    }
+
+    const statusData = statusSnap.data();
+    const roomName = statusData.roomName; // Use the name from the record
+
+    // 2. Update Room Status
+    await updateDoc(statusRef, {
+      status: 'available', // Return to available
+      housekeepingStatus: 'dirty', // Needs cleaning after maintenance
+      maintenanceReason: null,
+      maintenanceStartDate: null,
+      maintenanceEndDate: null,
+      updatedAt: serverTimestamp()
+    });
+
+    if (roomName) {
+      // 3. Update Room (Availability)
+      const roomsRef = collection(db, 'rooms');
+      // Try both field names potentially
+      const q1 = query(roomsRef, where('roomName', '==', roomName));
+      const snap1 = await getDocs(q1);
+
+      let roomDoc = snap1.empty ? null : snap1.docs[0];
+      if (!roomDoc) {
+        const q2 = query(roomsRef, where('name', '==', roomName));
+        const snap2 = await getDocs(q2);
+        roomDoc = snap2.empty ? null : snap2.docs[0];
+      }
+
+      if (roomDoc) {
+        await updateDoc(roomDoc.ref, {
+          status: 'available',
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error resolving room maintenance:", error);
+    throw error;
+  }
+};
+
+// ==================== Work Order System ====================
+
+export const createWorkOrder = async (data: Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+  try {
+    const docRef = await addDoc(collection(db, 'workOrders'), {
+      ...data,
+      status: 'open',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (e) {
+    console.error("Error creating work order:", e);
+    throw e;
+  }
+};
+
+export const getWorkOrders = async (statusFilter?: WorkOrderStatus | 'all'): Promise<WorkOrder[]> => {
+  if (!db) return [];
+  try {
+    let q = query(collection(db, 'workOrders'), orderBy('createdAt', 'desc'));
+
+    // Client-side filtering might be better if composite index is missing, 
+    // but basic equality + sort usually requires index. 
+    // Let's fetch all and filter client side if index issues arise, 
+    // OR create index. For now, fetch all sorted by date is safest standard query.
+    // If statusFilter is provided, we filter in memory to avoid index complexity for this task.
+
+    // Actually, let's keep it simple: Fetch all recent (limit 100?)
+    if (statusFilter && statusFilter !== 'all') {
+      q = query(collection(db, 'workOrders'), where('status', '==', statusFilter), orderBy('createdAt', 'desc'));
+    }
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as WorkOrder));
+  } catch (e) {
+    console.error("Error fetching work orders:", e);
+    return [];
+  }
+};
+
+export const updateWorkOrder = async (id: string, updates: Partial<WorkOrder>): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const docRef = doc(db, 'workOrders', id);
+    const cleanUpdates: any = { ...updates, updatedAt: serverTimestamp() };
+
+    if (updates.status === 'resolved') {
+      cleanUpdates.resolvedAt = serverTimestamp();
+    }
+
+    await updateDoc(docRef, cleanUpdates);
+    return true;
+  } catch (e) {
+    console.error("Error updating work order:", e);
+    return false;
+  }
+};

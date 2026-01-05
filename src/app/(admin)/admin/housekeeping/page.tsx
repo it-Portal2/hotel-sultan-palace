@@ -1,279 +1,219 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import {
-  getHousekeepingTasks,
-  updateHousekeepingTask,
-  updateRoomStatus,
-  HousekeepingTask,
   getRoomStatuses,
   getRoomTypes,
+  updateRoomStatus,
   RoomStatus,
   RoomType,
-  SuiteType
+  SuiteType,
+  getRooms,
+  Room,
+  setRoomMaintenance,
+  resolveRoomMaintenance,
+  getAllBookings,
+  Booking
 } from '@/lib/firestoreService';
-import HousekeepingStats from '@/components/admin/housekeeping/HousekeepingStats';
-import HousekeepingFilters from '@/components/admin/housekeeping/HousekeepingFilters';
-import HousekeepingTable from '@/components/admin/housekeeping/HousekeepingTable';
-import { Tab } from '@headlessui/react';
-import { Squares2X2Icon, ListBulletIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
-import RoomDetailsModal from '@/components/admin/housekeeping/RoomDetailsModal';
-import AddTaskModal from '@/components/admin/housekeeping/AddTaskModal';
+import HouseStatusView from '@/components/admin/housekeeping/HouseStatusView';
+import MaintenanceBlockView from '@/components/admin/housekeeping/MaintenanceBlockView';
+import WorkOrderView from '@/components/admin/housekeeping/WorkOrderView';
+import { BlockRoomData } from '@/components/admin/stayview/BlockRoomModal';
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
+
+
 
 export default function HousekeepingPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'house-status';
 
-  // State for Tasks
-  const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
-  const [taskLoading, setTaskLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-
-  // State for Room Status
+  // Data State
   const [roomStatuses, setRoomStatuses] = useState<RoomStatus[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [roomLoading, setRoomLoading] = useState(true);
-  const [selectedSuite, setSelectedSuite] = useState<SuiteType | 'all'>('all');
+  const [rooms, setRooms] = useState<Room[]>([]);
+  // const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]); // Removed: Managed by WorkOrderView
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Modal State
-  const [selectedRoomName, setSelectedRoomName] = useState<string | null>(null);
-  const [showAddTask, setShowAddTask] = useState(false);
+  const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
 
   useEffect(() => {
-    loadTasks();
-    loadRoomData();
-  }, []);
+    loadData();
+  }, [currentTab]); // Reload potentially if tab switching requires fresh data, though usually shared data is fine.
 
-  const loadTasks = async () => {
+  const loadData = async () => {
     try {
-      setTaskLoading(true);
-      const data = await getHousekeepingTasks();
-      setTasks(data);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  const loadRoomData = async () => {
-    try {
-      setRoomLoading(true);
-      const [statuses, types] = await Promise.all([
+      setLoading(true);
+      const [statusesData, typesData, roomsData, bookingsData] = await Promise.all([
         getRoomStatuses(),
         getRoomTypes(),
+        getRooms(),
+        // getWorkOrders(), // Removed
+        getAllBookings()
       ]);
-      setRoomStatuses(statuses);
-      setRoomTypes(types);
+      setRoomStatuses(statusesData);
+      setRoomTypes(typesData);
+      setRooms(roomsData);
+      // setWorkOrders(workOrdersData); // Removed
+      setBookings(bookingsData);
     } catch (error) {
-      console.error('Error loading room data:', error);
+      console.error('Error loading housekeeping data:', error);
+      showToast('Failed to load data', 'error');
     } finally {
-      setRoomLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleStatusUpdate = async (taskId: string, status: HousekeepingTask['status']) => {
+  const handleUpdateStatus = async (roomStatusId: string, status: RoomStatus['housekeepingStatus']) => {
     if (isReadOnly) return;
     try {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      const roomStatus = roomStatuses.find(r => r.id === roomStatusId);
 
-      // Update task status
-      await updateHousekeepingTask(taskId, { status });
+      await updateRoomStatus(roomStatusId, {
+        housekeepingStatus: status,
+        lastCleaned: status === 'clean' ? new Date() : (roomStatus?.lastCleaned || undefined)
+      });
 
-      // If task is completed, update room status automatically
-      if (status === 'completed' && task.roomName) {
-        // Logic to update room status (simplified for brevity, ensuring same logic as before)
-        const roomStatus = roomStatuses.find(r => r.roomName === task.roomName);
-        if (roomStatus) {
-          const historyType = task.taskType === 'maintenance' ? 'inspection' : task.taskType;
-          const newHistory = [
-            ...(roomStatus.cleaningHistory || []),
-            {
-              date: new Date(),
-              type: historyType,
-              staffName: task.assignedTo || 'Unassigned',
-              notes: task.notes || '',
-            }
-          ];
-
-          // Determing new status based on task type
-          let updates: any = {
-            housekeepingStatus: 'clean',
-            lastCleaned: new Date(),
-            cleaningHistory: newHistory
-          };
-
-          if (task.taskType === 'checkout_cleaning' || task.taskType === 'deep_cleaning') {
-            updates.status = 'available';
-            updates.currentBookingId = null; // Clear booking info if making available
-          }
-
-          await updateRoomStatus(roomStatus.id, updates);
-        }
-      }
-
-      await loadTasks();
-      await loadRoomData(); // Reload rooms to reflect changes
-      showToast(`Task ${status.replace('_', ' ')} successfully!`, 'success');
+      await loadData();
+      showToast(`Room updated to ${status}`, 'success');
     } catch (error) {
-      console.error('Error updating task status:', error);
-      showToast('Failed to update task status', 'error');
+      console.error('Error updating room status:', error);
+      showToast('Failed to update status', 'error');
     }
   };
 
-  // Filter Logic
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      const matchesSearch =
-        task.roomName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.taskType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-      const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [tasks, searchQuery, statusFilter, priorityFilter]);
+  const handleBlockRoom = async (data: BlockRoomData) => {
+    if (isReadOnly) return;
+    try {
+      const promises = data.selectedRooms.map(async (roomName) => {
+        const range = data.ranges[0];
+        if (range) {
+          const start = new Date(range.startDate);
+          const end = new Date(range.endDate);
+          // Add 1 day to end date to make it inclusive for the calendar (Start <= d < End)
+          end.setDate(end.getDate() + 1);
 
-  const stats = useMemo(() => {
-    return {
-      pending: tasks.filter(t => t.status === 'pending').length,
-      inProgress: tasks.filter(t => t.status === 'in_progress').length,
-      completed: tasks.filter(t => t.status === 'completed').length,
-      total: tasks.length,
-    };
-  }, [tasks]);
+          return setRoomMaintenance(
+            roomName,
+            start,
+            end,
+            data.reason
+          );
+        }
+      });
 
-  // Room Grid Logic
-  const filteredRooms = useMemo(() => {
-    let filtered = roomTypes;
-    if (selectedSuite !== 'all') {
-      filtered = filtered.filter(rt => rt.suiteType === selectedSuite);
+      await Promise.all(promises);
+      await loadData();
+      showToast('Rooms blocked for maintenance', 'success');
+    } catch (error: any) {
+      console.error("Error blocking rooms:", error);
+      showToast(error.message || 'Failed to block rooms', 'error');
     }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(rt =>
-        rt.roomName.toLowerCase().includes(query) ||
-        rt.suiteType.toLowerCase().includes(query)
-      );
+  };
+
+  const handleUnblockRoom = async (roomStatusId: string) => {
+    if (isReadOnly) return;
+    try {
+      await resolveRoomMaintenance(roomStatusId);
+      await loadData();
+      showToast('Maintenance completed', 'success');
+    } catch (error) {
+      console.error("Error unblocking room:", error);
+      showToast('Failed to unblock room', 'error');
     }
-    return filtered;
-  }, [roomTypes, selectedSuite, searchQuery]);
+  };
+
+
+
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Housekeeping Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage cleaning tasks and monitor room status.</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => { loadTasks(); loadRoomData(); }}
-            className="bg-white border border-gray-200 text-gray-600 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            Refresh Data
-          </button>
-          {!isReadOnly && (
-            <button
-              onClick={() => setShowAddTask(true)}
-              className="bg-[#FF6A00] text-white px-4 py-2 text-sm font-bold rounded shadow-lg shadow-orange-200 hover:bg-[#e65f00] transition-colors"
-            >
-              + Add Task
-            </button>
-          )}
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Housekeeping Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Monitor room status and manage maintenance tasks.</p>
       </div>
 
-      {/* Info Alert for Workflow */}
-      <div className="bg-blue-50 border border-blue-100 p-4 flex gap-3 text-sm text-blue-800">
-        <InformationCircleIcon className="w-5 h-5 flex-shrink-0 text-blue-500" />
-        <div>
-          <p className="font-semibold">How it works:</p>
-          <ul className="list-disc list-inside mt-1 space-y-1 text-blue-700/80">
-            <li><strong>Checkout:</strong> When a guest is checked out, the room automatically becomes <span className="font-semibold text-red-600">Dirty</span> and a <span className="font-semibold">Maintenance/Cleaning Task</span> is created.</li>
-            <li><strong>Tasks:</strong> Assign tasks to staff. When they mark a task as <span className="font-semibold text-green-600">Completed</span>, the room status automatically updates to <span className="font-semibold text-green-600">Clean/Available</span>.</li>
-          </ul>
-        </div>
-      </div >
-
-      <Tab.Group>
-        <Tab.List className="flex space-x-1 bg-gray-100 p-1 w-fit">
-          <Tab
-            className={({ selected }) =>
-              classNames(
-                'w-32 py-2.5 text-sm font-medium leading-5 transition-all duration-200',
-                'focus:outline-none focus:ring-0',
-                selected
-                  ? 'bg-white shadow-sm text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-              )
-            }
-          >
-            <div className="flex items-center justify-center gap-2">
-              <ListBulletIcon className="w-4 h-4" />
-              Tasks List
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <ListBulletIcon className="w-4 h-4" />
-              Tasks List
-            </div>
-          </Tab>
-        </Tab.List>
-
-        <Tab.Panels className="mt-4">
-          <Tab.Panel className="space-y-6 focus:outline-none">
-            <HousekeepingStats stats={stats} />
-            <HousekeepingFilters
-              query={searchQuery}
-              setQuery={setSearchQuery}
-              status={statusFilter}
-              setStatus={setStatusFilter}
-              priority={priorityFilter}
-              setPriority={setPriorityFilter}
-            />
-            {taskLoading ? (
-              <div className="text-center py-10">Loading Tasks...</div>
-            ) : (
-              <HousekeepingTable
-                tasks={filteredTasks}
-                onUpdateStatus={handleStatusUpdate}
-                isReadOnly={isReadOnly}
-              />
-            )}
-          </Tab.Panel>
-        </Tab.Panels>
-      </Tab.Group >
-
-      {/* Room Details Modal */}
-      {
-        selectedRoomName && (
-          <RoomDetailsModal
-            isOpen={true}
-            roomName={selectedRoomName}
-            onClose={() => setSelectedRoomName(null)}
-            onUpdate={loadRoomData}
+      <div className="mt-6">
+        {currentTab === 'house-status' && (
+          <HouseStatusView
+            roomStatuses={roomStatuses}
+            roomTypes={roomTypes}
+            bookings={bookings}
+            suiteTypes={SUITE_TYPES}
+            onUpdateStatus={handleUpdateStatus}
+            isLoading={loading}
           />
-        )
-      }
-      {/* Add Task Modal */}
-      <AddTaskModal
-        isOpen={showAddTask}
-        onClose={() => setShowAddTask(false)}
-        onSuccess={() => { loadTasks(); loadRoomData(); }}
-        roomTypes={roomTypes}
-      />
-    </div >
+        )}
+        {currentTab === 'maintenance-block' && (
+          <MaintenanceBlockView
+            roomStatuses={roomStatuses}
+            rooms={roomTypes
+              .sort((a, b) => a.roomName.localeCompare(b.roomName))
+              .map(rt => ({
+                id: rt.id,
+                name: rt.roomName,
+                roomName: rt.roomName,
+                suiteType: rt.suiteType,
+                type: rt.suiteType,
+                price: 0,
+                description: '',
+                amenities: rt.amenities || [],
+                size: '',
+                view: '',
+                beds: '',
+                image: '',
+                maxGuests: 0,
+                createdAt: rt.createdAt,
+                updatedAt: rt.updatedAt
+              } as Room))}
+            suiteTypes={['Garden Suite', 'Imperial Suite', 'Ocean Suite']} // Ensure these match SuiteType
+            bookings={bookings}
+            onBlockRoom={handleBlockRoom}
+            onUnblockRoom={async (id, isBooking) => {
+              if (isBooking) {
+                // Handle legacy booking unblock
+                await import('@/lib/firestoreService').then(m => m.updateBooking(id, { status: 'cancelled' }));
+                await loadData();
+                showToast('Maintenance block removed', 'success');
+              } else {
+                // Handle standard room status unblock
+                // @ts-ignore
+                handleUnblockRoom(id);
+              }
+            }}
+            isLoading={loading}
+          />
+        )}
+        {currentTab === 'work-order' && (
+          <WorkOrderView
+            rooms={roomTypes
+              .sort((a, b) => a.roomName.localeCompare(b.roomName))
+              .map(rt => ({
+                id: rt.id,
+                name: rt.roomName,
+                roomName: rt.roomName,
+                suiteType: rt.suiteType,
+                type: rt.suiteType,
+                price: 0,
+                description: '',
+                amenities: rt.amenities || [],
+                size: '',
+                view: '',
+                beds: '',
+                image: '',
+                maxGuests: 0,
+                createdAt: rt.createdAt,
+                updatedAt: rt.updatedAt
+              } as Room))}
+          />
+        )}
+      </div>
+    </div>
   );
 }

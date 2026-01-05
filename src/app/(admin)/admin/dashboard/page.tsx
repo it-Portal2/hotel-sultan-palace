@@ -32,8 +32,7 @@ export default function AdminDashboard() {
     housekeeping: { clean: 0, hkAssign: 0, dirty: 0, block: 0 },
     notifications: {
       bookingInquiry: 0, guestMessage: 0, walkInGuest: 0, onlineBooking: 0, activeOffers: 0,
-      workOrder: 0, paymentFailed: 0, overbooking: 0, guestPortal: 0, cardVerificationFailed: 0,
-      tasks: 0, review: 0, inventoryAlert: 0, lowStock: 0, pendingPOs: 0, dirtyRooms: 0, auditAlert: 0
+      workOrder: 0, lowStock: 0, pendingPOs: 0
     },
     activities: [] as any[],
     totalRooms: 0, totalBookings: 0, revenueThisMonth: 0, recentBookings: [] as any[], revenueTotal: 0
@@ -106,8 +105,8 @@ export default function AdminDashboard() {
         onlineBooking: bookings.filter(b => !(b.source === 'walk_in' || (b.bookingId || '').startsWith('WALKIN')) && isToday(b.createdAt)).length,
         activeOffers: offers.filter(o => o.isActive).length,
         workOrder: workOrders.length,
-        paymentFailed: 0, overbooking: 0, guestPortal: 0, cardVerificationFailed: 0, tasks: 0, review: 0,
-        inventoryAlert: 0, lowStock: lowStockItems.length, pendingPOs: pendingPOs.length, dirtyRooms: 0, auditAlert: 0
+        lowStock: lowStockItems.length,
+        pendingPOs: pendingPOs.length
       };
 
       const realActivities = [

@@ -130,7 +130,9 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 if (status === 'maintenance') {
                     blocked++;
                 } else if (status === 'checked_in') {
-                    if (isDueOut) {
+                    // Fix: Exclude CLEAN rooms from Due Out stats
+                    const isClean = statuses.find(s => s.roomName === room.roomName)?.housekeepingStatus === 'clean';
+                    if (isDueOut && !isClean) {
                         dueOut++;
                         occupied++;
                     } else {
@@ -151,8 +153,13 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                     return normalizeDate(b.checkOut).getTime() === todayTime;
                 });
 
-                if (dueOutBooking) {
+                const isClean = statuses.find(s => s.roomName === room.roomName)?.housekeepingStatus === 'clean';
+
+                if (dueOutBooking && !isClean) {
                     dueOut++;
+                    occupied++;
+                } else if (dueOutBooking) {
+                    // Is due out but Clean -> Count as Occupied
                     occupied++;
                 } else if (isInMaintenance) {
                     blocked++;
@@ -236,7 +243,9 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 const isDueOut = checkOutDate.getTime() === today.getTime();
 
                 if (booking.status === 'checked_in') {
-                    if (isDueOut) {
+                    // Fix: If room is marked CLEAN, do not show as "Due Out" (Red).
+                    // User considers "Clean" as ready/done. Show as Occupied (Blue) until actual system checkout.
+                    if (isDueOut && housekeeping !== 'clean') {
                         status = 'due_out';
                         colorClass = 'bg-red-50 text-red-700 border-red-200';
                         label = 'Due Out';
@@ -257,9 +266,10 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
         } else if (isMaintenanceStatus) {
             // No booking, but maintenance status is active (Date Checked)
             status = 'blocked';
-            colorClass = 'bg-gray-100 text-gray-600 border-gray-200';
-            label = 'Blocked';
-            icon = <FaTools className="w-5 h-5 mx-auto opacity-50" />;
+            // Lighter style matching other cards (Pastel Gray)
+            colorClass = 'bg-gray-100 text-gray-600 border-gray-300';
+            label = 'Maintenance';
+            icon = <FaTools className="w-5 h-5 mx-auto opacity-60" />;
         } else if (housekeeping === 'dirty') {
             // Vacant & Dirty
             colorClass = 'bg-orange-50 text-orange-700 border-orange-200';

@@ -20,11 +20,14 @@ import {
     getAllBookings,
     getMasterData,
     Booking,
-    Company
+    Company,
+    getSystemLocks,
+    SystemLock
 } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 // --- Invoice Form Component ---
 interface InvoiceFormProps {
@@ -61,24 +64,30 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
         }
     }, [contactType]);
 
+
+
+    const [activeLock, setActiveLock] = useState<SystemLock | null>(null);
+
     // Handle Name Input & Search
     const handleNameChange = async (val: string) => {
         setGuestName(val);
         setShowNameError(false);
-        setBookingId(''); // Clear link on manual type
+        setBookingId('');
         setCompanyId('');
+        setActiveLock(null); // Clear lock on change
 
         if (val.length < 2) {
             setSuggestions([]);
             setShowSuggestions(false);
             return;
         }
-
+        // ... existing search logic ...
         if (contactType === 'Guest') {
             setIsSearching(true);
             try {
-                // Fetch all bookings and filter locally (In a real app, use a search API)
+                // Fetch all bookings and filter locally
                 const bookings = await getAllBookings();
+                // ...
                 const matches = bookings.filter(b =>
                     b.status === 'checked_in' &&
                     (
@@ -86,6 +95,7 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                         (b.roomNumber || '').toLowerCase().includes(val.toLowerCase())
                     )
                 );
+                // ...
                 setSuggestions(matches.map(b => ({
                     id: b.id,
                     title: `${b.guestDetails.firstName} ${b.guestDetails.lastName}`,
@@ -99,7 +109,10 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
             } finally {
                 setIsSearching(false);
             }
-        } else if (contactType === 'City Ledger') {
+        }
+        // ... company search logic ...
+        else if (contactType === 'City Ledger') {
+            // ... existing logic ...
             setIsSearching(true);
             try {
                 const companies = await getMasterData('companies') as Company[];
@@ -116,19 +129,29 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                 })));
                 setShowSuggestions(true);
             } catch (e) {
-                console.error("Error searching companies", e);
+                console.error(e);
             } finally {
                 setIsSearching(false);
             }
         }
     };
 
-    const selectSuggestion = (item: any) => {
+    const selectSuggestion = async (item: any) => {
         setGuestName(item.title);
+        setActiveLock(null);
+
         if (item.type === 'booking') {
             setBookingId(item.id);
+            // Check for locks
+            const locks = await getSystemLocks();
+            const lock = locks.find(l => l.resourceId === item.id);
+            if (lock) setActiveLock(lock);
         } else if (item.type === 'company') {
             setCompanyId(item.id);
+            // Check for locks (future proofing, though current lock UI might not support picking companies yet)
+            const locks = await getSystemLocks();
+            const lock = locks.find(l => l.resourceId === item.id);
+            if (lock) setActiveLock(lock);
         }
         setShowSuggestions(false);
     };
@@ -321,6 +344,18 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                                 <div className="mt-1 text-xs text-green-600 flex items-center">
                                     <UserCircleIcon className="w-3 h-3 mr-1" />
                                     Linked to {contactType} Record
+                                </div>
+                            )}
+                            {activeLock && (
+                                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-3 animate-fadeIn">
+                                    <LockClosedIcon className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-red-800">Folio Locked</h4>
+                                        <p className="text-xs text-red-600 mt-1">
+                                            This folio has been locked by <strong>{activeLock.lockedBy}</strong>.<br />
+                                            Reason: {activeLock.description}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                             {showNameError && <span className="text-[10px] text-red-500 absolute -bottom-4 left-0 font-medium">Name is required.</span>}
@@ -629,10 +664,11 @@ function InvoiceForm({ onClose, onSave, initialData, currentUser }: InvoiceFormP
                         </button>
                         <button
                             onClick={handleSubmit}
-                            disabled={loading}
-                            className="flex-1 md:flex-none px-8 py-2.5 bg-[#FF6A00] text-white hover:bg-[#e66000] font-medium transition-colors shadow-sm rounded-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6A00] disabled:opacity-50"
+                            disabled={loading || !!activeLock}
+                            className={`flex-1 md:flex-none px-8 py-2.5 text-white font-medium transition-colors shadow-sm rounded-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6A00] disabled:opacity-50 disabled:cursor-not-allowed
+                                ${!!activeLock ? 'bg-gray-400 hover:bg-gray-500' : 'bg-[#FF6A00] hover:bg-[#e66000]'}`}
                         >
-                            {loading ? 'Saving...' : 'Save Invoice'}
+                            {loading ? 'Saving...' : !!activeLock ? 'Folio Locked' : 'Save Invoice'}
                         </button>
                     </div>
                 </div>

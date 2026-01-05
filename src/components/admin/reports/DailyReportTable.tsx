@@ -133,18 +133,24 @@ export default function DailyReportTable({ data }: DailyReportProps) {
                     </h4>
 
                     <div className="space-y-3 mt-4">
-                        <div className="flex justify-between items-center py-1">
-                            <span className="text-sm text-gray-500 font-medium">Room Revenue</span>
-                            <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.roomRevenue)}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                            <span className="text-sm text-gray-500 font-medium">F&B / Other</span>
-                            <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.fb + data.revenue.other)}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-1 border-b border-gray-200 pb-3">
-                            <span className="text-sm text-gray-500 font-medium">Taxes & Fees</span>
-                            <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.tax)}</span>
-                        </div>
+                        {data.revenue.roomRevenue > 0 && (
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-sm text-gray-500 font-medium">Room Revenue</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.roomRevenue)}</span>
+                            </div>
+                        )}
+                        {(data.revenue.fb + data.revenue.other) > 0 && (
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-sm text-gray-500 font-medium">F&B / Other</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.fb + data.revenue.other)}</span>
+                            </div>
+                        )}
+                        {data.revenue.tax > 0 && (
+                            <div className="flex justify-between items-center py-1 border-b border-gray-200 pb-3">
+                                <span className="text-sm text-gray-500 font-medium">Taxes & Fees</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCurrency(data.revenue.tax)}</span>
+                            </div>
+                        )}
 
                         <div className="flex justify-between items-center pt-2">
                             <span className="text-base text-gray-800 font-bold">Total Revenue</span>
@@ -176,6 +182,9 @@ export default function DailyReportTable({ data }: DailyReportProps) {
 
 // Sub-component for clean rows
 function Row({ label, value, isError = false, isHighlight = false, isBold = false }: { label: string, value: string | number, isError?: boolean, isHighlight?: boolean, isBold?: boolean }) {
+    // Hide if value is 0 or "0"
+    if (value === 0 || value === '0' || value === 0.00 || value === '$0.00') return null;
+
     return (
         <div className="flex justify-between items-center group">
             <span className={`text-xs ${isHighlight ? 'text-blue-600 font-semibold print:text-black' : 'text-gray-500 group-hover:text-gray-700 transition-colors print:text-gray-900'}`}>

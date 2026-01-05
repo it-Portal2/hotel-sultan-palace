@@ -89,30 +89,13 @@ export default function BlockRoomModal({
         }
     }, [isOpen, initialData]);
 
-    // Hardcoded mapping of rooms to suites as per user requirement
-    const ROOMS_BY_SUITE: Record<string, string[]> = {
-        'Garden Suite': ['TANGERINE', 'MANGOSTEEN', 'LYCHEE', 'JASMINE', 'DESERT ROSE', 'ANANAS'],
-        'Imperial Suite': ['PAPAYA', 'HIBISCUS', 'FRANGIPANI', 'FLAMBOYANT', 'EUCALYPTUS'],
-        'Ocean Suite': ['PASSION FLOWER', 'OLEANDER', 'CITRONELLA', 'BOUGAINVILLEA']
-    };
 
     // Filter rooms by selected suite
+    // Using dynamic data passed from props instead of hardcoded lists
     const availableRooms = rooms.filter(r => {
-        const rName = r.roomName || r.name;
-        const rNameUpper = rName ? rName.toUpperCase() : '';
-
-        // 1. Strict check against hardcoded list
-        if (ROOMS_BY_SUITE[suiteType]) {
-            return ROOMS_BY_SUITE[suiteType].includes(rNameUpper);
-        }
-
-        // 2. Fallback for other suites (if any) or if room not in list but suiteType matches
-        // (We prioritize the list, so if suite is one of the known ones, we ONLY show list items?
-        // User said "sahi name add nhi kiye" implying strictness.
-        // However, if the room name in DB is slightly different (case), we handled upper case.
-        // If enrichedRooms logic worked, r.suiteType should be correct.
-
-        return r.suiteType === suiteType;
+        // Robust filter:
+        if (!r.suiteType) return false;
+        return r.suiteType.trim().toLowerCase() === suiteType.trim().toLowerCase();
     });
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +145,7 @@ export default function BlockRoomModal({
             ranges: dateRanges,
             suiteType: suiteType as SuiteType,
             selectedRooms,
-            reason: activeReason || reason
+            reason: activeReason || reason || 'Maintenance'
         });
         onClose();
     };
@@ -378,8 +361,8 @@ export default function BlockRoomModal({
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={selectedRooms.length === 0 || !activeReason}
-                        className={`px-6 py-2 text-sm font-medium text-white rounded shadow-sm transition-colors ${selectedRooms.length > 0 && activeReason ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-300 cursor-not-allowed'
+                        disabled={selectedRooms.length === 0}
+                        className={`px-6 py-2 text-sm font-medium text-white rounded shadow-sm transition-colors ${selectedRooms.length > 0 ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-300 cursor-not-allowed'
                             }`}
                     >
                         Apply

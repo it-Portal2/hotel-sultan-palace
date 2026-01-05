@@ -455,8 +455,38 @@ export default function RoomAvailabilityPage() {
       });
     });
 
+    // Inject Maintenance Blocks from RoomStatuses (Housekeeping/Maintenance)
+    roomStatuses.forEach(status => {
+      if (status.status === 'maintenance' && status.maintenanceStartDate && status.maintenanceEndDate) {
+        const start = normalizeDate(status.maintenanceStartDate);
+        const end = normalizeDate(status.maintenanceEndDate);
+
+        // Mock a Booking object for visual compatibility
+        const mockBooking: any = {
+          id: `maintenance-${status.id}`,
+          status: 'maintenance',
+          checkIn: status.maintenanceStartDate,
+          checkOut: status.maintenanceEndDate,
+          guestDetails: { firstName: '', lastName: '', prefix: '', email: '', phone: '' },
+          paymentStatus: 'paid', // Irrelevant for maintenance
+          totalAmount: 0,
+          paidAmount: 0,
+          rooms: []
+        };
+
+        bars.push({
+          booking: mockBooking,
+          startDate: start,
+          endDate: end,
+          roomName: status.roomName,
+          suiteType: status.suiteType || 'Garden Suite', // Fallback, usually present
+          roomStatus: 'maintenance'
+        });
+      }
+    });
+
     return bars;
-  }, [bookings]);
+  }, [bookings, roomStatuses]);
 
   // Create price map from Rooms collection (real prices)
   const roomPriceMap = useMemo(() => {
@@ -543,10 +573,11 @@ export default function RoomAvailabilityPage() {
 
   // Calculate summary stats
   const summaryStats = useMemo(() => {
-    // Calculate strict total rooms from the database, not just fallback
-    const totalRoomsCount = roomTypes.length || 15;
+    // Calculate strict total rooms from the database
+    const totalRoomsCount = roomTypes.length || 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
 
     let vacant = 0;
     let occupied = 0;
@@ -555,47 +586,100 @@ export default function RoomAvailabilityPage() {
     let dueOut = 0;
     const dirty = roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty').length;
 
-    dateRange.dates.forEach(date => {
-      if (date.toDateString() === today.toDateString()) {
-        SUITE_TYPES.forEach(suiteType => {
-          roomsBySuite[suiteType].forEach(room => {
-            const dateStr = date.toISOString().split('T')[0];
-            const avail = roomAvailability[room.roomName]?.[dateStr];
+    // We must check every room's status for TODAY independent of the visible calendar range
+    roomTypes.forEach(room => {
+      // 1. Check for Room Block / Maintenance Logic
+      const roomStatus = roomStatuses.find(rs => rs.roomName === room.roomName);
+      let isRoomMarketingMaintenance = false;
+      if (roomStatus?.status === 'maintenance') {
+        if (roomStatus.maintenanceStartDate && roomStatus.maintenanceEndDate) {
+          const mStart = normalizeDate(roomStatus.maintenanceStartDate).getTime();
+          const mEnd = normalizeDate(roomStatus.maintenanceEndDate).getTime();
+          if (todayTime >= mStart && todayTime < mEnd) {
+            isRoomMarketingMaintenance = true;
+          }
+        } else {
+          isRoomMarketingMaintenance = true;
+        }
+      }
 
-            // Strict check: Room is occupied ONLY if there is a confirmed/checked_in booking
-            if (avail?.booking) {
-              const status = avail.booking.status;
-              const checkOutDate = new Date(avail.booking.checkOut);
-              checkOutDate.setHours(0, 0, 0, 0);
+      // 2. Check for Active Booking Logic
+      // Find a booking that covers TODAY
+      const booking = bookings.find(b => {
+        if (b.status === 'cancelled' || b.status === 'no_show') return false;
+        if (!b.rooms.some(r => r.allocatedRoomType === room.roomName || r.type === room.roomName)) return false;
 
-              const isDueOut = checkOutDate.getTime() === today.getTime();
+        const start = normalizeDate(b.checkIn).getTime();
+        const end = normalizeDate(b.checkOut).getTime();
 
-              if (status === 'checked_in') {
-                if (isDueOut) {
-                  dueOut++; // Count in due out
-                  occupied++; // Still technically occupied until they leave? Or maybe separate? Reference shows "Occupied 9", "Due Out 0". Often Due Out is a subset or separate state. Let's treat it as status.
-                } else {
-                  occupied++;
-                }
-              } else if (status === 'confirmed') {
-                reserved++;
-              } else if (status === 'maintenance') {
-                blocked++;
-              } else {
-                occupied++; // Fallback
-              }
-            } else if (avail?.blocked) {
-              blocked++;
-            } else {
-              vacant++;
-            }
-          });
-        });
+        // Standard Overlap: Start <= Today < End
+        const standardStay = todayTime >= start && todayTime < end;
+
+        // Due Out Case: End == Today (and Checked In)
+        const isDueOutDate = end === todayTime;
+
+        // "Due Out" Check:
+        // Technically "Due Out" means checkout is expected today.
+        // However, if the room is CLEAN, it implies the guest has left or room is ready.
+        // To resolve user inconsistency ("I cleaned it, why still Due Out?"), 
+        // we check the room status.
+        let isActuallyDueOut = isDueOutDate && b.status === 'checked_in';
+        if (isActuallyDueOut) {
+          const rs = roomStatuses.find(s => s.roomName === room.roomName);
+          // If room is CLEAN, we treat it as Vacant/Ready for the stats, or at least NOT "Due Out" (Red)
+          // But wait, "Occupied" stat might still apply if they haven't settled bill.
+          // User wants the "Due Out" label/count specifically to go away.
+          if (rs?.housekeepingStatus === 'clean') {
+            isActuallyDueOut = false;
+          }
+        }
+
+        return standardStay || isActuallyDueOut;
+      });
+
+      // Priority Logic
+      if (booking) {
+        if (booking.status === 'maintenance') {
+          blocked++;
+        } else if (booking.status === 'checked_in') {
+          const checkOutDate = normalizeDate(booking.checkOut).getTime();
+
+          let isDueOut = checkOutDate === todayTime;
+          // Apply same "Clean" filter for the stats count
+          const rs = roomStatuses.find(s => s.roomName === room.roomName);
+          if (isDueOut && rs?.housekeepingStatus === 'clean') {
+            isDueOut = false;
+          }
+
+          if (isDueOut) {
+            dueOut++;
+            occupied++; // Due Out is still occupied physically
+          } else {
+            // If it was due out but clean, it falls here (Occupied).
+            // But if it's clean, is it occupied? Yes, until checkout.
+            // But the user might want it to count as Vacant?
+            // "Due out count band dikha raha hai" -> "Due Out count shows closed/zero"? Or "shows 1"?
+            // User said: "Room availability me bhi due out count 1 dikha raha hai...". He wants it GONE.
+            // So if clean, `dueOut` should NOT increment.
+            occupied++;
+          }
+        } else if (booking.status === 'confirmed') {
+          // Only count as reserved if it overlaps today (e.g. arriving today or stayover confirmed)
+          // Typically "Reserved" means Arrivals today? Or just held?
+          // Let's count as Reserved if occupying slot
+          reserved++;
+        } else if (booking.status === 'stay_over') {
+          occupied++;
+        }
+      } else if (isRoomMarketingMaintenance) {
+        blocked++;
+      } else {
+        vacant++;
       }
     });
 
     return { totalRooms: totalRoomsCount, vacant, occupied, reserved, blocked, dirty, dueOut };
-  }, [roomTypes.length, dateRange.dates, roomsBySuite, roomAvailability, roomStatuses, blockedRooms]);
+  }, [roomTypes, bookings, roomStatuses]);
 
   // Filter rooms based on search and suite selection
   const filteredRooms = useMemo(() => {
@@ -1786,63 +1870,37 @@ export default function RoomAvailabilityPage() {
               setEditingBookingId(null);
             }
 
-            // Loop through all selected rooms and ranges to create booking blocks
+            // Loop through all selected rooms and ranges to create maintenance statuses
             const promises: Promise<any>[] = [];
 
             data.selectedRooms.forEach(roomName => {
-              // Find the room object to get pricing/details if needed
-              const room = enrichedRooms.find(r => r.name === roomName || r.roomName === roomName);
-              const price = room?.price || 0;
-
               data.ranges.forEach(range => {
-                // Create a booking for maintenance
-                // We use type casting to bypass strict checks if Booking interface isn't fully updated in all types yet, 
-                // but we updated it in firestoreService.
-                const maintenanceBooking: any = {
-                  checkIn: range.startDate, // YYYY-MM-DD
-                  checkOut: range.endDate,   // YYYY-MM-DD
-                  guests: { adults: 1, children: 0, rooms: 1 },
-                  guestDetails: {
-                    prefix: '',
-                    firstName: 'MAINTENANCE',
-                    lastName: 'BLOCK',
-                    email: '',
-                    phone: '',
-                  },
-                  address: {
-                    country: '',
-                    city: '',
-                    zipCode: '',
-                    address1: '',
-                    address2: ''
-                  },
-                  reservationGuests: [],
-                  rooms: [{
-                    type: data.suiteType,
-                    price: price,
-                    allocatedRoomType: roomName,
-                    suiteType: data.suiteType,
-                    status: 'maintenance',
-                    ratePlan: 'Standard'
-                  }],
-                  addOns: [],
-                  status: 'maintenance',
-                  totalAmount: 0,
-                  bookingId: `MAINT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                  paymentStatus: 'paid', // Dummy
-                  paidAmount: 0,
-                  paymentMethod: 'Internal',
-                  paymentDate: new Date(),
-                  source: 'maintenance',
-                  notes: data.reason || 'Maintenance Block',
-                };
+                // Use the markRoomForMaintenance function to update RoomStatus
+                // This ensures it appears in Housekeeping -> Maintenance
 
-                promises.push(createBooking(maintenanceBooking));
+                // Adjust dates to be full days as expected by maintenance logic
+                const startDate = new Date(range.startDate);
+                const endDate = new Date(range.endDate);
+                // End date is inclusive in the form, but maintenance logic might treat it differently.
+                // Usually maintenance is "until" a date. Let's ensure it covers the day.
+                // If user selects 1st to 1st, it's 1 day.
+                // markRoomForMaintenance uses start/end dates.
+
+                // Add 1 day to end date to make it inclusive for the calendar (Start <= d < End) logic used in page
+                const effectiveEndDate = new Date(endDate);
+                effectiveEndDate.setDate(effectiveEndDate.getDate() + 1);
+
+                promises.push(markRoomForMaintenance(
+                  roomName,
+                  startDate,
+                  effectiveEndDate,
+                  data.reason || 'Maintenance Block'
+                ));
               });
             });
 
             await Promise.all(promises);
-            showToast('Rooms blocked successfully', 'success');
+            showToast('Rooms blocked for maintenance', 'success');
             await loadData();
           } catch (error) {
             console.error("Failed to block rooms", error);
