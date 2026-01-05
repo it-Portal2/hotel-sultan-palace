@@ -132,8 +132,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         items: [
           { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'reservations' },
           { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'reservations' },
-          { name: 'Room View', href: '/admin/front-desk?tab=room_view', icon: Squares2X2Icon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'reservations' },
-          { name: 'Unsettled Folios', href: '/admin/unsettled-folios', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
+          { name: 'Room View', href: '/admin/front-desk?tab=room_view', icon: RectangleStackIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'reservations' },
+          { name: 'Unsettled Folios', href: '/admin/unsettled-folios', icon: ReceiptPercentIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
           { name: 'Insert Transaction', href: '/admin/insert-transaction', icon: PlusIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
           { name: 'Guest Database', href: '/admin/guest-database', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'guest_database' },
           { name: 'Lost & Found', href: '/admin/lost-and-found', icon: ArchiveBoxIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'lost_found' },
@@ -181,10 +181,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Housekeeping',
         icon: CleaningIcon,
         items: [
-          { name: 'Housekeeping', href: '/admin/housekeeping', icon: CleaningIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
+          { name: 'House Status', href: '/admin/housekeeping?tab=house-status', icon: HomeStatusIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
+          { name: 'Maintenance Block', href: '/admin/housekeeping?tab=maintenance-block', icon: WrenchIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'housekeeping' },
+          { name: 'Work Order', href: '/admin/housekeeping?tab=work-order', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'housekeeping' },
         ],
         defaultOpen: true,
-        isSingleItem: true
+        isSingleItem: false
       },
 
       {
@@ -548,38 +550,16 @@ function AdminLayoutContent({
     if (!isPathMatch) return false;
 
     // 2. Query Param Check (if href has specific params)
+    // 2. Query Param Check (if href has specific params)
     if (targetQueryString) {
+      if (!searchParams) return false;
       const targetParams = new URLSearchParams(targetQueryString);
-      const currentSearchParams = new URLSearchParams(window.location.search); // Use window location or parse current params if available. 
-      // Note: AdminLayoutContent doesn't have searchParams prop passed down from AdminLayout yet in user's diff?
-      // Wait, AdminLayout has `searchParams` hook! In user's code: `const searchParams = useSearchParams();`
-      // Let's rely on `useSearchParams` hook instance.
-      // But `isItemActive` is inside `AdminLayoutContent`?
-      // Yes. User's diff confirms `const searchParams = useSearchParams();` is present in AdminLayoutContent? 
-      // Actually, in the user provided diff:
-      // function AdminLayoutContent(...) {
-      //   const router = useRouter();
-      //   const [showUserMenu, setShowUserMenu] = useState(false);
-      // ...
-      // Implicitly `useSearchParams` might be missing in `AdminLayoutContent`?
-      // Ah, the user REMOVED `useSearchParams` from `AdminLayoutContent` in their diff? 
-      // No, wait. 
-      // line: `const searchParams = useSearchParams(); // Added hook` was in my previous code.
-      // In the user's LATEST diff (Step 48), `AdminLayoutContent` starts at line 494. 
-      // It has `const router = useRouter();` then `const [showUserMenu...]`.
-      // `useSearchParams` is NOT called in `AdminLayoutContent`.
-      // I MUST add `useSearchParams` hook to use it.
 
-      // I will skip using `searchParams` here and rely on `window.location.search`? No, that causes hydration issues.
-      // I must add `const searchParams = useSearchParams();` to `AdminLayoutContent`.
-
-      // Wait, I cannot add a hook easily with `replace_file_content` if I'm only targeting `isItemActive`.
-      // I have to replace `AdminLayoutContent` start or multiple parts.
-      // Or I can just check if `searchParams` is available in scope. 
-      // Since I see `useSearchParams` imported at top, I will assume I need to ADD it to the component body.
-      // But I am targeting `isItemActive` block.
-      // I will do two edits. One to add the hook, one to fix logic.
-      return false; // placeholder logic if hook missing
+      // Strict Check: All params in target must be present and equal in current searchParams
+      for (const [key, value] of Array.from(targetParams.entries())) {
+        if (searchParams.get(key) !== value) return false;
+      }
+      return true;
     }
 
     return true;
