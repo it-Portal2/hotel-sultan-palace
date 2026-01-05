@@ -1,40 +1,38 @@
 import React, { useState } from 'react';
-import { InventoryCategory } from '@/lib/firestoreService';
-import { createInventoryCategory, deleteInventoryCategory } from '@/lib/inventoryService';
-import { TrashIcon, PlusIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { Department } from '@/lib/firestoreService';
+import { createInventoryDepartment, deleteInventoryDepartment, seedDefaultDepartments } from '@/lib/inventoryService';
+import { TrashIcon, PlusIcon, BuildingOfficeIcon, BoltIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import Drawer from '@/components/ui/Drawer';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
-interface CategoryManagerProps {
-    categories: InventoryCategory[];
+interface DepartmentManagerProps {
+    departments: Department[];
     isOpen: boolean;
     onClose: () => void;
     onRefresh: () => void;
 }
 
-export default function CategoryManager({ categories, isOpen, onClose, onRefresh }: CategoryManagerProps) {
+export default function DepartmentManager({ departments, isOpen, onClose, onRefresh }: DepartmentManagerProps) {
     const { showToast } = useToast();
-    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newDepartmentName, setNewDepartmentName] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newCategoryName.trim()) return;
+        if (!newDepartmentName.trim()) return;
 
         setSubmitting(true);
         try {
-            // Create a slug-like name for internal use
-            const slug = newCategoryName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            await createInventoryCategory(slug, newCategoryName.trim());
-            showToast("Category added successfully", "success");
-            setNewCategoryName('');
+            await createInventoryDepartment(newDepartmentName.trim());
+            showToast("Department added successfully", "success");
+            setNewDepartmentName('');
             onRefresh();
         } catch (error) {
             console.error(error);
-            showToast("Failed to add category", "error");
+            showToast("Failed to add department", "error");
         } finally {
             setSubmitting(false);
         }
@@ -49,15 +47,29 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
 
         setDeletingId(confirmDeleteId);
         try {
-            await deleteInventoryCategory(confirmDeleteId);
-            showToast("Category deleted", "success");
+            await deleteInventoryDepartment(confirmDeleteId);
+            showToast("Department deleted", "success");
             onRefresh();
         } catch (error) {
             console.error(error);
-            showToast("Failed to delete category", "error");
+            showToast("Failed to delete department", "error");
         } finally {
             setDeletingId(null);
             setConfirmDeleteId(null);
+        }
+    };
+
+    const handleSeed = async () => {
+        setSubmitting(true);
+        try {
+            await seedDefaultDepartments();
+            showToast("Default departments seeded", "success");
+            onRefresh();
+        } catch (error) {
+            console.error(error);
+            showToast("Failed to seed departments", "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -65,7 +77,7 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
         <Drawer
             isOpen={isOpen}
             onClose={onClose}
-            title="Manage Categories"
+            title="Manage Departments"
             size="md"
             footer={
                 <div className="flex justify-end">
@@ -80,18 +92,18 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
         >
             <div className="space-y-6">
                 <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Add New Category</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Add New Department</h3>
                     <form onSubmit={handleAdd} className="flex gap-2">
                         <input
                             type="text"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="e.g. Seafood, Spirits, Linens..."
+                            value={newDepartmentName}
+                            onChange={(e) => setNewDepartmentName(e.target.value)}
+                            placeholder="e.g. Kitchen, Beach Bar, Maintenance..."
                             className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 transition-all shadow-sm"
                         />
                         <button
                             type="submit"
-                            disabled={submitting || !newCategoryName.trim()}
+                            disabled={submitting || !newDepartmentName.trim()}
                             className="bg-[#FF6A00] text-white px-4 py-2.5 rounded-lg hover:bg-[#FF6A00]/90 disabled:opacity-50 transition-colors flex items-center gap-2 font-bold text-sm shadow-sm"
                         >
                             <PlusIcon className="w-5 h-5" />
@@ -101,30 +113,41 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
 
                 <div>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
-                        <span>Existing Categories</span>
-                        <span className="bg-gray-100 text-gray-500 py-0.5 px-2 rounded-full text-[10px]">{categories.length}</span>
+                        <span>Existing Departments</span>
+                        <span className="bg-gray-100 text-gray-500 py-0.5 px-2 rounded-full text-[10px]">{departments.length}</span>
                     </h3>
 
                     <div className="space-y-2">
-                        {categories.length === 0 ? (
+                        {departments.length === 0 ? (
                             <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                <FolderIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-gray-400 text-sm">No categories found.</p>
+                                <BuildingOfficeIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-gray-400 text-sm mb-4">No departments found.</p>
+                                <button
+                                    onClick={handleSeed}
+                                    disabled={submitting}
+                                    className="px-4 py-2 bg-orange-50 text-[#FF6A00] font-bold rounded-lg text-xs hover:bg-orange-100 transition-colors flex items-center gap-2 mx-auto"
+                                >
+                                    <BoltIcon className="w-4 h-4" />
+                                    Seed Defaults
+                                </button>
                             </div>
                         ) : (
-                            categories.map(cat => (
-                                <div key={cat.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm group hover:border-[#FF6A00]/30 transition-all">
+                            departments.map(dept => (
+                                <div key={dept.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm group hover:border-[#FF6A00]/30 transition-all">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-orange-50 text-[#FF6A00] rounded-lg">
-                                            <FolderIcon className="w-4 h-4" />
+                                            <BuildingOfficeIcon className="w-4 h-4" />
                                         </div>
-                                        <span className="font-semibold text-gray-700">{cat.label}</span>
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-gray-700">{dept.name}</span>
+                                            <span className="text-[10px] text-gray-400 font-mono">ID: {dept.slug}</span>
+                                        </div>
                                     </div>
                                     <button
-                                        onClick={() => handleDelete(cat.id)}
-                                        disabled={deletingId === cat.id}
+                                        onClick={() => handleDelete(dept.id)}
+                                        disabled={deletingId === dept.id}
                                         className="text-gray-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100"
-                                        title="Delete category"
+                                        title="Delete department"
                                     >
                                         <TrashIcon className="w-4 h-4" />
                                     </button>
@@ -139,8 +162,8 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
                 isOpen={!!confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}
                 onConfirm={confirmDelete}
-                title="Delete Category"
-                message="Are you sure? Items in this category will not be deleted but may lose their category filter."
+                title="Delete Department"
+                message="Are you sure? Items in this department will not be deleted but may lose their department filter."
                 confirmText="Delete"
                 cancelText="Cancel"
             />

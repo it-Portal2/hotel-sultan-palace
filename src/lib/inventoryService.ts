@@ -23,7 +23,8 @@ import type {
     Recipe,
     FoodOrder,
     LowStockAlert,
-    InventoryCategory
+    InventoryCategory,
+    Department
 } from './firestoreService';
 
 // ==================== CATEGORIES ====================
@@ -55,6 +56,49 @@ export const deleteInventoryCategory = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'inventoryCategories', id));
 };
 
+// ==================== DEPARTMENTS ====================
+
+export const getInventoryDepartments = async (): Promise<Department[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'inventoryDepartments'), orderBy('name', 'asc'));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Department));
+    } catch (e) {
+        console.error("Error fetching departments:", e);
+        return [];
+    }
+};
+
+export const createInventoryDepartment = async (name: string): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const slug = name.toLowerCase().replace(/\s+/g, '_');
+    const docRef = await addDoc(collection(db, 'inventoryDepartments'), {
+        name,
+        slug,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const deleteInventoryDepartment = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'inventoryDepartments', id));
+};
+
+export const seedDefaultDepartments = async (): Promise<void> => {
+    const defaults = ["Kitchen", "Bar", "Housekeeping", "Front Office", "Maintenance", "Spa", "Other"];
+    const existing = await getInventoryDepartments();
+    const existingNames = new Set(existing.map(d => d.name));
+
+    const toCreate = defaults.filter(d => !existingNames.has(d));
+
+    if (toCreate.length === 0) return;
+
+    await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
+};
+
 // ==================== SUPPLIERS ====================
 
 export const getSuppliers = async (): Promise<Supplier[]> => {
@@ -72,6 +116,17 @@ export const createSupplier = async (data: Omit<Supplier, 'id' | 'createdAt' | '
         updatedAt: serverTimestamp()
     });
     return docRef.id;
+};
+
+export const updateSupplier = async (id: string, data: Partial<Supplier>): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'suppliers', id);
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+export const deleteSupplier = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'suppliers', id));
 };
 
 // ==================== PURCHASE ORDERS ====================
@@ -92,10 +147,10 @@ export const createPurchaseOrder = async (poData: Partial<PurchaseOrder>): Promi
     return docRef.id;
 };
 
-export const getPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+export const getAllPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
     if (!db) return [];
     try {
-        const q = query(collection(db, 'purchaseOrders'), where('status', 'not-in', ['received', 'cancelled']));
+        const q = query(collection(db, 'purchaseOrders'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
         return snap.docs.map(d => ({
             id: d.id,
@@ -108,6 +163,17 @@ export const getPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
         console.error("Error fetching pending POs:", e);
         return [];
     }
+};
+
+export const updatePurchaseOrder = async (id: string, data: Partial<PurchaseOrder>): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'purchaseOrders', id);
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+export const deletePurchaseOrder = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'purchaseOrders', id));
 };
 
 export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId: string, quantity: number }[], receivedBy: string) => {
@@ -185,10 +251,7 @@ export const getRecipeByMenuItem = async (menuItemId: string): Promise<Recipe | 
 
 // ==================== STOCK DEDUCTION (THE MAGIC) ====================
 
-/**
- * Call this when a Food Order is "Confirmed" or "Completed"
- * It finds recipes for all items and deducts inventory.
- */
+// Call this when a Food Order is "Confirmed" or "Completed"
 export const processOrderInventoryDeduction = async (orderId: string, performedBy: string) => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;
@@ -198,10 +261,15 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
     await runTransaction(firestore, async (transaction) => {
         const orderSnap = await transaction.get(orderRef);
         if (!orderSnap.exists()) throw new Error("Order not found");
-        const order = orderSnap.data() as FoodOrder;
+        const order = orderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
 
-        // Prevent double deduction
-        // In real app, check a flag like order.inventoryDeducted = true
+        // 1. Idempotency Check
+        if (order.inventoryDeducted) {
+            console.warn(`Inventory already deducted for Order ${orderId}`);
+            return; // Exit if already deducted
+        }
+
+        let hasDeductions = false;
 
         for (const item of order.items) {
             // Find Recipe
@@ -210,6 +278,7 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
 
             if (!recipeSnap.empty) {
                 const recipe = recipeSnap.docs[0].data() as Recipe;
+                hasDeductions = true;
 
                 // Deduct Ingredients
                 for (const ingredient of recipe.ingredients) {
@@ -218,7 +287,6 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                     if (invSnap.exists()) {
                         const currentInv = invSnap.data() as InventoryItem;
                         const deductionAmount = ingredient.quantity * item.quantity;
-
                         const newStock = (currentInv.currentStock || 0) - deductionAmount;
 
                         transaction.update(invRef, {
@@ -246,6 +314,12 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                 }
             }
         }
+
+        // 2. Mark as Deducted
+        transaction.update(orderRef, {
+            inventoryDeducted: true,
+            updatedAt: serverTimestamp()
+        });
     });
 };
 

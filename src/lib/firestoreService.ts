@@ -675,13 +675,26 @@ export interface InventoryCategory {
   createdAt: Date;
 }
 
+export type InventoryDepartment = string;
+
+export interface Department {
+  id: string;
+  name: string; // The display name, e.g. "Kitchen"
+  slug: string; // The functional ID, e.g. "kitchen"
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
+  department: InventoryDepartment; // Strict categorization
   category: string;
   subcategory?: string;
   sku: string;
-  unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'can' | 'gram' | 'ml' | 'other';
+  unit: 'kg' | 'liter' | 'piece' | 'bottle' | 'box' | 'pack' | 'can' | 'gram' | 'ml' | 'other'; // Consumption Unit
+  purchaseUnit?: string; // e.g. "Case", "Box"
+  conversionFactor?: number; // e.g. 24 (1 Case = 24 Pieces)
 
   // Stock Levels
   currentStock: number;

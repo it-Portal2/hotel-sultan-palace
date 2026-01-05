@@ -41,6 +41,8 @@ import {
   ClockIcon,
   TruckIcon,
   WrenchIcon,
+  ListBulletIcon,
+  ShoppingCartIcon,
 
   ClipboardDocumentCheckIcon,
   LockClosedIcon,
@@ -225,10 +227,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         name: 'Inventory',
         icon: ClipboardDocumentListIcon,
         items: [
-          { name: 'Inventory', href: '/admin/inventory', icon: ClipboardDocumentListIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'inventory' },
+          { name: 'Overview', href: '/admin/inventory?tab=overview', icon: Squares2X2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'inventory' },
+          { name: 'Items', href: '/admin/inventory?tab=items', icon: ListBulletIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'inventory' },
+          { name: 'Purchase Orders', href: '/admin/inventory?tab=purchase_orders', icon: ShoppingCartIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'inventory' },
+          { name: 'Suppliers', href: '/admin/inventory?tab=suppliers', icon: TruckIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'inventory' },
+          { name: 'Adjustments', href: '/admin/inventory?tab=adjustments', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'inventory' },
+          { name: 'Reports', href: '/admin/inventory?tab=reports', icon: ChartBarIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'inventory' },
         ],
         defaultOpen: true,
-        isSingleItem: true
+        isSingleItem: false
       },
 
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import { getFoodOrders, updateFoodOrder, FoodOrder } from '@/lib/firestoreService';
+import { processOrderInventoryDeduction } from '@/lib/inventoryService';
 import OrderStats from '@/components/admin/food-orders/OrderStats';
 import OrderFilters from '@/components/admin/food-orders/OrderFilters';
 import OrderTable from '@/components/admin/food-orders/OrderTable';
@@ -49,7 +50,19 @@ export default function AdminFoodOrdersPage() {
         setSelectedOrder({ ...selectedOrder, status });
       }
 
-      showToast(`Order status updated to ${status.replace('_', ' ')}`, 'success');
+
+      // TRIGGER INVENTORY DEDUCTION
+      if (status === 'delivered') {
+        try {
+          await processOrderInventoryDeduction(orderId, 'Admin User'); // In real app, pass current user name
+          showToast('Order delivered & Inventory deducted', 'success');
+        } catch (invError) {
+          console.error("Inventory Deduction Failed:", invError);
+          showToast('Order delivered but Inventory update failed', 'warning');
+        }
+      } else {
+        showToast(`Order status updated to ${status.replace('_', ' ')}`, 'success');
+      }
     } catch (error) {
       console.error('Error updating order status:', error);
       showToast('Failed to update order status', 'error');
