@@ -3615,15 +3615,28 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     const foodOrders = booking.foodOrderIds ? await Promise.all(
       booking.foodOrderIds.map(id => getFoodOrder(id))
     ) : [];
-    const validFoodOrders = foodOrders.filter(o => o !== null) as FoodOrder[];
+
+    // Filter out Cancelled, Voided, or already Paid orders
+    const validFoodOrders = (foodOrders.filter(o => o !== null) as FoodOrder[]).filter(o =>
+      o.status !== 'cancelled' &&
+      o.status !== 'voided' &&
+      o.paymentStatus !== 'paid'
+    );
+
     const foodCharges = validFoodOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
+    // Get guest services
     // Get guest services
     const services = booking.guestServiceIds ? await Promise.all(
       booking.guestServiceIds.map(id => getGuestService(id))
     ) : [];
-    const validServices = services.filter(s => s !== null) as GuestService[];
-    const serviceCharges = validServices.reduce((sum, service) => sum + (service.amount || 0), 0);
+
+    // Filter services: Exclude Cancelled services
+    const validServices = (services.filter(s => s !== null) as GuestService[]).filter(s =>
+      s.status !== 'cancelled'
+    );
+
+    const serviceCharges = validServices.reduce((sum, service) => sum + (service.totalAmount || service.amount || 0), 0);
 
     // Get folio transactions (real-time payments and charges)
     const transactions = await getFolioTransactions(bookingId);
