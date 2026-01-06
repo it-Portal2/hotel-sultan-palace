@@ -474,6 +474,7 @@ export interface GuestService {
   guestName: string;
   guestPhone: string;
   roomNumber?: string;
+  roomCategory?: string; // e.g., "Garden Suite", "Imperial Suite"
   // High-level category to match app design cards
   serviceCategory: 'laundry' | 'spa' | 'game' | 'other';
   // Detailed type within category
@@ -513,6 +514,7 @@ export interface GuestService {
   completedAt?: Date;
   notes?: string;
   requestSource?: 'mobile' | 'web';
+  transactionId?: string; // Linked financial transaction
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3355,20 +3357,58 @@ export const createGuestService = async (data: Omit<GuestService, 'id' | 'create
   }
 };
 
-export const updateGuestService = async (id: string, data: Partial<GuestService>): Promise<boolean> => {
+export const updateGuestService = async (id: string, data: Partial<GuestService> & { createTransaction?: boolean }): Promise<boolean> => {
   if (!db) return false;
   try {
+    const { createTransaction, ...updateData } = data;
+
     // Remove undefined values - Firestore doesn't accept undefined
     const cleanData: any = {};
-    Object.keys(data).forEach(key => {
-      const value = (data as any)[key];
+    Object.keys(updateData).forEach(key => {
+      const value = (updateData as any)[key];
       if (value !== undefined) {
         cleanData[key] = value;
       }
     });
 
-    const r = doc(db, 'guestServices', id);
-    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    const docRef = doc(db, 'guestServices', id);
+    await updateDoc(docRef, { ...cleanData, updatedAt: serverTimestamp() });
+
+    // Financial Integration Logic
+    if (createTransaction && updateData.status === 'completed') {
+      // 1. Fetch the full service record to get amount and bookingId
+      const serviceSnap = await getDoc(docRef);
+      if (!serviceSnap.exists()) return true;
+      const service = serviceSnap.data() as GuestService;
+
+      // 2. Validate essential data
+      // Use totalAmount if available, fallback to amount
+      const chargeAmount = service.totalAmount || service.amount;
+
+      if (!service.bookingId || !chargeAmount || service.transactionId) {
+        console.warn("Skipping auto-transaction: Missing bookingId, amount, or already charged.");
+        return true;
+      }
+
+      // 3. Create Transaction
+      const transactionId = await addTransaction({
+        bookingId: service.bookingId,
+        amount: chargeAmount,
+        type: 'charge',
+        category: service.serviceCategory || 'misc',
+        description: `Service Charge: ${service.serviceCategory.charAt(0).toUpperCase() + service.serviceCategory.slice(1)} - ${service.serviceType?.replace('_', ' ') || 'Service'}`,
+        date: new Date(),
+        reference: `SVC-${serviceSnap.id.slice(-6).toUpperCase()}`,
+        userId: 'System',
+        code: 'SERVICE_CHARGE'
+      });
+
+      // 4. Link transaction back to service
+      if (transactionId) {
+        await updateDoc(docRef, { transactionId });
+      }
+    }
+
     return true;
   } catch (e) {
     console.error('Error updating guest service:', e);

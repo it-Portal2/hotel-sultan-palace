@@ -2,24 +2,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
-import { getGuestServices, updateGuestService, GuestService } from '@/lib/firestoreService';
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
+import { getGuestServices, GuestService } from '@/lib/firestoreService';
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, WrenchScrewdriverIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import ServiceDetailDrawer from '@/components/admin/guest-services/ServiceDetailDrawer';
+import NewServiceDrawer from '@/components/admin/guest-services/NewServiceDrawer';
 
 export default function AdminGuestServicesPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
   const [services, setServices] = useState<GuestService[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  // Drawer States
+  const [selectedService, setSelectedService] = useState<GuestService | null>(null);
+  const [isNewServiceDrawerOpen, setIsNewServiceDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!db) {
@@ -75,22 +82,6 @@ export default function AdminGuestServicesPage() {
     }
   };
 
-  const handleStatusUpdate = async (serviceId: string, status: GuestService['status']) => {
-    if (isReadOnly) return;
-    try {
-      const updateData: any = { status };
-      if (status === 'completed') {
-        updateData.completedAt = new Date();
-      }
-      await updateGuestService(serviceId, updateData);
-      await loadServices();
-      showToast(`Service ${status} successfully!`, 'success');
-    } catch (error) {
-      console.error('Error updating service status:', error);
-      showToast('Failed to update service status', 'error');
-    }
-  };
-
   const filteredServices = useMemo(() => {
     return services.filter(service => {
       const matchesSearch =
@@ -115,16 +106,11 @@ export default function AdminGuestServicesPage() {
 
   const getStatusColor = (status: GuestService['status']) => {
     switch (status) {
-      case 'requested':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'in_progress':
-        return 'text-blue-600 bg-blue-50';
-      case 'completed':
-        return 'text-green-600 bg-green-50';
-      case 'cancelled':
-        return 'text-red-600 bg-red-50';
-      default:
-        return 'text-gray-600 bg-gray-50';
+      case 'requested': return 'text-yellow-700 bg-yellow-50 ring-yellow-600/20';
+      case 'in_progress': return 'text-blue-700 bg-blue-50 ring-blue-600/20';
+      case 'completed': return 'text-green-700 bg-green-50 ring-green-600/20';
+      case 'cancelled': return 'text-red-700 bg-red-50 ring-red-600/20';
+      default: return 'text-gray-600 bg-gray-50 ring-gray-500/10';
     }
   };
 
@@ -148,50 +134,32 @@ export default function AdminGuestServicesPage() {
     other: 'Other',
   };
 
-  const renderSchedule = (service: GuestService) => {
-    if (service.serviceCategory === 'laundry') {
-      const pickup =
-        service.pickupDate
-          ? `${new Date(service.pickupDate).toLocaleDateString()}${service.pickupTime ? `, ${service.pickupTime}` : ''}`
-          : 'Pickup not set';
-      const delivery =
-        service.deliveryDate
-          ? `${new Date(service.deliveryDate).toLocaleDateString()}${service.deliveryTime ? `, ${service.deliveryTime}` : ''}`
-          : 'Delivery not set';
+  const renderSummary = (service: GuestService) => {
+    if (service.serviceCategory === 'laundry' && service.items && service.items.length > 0) {
+      const itemCount = service.items.reduce((acc, item) => acc + item.qty, 0);
       return (
-        <div className="space-y-1">
-          <div className="text-xs text-gray-600">Pickup: {pickup}</div>
-          <div className="text-xs text-gray-600">Delivery: {delivery}</div>
+        <div>
+          <span className="font-medium text-gray-900 block">{itemCount} Laundry Items</span>
+          <span className="text-xs text-gray-500 truncate block max-w-xs">
+            {service.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
+          </span>
         </div>
       );
     }
     if (service.serviceCategory === 'spa') {
-      const appt =
-        service.appointmentDate
-          ? `${new Date(service.appointmentDate).toLocaleDateString()}${service.appointmentTime ? `, ${service.appointmentTime}` : ''}`
-          : 'Not scheduled';
       return (
-        <div className="space-y-1">
-          <div className="text-xs text-gray-600">
-            {service.spaType || 'SPA Session'} {service.durationMinutes ? `(${service.durationMinutes} mins)` : ''}
-          </div>
-          <div className="text-xs text-gray-600">When: {appt}</div>
-          {service.guestCount && (
-            <div className="text-xs text-gray-600">Guests: {service.guestCount}</div>
-          )}
+        <div>
+          <span className="font-medium text-purple-900 block">{service.spaType || 'Spa Session'}</span>
+          <span className="text-xs text-gray-500 block">{service.durationMinutes} mins • {service.guestCount} Guest(s)</span>
         </div>
       );
     }
-    return (
-      <div className="text-xs text-gray-600 truncate">
-        {service.description}
-      </div>
-    );
+    return <span className="text-gray-700 truncate block max-w-xs">{service.description}</span>;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
       </div>
     );
@@ -204,232 +172,177 @@ export default function AdminGuestServicesPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="h-full flex flex-col bg-gray-50/50">
 
+      {/* Header */}
+      <div className="px-8 py-6 border-b border-gray-200 bg-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Guest Services</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage guest requests & billing • {currentDate}</p>
+          </div>
 
-      {/* Simple Header with Inline Stats */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Service Requests</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage guest service requests • {currentDate}</p>
-        </div>
-
-        {/* Inline Stats */}
-        <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-            <span className="text-gray-600">Total:</span>
-            <span className="font-semibold text-gray-900">{stats.total}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-            <span className="text-gray-600">Requested:</span>
-            <span className="font-semibold text-gray-900">{stats.requested}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            <span className="text-gray-600">In Progress:</span>
-            <span className="font-semibold text-gray-900">{stats.inProgress}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-gray-600">Completed:</span>
-            <span className="font-semibold text-gray-900">{stats.completed}</span>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex flex-col items-center px-4 border-r border-gray-100">
+              <span className="text-xs text-gray-500 uppercase tracking-wider font-bold">New</span>
+              <span className="text-xl font-bold text-yellow-600">{stats.requested}</span>
+            </div>
+            <div className="flex flex-col items-center px-4 border-r border-gray-100">
+              <span className="text-xs text-gray-500 uppercase tracking-wider font-bold">Active</span>
+              <span className="text-xl font-bold text-blue-600">{stats.inProgress}</span>
+            </div>
+            <div className="flex flex-col items-center px-4">
+              <span className="text-xs text-gray-500 uppercase tracking-wider font-bold">Done</span>
+              <span className="text-xl font-bold text-green-600">{stats.completed}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Simple Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Toolbar */}
+      <div className="px-8 py-4 flex flex-col sm:flex-row gap-3 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex-1 relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by guest name, description, or room..."
+            placeholder="Search guest, room, or service..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border-gray-200  focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all"
           />
         </div>
         <div className="flex items-center gap-2">
           <FunnelIcon className="h-5 w-5 text-gray-400" />
-          <div className="flex gap-1 border-b-2 border-gray-200 pb-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'all'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setStatusFilter('requested')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'requested'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              Requested
-            </button>
-            <button
-              onClick={() => setStatusFilter('in_progress')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'in_progress'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              In Progress
-            </button>
-            <button
-              onClick={() => setStatusFilter('completed')}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${statusFilter === 'completed'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              Completed
-            </button>
-          </div>
-        </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none px-3 py-2 text-sm"
-        >
-          {Object.entries(serviceCategoryLabels).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-        <select
-          value={serviceTypeFilter}
-          onChange={(e) => setServiceTypeFilter(e.target.value)}
-          className="border-b-2 border-gray-200 focus:border-[#FF6A00] bg-transparent focus:outline-none px-3 py-2 text-sm"
-        >
-          {Object.entries(serviceTypeLabels).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-        {!isReadOnly && (
-          <Link
-            href="/admin/guest-services/new"
-            className="inline-flex items-center rounded-lg bg-[#FF6A00] px-4 py-2 text-sm font-medium text-white hover:bg-[#FF6A00]/90 transition-colors"
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className=" text-sm focus:ring-[#FF6A00] focus:border-[#FF6A00]"
           >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Request
-          </Link>
-        )}
+            {Object.entries(serviceCategoryLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className=" text-sm focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+          >
+            <option value="all">All Status</option>
+            <option value="requested">Requested</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+          {!isReadOnly && (
+            <button
+              onClick={() => setIsNewServiceDrawerOpen(true)}
+              className="inline-flex items-center  bg-[#FF6A00] px-4 py-2 text-sm font-bold text-white hover:bg-[#FF6A00]/90 transition-shadow shadow-sm hover:shadow-md ml-2"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              New Request
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Clean Table */}
-      {filteredServices.length === 0 ? (
-        <div className="text-center py-16">
-          <WrenchScrewdriverIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-          <p className="text-lg font-medium text-gray-600">No services found</p>
-          <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-8">
+        {filteredServices.length === 0 ? (
+          <div className="text-center py-20 bg-white border border-dashed border-gray-300">
+            <WrenchScrewdriverIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+            <p className="text-lg font-medium text-gray-600">No services found</p>
+            <p className="text-sm text-gray-500 mt-2">Try adjusting your filters</p>
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-200 overflow-hidden shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Guest</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Service Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Schedule</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Requested</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Guest & Room</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Service Detail</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Schedule</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={service.id}
+                    onClick={() => setSelectedService(service)}
+                    className="hover:bg-orange-50/50 transition-colors cursor-pointer group"
+                  >
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{service.guestName}</div>
-                      <div className="text-xs text-gray-500">{service.guestPhone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {service.roomNumber ? (
-                        <span className="text-sm text-gray-900">{service.roomNumber}</span>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 capitalize">{service.serviceCategory || 'other'}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 capitalize">{service.serviceType.replace('_', ' ')}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs">
-                        {renderSchedule(service)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {service.fastService && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">Fast</span>
-                        )}
-                        <div className="text-sm font-semibold text-gray-900">
-                          ${(service.totalAmount ?? service.amount ?? 0).toFixed(2)}
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                          {service.roomNumber ? service.roomNumber.replace(/\D/g, '').substring(0, 3) : '?'}
+                        </div>
+                        <div className="truncate">
+                          <div className="text-sm font-bold text-gray-900 truncate">{service.roomCategory || 'Room'}</div>
+                          <div className="text-xs text-gray-500">{service.roomNumber || 'N/A'} • {service.guestName}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">{service.serviceCategory}</span>
+                        {renderSummary(service)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-900 block">
+                        {service.pickupDate?.toLocaleDateString() || service.appointmentDate?.toLocaleDateString() || new Date(service.requestedAt).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs text-gray-500 block">
+                        {service.pickupTime || service.appointmentTime || new Date(service.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-bold text-gray-900">
+                        ₹{(service.totalAmount || service.amount || 0).toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(service.status)}`}>
                         {service.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(service.requestedAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(service.requestedAt).toLocaleTimeString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {!isReadOnly && (
-                        <div className="flex items-center gap-2">
-                          {service.status === 'requested' && (
-                            <button
-                              onClick={() => handleStatusUpdate(service.id, 'in_progress')}
-                              className="text-blue-600 hover:text-blue-800 font-medium border-b-2 border-transparent hover:border-blue-600 transition-colors"
-                            >
-                              Start
-                            </button>
-                          )}
-                          {service.status === 'in_progress' && (
-                            <button
-                              onClick={() => handleStatusUpdate(service.id, 'completed')}
-                              className="text-green-600 hover:text-green-800 font-medium border-b-2 border-transparent hover:border-green-600 transition-colors"
-                            >
-                              Complete
-                            </button>
-                          )}
-                          {service.status !== 'completed' && service.status !== 'cancelled' && (
-                            <button
-                              onClick={() => handleStatusUpdate(service.id, 'cancelled')}
-                              className="text-red-600 hover:text-red-800 font-medium border-b-2 border-transparent hover:border-red-600 transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </div>
-                      )}
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedService(service);
+                        }}
+                        className="text-gray-400 hover:text-[#FF6A00] transition-colors"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <ServiceDetailDrawer
+        open={!!selectedService}
+        service={selectedService}
+        onClose={() => setSelectedService(null)}
+        onUpdate={() => {
+          loadServices(); // Refresh list to show updated status
+        }}
+      />
+
+      <NewServiceDrawer
+        open={isNewServiceDrawerOpen}
+        onClose={() => setIsNewServiceDrawerOpen(false)}
+        onSuccess={() => {
+          loadServices();
+          setIsNewServiceDrawerOpen(false);
+        }}
+      />
     </div>
   );
 }
