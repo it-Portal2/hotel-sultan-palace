@@ -51,7 +51,8 @@ import {
   GlobeAltIcon,
   XCircleIcon,
   UserIcon,
-  ArchiveBoxIcon
+  ArchiveBoxIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { UserIcon as UserIconSolid } from '@heroicons/react/24/solid';
 import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
@@ -65,29 +66,13 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-// Portal Types
-type PortalType = 'selection' | 'operations' | 'kitchen' | 'website' | 'finance' | 'staff';
+import {
+  type PortalType,
+  type NavigationGroup,
+  type NavigationItem,
+  portalNavigationGroups
+} from '@/lib/adminNavigation';
 
-interface NavigationGroup {
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  items: NavigationItem[];
-  defaultOpen?: boolean;
-  isSingleItem?: boolean;
-}
-
-interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
-  section?: string; // RBAC Section Key
-  requiresFullAdmin?: boolean; // Legacy fallback
-  locked?: boolean;
-}
-
-// Helper to determine portal from path
 // Helper to determine portal from path
 const getPortalFromPath = (path: string): PortalType => {
   // Normalize path by removing trailing slash if present (except for root '/')
@@ -97,7 +82,7 @@ const getPortalFromPath = (path: string): PortalType => {
   if (normalizedPath.startsWith('/admin/kitchen') || normalizedPath.startsWith('/admin/food-orders') || normalizedPath.startsWith('/admin/menu') || normalizedPath.startsWith('/admin/fb-dashboard')) return 'kitchen';
   if (normalizedPath.startsWith('/admin/gallery') || normalizedPath.startsWith('/admin/story-pictures') || normalizedPath.startsWith('/admin/testimonials') || normalizedPath.startsWith('/admin/offers') || normalizedPath.startsWith('/admin/excursions') || normalizedPath.startsWith('/admin/contacts') || normalizedPath.startsWith('/admin/reputation-management') || normalizedPath.startsWith('/admin/booking-enquiries')) return 'website';
   if (normalizedPath.startsWith('/admin/accounts')) return 'finance';
-  if (normalizedPath.startsWith('/admin/staff') || normalizedPath.startsWith('/admin/admin-users')) return 'staff';
+  if (normalizedPath.startsWith('/admin/staff') || normalizedPath.startsWith('/admin/users') || normalizedPath.startsWith('/admin/roles')) return 'staff';
   return 'operations'; // Default to operations for dashboard, bookings, rooms, etc.
 };
 
@@ -114,218 +99,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [isRoleLoading]);
 
   const currentPortal = useMemo(() => getPortalFromPath(pathname), [pathname]);
-
-  // Define Navigation Groups per Portal
-  const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
-    selection: [], // No sidebar for selection
-    operations: [
-      {
-        name: 'Dashboard',
-        icon: Squares2X2Icon,
-        items: [
-          { name: 'Front Desk', href: '/admin/dashboard', icon: HomeIcon, color: 'text-orange-500', bgColor: 'bg-orange-50', section: 'dashboard' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
-      {
-        name: 'Front Office',
-        icon: ClipboardDocumentListIcon,
-        items: [
-          { name: 'All Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'reservations' },
-          { name: 'Room Availability', href: '/admin/room-availability', icon: CalendarDaysIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'reservations' },
-          { name: 'Room View', href: '/admin/front-desk?tab=room_view', icon: RectangleStackIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'reservations' },
-          { name: 'Unsettled Folios', href: '/admin/unsettled-folios', icon: ReceiptPercentIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'unsettled_folios' },
-          { name: 'Insert Transaction', href: '/admin/insert-transaction', icon: PlusIcon, color: 'text-emerald-600', bgColor: 'bg-emerald-50', section: 'transactions' },
-          { name: 'Guest Database', href: '/admin/guest-database', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'guest_database' },
-          { name: 'Lost & Found', href: '/admin/lost-and-found', icon: ArchiveBoxIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'lost_found' },
-        ],
-        defaultOpen: true
-      },
-
-      {
-        name: 'Rooms',
-        icon: BuildingOfficeIcon,
-        items: [
-          { name: 'Room List', href: '/admin/rooms', icon: BuildingOfficeIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'rooms' },
-          { name: 'Add-ons', href: '/admin/addons', icon: PlusIcon, color: 'text-green-500', bgColor: 'bg-green-50', section: 'rooms' },
-          { name: 'Room Types', href: '/admin/room-types', icon: BuildingOfficeIcon, color: 'text-emerald-500', bgColor: 'bg-emerald-50', section: 'rooms' },
-        ],
-        defaultOpen: true
-      },
-      {
-        name: 'Cashiering',
-        icon: CurrencyDollarIcon,
-        items: [
-          { name: 'Company Database', href: '/admin/cashiering?tab=companies', icon: BuildingOffice2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'companies' },
-          { name: 'Sales Persons', href: '/admin/cashiering?tab=sales-persons', icon: UserIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'sales_persons' },
-          { name: 'Travel Agents', href: '/admin/cashiering?tab=travel-agents', icon: UserGroupIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'travel_agents' },
-          { name: 'POS', href: '/admin/cashiering?tab=pos', icon: CreditCardIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'companies' }, // Assuming 'companies' section access or appropriate existing one
-        ],
-        defaultOpen: true
-      },
-
-
-      {
-        name: 'Reports',
-        icon: ChartBarIcon,
-        items: [
-          { name: 'Analytics', href: '/admin/reports', icon: ChartBarIcon, color: 'text-pink-600', bgColor: 'bg-pink-50', section: 'analytics' },
-          { name: 'Arrival List', href: '/admin/reports/arrival-list', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'arrival_list' },
-          { name: 'Cancelled Reservations', href: '/admin/reports/cancelled', icon: XCircleIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'cancelled' },
-          { name: 'No Show Reservations', href: '/admin/reports/no-show', icon: userSlashIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'no_show' },
-        ],
-        defaultOpen: true
-      },
-
-
-      {
-        name: 'Housekeeping',
-        icon: CleaningIcon,
-        items: [
-          { name: 'House Status', href: '/admin/housekeeping?tab=house-status', icon: HomeStatusIcon, color: 'text-teal-600', bgColor: 'bg-teal-50', section: 'housekeeping' },
-          { name: 'Maintenance Block', href: '/admin/housekeeping?tab=maintenance-block', icon: WrenchIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'housekeeping' },
-          { name: 'Work Order', href: '/admin/housekeeping?tab=work-order', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'housekeeping' },
-        ],
-        defaultOpen: true,
-        isSingleItem: false
-      },
-
-      {
-        name: 'Net Locks',
-        icon: LockClosedIcon,
-        items: [
-          { name: 'Net Locks', href: '/admin/cashiering/net-locks', icon: LockClosedIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', section: 'net_locks' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
-
-      {
-        name: 'Night Audit',
-        icon: ClockIcon,
-        items: [
-          { name: 'Night Audit', href: '/admin/front-desk/night-audit', icon: ClockIcon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'night_audit' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
-
-      {
-        name: 'Guest Services',
-        icon: WrenchScrewdriverIcon,
-        items: [
-          { name: 'Guest Services', href: '/admin/guest-services', icon: WrenchScrewdriverIcon, color: 'text-violet-600', bgColor: 'bg-violet-50', section: 'guest_services' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
-
-
-
-      {
-        name: 'Inventory',
-        icon: ClipboardDocumentListIcon,
-        items: [
-          { name: 'Overview', href: '/admin/inventory?tab=overview', icon: Squares2X2Icon, color: 'text-indigo-600', bgColor: 'bg-indigo-50', section: 'inventory' },
-          { name: 'Items', href: '/admin/inventory?tab=items', icon: ListBulletIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'inventory' },
-          { name: 'Purchase Orders', href: '/admin/inventory?tab=purchase_orders', icon: ShoppingCartIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'inventory' },
-          { name: 'Suppliers', href: '/admin/inventory?tab=suppliers', icon: TruckIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'inventory' },
-          { name: 'Adjustments', href: '/admin/inventory?tab=adjustments', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'inventory' },
-          { name: 'Reports', href: '/admin/inventory?tab=reports', icon: ChartBarIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'inventory' },
-        ],
-        defaultOpen: true,
-        isSingleItem: false
-      },
-
-
-    ],
-    kitchen: [
-      {
-        name: 'Kitchen',
-        icon: BeakerIcon,
-        items: [
-          { name: 'Dashboard', href: '/admin/kitchen', icon: HomeIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'kitchen_dashboard' },
-          { name: 'Active Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'kitchen_dashboard' },
-          { name: 'Order History', href: '/admin/kitchen/history', icon: ClipboardDocumentListIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'kitchen_dashboard' },
-        ],
-        defaultOpen: true
-      },
-      {
-        name: 'Menu',
-        icon: ClipboardDocumentListIcon,
-        items: [
-          { name: 'Menu Items', href: '/admin/menu', icon: BeakerIcon, color: 'text-rose-500', bgColor: 'bg-rose-50', section: 'menu_management' },
-          { name: 'Recipes / Costing', href: '/admin/menu/recipes', icon: BeakerIcon, color: 'text-purple-500', bgColor: 'bg-purple-50', section: 'menu_management' },
-        ],
-        defaultOpen: true,
-        isSingleItem: false // changed to false to show both
-      },
-      {
-        name: 'Analytics',
-        icon: ChartBarIcon,
-        items: [
-          { name: 'F&B Stats', href: '/admin/fb-dashboard', icon: ChartBarIcon, color: 'text-teal-500', bgColor: 'bg-teal-50', section: 'analytics' },
-        ],
-        defaultOpen: true,
-        isSingleItem: true
-      },
-    ],
-    website: [
-
-      {
-        name: 'Content',
-        icon: PhotoIcon,
-        items: [
-          { name: 'Gallery', href: '/admin/gallery', icon: RectangleStackIcon, color: 'text-cyan-500', bgColor: 'bg-cyan-50', section: 'content' },
-          { name: 'Story Pictures', href: '/admin/story-pictures', icon: FilmIcon, color: 'text-amber-500', bgColor: 'bg-amber-50', section: 'content' },
-          { name: 'Excursions', href: '/admin/excursions', icon: MapPinIcon, color: 'text-yellow-500', bgColor: 'bg-yellow-50', section: 'content' },
-        ],
-        defaultOpen: true
-      },
-      {
-        name: 'Marketing',
-        icon: TagIcon,
-        items: [
-          { name: 'Offers', href: '/admin/offers', icon: TagIcon, color: 'text-red-500', bgColor: 'bg-red-50', section: 'marketing' },
-          { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon, color: 'text-pink-500', bgColor: 'bg-pink-50', section: 'marketing' },
-          { name: 'Reputation', href: '/admin/reputation-management', icon: StarIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'marketing' },
-        ],
-        defaultOpen: true
-      },
-      {
-        name: 'Inquiries',
-        icon: EnvelopeIcon,
-        items: [
-          { name: 'Contact Msgs', href: '/admin/contacts', icon: EnvelopeIcon, color: 'text-indigo-500', bgColor: 'bg-indigo-50', section: 'inquiries' },
-          { name: 'Booking Enquiries', href: '/admin/booking-enquiries', icon: PhoneIcon, color: 'text-teal-500', bgColor: 'bg-teal-50', section: 'inquiries' },
-        ],
-        defaultOpen: true
-      },
-    ],
-    finance: [
-      {
-        name: 'Finance',
-        icon: CurrencyDollarIcon,
-        items: [
-          { name: 'Accounts Overview', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'finance_ops' },
-          { name: 'Transactions', href: '/admin/accounts?tab=transactions', icon: ClipboardDocumentListIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'finance_ops' },
-        ],
-        defaultOpen: true
-      },
-    ],
-    staff: [
-      {
-        name: 'Staff',
-        icon: UserGroupIcon,
-        items: [
-          { name: 'Directory', href: '/admin/staff', icon: UserGroupIcon, color: 'text-cyan-600', bgColor: 'bg-cyan-50', section: 'directory' },
-          { name: 'Admin Users', href: '/admin/admin-users', icon: KeyIcon, color: 'text-gray-600', bgColor: 'bg-gray-50', section: 'admin_users' },
-        ],
-        defaultOpen: true
-      },
-    ],
-  };
 
 
 
@@ -845,19 +618,7 @@ function AdminLayoutContent({
                             )}
                           </div>
 
-                          {isFullAdmin && (
-                            <>
-                              <Link
-                                href="/admin/admin-users"
-                                onClick={() => setShowUserMenu(false)}
-                                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                              >
-                                <UserGroupIcon className="h-4 w-4" />
-                                Manage Admin Users
-                              </Link>
-                              <div className="border-t border-gray-200 my-1"></div>
-                            </>
-                          )}
+
 
                           <button
                             onClick={async () => {

@@ -54,14 +54,16 @@ export interface RBACPermissions {
   [key: string]: any;
 }
 
-export type AdminRoleType = 'super_admin' | 'manager' | 'receptionist' | 'chef' | 'housekeeper' | 'auditor' | 'accountant' | 'custom';
+// Role identifiers can be system defaults or custom generated IDs
+export type AdminRoleType = string; // Was: 'super_admin' | 'manager' | ... | 'custom';
 
 export interface AdminUser {
   id: string;
   email: string;
   username: string;
   employeeId: string; // Unique Link to Staff
-  role: AdminRoleType;
+  role: AdminRoleType; // Primary/Display Role
+  roles?: string[]; // Multiple Roles
   name: string;
 
   // Granular Permissions
@@ -275,11 +277,12 @@ export async function getAllAdminUsers(): Promise<AdminUser[]> {
 export async function createSystemUser(
   userData: {
     email: string;
-    password?: string; // Optional if only creating DB record (legacy), but required for new flow
+    password?: string;
     name: string;
     username: string;
     employeeId: string;
     role: AdminRoleType;
+    roles?: string[]; // New
     permissions?: RBACPermissions;
   },
   creatorEmail: string
@@ -330,6 +333,7 @@ export async function createSystemUser(
       employeeId: userData.employeeId,
       name: userData.name,
       role: userData.role,
+      roles: userData.roles || [userData.role],
       permissions: finalPermissions,
       allowedPortals: getSafeAllowedPortals(finalPermissions),
       isActive: true,
@@ -349,13 +353,15 @@ export async function createSystemUser(
 export async function updateSystemUserPermissions(
   userId: string,
   role: AdminRoleType,
-  permissions: RBACPermissions
+  permissions: RBACPermissions,
+  roles?: string[]
 ): Promise<boolean> {
   if (!userId || !db) return false;
   try {
     const ref = doc(db, 'adminUsers', userId);
     await updateDoc(ref, {
       role,
+      roles: roles || [role],
       permissions,
       allowedPortals: getSafeAllowedPortals(permissions),
       updatedAt: serverTimestamp()

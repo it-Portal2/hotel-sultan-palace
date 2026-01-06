@@ -21,7 +21,7 @@ import { FaBed, FaUserCheck, FaUserSlash, FaSmoking, FaSmokingBan, FaBroom, FaSp
 import LegendPopover from '@/components/admin/stayview/LegendPopover';
 import RegistrationCardModal from '@/components/admin/stayview/RegistrationCardModal';
 import PremiumLoader from '@/components/ui/PremiumLoader';
-
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
 
@@ -133,6 +133,7 @@ import BlockRoomModal, { BlockRoomData } from '@/components/admin/stayview/Block
 
 export default function RoomAvailabilityPage() {
   const { showToast } = useToast();
+  const { hasSectionAccess } = useAdminRole();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -1012,16 +1013,18 @@ export default function RoomAvailabilityPage() {
 
           <LegendPopover />
 
-          <button
-            onClick={() => {
-              setAssignRoomView('calendar');
-              setShowAssignRoom(true);
-            }}
-            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
-          >
-            <UserIcon className="h-4 w-4" />
-            Assign Room
-          </button>
+          {hasSectionAccess('front_office', 'reservations', 'read_write') && (
+            <button
+              onClick={() => {
+                setAssignRoomView('calendar');
+                setShowAssignRoom(true);
+              }}
+              className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
+            >
+              <UserIcon className="h-4 w-4" />
+              Assign Room
+            </button>
+          )}
         </div>
       </div>
 
@@ -1675,34 +1678,38 @@ export default function RoomAvailabilityPage() {
 
               {/* Actions */}
               <div className="flex flex-col gap-1.5 pt-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnblockRequest(hoveredBooking);
-                    setHoveredBooking(null); // Close tooltip
-                  }}
-                  className="text-gray-500 hover:text-red-600 hover:bg-red-50 py-1 px-2 rounded text-xs font-medium transition-colors text-center"
-                >
-                  Unblock Room
-                </button>
+                {hasSectionAccess('front_office', 'reservations', 'read_write') && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUnblockRequest(hoveredBooking);
+                      setHoveredBooking(null); // Close tooltip
+                    }}
+                    className="text-gray-500 hover:text-red-600 hover:bg-red-50 py-1 px-2 rounded text-xs font-medium transition-colors text-center"
+                  >
+                    Unblock Room
+                  </button>
+                )}
                 <div className="h-px bg-gray-100 w-full" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingBookingId(hoveredBooking.id);
-                    setBlockRoomInitialData({
-                      ranges: [{ startDate: hoveredBooking.checkIn, endDate: hoveredBooking.checkOut }],
-                      suiteType: hoveredBooking.rooms[0].suiteType,
-                      selectedRooms: [hoveredBooking.rooms[0].allocatedRoomType || ''],
-                      reason: hoveredBooking.notes
-                    });
-                    setShowBlockRoomModal(true);
-                    setHoveredBooking(null); // Close tooltip
-                  }}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-1 px-2 rounded text-xs font-medium transition-colors text-center"
-                >
-                  Edit Block Room
-                </button>
+                {hasSectionAccess('front_office', 'reservations', 'read_write') && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingBookingId(hoveredBooking.id);
+                      setBlockRoomInitialData({
+                        ranges: [{ startDate: hoveredBooking.checkIn, endDate: hoveredBooking.checkOut }],
+                        suiteType: hoveredBooking.rooms[0].suiteType,
+                        selectedRooms: [hoveredBooking.rooms[0].allocatedRoomType || ''],
+                        reason: hoveredBooking.notes
+                      });
+                      setShowBlockRoomModal(true);
+                      setHoveredBooking(null); // Close tooltip
+                    }}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-1 px-2 rounded text-xs font-medium transition-colors text-center"
+                  >
+                    Edit Block Room
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1772,56 +1779,60 @@ export default function RoomAvailabilityPage() {
 
               {/* Actions */}
               <div className="px-5 pb-5 space-y-3">
-                <button
-                  onClick={() => {
-                    const d = new Date(selectedCell.date);
-                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                    const startStr = d.toISOString().split('T')[0];
+                {hasSectionAccess('front_office', 'reservations', 'read_write') && (
+                  <button
+                    onClick={() => {
+                      const d = new Date(selectedCell.date);
+                      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                      const startStr = d.toISOString().split('T')[0];
 
-                    const endDate = new Date(selectedCell.date);
-                    endDate.setDate(endDate.getDate() + 1);
-                    endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
-                    const endStr = endDate.toISOString().split('T')[0];
+                      const endDate = new Date(selectedCell.date);
+                      endDate.setDate(endDate.getDate() + 1);
+                      endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+                      const endStr = endDate.toISOString().split('T')[0];
 
-                    setAssignRoomForm(prev => ({
-                      ...prev,
-                      startDate: startStr,
-                      endDate: endStr,
-                      suiteType: selectedCell.suiteType,
-                      roomName: selectedCell.roomName,
-                      isWalkIn: true
-                    }));
-                    setShowCellPopup(false);
-                    setSelectedCell(null);
-                    setAssignRoomView('form');
-                    setShowAssignRoom(true);
-                  }}
-                  className="w-full text-center py-2.5 text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 rounded border border-gray-200 transition-all text-sm font-medium"
-                >
-                  Walk In / Reservation
-                </button>
+                      setAssignRoomForm(prev => ({
+                        ...prev,
+                        startDate: startStr,
+                        endDate: endStr,
+                        suiteType: selectedCell.suiteType,
+                        roomName: selectedCell.roomName,
+                        isWalkIn: true
+                      }));
+                      setShowCellPopup(false);
+                      setSelectedCell(null);
+                      setAssignRoomView('form');
+                      setShowAssignRoom(true);
+                    }}
+                    className="w-full text-center py-2.5 text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 rounded border border-gray-200 transition-all text-sm font-medium"
+                  >
+                    Walk In / Reservation
+                  </button>
+                )}
 
-                <button
-                  onClick={() => {
-                    const startStr = selectedCell.date.toISOString().split('T')[0];
-                    const endDate = new Date(selectedCell.date);
-                    endDate.setDate(endDate.getDate() + 1);
-                    const endStr = endDate.toISOString().split('T')[0];
+                {hasSectionAccess('front_office', 'reservations', 'read_write') && (
+                  <button
+                    onClick={() => {
+                      const startStr = selectedCell.date.toISOString().split('T')[0];
+                      const endDate = new Date(selectedCell.date);
+                      endDate.setDate(endDate.getDate() + 1);
+                      const endStr = endDate.toISOString().split('T')[0];
 
-                    setBlockRoomInitialData({
-                      ranges: [{ startDate: startStr, endDate: endStr }],
-                      suiteType: selectedCell.suiteType,
-                      selectedRooms: [selectedCell.roomName],
-                      reason: ''
-                    });
-                    setShowCellPopup(false);
-                    setSelectedCell(null);
-                    setShowBlockRoomModal(true);
-                  }}
-                  className="w-full text-center py-2.5 text-gray-700   bg-white hover:bg-blue-50 hover:border-blue-200 rounded border border-gray-200 transition-all text-sm font-medium"
-                >
-                  Block Room
-                </button>
+                      setBlockRoomInitialData({
+                        ranges: [{ startDate: startStr, endDate: endStr }],
+                        suiteType: selectedCell.suiteType,
+                        selectedRooms: [selectedCell.roomName],
+                        reason: ''
+                      });
+                      setShowCellPopup(false);
+                      setSelectedCell(null);
+                      setShowBlockRoomModal(true);
+                    }}
+                    className="w-full text-center py-2.5 text-gray-700   bg-white hover:bg-blue-50 hover:border-blue-200 rounded border border-gray-200 transition-all text-sm font-medium"
+                  >
+                    Block Room
+                  </button>
+                )}
               </div>
             </div>
           </>

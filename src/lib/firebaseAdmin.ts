@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getAuth } from 'firebase-admin/auth';
 
 let adminApp: App | null = null;
 
@@ -19,7 +20,7 @@ export const getAdminApp = (): App => {
 
   // Initialize with service account JSON from environment variable
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  
+
   if (!serviceAccountJson) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set');
   }
@@ -27,7 +28,7 @@ export const getAdminApp = (): App => {
   try {
     // Parse the JSON string from environment variable
     const serviceAccount = JSON.parse(serviceAccountJson);
-    
+
     adminApp = initializeApp({
       credential: cert(serviceAccount),
       projectId: serviceAccount.project_id,
@@ -50,5 +51,11 @@ export const getAdminFirestore = () => {
 export const getAdminMessaging = () => {
   const app = getAdminApp();
   return getMessaging(app);
+};
+
+// Get Auth instance
+export const getAdminAuth = () => {
+  const app = getAdminApp();
+  return getAuth(app);
 };
 

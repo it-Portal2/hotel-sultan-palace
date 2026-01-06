@@ -77,15 +77,15 @@ export default function OurStoriesPage() {
 
     const setupObservers = () => {
       const sectionKeys = ['testimonials-section', 'media-section'];
-      
+
       sectionKeys.forEach((key) => {
         const element = sectionRefs.current[key];
         if (element && !observedElements.has(element)) {
           observedElements.add(element);
-          
+
           const rect = element.getBoundingClientRect();
           const isVisibleNow = rect.top < window.innerHeight && rect.bottom > 0;
-          
+
           if (isVisibleNow) {
             setTimeout(() => {
               setSectionVisible((prev) => ({ ...prev, [key]: true }));
@@ -189,7 +189,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
   }
 
   const testimonialIndex = currentTestimonial % effectiveStories.length;
-  
+
   const nextTestimonial = () => {
     setCurrentTestimonial((prev) => (prev + 1) % totalPages);
   };
@@ -200,32 +200,30 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
 
   const renderPagination = () => {
     const visiblePages = [0, 1, 2, 3, 4];
-    
+
     return (
       <div className="flex items-center space-x-1 md:space-x-2 text-[16px] md:text-[20px] font-normal leading-[1.35] tracking-[0.05em] md:tracking-[0.1em] h-full font-playpen-sans flex-shrink-0">
-            {visiblePages.map((index) => (
-                <button
-                    key={index}
-                    onClick={() => setCurrentTestimonial(index)}
-            className={`px-1 ${
-              currentTestimonial === index ? 'text-[#000000] font-bold' : 'text-[#000000] font-normal'
-                    }`}
-                >
-                    {index + 1}
-                </button>
-            ))}
-            
-        <span className="text-[#000000] px-1">...</span> 
-            
-            <button
-                onClick={() => setCurrentTestimonial(totalPages - 1)}
-          className={`px-1 ${
-            currentTestimonial === totalPages - 1 ? 'text-[#000000] font-bold' : 'text-[#000000] font-normal'
-                }`}
-            >
-                {totalPages}
-            </button>
-        </div>
+        {visiblePages.map((index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentTestimonial(index)}
+            className={`px-1 ${currentTestimonial === index ? 'text-[#000000] font-bold' : 'text-[#000000] font-normal'
+              }`}
+          >
+            {index + 1}
+          </button>
+        ))}
+
+        <span className="text-[#000000] px-1">...</span>
+
+        <button
+          onClick={() => setCurrentTestimonial(totalPages - 1)}
+          className={`px-1 ${currentTestimonial === totalPages - 1 ? 'text-[#000000] font-bold' : 'text-[#000000] font-normal'
+            }`}
+        >
+          {totalPages}
+        </button>
+      </div>
     );
   };
 
@@ -245,22 +243,22 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
           className="object-cover"
           style={{ opacity: 1 }}
         />
-        
-        <div 
+
+        <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background: "linear-gradient(180deg, rgba(255, 255, 255, 0) 71%, rgba(255, 255, 255, 0.67) 85%, rgba(255, 255, 255, 1) 98%)"
           }}
         />
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background: "linear-gradient(0deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 1) 100%)"
           }}
         />
-       
+
         <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-4 sm:px-6 md:px-8 w-full ">
-          <h1 
+          <h1
             className="relative z-10 text-[#FFFFFF] text-[32px] sm:text-[42px] md:text-[56px] lg:text-[72px] xl:text-[96px] font-moon-dance leading-[1.2] tracking-[0.05em] text-center w-full max-w-full px-2"
             style={{
               textShadow: '0px 2px 8px rgba(0, 0, 0, 0.9), 0px 4px 10px rgba(0, 0, 0, 0.7), 0px 8px 20px rgba(0, 0, 0, 0.5), 0px 0px 30px rgba(0, 0, 0, 0.3)',
@@ -272,9 +270,8 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               {"Voices from Our Guests".split(" ").map((word, index) => (
                 <span
                   key={index}
-                  className={`inline-block hero-word ${
-                    isVisible ? "hero-word-visible" : ""
-                  }`}
+                  className={`inline-block hero-word ${isVisible ? "hero-word-visible" : ""
+                    }`}
                   style={{
                     animationDelay: `${index * 0.15}s`,
                   }}
@@ -301,7 +298,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
 
       <div ref={(el) => { if (el) sectionRefs.current['testimonials-section'] = el; }} className={`bg-white py-12 md:py-16 lg:py-20 w-full overflow-x-hidden stories-testimonials-section ${sectionVisible['testimonials-section'] ? 'stories-testimonials-section-visible' : ''}`}>
         <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
-          <div 
+          <div
             ref={testimonialCardRef}
             className="bg-white rounded-lg w-full p-8 md:p-12 lg:p-16 stories-testimonial-card"
             style={{
@@ -309,56 +306,56 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-              
+
               <div className="flex flex-col justify-center order-2 lg:order-1 group stories-testimonial-content">
                 <div className="space-y-[64px] mb-[52px]">
                   <h3 className="text-[#000000] text-[28px] md:text-[30px] lg:text-[32px] font-moon-dance leading-[0.84375] tracking-[0.1em] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#FF6A00] stories-testimonial-title">
-                  {effectiveStories[testimonialIndex]?.title || 'Where I Found My Calm Again'}
-                </h3>
-                
+                    {effectiveStories[testimonialIndex]?.title || 'Where I Found My Calm Again'}
+                  </h3>
+
                   <div className="space-y-[32px] stories-testimonial-text">
                     <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] leading-[1.35] font-moon-dance tracking-[0.05em] whitespace-pre-line transition-all duration-300 group-hover:translate-x-1">
                       {effectiveStories[testimonialIndex]?.text || defaultText}
                     </p>
                   </div>
                 </div>
-                
+
                 <p className="text-[#000000] text-[18px] md:text-[19px] lg:text-[20px] font-moon-dance leading-[1.35] tracking-[0.1em] mb-8 lg:mb-0 transition-all duration-300 group-hover:translate-x-2 group-hover:text-[#BE8C53] stories-testimonial-author">
                   {[effectiveStories[testimonialIndex]?.author, effectiveStories[testimonialIndex]?.location].filter(Boolean).join(', ')}
                 </p>
-         
+
                 <div className="flex items-center gap-4 md:gap-[97px] justify-start mt-8 w-full overflow-x-auto pb-2 stories-testimonial-pagination">
-                <button 
-                  onClick={prevTestimonial}
+                  <button
+                    onClick={prevTestimonial}
                     className="w-[38px] h-[37px] rounded-[43px] bg-[#FF6A00] text-white hover:opacity-90 hover:scale-110 transition-all duration-300 flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg"
-                  aria-label="Previous testimonial"
-                >
+                    aria-label="Previous testimonial"
+                  >
                     <GrLinkPrevious className="w-4 h-4 transition-transform duration-300 hover:-translate-x-1" />
-                </button>
-                
+                  </button>
+
                   <div className="flex items-center h-[37px] flex-shrink-0">
                     {renderPagination()}
-                </div>
-                
-                <button 
-                  onClick={nextTestimonial}
+                  </div>
+
+                  <button
+                    onClick={nextTestimonial}
                     className="w-[38px] h-[37px] rounded-[43px] bg-[#FF6A00] text-white hover:opacity-90 hover:scale-110 transition-all duration-300 flex items-center justify-center flex-shrink-0 shadow-md hover:shadow-lg"
-                  aria-label="Next testimonial"
-                >
+                    aria-label="Next testimonial"
+                  >
                     <GrLinkNext className="w-4 h-4 transition-transform duration-300 hover:translate-x-1" />
-                </button>
+                  </button>
+                </div>
               </div>
-            </div>
 
               <div className="relative h-[400px] md:h-[550px] lg:h-[698px] w-full order-1 lg:order-2 group/image overflow-hidden rounded stories-testimonial-image">
-              <Image
-                src={effectiveStories[testimonialIndex]?.imageUrl || '/our-story/story1.png'} 
-                alt={effectiveStories[testimonialIndex]?.alt || 'Hotel guest and staff'}
-                fill
-                quality={85}
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                <Image
+                  src={effectiveStories[testimonialIndex]?.imageUrl || '/our-story/story1.png'}
+                  alt={effectiveStories[testimonialIndex]?.alt || 'Hotel guest and staff'}
+                  fill
+                  quality={85}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover rounded transition-transform duration-700 ease-out group-hover/image:scale-110"
-              />
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-500 rounded"></div>
               </div>
             </div>
@@ -367,7 +364,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
       </div>
 
       <div ref={(el) => { if (el) sectionRefs.current['media-section'] = el; }} className={`relative w-full overflow-x-hidden stories-media-section ${sectionVisible['media-section'] ? 'stories-media-section-visible' : ''}`}>
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: 'url(/our-story/marissa.png)',
@@ -375,13 +372,13 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
             backgroundPosition: 'center'
           }}
         />
-        
+
         <div className="relative z-10 pt-16 md:pt-20 pb-8 md:pb-12 w-full">
           <div className="mx-auto px-4 md:px-4 lg:px-6 w-full max-w-full" style={{ maxWidth: '1500px' }}>
             <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-start justify-center w-full">
-              
+
               <div className="w-full md:w-1/2 flex flex-col">
-                <div 
+                <div
                   className="media-item relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[700px] xl:h-[965px] w-full flex-shrink-0 group cursor-pointer overflow-hidden rounded stories-media-left bg-black"
                 >
                   <video
@@ -404,12 +401,12 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
                       {v1Playing ? (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
-                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="6" y="5" width="4" height="14" fill="#242424" />
+                          <rect x="14" y="5" width="4" height="14" fill="#242424" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424" />
                         </svg>
                       )}
                     </div>
@@ -419,7 +416,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                   </div>
                 </div>
 
-                <div 
+                <div
                   className="media-item relative mt-4 h-[280px] sm:h-[320px] md:h-[360px] lg:h-[420px] w-full flex-shrink-0 group cursor-pointer overflow-hidden rounded"
                 >
                   <video
@@ -442,12 +439,12 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
                       {v3Playing ? (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
-                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="6" y="5" width="4" height="14" fill="#242424" />
+                          <rect x="14" y="5" width="4" height="14" fill="#242424" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424" />
                         </svg>
                       )}
                     </div>
@@ -456,7 +453,7 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
               </div>
 
               <div className="w-full md:w-1/2 flex flex-col">
-                <div 
+                <div
                   className="media-item relative w-full  h-[300px] sm:h-[400px] md:h-[500px] lg:h-[700px] xl:h-[965px] group cursor-pointer overflow-hidden rounded stories-media-item-1"
                 >
                   <video
@@ -479,12 +476,12 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
                       {v2Playing ? (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
-                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="6" y="5" width="4" height="14" fill="#242424" />
+                          <rect x="14" y="5" width="4" height="14" fill="#242424" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424" />
                         </svg>
                       )}
                     </div>
@@ -512,12 +509,12 @@ Days flowed beautifully — snorkeling in clear waters, relaxing at the spa, and
                     <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] md:w-[70px] md:h-[70px] rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
                       {v4Playing ? (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="6" y="5" width="4" height="14" fill="#242424"/>
-                          <rect x="14" y="5" width="4" height="14" fill="#242424"/>
+                          <rect x="6" y="5" width="4" height="14" fill="#242424" />
+                          <rect x="14" y="5" width="4" height="14" fill="#242424" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 5v14l11-7L8 5z" fill="#242424"/>
+                          <path d="M8 5v14l11-7L8 5z" fill="#242424" />
                         </svg>
                       )}
                     </div>

@@ -7,6 +7,7 @@ import DepartmentManager from './DepartmentManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
+import { useAdminRole } from '@/context/AdminRoleContext';
 
 interface InventoryItemsTabProps {
     items: InventoryItem[];
@@ -16,6 +17,7 @@ interface InventoryItemsTabProps {
 
 export default function InventoryItemsTab({ items, loading, onRefresh }: InventoryItemsTabProps) {
     const { showToast } = useToast();
+    const { hasSectionAccess } = useAdminRole();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
     // Removed department filter to restore legacy view
@@ -128,34 +130,38 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
 
                 {/* Right Side: Actions */}
                 <div className="flex w-full md:w-auto gap-3">
-                    <button
-                        onClick={() => {
-                            // If a specific category is selected, let's pass it to the modal
-                            // We need to implement this in the handleCreate logic or similar
-                            setEditingItem(null);
-                            setShowModal(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-transform active:scale-95 font-bold text-sm shadow-sm whitespace-nowrap flex-1 md:flex-none justify-center"
-                    >
-                        <PlusIcon className="w-5 h-5" />
-                        <span>New Item</span>
-                    </button>
+                    {hasSectionAccess('inventory', 'items', 'read_write') && (
+                        <button
+                            onClick={() => {
+                                setEditingItem(null);
+                                setShowModal(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-transform active:scale-95 font-bold text-sm shadow-sm whitespace-nowrap flex-1 md:flex-none justify-center"
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            <span>New Item</span>
+                        </button>
+                    )}
 
-                    <button
-                        onClick={() => setShowCategoryManager(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors whitespace-nowrap"
-                    >
-                        <FolderPlusIcon className="w-5 h-5 text-gray-500" />
-                        <span className="hidden sm:inline">Manage Categories</span>
-                    </button>
+                    {hasSectionAccess('inventory', 'items', 'read_write') && (
+                        <>
+                            <button
+                                onClick={() => setShowCategoryManager(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors whitespace-nowrap"
+                            >
+                                <FolderPlusIcon className="w-5 h-5 text-gray-500" />
+                                <span className="hidden sm:inline">Manage Categories</span>
+                            </button>
 
-                    <button
-                        onClick={() => setShowDepartmentManager(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors whitespace-nowrap"
-                    >
-                        <BuildingOfficeIcon className="w-5 h-5 text-gray-500" />
-                        <span className="hidden sm:inline">Manage Depts</span>
-                    </button>
+                            <button
+                                onClick={() => setShowDepartmentManager(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors whitespace-nowrap"
+                            >
+                                <BuildingOfficeIcon className="w-5 h-5 text-gray-500" />
+                                <span className="hidden sm:inline">Manage Depts</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -164,13 +170,15 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                 <div className="w-full md:w-64 flex-none bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                         <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Categories</h3>
-                        <button
-                            onClick={() => setShowCategoryManager(true)}
-                            className="text-[#FF6A00] hover:bg-orange-50 p-1.5 rounded-lg transition-colors border border-dashed border-[#FF6A00]/30"
-                            title="Manage Categories"
-                        >
-                            <FolderPlusIcon className="w-4 h-4" />
-                        </button>
+                        {hasSectionAccess('inventory', 'items', 'read_write') && (
+                            <button
+                                onClick={() => setShowCategoryManager(true)}
+                                className="text-[#FF6A00] hover:bg-orange-50 p-1.5 rounded-lg transition-colors border border-dashed border-[#FF6A00]/30"
+                                title="Manage Categories"
+                            >
+                                <FolderPlusIcon className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
                         {displayCategories.map(cat => (
@@ -272,23 +280,27 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingItem(item);
-                                                                setShowModal(true);
-                                                            }}
-                                                            className="p-2 text-gray-400 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-colors"
-                                                            title="Edit Item"
-                                                        >
-                                                            <PencilIcon className="w-5 h-5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(item.id)}
-                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Delete Item"
-                                                        >
-                                                            <TrashIcon className="w-5 h-5" />
-                                                        </button>
+                                                        {hasSectionAccess('inventory', 'items', 'read_write') && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingItem(item);
+                                                                    setShowModal(true);
+                                                                }}
+                                                                className="p-2 text-gray-400 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-colors"
+                                                                title="Edit Item"
+                                                            >
+                                                                <PencilIcon className="w-5 h-5" />
+                                                            </button>
+                                                        )}
+                                                        {hasSectionAccess('inventory', 'items', 'full_control') && (
+                                                            <button
+                                                                onClick={() => handleDelete(item.id)}
+                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete Item"
+                                                            >
+                                                                <TrashIcon className="w-5 h-5" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -320,18 +332,22 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => { setEditingItem(item); setShowModal(true); }}
-                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg"
-                                                >
-                                                    <PencilIcon className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(item.id)}
-                                                    className="p-2 bg-red-50 text-red-600 rounded-lg"
-                                                >
-                                                    <TrashIcon className="h-4 w-4" />
-                                                </button>
+                                                {hasSectionAccess('inventory', 'items', 'read_write') && (
+                                                    <button
+                                                        onClick={() => { setEditingItem(item); setShowModal(true); }}
+                                                        className="p-2 bg-blue-50 text-blue-600 rounded-lg"
+                                                    >
+                                                        <PencilIcon className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                                {hasSectionAccess('inventory', 'items', 'full_control') && (
+                                                    <button
+                                                        onClick={() => handleDelete(item.id)}
+                                                        className="p-2 bg-red-50 text-red-600 rounded-lg"
+                                                    >
+                                                        <TrashIcon className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 

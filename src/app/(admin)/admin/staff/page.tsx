@@ -1,16 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useAdminRole } from '@/context/AdminRoleContext';
 import { getStaffMembers, createStaffMember, updateStaffMember } from '@/lib/accountsService';
 import type { StaffMember } from '@/lib/firestoreService';
-import { PlusIcon, PencilIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, UserGroupIcon, KeyIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
+import UserDrawer from '@/components/admin/users/UserDrawer';
+import StaffDrawer from '@/components/admin/staff/StaffDrawer';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import { HOTEL_DEPARTMENTS } from '@/lib/constants';
 
 export default function StaffPage() {
+    const { hasSectionAccess } = useAdminRole();
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
     const [filterDepartment, setFilterDepartment] = useState('all');
+
+    // User Creation Drawer
+    const [showUserDrawer, setShowUserDrawer] = useState(false);
+    const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+    const [deleteModal, setDeleteModal] = useState<{ open: boolean; staff: StaffMember | null }>({ open: false, staff: null });
+
+    // Permissions
+    const canAddStaff = hasSectionAccess('staff', 'directory', 'read_write');
+    const canEditStaff = hasSectionAccess('staff', 'directory', 'read_write');
+    const canTerminateStaff = hasSectionAccess('staff', 'directory', 'full_control');
 
     useEffect(() => {
         loadData();
@@ -23,15 +39,23 @@ export default function StaffPage() {
         setLoading(false);
     };
 
-    const handleSave = async (formData: Partial<StaffMember>) => {
-        if (editingStaff) {
-            await updateStaffMember(editingStaff.id, formData);
-        } else {
-            await createStaffMember(formData as Omit<StaffMember, 'id' | 'createdAt' | 'updatedAt'>);
-        }
+    const handleSave = async () => {
+        // Drawer handles save internally via onSave callback which just needs to reload data
         setShowModal(false);
         setEditingStaff(null);
         loadData();
+    };
+
+    const handleMarkAsLeft = (member: StaffMember) => {
+        setDeleteModal({ open: true, staff: member });
+    };
+
+    const confirmMarkAsLeft = async () => {
+        if (deleteModal.staff) {
+            await updateStaffMember(deleteModal.staff.id, { status: 'terminated', terminationDate: new Date() } as any);
+            setDeleteModal({ open: false, staff: null });
+            loadData();
+        }
     };
 
     const filteredStaff = staff.filter(s =>
@@ -54,16 +78,23 @@ export default function StaffPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
                     <p className="text-gray-600">Manage hotel staff and employees</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setEditingStaff(null);
-                        setShowModal(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors"
-                >
-                    <PlusIcon className="h-5 w-5" />
-                    Add Staff
-                </button>
+                {canAddStaff ? (
+                    <button
+                        onClick={() => {
+                            setEditingStaff(null);
+                            setShowModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors"
+                    >
+                        <PlusIcon className="h-5 w-5" />
+                        Add Staff
+                    </button>
+                ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                        <PlusIcon className="h-5 w-5" />
+                        Add Staff
+                    </div>
+                )}
             </div>
 
             {/* Stats */}
@@ -111,11 +142,9 @@ export default function StaffPage() {
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
                 >
                     <option value="all">All Departments</option>
-                    <option value="front_office">Front Office</option>
-                    <option value="housekeeping">Housekeeping</option>
-                    <option value="food_beverage">Food & Beverage</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="management">Management</option>
+                    {HOTEL_DEPARTMENTS.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
                 </select>
             </div>
 
@@ -159,15 +188,30 @@ export default function StaffPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button
-                                            onClick={() => {
-                                                setEditingStaff(member);
-                                                setShowModal(true);
-                                            }}
-                                            className="text-[#FF6A00] hover:text-[#FF6A00]/80"
-                                        >
-                                            <PencilIcon className="h-5 w-5" />
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            {canEditStaff && (
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingStaff(member);
+                                                        setShowModal(true);
+                                                    }}
+                                                    className="text-[#FF6A00] hover:text-[#FF6A00]/80"
+                                                    title="Edit Staff Details"
+                                                >
+                                                    <PencilIcon className="h-5 w-5" />
+                                                </button>
+                                            )}
+
+                                            {canTerminateStaff && (
+                                                <button
+                                                    onClick={() => handleMarkAsLeft(member)}
+                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    title="Mark as Left"
+                                                >
+                                                    <ArchiveBoxIcon className="h-5 w-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -176,180 +220,43 @@ export default function StaffPage() {
                 </div>
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <StaffModal
-                    staff={editingStaff}
-                    onClose={() => {
-                        setShowModal(false);
-                        setEditingStaff(null);
-                    }}
-                    onSave={handleSave}
-                />
-            )}
+            {/* Staff Drawer */}
+            <StaffDrawer
+                open={showModal}
+                staff={editingStaff}
+                onClose={() => {
+                    setShowModal(false);
+                    setEditingStaff(null);
+                }}
+                onSave={handleSave}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={deleteModal.open}
+                onClose={() => setDeleteModal({ open: false, staff: null })}
+                onConfirm={confirmMarkAsLeft}
+                title="Confirm Staff Termination"
+                message={`Are you sure you want to mark ${deleteModal.staff?.name} as Left? This action will set their status to Terminated.`}
+                confirmText="Yes, Mark as Left"
+                cancelText="Cancel"
+                type="danger"
+            />
+
+            {/* User Drawer */}
+            <UserDrawer
+                open={showUserDrawer}
+                onClose={() => {
+                    setShowUserDrawer(false);
+                    setSelectedStaffId('');
+                }}
+                onSave={() => {
+                    // Optional: Show success message
+                }}
+                initialStaffId={selectedStaffId}
+            />
         </div>
     );
 }
 
-function StaffModal({
-    staff,
-    onClose,
-    onSave
-}: {
-    staff: StaffMember | null;
-    onClose: () => void;
-    onSave: (data: Partial<StaffMember>) => void;
-}) {
-    const [formData, setFormData] = useState<Partial<StaffMember>>(
-        staff || {
-            employeeId: '',
-            name: '',
-            email: '',
-            phone: '',
-            role: 'other',
-            department: 'front_office',
-            salary: 0,
-            salaryType: 'monthly',
-            joinDate: new Date(),
-            status: 'active',
-        }
-    );
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">{staff ? 'Edit Staff' : 'Add New Staff'}</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.employeeId}
-                                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                            <input
-                                type="tel"
-                                required
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                            <select
-                                value={formData.role}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value as StaffMember['role'] })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            >
-                                <option value="manager">Manager</option>
-                                <option value="front_desk">Front Desk</option>
-                                <option value="housekeeping">Housekeeping</option>
-                                <option value="kitchen">Kitchen</option>
-                                <option value="waiter">Waiter</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                            <select
-                                value={formData.department}
-                                onChange={(e) => setFormData({ ...formData, department: e.target.value as StaffMember['department'] })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            >
-                                <option value="front_office">Front Office</option>
-                                <option value="housekeeping">Housekeeping</option>
-                                <option value="food_beverage">Food & Beverage</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="management">Management</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
-                            <input
-                                type="number"
-                                required
-                                min="0"
-                                value={formData.salary}
-                                onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Salary Type</label>
-                            <select
-                                value={formData.salaryType}
-                                onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as StaffMember['salaryType'] })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            >
-                                <option value="monthly">Monthly</option>
-                                <option value="hourly">Hourly</option>
-                                <option value="daily">Daily</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value as StaffMember['status'] })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-transparent"
-                            >
-                                <option value="active">Active</option>
-                                <option value="on_leave">On Leave</option>
-                                <option value="terminated">Terminated</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-[#FF6A00]/90 transition-colors"
-                        >
-                            {staff ? 'Update' : 'Create'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}

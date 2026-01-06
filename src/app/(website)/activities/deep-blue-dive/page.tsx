@@ -15,7 +15,7 @@ export default function DeepBlueDivePage() {
 
   useEffect(() => {
     setIsVisible(true);
-    
+
     const observers = [
       { ref: titleRef, threshold: 0.3 },
       { ref: galleryRef, threshold: 0.2 },
@@ -49,7 +49,7 @@ export default function DeepBlueDivePage() {
 
   return (
     <>
-            <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative w-full h-[560px] md:h-[700px] lg:h-[977px] overflow-hidden">
           <Image
@@ -64,29 +64,29 @@ export default function DeepBlueDivePage() {
             className="object-cover"
             style={{ opacity: 1 }}
           />
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none z-10"
             style={{
               background: "linear-gradient(0deg, rgba(0, 0, 0, 0) 67%, rgba(0, 0, 0, 1) 97%)"
             }}
           />
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none z-20"
             style={{
               background: "linear-gradient(180deg, rgba(255, 252, 246, 0) 79%, rgba(255, 252, 246, 0.9) 96%, rgba(255, 252, 246, 1) 99%)"
             }}
           />
-         
+
           <div ref={heroRef} className="absolute left-1/2 -translate-x-1/2 top-[180px] md:top-[220px] lg:top-[687px] z-30 pointer-events-none">
             <div className="relative flex flex-col items-center h-[189px] hero-decoration">
-            
-              <div 
+
+              <div
                 className={`w-[2px] h-[127px] hero-line ${isVisible ? 'hero-line-visible' : ''}`}
                 style={{
                   background: "linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 35%, rgba(255, 255, 255, 0) 100%)"
                 }}
               />
-            
+
               <div className={`relative w-[80px] h-[80px] hero-icon ${isVisible ? 'hero-icon-visible' : ''}`}>
                 <Image
                   src="/deep-dive/hero-decoration.png"
@@ -99,7 +99,7 @@ export default function DeepBlueDivePage() {
           </div>
         </section>
 
-      
+
         <section ref={titleRef} className="pt-12 pb-8 md:pt-16 md:pb-12">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <h2 className="text-[#423B2D] text-[32px] md:text-[40px] lg:text-[48px] font-semibold leading-[1.25] text-center font-quicksand mb-6 md:mb-8 title-animate">
@@ -113,9 +113,9 @@ export default function DeepBlueDivePage() {
           </div>
         </section>
 
-      
+
         <section className="relative pt-8 pb-12 md:pb-16 lg:pb-20">
-          <div 
+          <div
             className="absolute inset-0 top-[30%] pointer-events-none hidden md:block"
             style={{
               background: "linear-gradient(180deg, rgba(255, 252, 246, 1) 3%, rgba(255, 252, 246, 0.89) 8%, rgba(255, 252, 246, 0.38) 20%, rgba(255, 252, 246, 0) 47%, rgba(255, 252, 246, 0) 59%, rgba(255, 252, 246, 0) 63%, rgba(255, 252, 246, 0.22) 73%, rgba(255, 252, 246, 1) 86%)"
@@ -136,13 +136,13 @@ export default function DeepBlueDivePage() {
                 { src: "deep-2.png", label: "400 Fish Species" },
                 { src: "deep-3.png", label: "65,000 Meters of Reef" },
               ].map((item, index) => (
-                <div 
-                  key={`gallery-${index}`} 
+                <div
+                  key={`gallery-${index}`}
                   className="flex flex-col items-center gallery-card"
                   style={{ animationDelay: `${index * 0.15}s` }}
                 >
                   <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden rounded-lg group cursor-pointer">
-                    <Image 
+                    <Image
                       src={`/deep-dive/${item.src}`}
                       alt={item.label}
                       fill
@@ -164,7 +164,7 @@ export default function DeepBlueDivePage() {
           </div>
         </section>
 
-       
+
         <section ref={videoRef} className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[945px] overflow-hidden bg-transparent">
           {/* Embedded Video - Only video, no background */}
           <video
@@ -179,7 +179,7 @@ export default function DeepBlueDivePage() {
 
         <section ref={contentRef} className="relative">
           <div className="flex flex-col md:flex-row h-full">
-          
+
             <div className="relative w-full md:w-1/2 h-[400px] md:h-[600px] lg:h-[900px] group/image overflow-hidden">
               <Image
                 src="/deep-dive/main-diver.png"
@@ -187,7 +187,7 @@ export default function DeepBlueDivePage() {
                 fill
                 className="object-cover transition-transform duration-1000 ease-out group-hover/image:scale-110"
               />
-              <div 
+              <div
                 className="absolute inset-0 pointer-events-none transition-opacity duration-500"
                 style={{
                   background: "linear-gradient(-1deg, rgba(3, 69, 86, 0) 64%, rgba(3, 69, 86, 1) 100%)"
@@ -198,8 +198,8 @@ export default function DeepBlueDivePage() {
                 <div className="absolute inset-0 depth-shimmer"></div>
               </div>
             </div>
-            
-       
+
+
             <div className="relative w-full md:w-1/2 h-[400px] md:h-[600px] lg:h-[900px]">
               <Image
                 src="/deep-dive/right-bg.png"
@@ -211,7 +211,7 @@ export default function DeepBlueDivePage() {
                 className="absolute inset-0"
                 style={{ background: "rgba(0, 0, 0, 0.67)" }}
               />
-              
+
               {/* Content on Right Side */}
               <div className="absolute inset-0 z-10 flex flex-col justify-center items-center md:items-start px-6 md:px-12 lg:px-16">
                 <div className="flex flex-col gap-14 md:gap-16 w-full max-w-[535px] content-group">
@@ -245,7 +245,7 @@ export default function DeepBlueDivePage() {
           </div>
         )}
       </main>
-          </>
+    </>
   );
 }
 

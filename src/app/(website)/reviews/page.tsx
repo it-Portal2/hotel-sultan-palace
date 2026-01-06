@@ -11,7 +11,7 @@ export default function ReviewsPage() {
   const [reviews, setReviews] = useState<GuestReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
-  
+
   const toggleReview = (reviewId: string) => {
     setExpandedReviews(prev => {
       const newSet = new Set(prev);
@@ -47,16 +47,16 @@ export default function ReviewsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F7F7]">
-                <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
         </div>
-              </div>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#F7F7F7]">
-            <div className="px-4 sm:px-6 md:px-8 lg:px-[114px] py-8 sm:py-12 md:py-16 lg:py-[117px]">
+      <div className="px-4 sm:px-6 md:px-8 lg:px-[114px] py-8 sm:py-12 md:py-16 lg:py-[117px]">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 mt-24 md:mt-32">
@@ -114,20 +114,18 @@ export default function ReviewsPage() {
                         {[...Array(5)].map((_, i) => (
                           <FaStar
                             key={i}
-                            className={`text-lg ${
-                              i < review.rating ? 'text-[#FFC400]' : 'text-gray-300'
-                            }`}
+                            className={`text-lg ${i < review.rating ? 'text-[#FFC400]' : 'text-gray-300'
+                              }`}
                           />
                         ))}
                         <span className="text-sm text-gray-600 ml-2">{review.rating} / 5</span>
                       </div>
                       <div className="mb-4">
-                        <p 
-                          className={`text-gray-700 leading-relaxed italic ${
-                            !expandedReviews.has(review.id) && review.review.length > 250 
-                              ? 'line-clamp-5' 
+                        <p
+                          className={`text-gray-700 leading-relaxed italic ${!expandedReviews.has(review.id) && review.review.length > 250
+                              ? 'line-clamp-5'
                               : ''
-                          }`}
+                            }`}
                         >
                           &quot;{review.review}&quot;
                         </p>
@@ -140,49 +138,49 @@ export default function ReviewsPage() {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Detailed Ratings */}
                       {(review.staffRating || review.facilitiesRating || review.cleanlinessRating ||
                         review.comfortRating || review.valueRating || review.locationRating || review.wifiRating) && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 pt-4 border-t border-gray-200">
-                          {review.staffRating && (
-                            <div>
-                              <strong>Staff:</strong> {review.staffRating}/5
-                            </div>
-                          )}
-                          {review.facilitiesRating && (
-                            <div>
-                              <strong>Facilities:</strong> {review.facilitiesRating}/5
-                            </div>
-                          )}
-                          {review.cleanlinessRating && (
-                            <div>
-                              <strong>Cleanliness:</strong> {review.cleanlinessRating}/5
-                            </div>
-                          )}
-                          {review.comfortRating && (
-                            <div>
-                              <strong>Comfort:</strong> {review.comfortRating}/5
-                            </div>
-                          )}
-                          {review.valueRating && (
-                            <div>
-                              <strong>Value:</strong> {review.valueRating}/5
-                            </div>
-                          )}
-                          {review.locationRating && (
-                            <div>
-                              <strong>Location:</strong> {review.locationRating}/5
-                            </div>
-                          )}
-                          {review.wifiRating && (
-                            <div>
-                              <strong>WiFi:</strong> {review.wifiRating}/5
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 pt-4 border-t border-gray-200">
+                            {review.staffRating && (
+                              <div>
+                                <strong>Staff:</strong> {review.staffRating}/5
+                              </div>
+                            )}
+                            {review.facilitiesRating && (
+                              <div>
+                                <strong>Facilities:</strong> {review.facilitiesRating}/5
+                              </div>
+                            )}
+                            {review.cleanlinessRating && (
+                              <div>
+                                <strong>Cleanliness:</strong> {review.cleanlinessRating}/5
+                              </div>
+                            )}
+                            {review.comfortRating && (
+                              <div>
+                                <strong>Comfort:</strong> {review.comfortRating}/5
+                              </div>
+                            )}
+                            {review.valueRating && (
+                              <div>
+                                <strong>Value:</strong> {review.valueRating}/5
+                              </div>
+                            )}
+                            {review.locationRating && (
+                              <div>
+                                <strong>Location:</strong> {review.locationRating}/5
+                              </div>
+                            )}
+                            {review.wifiRating && (
+                              <div>
+                                <strong>WiFi:</strong> {review.wifiRating}/5
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                       <div className="text-xs text-gray-500 mt-4">
                         {review.createdAt.toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -198,7 +196,7 @@ export default function ReviewsPage() {
           )}
         </div>
       </div>
-          </div>
+    </div>
   );
 }
 

@@ -94,7 +94,7 @@ export default function AdminGalleryPage() {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-6">
         <div>
@@ -128,8 +128,8 @@ export default function AdminGalleryPage() {
                 key={type}
                 onClick={() => setSelectedType(type)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${selectedType === type
-                    ? 'bg-[#FF6A00] text-white border-[#FF6A00] shadow-md shadow-orange-500/20'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                  ? 'bg-[#FF6A00] text-white border-[#FF6A00] shadow-md shadow-orange-500/20'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00]'
                   }`}
               >
                 {type === 'All' ? 'All Images' : type.replace(/_/g, ' ')}

@@ -1005,7 +1005,14 @@ export interface LedgerEntry {
   subcategory?: string;
   amount: number;
   description: string;
-  paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'online';
+  paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'online' | 'cheque';
+  // New Hotel Specific Fields
+  referenceNumber?: string; // Invoice #, Receipt #
+  payerOrPayee?: string; // Guest Name, Vendor Name, Staff Name
+  department?: 'front_office' | 'housekeeping' | 'kitchen' | 'maintenance' | 'hr' | 'accounts' | 'other';
+  status?: 'pending' | 'cleared' | 'void';
+  attachmentUrl?: string;
+
   referenceId?: string; // Link to booking, order, etc.
   invoiceNumber?: string;
   taxAmount?: number;
@@ -1062,13 +1069,21 @@ export interface StaffMember {
   name: string;
   email: string;
   phone: string;
-  role: 'manager' | 'front_desk' | 'housekeeping' | 'kitchen' | 'waiter' | 'maintenance' | 'other';
-  department: 'front_office' | 'housekeeping' | 'food_beverage' | 'maintenance' | 'management';
+  role: string;
+  department: string;
   salary: number;
   salaryType: 'monthly' | 'hourly' | 'daily';
   joinDate: Date;
-  status: 'active' | 'on_leave' | 'terminated';
+  status: 'active' | 'on_leave' | 'terminated' | 'resigned';
+  designation?: string;
+  terminationDate?: Date;
   address?: string;
+  // Flat fields for easier form handling
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  idProofType?: string;
+  idProofNumber?: string;
+  // Legacy object (optional)
   emergencyContact?: {
     name: string;
     phone: string;

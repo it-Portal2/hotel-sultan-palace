@@ -33,7 +33,7 @@ export default function GalleryPage() {
 
   useEffect(() => {
     setIsVisible(true);
-    
+
     const observerOptions = {
       threshold: 0.1,
       rootMargin: '0px 0px -50px 0px'
@@ -79,16 +79,16 @@ export default function GalleryPage() {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.15 : 0.15;
       const newZoom = Math.max(1, Math.min(5, zoom + delta));
-      
+
       if (newZoom !== zoom) {
         const rect = containerRef.current!.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        
+
         const zoomChange = newZoom / zoom;
         let newX = x - (x - position.x) * zoomChange;
         let newY = y - (y - position.y) * zoomChange;
-        
+
         // Apply boundaries
         if (newZoom > 1 && imageRef.current) {
           const imgRect = imageRef.current.getBoundingClientRect();
@@ -102,7 +102,7 @@ export default function GalleryPage() {
           newX = 0;
           newY = 0;
         }
-        
+
         setZoom(newZoom);
         setPosition({ x: newX, y: newY });
       }
@@ -154,7 +154,7 @@ export default function GalleryPage() {
         const imgHeight = rect.height * zoom;
         const maxX = (imgWidth - window.innerWidth) / 2;
         const maxY = (imgHeight - window.innerHeight) / 2;
-        
+
         setPosition({
           x: Math.max(-maxX, Math.min(maxX, e.touches[0].clientX - dragStart.x)),
           y: Math.max(-maxY, Math.min(maxY, e.touches[0].clientY - dragStart.y))
@@ -197,7 +197,7 @@ export default function GalleryPage() {
         const imgHeight = rect.height * zoom;
         const maxX = (imgWidth - window.innerWidth) / 2;
         const maxY = (imgHeight - window.innerHeight) / 2;
-        
+
         setPosition({
           x: Math.max(-maxX, Math.min(maxX, e.clientX - dragStart.x)),
           y: Math.max(-maxY, Math.min(maxY, e.clientY - dragStart.y))
@@ -234,14 +234,14 @@ export default function GalleryPage() {
 
   return (
     <>
-            <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden" style={{ transform: 'none', willChange: 'auto' }}>
+      <main className="min-h-screen bg-[#FFFCF6] font-open-sans w-full max-w-full overflow-x-hidden" style={{ transform: 'none', willChange: 'auto' }}>
         {/* Hero Section */}
         <section className="relative w-full h-[680px] md:h-[800px] lg:h-[951px] overflow-hidden">
-          <Image 
-            src="/gallery/hero-main-6ecfac.png" 
-            alt="Gallery Hero Background" 
-            fill 
-            priority 
+          <Image
+            src="/gallery/hero-main-6ecfac.png"
+            alt="Gallery Hero Background"
+            fill
+            priority
             loading="eager"
             fetchPriority="high"
             quality={90}
@@ -275,11 +275,10 @@ export default function GalleryPage() {
                 <button
                   key={f.value}
                   onClick={() => setActive(f.value)}
-                  className={`px-4 py-2 rounded-lg text-lg font-semibold font-quicksand gallery-filter-btn relative overflow-hidden ${
-                    active === f.value
+                  className={`px-4 py-2 rounded-lg text-lg font-semibold font-quicksand gallery-filter-btn relative overflow-hidden ${active === f.value
                       ? "bg-[#FF6A00] text-white"
                       : "border border-[#655D4E] text-[#655D4E] hover:bg-[#655D4E] hover:text-white transition-colors"
-                  }`}
+                    }`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <span className="relative z-10">{f.label}</span>
@@ -313,7 +312,7 @@ export default function GalleryPage() {
                       <div key={`grid-${i}`} className="mb-8">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                           {gridChunk.map((src, idx) => (
-                            <button onClick={()=>{setLightboxSrc(src); setLightboxOpen(true); setZoom(1); setPosition({x:0, y:0});}} key={`${src}-${i+idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
+                            <button onClick={() => { setLightboxSrc(src); setLightboxOpen(true); setZoom(1); setPosition({ x: 0, y: 0 }); }} key={`${src}-${i + idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
                               <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-300 ease-out" />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
                               <div className="absolute inset-0 flex items-end justify-center pb-4">
@@ -328,7 +327,7 @@ export default function GalleryPage() {
                   if (hero) {
                     sections.push(
                       <div key={`hero-${i}`} className="mb-8 gallery-full-image">
-                        <button onClick={()=>{setLightboxSrc(hero); setLightboxOpen(true); setZoom(1); setPosition({x:0, y:0});}} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
+                        <button onClick={() => { setLightboxSrc(hero); setLightboxOpen(true); setZoom(1); setPosition({ x: 0, y: 0 }); }} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
                           <Image src={hero} alt="Gallery Feature" fill className="object-cover transition-transform duration-300 ease-out" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
                           <div className="absolute inset-0 flex items-end justify-center pb-4">
@@ -347,22 +346,22 @@ export default function GalleryPage() {
           </div>
         </section>
       </main>
-      
+
       {lightboxOpen && (
-        <div 
+        <div
           ref={containerRef}
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-grab active:cursor-grabbing overflow-hidden" 
-          onClick={()=>{if(zoom === 1) {setLightboxOpen(false); setZoom(1); setPosition({x:0, y:0});}}}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-grab active:cursor-grabbing overflow-hidden"
+          onClick={() => { if (zoom === 1) { setLightboxOpen(false); setZoom(1); setPosition({ x: 0, y: 0 }); } }}
           style={{ userSelect: 'none' }}
         >
           {/* Close Button - Top Right Corner */}
-          <button 
-            onClick={(e)=>{
-              e.stopPropagation(); 
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               setLightboxOpen(false);
               setZoom(1);
-              setPosition({x:0, y:0});
-            }} 
+              setPosition({ x: 0, y: 0 });
+            }}
             className="absolute top-4 right-4 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-[#242424] hover:text-red-600 shadow-xl transition-all duration-200 group"
             title="Close"
             aria-label="Close image"
@@ -374,9 +373,9 @@ export default function GalleryPage() {
 
           {/* Zoom Controls - Top Left */}
           <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
-            <button 
-              onClick={(e)=>{
-                e.stopPropagation(); 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 const newZoom = Math.min(5, zoom + 0.25);
                 if (newZoom !== zoom) {
                   setZoom(newZoom);
@@ -397,16 +396,16 @@ export default function GalleryPage() {
                     }, 0);
                   }
                 }
-              }} 
+              }}
               className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xl md:text-2xl font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Zoom In"
               aria-label="Zoom in"
             >
               +
             </button>
-            <button 
-              onClick={(e)=>{
-                e.stopPropagation(); 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
                 const newZoom = Math.max(1, zoom - 0.25);
                 if (newZoom !== zoom) {
                   setZoom(newZoom);
@@ -421,19 +420,19 @@ export default function GalleryPage() {
                     });
                   }
                 }
-              }} 
+              }}
               className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xl md:text-2xl font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Zoom Out"
               aria-label="Zoom out"
             >
               −
             </button>
-            <button 
-              onClick={(e)=>{
-                e.stopPropagation(); 
-                setZoom(1); 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoom(1);
                 setPosition({ x: 0, y: 0 });
-              }} 
+              }}
               className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white text-[#242424] text-xs md:text-sm font-semibold shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
               title="Reset Zoom"
               aria-label="Reset zoom"
@@ -443,33 +442,33 @@ export default function GalleryPage() {
           </div>
 
           {/* Image Container */}
-          <div 
+          <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ 
+            style={{
               transform: `translate(${position.x}px, ${position.y}px)`,
               transition: isDragging ? 'none' : 'transform 0.1s ease-out'
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
+            <img
               ref={imageRef}
-              src={lightboxSrc} 
-              alt="Gallery image" 
-              style={{ 
+              src={lightboxSrc}
+              alt="Gallery image"
+              style={{
                 transform: `scale(${zoom})`,
                 transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                maxWidth: '95vw', 
+                maxWidth: '95vw',
                 maxHeight: '95vh',
                 cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
                 touchAction: 'none'
-              }} 
-              className="object-contain select-none" 
-              onClick={(e)=>{
+              }}
+              className="object-contain select-none"
+              onClick={(e) => {
                 e.stopPropagation();
-                if(zoom === 1) {
+                if (zoom === 1) {
                   setLightboxOpen(false);
                   setZoom(1);
-                  setPosition({x:0, y:0});
+                  setPosition({ x: 0, y: 0 });
                 }
               }}
               draggable={false}

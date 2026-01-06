@@ -70,10 +70,11 @@ const ReviewSubmissionForm: React.FC = () => {
 
     try {
       // Build review data object, only including defined values
-      const reviewData: Omit<GuestReview, 'id' | 'createdAt' | 'updatedAt' | 'isApproved'> = {
+      const reviewData: Omit<GuestReview, 'id' | 'createdAt' | 'updatedAt'> = {
         name: formData.name,
         rating: formData.rating,
         review: formData.review,
+        isApproved: true, // Auto-approve new reviews
       };
 
       // Only add optional fields if they have values
@@ -212,11 +213,10 @@ const ReviewSubmissionForm: React.FC = () => {
                   className="focus:outline-none"
                 >
                   <FaStar
-                    className={`text-3xl ${
-                      star <= formData.rating
+                    className={`text-3xl ${star <= formData.rating
                         ? 'text-[#FFC400]'
                         : 'text-gray-300'
-                    } transition-colors hover:text-[#FFC400]`}
+                      } transition-colors hover:text-[#FFC400]`}
                   />
                 </button>
               ))}
@@ -252,11 +252,10 @@ const ReviewSubmissionForm: React.FC = () => {
                         className="focus:outline-none"
                       >
                         <FaStar
-                          className={`text-xl ${
-                            star <= (formData[key] || 0)
+                          className={`text-xl ${star <= (formData[key] || 0)
                               ? 'text-[#FFC400]'
                               : 'text-gray-300'
-                          } transition-colors hover:text-[#FFC400]`}
+                            } transition-colors hover:text-[#FFC400]`}
                         />
                       </button>
                     ))}
