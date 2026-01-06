@@ -1,17 +1,136 @@
 import React, { useState, useEffect } from 'react';
 import { FoodOrder } from '@/lib/firestoreService';
+import { getRecipeByMenuItem, getInventoryItems } from '@/lib/inventoryService';
+import { InventoryItem, Recipe } from '@/lib/firestoreService';
 import {
     ClockIcon,
     FireIcon,
     CheckCircleIcon,
     MapPinIcon,
     UserIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    BeakerIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+    XCircleIcon,
+    CheckIcon
 } from '@heroicons/react/24/solid';
 
 interface KitchenOrderCardProps {
     order: FoodOrder;
     onUpdateStatus: (orderId: string, status: FoodOrder['status']) => void;
+}
+
+// Sub-component to handle ingredient fetching and display
+function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: string, quantity: number, itemName: string }) {
+    const [loading, setLoading] = useState(true);
+    const [recipe, setRecipe] = useState<Recipe | null>(null);
+    const [ingredientsStatus, setIngredientsStatus] = useState<Array<{
+        name: string;
+        required: number;
+        available: number;
+        unit: string;
+        isLow: boolean;
+    }>>([]);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [missingStock, setMissingStock] = useState(false);
+
+    useEffect(() => {
+        const checkStock = async () => {
+            try {
+                // 1. Get Recipe
+                const fetchedRecipe = await getRecipeByMenuItem(menuItemId);
+                if (!fetchedRecipe) {
+                    setLoading(false);
+                    return;
+                }
+                setRecipe(fetchedRecipe);
+
+                // 2. Get Inventory Items needed
+                // Note: In a real large-scale app, we might want to cache this or fetch all at once, 
+                // but for this scale fetching per item is acceptable for real-time accuracy.
+                const allInventory = await getInventoryItems(); 
+                
+                const status = fetchedRecipe.ingredients.map(ing => {
+                    const invItem = allInventory.find(i => i.id === ing.inventoryItemId);
+                    const currentStock = invItem?.currentStock || 0;
+                    const requiredTotal = ing.quantity * quantity;
+                    
+                    return {
+                        name: ing.inventoryItemName,
+                        required: requiredTotal,
+                        available: currentStock,
+                        unit: ing.unit,
+                        isLow: currentStock < requiredTotal
+                    };
+                });
+
+                setIngredientsStatus(status);
+                
+                if (status.some(i => i.isLow)) {
+                    setMissingStock(true);
+                    // Auto-expand if critical
+                    setIsExpanded(true); 
+                }
+
+            } catch (error) {
+                console.error("Error checking stock", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkStock();
+    }, [menuItemId, quantity]);
+
+    if (loading) return <div className="animate-pulse h-4 w-20 bg-gray-100 rounded mt-1"></div>;
+    if (!recipe) return null; // No recipe mapped, nothing to show
+
+    return (
+        <div className="mt-2">
+            {/* Status Indicator / Toggle */}
+            <button 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded transition-colors ${
+                    missingStock 
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                        : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'
+                }`}
+            >
+                {missingStock ? (
+                    <>
+                        <XCircleIcon className="h-3.5 w-3.5" />
+                        <span>Insufficient Ingredients</span>
+                    </>
+                ) : (
+                    <>
+                        <CheckIcon className="h-3.5 w-3.5" />
+                        <span>Ingredients Available</span>
+                    </>
+                )}
+                {isExpanded ? <ChevronUpIcon className="h-3 w-3 ml-1"/> : <ChevronDownIcon className="h-3 w-3 ml-1"/>}
+            </button>
+
+            {/* Detailed Ingredient List */}
+            {isExpanded && (
+                <div className="mt-2 pl-2 border-l-2 border-gray-100 space-y-1">
+                    {ingredientsStatus.map((ing, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 font-medium">{ing.name}</span>
+                            <div className="flex items-center gap-2">
+                                <span className={ing.isLow ? "text-red-600 font-bold" : "text-gray-500"}>
+                                    req: {ing.required.toFixed(2)}{ing.unit}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold ${ing.isLow ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    {ing.available.toFixed(2)}{ing.unit} Stock
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrderCardProps) {
@@ -42,6 +161,9 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
     } else if (order.status === 'ready') {
         headerColor = "bg-green-600 text-white";
         statusText = "READY";
+    } else if (order.status === 'out_for_delivery') {
+         headerColor = "bg-indigo-600 text-white";
+         statusText = "SERVING";
     }
 
     const isLate = elapsedMinutes > 20;
@@ -75,7 +197,7 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
             </div>
 
             {/* ORDER ITEMS (Ticket Body) */}
-            <div className="flex-1 p-0 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200 bg-white">
+            <div className="flex-1 p-0 overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-gray-200 bg-white">
                 <ul className="divide-y divide-gray-100">
                     {order.items.map((item, idx) => (
                         <li key={`${order.id}-${idx}`} className="p-3 hover:bg-gray-50 transition-colors">
@@ -107,6 +229,16 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                                             <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
                                             <span>{item.specialInstructions}</span>
                                         </div>
+                                    )}
+
+                                    {/* Real-time Ingredient Status */}
+                                    {/* Only show for active orders (not delivered) to save visual noise */}
+                                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                                        <OrderItemIngredients 
+                                            menuItemId={item.menuItemId} 
+                                            quantity={item.quantity}
+                                            itemName={item.name}
+                                        />
                                     )}
                                 </div>
                             </div>
@@ -141,6 +273,14 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                         className="w-full py-3 bg-green-600 text-white hover:bg-green-700 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                         Serve / Deliver
+                    </button>
+                )}
+                {order.status === 'out_for_delivery' && (
+                    <button
+                        onClick={() => onUpdateStatus(order.id, 'delivered')}
+                        className="w-full py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2"
+                    >
+                         Mark Delivered
                     </button>
                 )}
             </div>
