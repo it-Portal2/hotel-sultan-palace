@@ -18,7 +18,7 @@ import { ListBulletIcon, Squares2X2Icon, MagnifyingGlassIcon, ArrowDownTrayIcon 
 import PremiumLoader from '@/components/ui/PremiumLoader';
 
 export default function AdminBookingsPage() {
-  const { isReadOnly } = useAdminRole();
+  const { isReadOnly, isFullAdmin, isSuperAdmin } = useAdminRole();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,9 @@ export default function AdminBookingsPage() {
   // Tabs State
   const [activeTab, setActiveTab] = useState<'all' | 'arrivals' | 'departures' | 'in_house'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+
+  // History Toggle State
+  const [showHistory, setShowHistory] = useState(false);
 
   // Filters
   const router = useRouter();
@@ -51,7 +54,20 @@ export default function AdminBookingsPage() {
   const refreshData = async () => {
     try {
       setLoading(true);
-      const data = await getAllBookings();
+
+      const isAdmin = isFullAdmin || isSuperAdmin;
+      const shouldFetchAll = isAdmin && showHistory;
+
+      let startDate: Date | undefined;
+
+      if (!shouldFetchAll) {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        d.setHours(0, 0, 0, 0);
+        startDate = d;
+      }
+
+      const data = await getAllBookings(startDate);
       setBookings(data);
     } catch (e) {
       console.error('Error loading bookings:', e);
@@ -63,7 +79,7 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [showHistory]); // Re-fetch when toggle changes
 
   // Set page to 1 when filters change
   useEffect(() => {
@@ -469,6 +485,27 @@ export default function AdminBookingsPage() {
               <ArrowDownTrayIcon className="h-3.5 w-3.5" />
               <span className="hidden leading-none xl:inline">Export</span>
             </button>
+
+            {/* Admin History Toggle */}
+            {(isFullAdmin || isSuperAdmin) && (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
+                <span className="text-xs font-bold text-gray-500 hidden xl:inline">History</span>
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`
+                    relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                    ${showHistory ? 'bg-blue-600' : 'bg-gray-200'}
+                  `}
+                >
+                  <span
+                    className={`
+                      inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                      ${showHistory ? 'translate-x-6' : 'translate-x-1'}
+                    `}
+                  />
+                </button>
+              </div>
+            )}
 
           </div>
         </div>

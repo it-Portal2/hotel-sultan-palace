@@ -1662,7 +1662,7 @@ export const getBooking = async (bookingId: string): Promise<Booking | null> => 
   }
 };
 
-export const getAllBookings = async (): Promise<Booking[]> => {
+export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
   if (!db) {
     console.warn('Firestore not available, cannot get bookings');
     return [];
@@ -1670,7 +1670,14 @@ export const getAllBookings = async (): Promise<Booking[]> => {
 
   try {
     const bookingsRef = collection(db, 'bookings');
-    const q = query(bookingsRef, orderBy('createdAt', 'desc'));
+    let q;
+
+    if (startDate) {
+      q = query(bookingsRef, where('createdAt', '>=', startDate), orderBy('createdAt', 'desc'));
+    } else {
+      q = query(bookingsRef, orderBy('createdAt', 'desc'));
+    }
+
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map(doc => {
