@@ -1,6 +1,6 @@
-import React from 'react';
-import { MenuItem } from '@/lib/firestoreService';
-import { PlusIcon, TrashIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { MenuItem, Booking } from '@/lib/firestoreService';
+import { PlusIcon, TrashIcon, ShoppingCartIcon, UserIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 // ================= TYPES =================
 interface CartItem extends MenuItem {
@@ -23,37 +23,176 @@ interface POSCartProps {
     setGuestName: (val: string) => void;
     roomNumber: string;
     setRoomNumber: (val: string) => void;
+    activeGuests: Booking[];
+    deliveryLocation: string;
+    setDeliveryLocation: (val: string) => void;
+    scheduledTime: Date | null;
+    setScheduledTime: (date: Date | null) => void;
+    deliveryMode: 'asap' | 'scheduled';
+    setDeliveryMode: (mode: 'asap' | 'scheduled') => void;
 }
 
 export function POSCart({
     cart, onRemove, onUpdateQty, onSubmit,
     subtotal, tax, total, isSubmitting, canSubmit,
-    guestName, setGuestName, roomNumber, setRoomNumber
+    guestName, setGuestName, roomNumber, setRoomNumber,
+    activeGuests, deliveryLocation, setDeliveryLocation,
+    scheduledTime, setScheduledTime, deliveryMode, setDeliveryMode
 }: POSCartProps) {
+    const [showGuestResults, setShowGuestResults] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // Filter guests based on input search
+    const filteredGuests = activeGuests.filter(g =>
+        (g.guestDetails?.firstName + ' ' + g.guestDetails?.lastName).toLowerCase().includes(guestName.toLowerCase()) ||
+        (g.rooms?.[0]?.allocatedRoomType || '').toLowerCase().includes(guestName.toLowerCase())
+    ).slice(0, 5); // Limit 5
+
+    // Close search on click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowGuestResults(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [searchRef]);
+
+    const selectGuest = (guest: Booking) => {
+        const fullName = `${guest.guestDetails?.firstName || 'Guest'} ${guest.guestDetails?.lastName || ''}`;
+        setGuestName(fullName);
+        const room = guest.rooms?.[0]?.allocatedRoomType || ''; // Use allocated room as room number/name
+        setRoomNumber(room);
+        setDeliveryLocation('in_room'); // Default to room if guest selected
+        setShowGuestResults(false);
+    };
+
     return (
-        <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-full md:w-96 fixed right-0 top-0 bottom-0 z-50 pt-[64px] md:pt-[72px] transition-transform duration-300">
+        <div className="flex flex-col fixed top-[90px] right-6 w-full md:w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl z-40 h-auto max-h-[calc(100vh-110px)] transition-all duration-300">
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
 
                 {/* GUEST DETAILS INPUTS */}
-                <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Order Details</h3>
-                    <div>
+                <div className="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
+                        <UserIcon className="h-4 w-4" /> Guest & Location
+                    </h3>
+
+                    {/* Guest Search / Name Input */}
+                    <div className="relative" ref={searchRef}>
+                        <label className="text-xs text-gray-500 font-semibold mb-1 block">Guest Name / Walk-in</label>
                         <input
                             type="text"
-                            placeholder="Guest Name (e.g. John Doe)"
+                            placeholder="Type to search guest..."
                             value={guestName}
-                            onChange={(e) => setGuestName(e.target.value)}
+                            onChange={(e) => {
+                                setGuestName(e.target.value);
+                                setShowGuestResults(true);
+                            }}
                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
                         />
+                        {/* Autocomplete Results */}
+                        {showGuestResults && guestName.length > 0 && filteredGuests.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-lg rounded-lg mt-1 z-50 max-h-48 overflow-y-auto">
+                                {filteredGuests.map(guest => (
+                                    <div
+                                        key={guest.id}
+                                        onClick={() => selectGuest(guest)}
+                                        className="px-4 py-2 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0"
+                                    >
+                                        <div className="text-sm font-bold text-gray-900">
+                                            {guest.guestDetails?.firstName} {guest.guestDetails?.lastName}
+                                        </div>
+                                        <div className="text-xs text-gray-500 flex justify-between">
+                                            <span>Room: {guest.rooms?.[0]?.allocatedRoomType || 'Unassigned'}</span>
+                                            <span className="text-orange-600 font-medium">{guest.rooms?.[0]?.suiteType}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
+
+                    {/* Room Display (Read Only if Found) */}
+                    {roomNumber && (
+                        <div className="bg-orange-50/50 p-2 rounded border border-orange-100 flex justify-between items-center">
+                            <span className="text-xs text-gray-600 font-medium">Linked Room:</span>
+                            <span className="text-sm font-bold text-[#FF6A00]">{roomNumber}</span>
+                        </div>
+                    )}
+
+                    {/* Delivery Location Dropdown */}
                     <div>
-                        <input
-                            type="text"
-                            placeholder="Room # (Optional)"
-                            value={roomNumber}
-                            onChange={(e) => setRoomNumber(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00]"
-                        />
+                        <label className="text-xs text-gray-500 font-semibold mb-1 block">Delivery Location</label>
+                        <div className="relative">
+                            <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <select
+                                value={deliveryLocation}
+                                onChange={(e) => setDeliveryLocation(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] appearance-none bg-white"
+                            >
+                                <option value="restaurant">Restaurant (Dine-in)</option>
+                                <option value="in_room" disabled={!roomNumber}>Room Service {(!roomNumber) ? '(Select Guest First)' : ''}</option>
+                                <option value="pool_side">Pool Side</option>
+                                <option value="beach_side">Beach Side</option>
+                                <option value="bar">Bar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Schedule Delivery Section */}
+                    <div className="pt-2 border-t border-dashed border-gray-200 mt-4">
+                        <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2 mb-3">
+                            <ClockIcon className="h-4 w-4" /> Schedule Delivery
+                        </h3>
+                        <div className="space-y-3 bg-white p-3 rounded-lg border border-gray-200">
+                            <p className="text-xs text-gray-500 font-medium mb-2">When would you like your order?</p>
+
+                            {/* Standard Option (ASAP / 30 mins) */}
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input
+                                    type="radio"
+                                    name="deliverySchedule"
+                                    checked={deliveryMode === 'asap'}
+                                    onChange={() => setDeliveryMode('asap')}
+                                    className="w-4 h-4 text-[#FF6A00] border-gray-300 focus:ring-[#FF6A00]"
+                                />
+                                <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">30 min (Default)</span>
+                            </label>
+
+                            {/* Scheduled Option */}
+                            <div className="flex flex-col gap-2">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="radio"
+                                        name="deliverySchedule"
+                                        checked={deliveryMode === 'scheduled'}
+                                        onChange={() => setDeliveryMode('scheduled')}
+                                        className="w-4 h-4 text-[#FF6A00] border-gray-300 focus:ring-[#FF6A00]"
+                                    />
+                                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">Select your preferred time</span>
+                                </label>
+
+                                {/* Time Picker (Conditional) */}
+                                {deliveryMode === 'scheduled' && (
+                                    <div className="ml-7 animate-fade-in flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200">
+                                        <input
+                                            type="time"
+                                            value={scheduledTime ? scheduledTime.toTimeString().slice(0, 5) : ''}
+                                            onChange={(e) => {
+                                                const [hours, minutes] = e.target.value.split(':').map(Number);
+                                                const date = new Date();
+                                                date.setHours(hours, minutes, 0, 0);
+                                                setScheduledTime(date);
+                                            }}
+                                            className="bg-transparent text-sm font-bold text-gray-900 focus:outline-none w-full"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -66,12 +205,12 @@ export function POSCart({
                 </div>
 
                 {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-center p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                        <div className="bg-white p-4 rounded-full shadow-sm mb-3">
-                            <ShoppingCartIcon className="h-8 w-8 text-gray-300" />
+                    <div className="flex flex-col items-center justify-center h-32 text-center p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        <div className="bg-white p-3 rounded-full shadow-sm mb-2">
+                            <ShoppingCartIcon className="h-6 w-6 text-gray-300" />
                         </div>
-                        <h4 className="font-semibold text-gray-900 mb-1">Your cart is empty</h4>
-                        <p className="text-sm text-gray-500 max-w-[200px]">Select items from the menu to start a new order.</p>
+                        <h4 className="font-semibold text-gray-900 mb-1 text-sm">Cart Empty</h4>
+                        <p className="text-xs text-gray-500">Add items to start.</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -115,15 +254,12 @@ export function POSCart({
             </div>
 
             {/* Cart Footer */}
-            <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-3">
+            <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-3 rounded-b-2xl">
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Subtotal</span>
                     <span>${subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                    <span>Tax (10%)</span>
-                    <span>${tax.toFixed(2)}</span>
-                </div>
+                {/* Simplified footer content for cleaner look */}
                 <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-2">
                     <span>Total</span>
                     <span className="text-[#FF6A00]">${total.toFixed(2)}</span>
@@ -159,7 +295,7 @@ export function MenuBrowser({ categories, items, onAddToCart }: MenuBrowserProps
     });
 
     return (
-        <div className="flex-1 p-6 overflow-y-auto h-full bg-slate-50">
+        <div className="flex-1 p-6 overflow-y-auto h-full bg-slate-50 md:pr-[26rem]">
             {/* Filters */}
             <div className="mb-8 space-y-4 sticky top-0 bg-slate-50 z-20 pb-4 pt-2">
                 <div className="relative max-w-lg">

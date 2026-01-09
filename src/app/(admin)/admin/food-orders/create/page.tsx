@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMenuItems, getMenuCategories, createFoodOrder, MenuItem } from '@/lib/firestoreService';
+import { getMenuItems, getMenuCategories, createFoodOrder, MenuItem, getAllBookings, Booking } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { ArrowLeftIcon, MapIcon, ListBulletIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -24,11 +24,16 @@ export default function POSCreatePage() {
     // Data State
     const [items, setItems] = useState<MenuItem[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [activeGuests, setActiveGuests] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Order Details State
     const [guestName, setGuestName] = useState("");
     const [roomNumber, setRoomNumber] = useState("");
+    const [deliveryLocation, setDeliveryLocation] = useState<string>('restaurant');
+    const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+    const [deliveryMode, setDeliveryMode] = useState<'asap' | 'scheduled'>('asap');
+    const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
 
     // Cart State
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -38,15 +43,21 @@ export default function POSCreatePage() {
     useEffect(() => {
         async function loadData() {
             try {
-                const [itemsData, catsData] = await Promise.all([
+                const [itemsData, catsData, bookingsData] = await Promise.all([
                     getMenuItems(),
-                    getMenuCategories()
+                    getMenuCategories(),
+                    getAllBookings() // Fetches all, we filter client side for 'checked_in'
                 ]);
                 setItems(itemsData.filter(i => i.isAvailable && i.status === 'published'));
                 setCategories(catsData);
+
+                // Filter only currently checked-in guests
+                const checkedIn = bookingsData.filter(b => b.status === 'checked_in' || b.status === 'stay_over');
+                setActiveGuests(checkedIn);
+
             } catch (error) {
                 console.error("Failed to load POS data:", error);
-                showToast("Failed to load menu", "error");
+                showToast("Failed to load menu/guests", "error");
             } finally {
                 setLoading(false);
             }
@@ -95,12 +106,18 @@ export default function POSCreatePage() {
 
         setSubmitting(true);
         try {
+            // Calculate Schedule Time
+            let finalDeliveryTime = new Date(Date.now() + 30 * 60000); // Default 30 mins
+            if (deliveryMode === 'scheduled' && scheduledTime) {
+                finalDeliveryTime = scheduledTime;
+            }
+
             const orderData = {
                 guestName: guestName,
-                guestPhone: "N/A",
+                guestPhone: "N/A", // Could fetch from booking if selected
                 roomNumber: roomNumber || null,
-                deliveryLocation: roomNumber ? 'room_service' : 'restaurant',
-                status: 'pending' as const, // Goes to KDS New
+                deliveryLocation: deliveryLocation,
+                status: 'pending' as const,
                 paymentStatus: 'pending' as const,
                 orderType: roomNumber ? 'room_service' : 'dine_in',
                 kitchenStatus: 'received' as const,
@@ -114,6 +131,7 @@ export default function POSCreatePage() {
                 tax,
                 totalAmount: total,
                 estimatedPreparationTime: 20,
+                scheduledDeliveryTime: finalDeliveryTime, // Persist Schedule
             };
 
             // @ts-ignore
@@ -172,6 +190,13 @@ export default function POSCreatePage() {
                 setGuestName={setGuestName}
                 roomNumber={roomNumber}
                 setRoomNumber={setRoomNumber}
+                activeGuests={activeGuests}
+                deliveryLocation={deliveryLocation}
+                setDeliveryLocation={setDeliveryLocation}
+                scheduledTime={scheduledTime}
+                setScheduledTime={setScheduledTime}
+                deliveryMode={deliveryMode}
+                setDeliveryMode={setDeliveryMode}
             />
         </div>
     );

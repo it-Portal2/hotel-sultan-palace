@@ -73,8 +73,8 @@ export default function OrderTable({ orders, onSelect, statusColors }: OrderTabl
                                     <div className="text-sm font-bold text-gray-900">${order.totalAmount?.toFixed(2)}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2.5 py-0.5 text-xs font-medium border ${statusColors(order.status)}`}>
-                                        {order.status.replace('_', ' ').toUpperCase()}
+                                    <span className={`px-2.5 py-0.5 text-xs font-medium border ${statusColors(order.status || 'pending')}`}>
+                                        {(order.status || 'pending').replace('_', ' ').toUpperCase()}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">

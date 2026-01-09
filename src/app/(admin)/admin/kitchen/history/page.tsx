@@ -11,11 +11,17 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { db } from '@/lib/firebase';
 import { FoodOrder } from '@/lib/firestoreService';
 
+import OrderDetailsModal from '@/components/admin/food-orders/OrderDetailsModal';
+import { useAdminRole } from '@/context/AdminRoleContext';
+import { updateFoodOrder } from '@/lib/firestoreService';
+
 export default function KitchenHistoryPage() {
+    const { isReadOnly } = useAdminRole();
     const [orders, setOrders] = useState<FoodOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [selectedOrder, setSelectedOrder] = useState<FoodOrder | null>(null);
 
     useEffect(() => {
         const startOfDay = new Date(dateFilter);
@@ -42,15 +48,37 @@ export default function KitchenHistoryPage() {
         return () => unsubscribe();
     }, [dateFilter]);
 
+    // Handle Status Updates from Modal (even in history, allowing corrections if needed, or just viewing)
+    const handleStatusUpdate = async (orderId: string, status: FoodOrder['status']) => {
+        if (isReadOnly) return;
+        try {
+            await updateFoodOrder(orderId, { status });
+            // The onSnapshot will automatically update 'orders', so we just update selectedOrder for UI responsiveness
+            if (selectedOrder && selectedOrder.id === orderId) {
+                setSelectedOrder({ ...selectedOrder, status });
+            }
+        } catch (error) {
+            console.error('Error updating order:', error);
+        }
+    };
+
+    // Derived state for History (Finalized) Orders
+    const historyOrders = useMemo(() => {
+        return orders.filter(o => ['delivered', 'cancelled', 'completed'].includes(o.status));
+    }, [orders]);
+
     const filteredData = useMemo(() => {
-        if (!searchQuery) return orders;
-        const lowerQuery = searchQuery.toLowerCase();
-        return orders.filter(o =>
-            o.orderNumber.toLowerCase().includes(lowerQuery) ||
-            o.guestName.toLowerCase().includes(lowerQuery) ||
-            (o.roomNumber && o.roomNumber.toLowerCase().includes(lowerQuery))
-        );
-    }, [orders, searchQuery]);
+        let data = historyOrders;
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            data = data.filter(o =>
+                o.orderNumber.toLowerCase().includes(lowerQuery) ||
+                o.guestName.toLowerCase().includes(lowerQuery) ||
+                (o.roomNumber && o.roomNumber.toLowerCase().includes(lowerQuery))
+            );
+        }
+        return data;
+    }, [historyOrders, searchQuery]);
 
     const getStatusColor = (status: string) => {
         const colors: any = {
@@ -58,8 +86,10 @@ export default function KitchenHistoryPage() {
             received: 'bg-blue-50 text-blue-700',
             cooking: 'bg-orange-50 text-orange-700',
             ready: 'bg-green-50 text-green-700',
+            out_for_delivery: 'bg-purple-50 text-purple-700',
             delivered: 'bg-teal-50 text-teal-700',
-            completed: 'bg-gray-100 text-gray-600'
+            completed: 'bg-gray-100 text-gray-600',
+            cancelled: 'bg-red-50 text-red-600'
         };
         return colors[status] || colors.pending;
     };
@@ -74,7 +104,7 @@ export default function KitchenHistoryPage() {
                         Order History
                     </h1>
                     <p className="text-gray-500 text-sm font-medium mt-1">
-                        Review past orders and performance metrics.
+                        Review past orders (Delivered, Cancelled, Completed).
                     </p>
                 </div>
 
@@ -85,7 +115,7 @@ export default function KitchenHistoryPage() {
                             type="date"
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value)}
-                            className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none uppercase tracking-wider"
+                            className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none uppercase tracking-wider cursor-pointer"
                         />
                     </div>
                 </div>
@@ -96,8 +126,8 @@ export default function KitchenHistoryPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
                         <div>
-                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Total Orders</div>
-                            <div className="text-3xl font-black text-gray-800 mt-1">{orders.length}</div>
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Total History</div>
+                            <div className="text-3xl font-black text-gray-800 mt-1">{historyOrders.length}</div>
                         </div>
                         <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100">
                             <span className="text-xl">📦</span>
@@ -105,16 +135,35 @@ export default function KitchenHistoryPage() {
                     </div>
                     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
                         <div>
-                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Completed</div>
-                            <div className="text-3xl font-black text-green-600 mt-1">{orders.filter(o => o.kitchenStatus === 'ready' || o.kitchenStatus === 'delivered').length}</div>
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Delivered</div>
+                            <div className="text-3xl font-black text-teal-600 mt-1">{historyOrders.filter(o => o.status === 'delivered').length}</div>
+                        </div>
+                        <div className="h-12 w-12 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center border border-teal-100">
+                            <CheckCircleIcon className="h-6 w-6" />
+                        </div>
+                    </div>
+                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                        <div>
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Cancelled</div>
+                            <div className="text-3xl font-black text-red-600 mt-1">{historyOrders.filter(o => o.status === 'cancelled').length}</div>
+                        </div>
+                        <div className="h-12 w-12 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-100">
+                            <span className="text-xl">✕</span>
+                        </div>
+                    </div>
+                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                        <div>
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Revenue</div>
+                            <div className="text-3xl font-black text-gray-800 mt-1">
+                                ${(historyOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + (o.totalAmount || 0), 0)).toFixed(0)}
+                            </div>
                         </div>
                         <div className="h-12 w-12 bg-green-50 text-green-600 rounded-lg flex items-center justify-center border border-green-100">
-                            <CheckCircleIcon className="h-6 w-6" />
+                            <span className="text-xl">$</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Table */}
                 {/* Table */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
                     {/* Toolbar */}
@@ -128,6 +177,9 @@ export default function KitchenHistoryPage() {
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
+                        </div>
+                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                            {filteredData.length} Records Found
                         </div>
                     </div>
 
@@ -143,62 +195,64 @@ export default function KitchenHistoryPage() {
                             <p className="text-xs mt-1">Try adjusting the date or search query.</p>
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-auto">
+                        <div className="flex-1 overflow-auto custom-scrollbar">
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Order #</th>
-                                        <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
                                         <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Guest Details</th>
                                         <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Items</th>
-                                        <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Kitchen Stage</th>
-                                        <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Final Status</th>
+                                        <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Amount</th>
+                                        <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filteredData.map((order) => (
-                                        <tr key={order.id} className="hover:bg-gray-50/80 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <span className="font-black text-gray-800 tracking-tight group-hover:text-blue-600 transition-colors">
-                                                    #{order.orderNumber}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
+                                        <tr
+                                            key={order.id}
+                                            onClick={() => setSelectedOrder(order)}
+                                            className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
+                                        >
+                                            <td className="px-6 py-4 align-top">
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-bold text-gray-700">
-                                                        {order.createdAt ? (order.createdAt as any).toDate?.().toLocaleDateString() : '-'}
+                                                    <span className="font-black text-gray-800 tracking-tight group-hover:text-blue-600 transition-colors">
+                                                        #{order.orderNumber}
                                                     </span>
-                                                    <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">
+                                                    <span className="text-[10px] text-gray-400 font-medium mt-1">
                                                         {order.createdAt ? (order.createdAt as any).toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 align-top">
                                                 <div>
                                                     <div className="text-sm font-bold text-gray-900">{order.guestName}</div>
-                                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mt-0.5">
                                                         {order.roomNumber ? `RM ${order.roomNumber}` : 'No Room'}
                                                         {order.deliveryLocation && <span className="text-gray-300">•</span>}
-                                                        {order.deliveryLocation?.replace('_', ' ')}
+                                                        {(order.deliveryLocation || 'N/A').replace('_', ' ')}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="max-w-xs text-sm text-gray-600 leading-snug">
-                                                    {order.items.map((i, idx) => (
-                                                        <span key={idx} className="block">
-                                                            <span className="font-bold text-gray-800">{i.quantity}x</span> {i.name}
-                                                        </span>
+                                            <td className="px-6 py-4 align-top">
+                                                <div className="max-w-xs text-sm text-gray-600 leading-snug space-y-1">
+                                                    {order.items.slice(0, 3).map((i, idx) => (
+                                                        <div key={idx} className="flex gap-2">
+                                                            <span className="font-bold text-gray-800 whitespace-nowrap">{i.quantity}x</span>
+                                                            <span className="truncate">{i.name}</span>
+                                                        </div>
                                                     ))}
+                                                    {order.items.length > 3 && (
+                                                        <div className="text-xs text-blue-600 font-bold">+{order.items.length - 3} more items...</div>
+                                                    )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest border ${getStatusColor(order.kitchenStatus || 'pending').replace('bg-', 'border-').replace('text-', 'text-') /* Hacky but works if colors are standard tailwind */} ${getStatusColor(order.kitchenStatus || 'pending')}`}>
-                                                    {order.kitchenStatus || 'pending'}
-                                                </span>
+                                            <td className="px-6 py-4 align-top">
+                                                <span className="font-bold text-gray-900">${order.totalAmount?.toFixed(2)}</span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-bold text-gray-500 capitalize bg-gray-100 px-2 py-1 rounded-full">{order.status.replace('_', ' ')}</span>
+                                            <td className="px-6 py-4 align-top">
+                                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest border ${getStatusColor(order.status).replace('bg-', 'border-').replace('text-', 'text-')} ${getStatusColor(order.status)}`}>
+                                                    {(order.status || 'pending').replace('_', ' ')}
+                                                </span>
                                             </td>
                                         </tr>
                                     ))}
@@ -208,6 +262,16 @@ export default function KitchenHistoryPage() {
                     )}
                 </div>
             </div>
+
+            {/* DRAWER MODAL - VIEW DETAILS */}
+            {selectedOrder && (
+                <OrderDetailsModal
+                    order={selectedOrder}
+                    onClose={() => setSelectedOrder(null)}
+                    onUpdateStatus={handleStatusUpdate}
+                    isReadOnly={isReadOnly}
+                />
+            )}
         </div>
     );
 }

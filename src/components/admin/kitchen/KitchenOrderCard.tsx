@@ -49,13 +49,13 @@ function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: 
                 // 2. Get Inventory Items needed
                 // Note: In a real large-scale app, we might want to cache this or fetch all at once, 
                 // but for this scale fetching per item is acceptable for real-time accuracy.
-                const allInventory = await getInventoryItems(); 
-                
+                const allInventory = await getInventoryItems();
+
                 const status = fetchedRecipe.ingredients.map(ing => {
                     const invItem = allInventory.find(i => i.id === ing.inventoryItemId);
                     const currentStock = invItem?.currentStock || 0;
                     const requiredTotal = ing.quantity * quantity;
-                    
+
                     return {
                         name: ing.inventoryItemName,
                         required: requiredTotal,
@@ -66,11 +66,11 @@ function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: 
                 });
 
                 setIngredientsStatus(status);
-                
+
                 if (status.some(i => i.isLow)) {
                     setMissingStock(true);
                     // Auto-expand if critical
-                    setIsExpanded(true); 
+                    setIsExpanded(true);
                 }
 
             } catch (error) {
@@ -89,13 +89,12 @@ function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: 
     return (
         <div className="mt-2">
             {/* Status Indicator / Toggle */}
-            <button 
+            <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded transition-colors ${
-                    missingStock 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded transition-colors ${missingStock
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
                         : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'
-                }`}
+                    }`}
             >
                 {missingStock ? (
                     <>
@@ -108,7 +107,7 @@ function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: 
                         <span>Ingredients Available</span>
                     </>
                 )}
-                {isExpanded ? <ChevronUpIcon className="h-3 w-3 ml-1"/> : <ChevronDownIcon className="h-3 w-3 ml-1"/>}
+                {isExpanded ? <ChevronUpIcon className="h-3 w-3 ml-1" /> : <ChevronDownIcon className="h-3 w-3 ml-1" />}
             </button>
 
             {/* Detailed Ingredient List */}
@@ -162,8 +161,8 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
         headerColor = "bg-green-600 text-white";
         statusText = "READY";
     } else if (order.status === 'out_for_delivery') {
-         headerColor = "bg-indigo-600 text-white";
-         statusText = "SERVING";
+        headerColor = "bg-indigo-600 text-white";
+        statusText = "SERVING";
     }
 
     const isLate = elapsedMinutes > 20;
@@ -176,9 +175,23 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                     <span className="text-lg font-black tracking-tight leading-none">#{order.orderNumber}</span>
                     <span className="text-[10px] font-bold uppercase opacity-90 mt-0.5 tracking-wider">{statusText}</span>
                 </div>
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold ${isLate && order.status !== 'ready' ? 'bg-red-600 text-white animate-pulse' : 'bg-black/20 text-white'}`}>
-                    <ClockIcon className="h-3.5 w-3.5" />
-                    <span>{elapsedMinutes}m</span>
+                <div className="flex items-center gap-2">
+                    {/* Scheduled Time Badge */}
+                    {order.scheduledDeliveryTime && (
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold ${new Date() > new Date(order.scheduledDeliveryTime)
+                                ? 'bg-red-600 text-white animate-pulse'
+                                : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                            }`}>
+                            <ClockIcon className="h-3.5 w-3.5" />
+                            <span>Due: {new Date(order.scheduledDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                    )}
+
+                    {/* Elapsed Timer */}
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold ${isLate && order.status !== 'ready' ? 'bg-orange-500 text-white animate-pulse' : 'bg-black/20 text-white'}`}>
+                        <ClockIcon className="h-3.5 w-3.5" />
+                        <span>{elapsedMinutes}m</span>
+                    </div>
                 </div>
             </div>
 
@@ -234,8 +247,8 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                                     {/* Real-time Ingredient Status */}
                                     {/* Only show for active orders (not delivered) to save visual noise */}
                                     {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                                        <OrderItemIngredients 
-                                            menuItemId={item.menuItemId} 
+                                        <OrderItemIngredients
+                                            menuItemId={item.menuItemId}
                                             quantity={item.quantity}
                                             itemName={item.name}
                                         />
@@ -280,7 +293,7 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                         onClick={() => onUpdateStatus(order.id, 'delivered')}
                         className="w-full py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                         Mark Delivered
+                        Mark Delivered
                     </button>
                 )}
             </div>

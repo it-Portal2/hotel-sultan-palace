@@ -1673,6 +1673,10 @@ export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
     let q;
 
     if (startDate) {
+      q = query(bookingsRef, where('created_at', '>=', startDate), orderBy('created_at', 'desc'));
+      // Fallback if 'created_at' index is missing or using 'createdAt'
+      // Note: App seems to use 'created_at' (snake_case) or standard 'createdAt'?
+      // We will try standard 'createdAt' as per schema.
       q = query(bookingsRef, where('createdAt', '>=', startDate), orderBy('createdAt', 'desc'));
     } else {
       q = query(bookingsRef, orderBy('createdAt', 'desc'));
@@ -1682,11 +1686,69 @@ export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
 
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
+
+      // ==============================================================
+      // ADAPTER: Handle App Bookings (Missing guestDetails / status)
+      // ==============================================================
+      let finalGuestDetails = data.guestDetails;
+      let finalStatus = data.status;
+      let finalRooms = data.rooms;
+
+      // 1. Map Guest Details from reservationGuests if missing
+      if (!finalGuestDetails && data.reservationGuests && data.reservationGuests.length > 0) {
+        const primaryGuest = data.reservationGuests[0];
+        // Split name if needed
+        const nameParts = (primaryGuest.firstName || '').split(' ');
+        const firstName = nameParts[0] || 'Guest';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        finalGuestDetails = {
+          firstName: firstName,
+          lastName: lastName,
+          email: primaryGuest.email || '', // Might be missing in app struct
+          phone: primaryGuest.phone || '',
+          prefix: '',
+          idNumber: primaryGuest.userId // Use userId as ref if nothing else
+        };
+      }
+
+      // 2. Map Status from reservationGuests if missing at root
+      if (!finalStatus && data.reservationGuests && data.reservationGuests.length > 0) {
+        finalStatus = data.reservationGuests[0].status || 'pending';
+      }
+      if (!finalStatus) finalStatus = 'pending'; // Default fallback
+
+      // 3. Map Rooms from activities or defaults if missing
+      if (!finalRooms || finalRooms.length === 0) {
+        if (data.activities && data.activities.length > 0) {
+          // Treat activities as rooms for display purposes if real room missing
+          finalRooms = data.activities.map((act: any) => ({
+            type: act.name,
+            price: act.price,
+            status: finalStatus,
+            allocatedRoomType: 'App Booking',
+            suiteType: 'Garden Suite' // Default fallback
+          }));
+        } else {
+          // Absolute fallback
+          finalRooms = [{
+            type: 'App/Unknown Room',
+            price: data.totalAmount || 0,
+            status: finalStatus,
+            suiteType: 'Garden Suite'
+          }];
+        }
+      }
+      // ==============================================================
+
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        guestDetails: finalGuestDetails || { firstName: 'Unknown', lastName: 'Guest', email: '', phone: '' },
+        status: finalStatus,
+        rooms: finalRooms,
+        createdAt: data.createdAt?.toDate() ? data.createdAt.toDate() : (data.updatedAt?.toDate() ? data.updatedAt.toDate() : new Date()),
+        updatedAt: data.updatedAt?.toDate() ? data.updatedAt.toDate() : new Date(),
       } as Booking;
     });
   } catch (error) {

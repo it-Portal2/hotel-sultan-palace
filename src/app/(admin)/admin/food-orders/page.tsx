@@ -15,6 +15,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 export default function AdminFoodOrdersPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
+  // State
   const [orders, setOrders] = useState<FoodOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,10 +75,17 @@ export default function AdminFoodOrdersPage() {
   const filteredOrders = useMemo(() => {
     let filtered = orders;
 
+    // 1. Filter: ONLY Active Orders
+    filtered = filtered.filter(o =>
+      ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
+    );
+
+    // 2. Filter by Status Dropdown
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
+    // 3. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(order =>
@@ -94,9 +102,9 @@ export default function AdminFoodOrdersPage() {
 
   const stats = useMemo(() => {
     return {
-      total: orders.length,
-      pending: orders.filter(o => o.status === 'pending').length,
-      delivered: orders.filter(o => o.status === 'delivered').length,
+      activeOrders: orders.filter(o => ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)).length,
+      pendingOrders: orders.filter(o => o.status === 'pending').length,
+      readyOrders: orders.filter(o => o.status === 'ready').length,
     };
   }, [orders]);
 
@@ -125,26 +133,42 @@ export default function AdminFoodOrdersPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-20">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Food Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage, track, and update guest food orders.</p>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Active Food Orders</h1>
+          <p className="text-gray-500 text-sm mt-1">Manage, track, and update guest food orders.</p>
         </div>
-        <div className="flex gap-3">
-          <Link
-            href="/admin/food-orders/create"
-            className="inline-flex items-center justify-center px-4 py-2 bg-[#FF6A00] text-white font-bold rounded-lg shadow-sm hover:bg-[#FF6A00]/90 transition-all text-sm"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New POS Order
+        <div className="flex items-center gap-3">
+          <Link href="/admin/food-orders/create">
+            <button className="flex items-center gap-2 px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-semibold text-sm">
+              <PlusIcon className="h-5 w-5" />
+              New POS Order
+            </button>
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
-      <OrderStats stats={stats} />
+      <div className="p-6 pb-2">
+        {/* Stats */}
+        {/* Mapping to OrderStats props: total, pending, delivered (using ready as 3rd metric for active page?) */}
+        {/* Let's adjust simple metrics */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Active</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeOrders}</p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Pending</p>
+            <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pendingOrders}</p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Kitchen Ready</p>
+            <p className="text-2xl font-bold text-teal-600 mt-1">{stats.readyOrders}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <OrderFilters
@@ -157,11 +181,11 @@ export default function AdminFoodOrdersPage() {
       {/* Table */}
       <OrderTable
         orders={filteredOrders}
-        onSelect={setSelectedOrder}
+        onSelect={setSelectedOrder} // Ensure this matches (val) => setSelectedOrder(val)
         statusColors={getStatusColor}
       />
 
-      {/* Modal */}
+      {/* Modal / Drawer */}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
@@ -173,3 +197,4 @@ export default function AdminFoodOrdersPage() {
     </div>
   );
 }
+

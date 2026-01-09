@@ -121,17 +121,26 @@ export default function AdminBookingsPage() {
     }
 
     if (startDate) {
-      const s = new Date(startDate);
-      list = list.filter(b => (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) >= s);
+      // Parse YYYY-MM-DD strictly as local time
+      const [y, m, d] = startDate.split('-').map(Number);
+      const s = new Date(y, m - 1, d, 0, 0, 0, 0); // Local Midnight
+
+      list = list.filter(b => {
+        const bookingDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return bookingDate >= s;
+      });
     }
+
     if (endDate) {
-      const e = new Date(startDate); // Use START date for single date filtering or implement range logic correctly
-      // Simplification: if both present, filter range. If only start, filter >= start.
-      if (endDate && startDate) {
-        const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        list = list.filter(b => (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) < end);
-      }
+      // Parse YYYY-MM-DD strictly as local time
+      const [y, m, d] = endDate.split('-').map(Number);
+      const e = new Date(y, m - 1, d, 0, 0, 0, 0); // Local Midnight
+      e.setDate(e.getDate() + 1); // Add 1 day to include the end date fully (up to 23:59:59.999 local)
+
+      list = list.filter(b => {
+        const bookingDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return bookingDate < e;
+      });
     }
 
     if (status === 'walk_in') {
