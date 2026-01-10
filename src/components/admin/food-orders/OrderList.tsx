@@ -2,13 +2,13 @@ import React from 'react';
 import { FoodOrder } from '@/lib/firestoreService';
 import { ClockIcon } from '@heroicons/react/24/outline';
 
-interface OrderTableProps {
+interface OrderListProps {
     orders: FoodOrder[];
     onSelect: (order: FoodOrder) => void;
     statusColors: (status: string) => string;
 }
 
-export default function OrderTable({ orders, onSelect, statusColors }: OrderTableProps) {
+export default function OrderList({ orders, onSelect, statusColors }: OrderListProps) {
     if (orders.length === 0) {
         return (
             <div className="text-center py-16 bg-white border border-gray-100 shadow-sm">

@@ -30,6 +30,8 @@ interface POSCartProps {
     setScheduledTime: (date: Date | null) => void;
     deliveryMode: 'asap' | 'scheduled';
     setDeliveryMode: (mode: 'asap' | 'scheduled') => void;
+    notes: string;
+    setNotes: (val: string) => void;
 }
 
 export function POSCart({
@@ -37,7 +39,8 @@ export function POSCart({
     subtotal, tax, total, isSubmitting, canSubmit,
     guestName, setGuestName, roomNumber, setRoomNumber,
     activeGuests, deliveryLocation, setDeliveryLocation,
-    scheduledTime, setScheduledTime, deliveryMode, setDeliveryMode
+    scheduledTime, setScheduledTime, deliveryMode, setDeliveryMode,
+    notes, setNotes
 }: POSCartProps) {
     const [showGuestResults, setShowGuestResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
@@ -80,7 +83,8 @@ export function POSCart({
                         <UserIcon className="h-4 w-4" /> Guest & Location
                     </h3>
 
-                    {/* Guest Search / Name Input */}
+                    {/* ... (Existing Guest Inputs) ... */}
+
                     <div className="relative" ref={searchRef}>
                         <label className="text-xs text-gray-500 font-semibold mb-1 block">Guest Name / Walk-in</label>
                         <input
@@ -193,6 +197,17 @@ export function POSCart({
                                 )}
                             </div>
                         </div>
+                    </div>
+
+                    {/* NEW: Order Notes */}
+                    <div className="mt-4">
+                        <label className="text-xs text-gray-500 font-semibold mb-1 block">Special Requests / Notes</label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Allergies, extra napkins, etc."
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] min-h-[60px]"
+                        />
                     </div>
                 </div>
 

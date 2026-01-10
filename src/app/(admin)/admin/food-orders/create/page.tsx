@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getMenuItems, getMenuCategories, createFoodOrder, MenuItem, getAllBookings, Booking } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { ArrowLeftIcon, MapIcon, ListBulletIcon, CheckIcon } from '@heroicons/react/24/outline';
@@ -15,11 +15,15 @@ interface CartItem extends MenuItem {
     quantity: number;
 }
 
-type ViewMode = 'tables' | 'menu';
+
 
 export default function POSCreatePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
+
+    // Determine return path
+    const returnUrl = searchParams.get('returnUrl') || '/admin/food-orders';
 
     // Data State
     const [items, setItems] = useState<MenuItem[]>([]);
@@ -34,6 +38,7 @@ export default function POSCreatePage() {
     const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
     const [deliveryMode, setDeliveryMode] = useState<'asap' | 'scheduled'>('asap');
     const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
+    const [notes, setNotes] = useState("");
 
     // Cart State
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -132,6 +137,7 @@ export default function POSCreatePage() {
                 totalAmount: total,
                 estimatedPreparationTime: 20,
                 scheduledDeliveryTime: finalDeliveryTime, // Persist Schedule
+                notes: notes, // Persist Notes
             };
 
             // @ts-ignore
@@ -139,7 +145,7 @@ export default function POSCreatePage() {
 
             if (orderId) {
                 showToast("Order sent to Kitchen!", "success");
-                router.push('/admin/food-orders');
+                router.push(returnUrl);
             }
         } catch (error) {
             console.error(error);
@@ -159,7 +165,7 @@ export default function POSCreatePage() {
                 {/* Header Bar */}
                 <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm z-10">
                     <div className="flex items-center gap-4">
-                        <Link href="/admin/food-orders" className="p-2 -ml-2 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors">
+                        <Link href={returnUrl} className="p-2 -ml-2 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors">
                             <ArrowLeftIcon className="h-6 w-6" />
                         </Link>
                         <div>
@@ -197,6 +203,8 @@ export default function POSCreatePage() {
                 setScheduledTime={setScheduledTime}
                 deliveryMode={deliveryMode}
                 setDeliveryMode={setDeliveryMode}
+                notes={notes}
+                setNotes={setNotes}
             />
         </div>
     );

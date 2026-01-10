@@ -106,7 +106,26 @@ export default function KitchenDashboardPage() {
     minute: '2-digit'
   });
 
+  // Filter State
+  const [filterType, setFilterType] = useState<'all' | 'dine_in' | 'room_service'>('all');
+  const [showUrgentOnly, setShowUrgentOnly] = useState(false);
 
+  // Derived State
+  const filteredOrders = orders.filter(o => {
+    if (filterType !== 'all' && o.orderType !== filterType) return false;
+    if (showUrgentOnly) {
+      // Check if late (either scheduled time passed OR > 45 mins old if no schedule)
+      const now = new Date();
+      if (o.scheduledDeliveryTime) {
+        return now > new Date(o.scheduledDeliveryTime);
+      }
+      // Fallback urgency: created > 45 mins ago
+      const created = o.createdAt instanceof Date ? o.createdAt : new Date(o.createdAt);
+      const diff = (now.getTime() - created.getTime()) / 1000 / 60;
+      return diff > 45;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -143,6 +162,46 @@ export default function KitchenDashboardPage() {
 
         {/* Legend & Controls */}
         <div className="flex items-center gap-4">
+          <Link href="/admin/food-orders/create?returnUrl=/admin/kitchen">
+            <button className="flex items-center gap-2 px-3 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-semibold text-xs uppercase tracking-wide">
+              <PlusIcon className="h-4 w-4" />
+              <span>New Order</span>
+            </button>
+          </Link>
+          {/* Type Filter */}
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterType === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterType('room_service')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterType === 'room_service' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Room Service
+            </button>
+            <button
+              onClick={() => setFilterType('dine_in')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterType === 'dine_in' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Dine-In
+            </button>
+          </div>
+
+          {/* Urgency Toggle */}
+          <button
+            onClick={() => setShowUrgentOnly(!showUrgentOnly)}
+            className={`px-3 py-2 rounded-lg text-xs font-bold border flex items-center gap-2 transition-colors ${showUrgentOnly
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${showUrgentOnly ? 'bg-red-600 animate-pulse' : 'bg-gray-300'}`}></span>
+            Urgent Only
+          </button>
+
           <div className="hidden lg:flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-100"></span>
@@ -151,10 +210,6 @@ export default function KitchenDashboardPage() {
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-orange-100"></span>
               <span className="text-xs font-bold text-gray-600">Cooking</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-              <span className="text-xs font-bold text-gray-600">Urgent</span>
             </div>
           </div>
 
@@ -170,7 +225,7 @@ export default function KitchenDashboardPage() {
       </div>
 
       <div className="flex-1 min-h-0 bg-gray-100 relative">
-        <KitchenKanbanBoard orders={orders} onUpdateStatus={updateOrderStatus} />
+        <KitchenKanbanBoard orders={filteredOrders} onUpdateStatus={updateOrderStatus} />
       </div>
     </div>
   );

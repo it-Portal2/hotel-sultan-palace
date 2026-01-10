@@ -92,8 +92,8 @@ function OrderItemIngredients({ menuItemId, quantity, itemName }: { menuItemId: 
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded transition-colors ${missingStock
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                        : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'
                     }`}
             >
                 {missingStock ? (
@@ -179,8 +179,8 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                     {/* Scheduled Time Badge */}
                     {order.scheduledDeliveryTime && (
                         <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold ${new Date() > new Date(order.scheduledDeliveryTime)
-                                ? 'bg-red-600 text-white animate-pulse'
-                                : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                            ? 'bg-red-600 text-white animate-pulse'
+                            : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                             }`}>
                             <ClockIcon className="h-3.5 w-3.5" />
                             <span>Due: {new Date(order.scheduledDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -245,8 +245,8 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
                                     )}
 
                                     {/* Real-time Ingredient Status */}
-                                    {/* Only show for active orders (not delivered) to save visual noise */}
-                                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                                    {/* Only show for NEW orders. Once cooking, ingredients are already used. */}
+                                    {(order.status === 'pending' || order.status === 'confirmed') && (
                                         <OrderItemIngredients
                                             menuItemId={item.menuItemId}
                                             quantity={item.quantity}
@@ -262,7 +262,7 @@ export default function KitchenOrderCard({ order, onUpdateStatus }: KitchenOrder
 
             {/* ACTION FOOTER */}
             <div className="p-3 bg-gray-50 border-t border-gray-100">
-                {order.status === 'confirmed' && (
+                {(order.status === 'confirmed' || order.status === 'pending') && (
                     <button
                         onClick={() => onUpdateStatus(order.id, 'preparing')}
                         className="w-full py-3 bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2"

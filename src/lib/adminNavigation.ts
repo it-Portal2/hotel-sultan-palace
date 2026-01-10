@@ -194,7 +194,7 @@ export const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
             icon: BeakerIcon,
             items: [
                 { name: 'Dashboard', href: '/admin/kitchen', icon: HomeIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'kitchen_dashboard' },
-                { name: 'Active Orders', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'kitchen_active_orders' },
+                { name: 'Service / Delivery', href: '/admin/food-orders', icon: ShoppingBagIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'kitchen_active_orders' },
                 { name: 'Order History', href: '/admin/kitchen/history', icon: ClipboardDocumentListIcon, color: 'text-blue-500', bgColor: 'bg-blue-50', section: 'kitchen_history' },
             ],
             defaultOpen: true

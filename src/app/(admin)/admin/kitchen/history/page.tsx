@@ -153,13 +153,21 @@ export default function KitchenHistoryPage() {
                     </div>
                     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
                         <div>
-                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Revenue</div>
-                            <div className="text-3xl font-black text-gray-800 mt-1">
-                                ${(historyOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + (o.totalAmount || 0), 0)).toFixed(0)}
+                            <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Late Orders</div>
+                            <div className="text-3xl font-black text-orange-600 mt-1">
+                                {historyOrders.filter(o => {
+                                    // Simple check for late orders (completed but took > 45 mins)
+                                    // Note: In real app, check actualDeliveryTime vs createdAt
+                                    // For now, illustrating the metric placement
+                                    const created = o.createdAt && (o.createdAt as any).toDate ? (o.createdAt as any).toDate() : new Date();
+                                    const delivered = o.actualDeliveryTime && (o.actualDeliveryTime as any).toDate ? (o.actualDeliveryTime as any).toDate() : new Date();
+                                    const diff = (delivered.getTime() - created.getTime()) / 1000 / 60;
+                                    return diff > 45;
+                                }).length}
                             </div>
                         </div>
-                        <div className="h-12 w-12 bg-green-50 text-green-600 rounded-lg flex items-center justify-center border border-green-100">
-                            <span className="text-xl">$</span>
+                        <div className="h-12 w-12 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center border border-orange-100">
+                            <ClockIcon className="h-6 w-6" />
                         </div>
                     </div>
                 </div>

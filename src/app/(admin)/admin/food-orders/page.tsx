@@ -8,7 +8,7 @@ import { getFoodOrders, updateFoodOrder, FoodOrder } from '@/lib/firestoreServic
 import { processOrderInventoryDeduction } from '@/lib/inventoryService';
 import OrderStats from '@/components/admin/food-orders/OrderStats';
 import OrderFilters from '@/components/admin/food-orders/OrderFilters';
-import OrderTable from '@/components/admin/food-orders/OrderTable';
+import OrderList from '@/components/admin/food-orders/OrderList';
 import OrderDetailsModal from '@/components/admin/food-orders/OrderDetailsModal';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
@@ -137,16 +137,11 @@ export default function AdminFoodOrdersPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-20">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Active Food Orders</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage, track, and update guest food orders.</p>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Service & Delivery Dashboard</h1>
+          <p className="text-gray-500 text-sm mt-1">Track ready orders and manage delivery/service to guests.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/admin/food-orders/create">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#FF6A00] text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-semibold text-sm">
-              <PlusIcon className="h-5 w-5" />
-              New POS Order
-            </button>
-          </Link>
+          {/* New Order button moved to Kitchen Dashboard primarily */}
         </div>
       </div>
 
@@ -179,7 +174,7 @@ export default function AdminFoodOrdersPage() {
       />
 
       {/* Table */}
-      <OrderTable
+      <OrderList
         orders={filteredOrders}
         onSelect={setSelectedOrder} // Ensure this matches (val) => setSelectedOrder(val)
         statusColors={getStatusColor}
