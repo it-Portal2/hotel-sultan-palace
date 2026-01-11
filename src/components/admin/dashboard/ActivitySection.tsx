@@ -97,7 +97,8 @@ export default function ActivitySection({ notifications, activities }: ActivityS
                                 <option value="All">All Activities</option>
                                 <option value="New Booking">Bookings</option>
                                 <option value="Cancellation">Cancellations</option>
-                                <option value="User Action">System</option>
+                                <option value="Inquiry">Inquiries</option>
+                                <option value="Message">Messages</option>
                             </select>
                             <ChevronDownIcon className="w-3 h-3 text-gray-400 absolute right-3 top-2.5 pointer-events-none group-hover:text-[#FF6A00]" />
                         </div>

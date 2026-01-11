@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { getAllBookings, getRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
+import { Timestamp } from 'firebase/firestore';
 import { sendBookingConfirmationEmailAction } from '@/app/actions/emailActions';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -472,7 +473,13 @@ export default function RoomAvailabilityPage() {
           paymentStatus: 'paid', // Irrelevant for maintenance
           totalAmount: 0,
           paidAmount: 0,
-          rooms: []
+          rooms: [{
+            type: status.suiteType || 'Garden Suite',
+            price: 0,
+            allocatedRoomType: status.roomName,
+            suiteType: status.suiteType || 'Garden Suite',
+            status: 'maintenance'
+          }]
         };
 
         bars.push({
@@ -763,8 +770,8 @@ export default function RoomAvailabilityPage() {
       const totalGuests = formData.selectedRooms.reduce((acc: number, r: any) => acc + r.adults + r.children, 0);
 
       const newBooking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
-        checkIn: formData.checkInDate,
-        checkOut: formData.checkOutDate,
+        checkIn: Timestamp.fromDate(new Date(formData.checkInDate + 'T00:00:00')) as any,
+        checkOut: Timestamp.fromDate(new Date(formData.checkOutDate + 'T00:00:00')) as any,
         guests: {
           adults: formData.selectedRooms.reduce((acc: number, r: any) => acc + r.adults, 0),
           children: formData.selectedRooms.reduce((acc: number, r: any) => acc + r.children, 0),
@@ -803,7 +810,29 @@ export default function RoomAvailabilityPage() {
         // Update source if Walk In, otherwise default or from form
         source: formData.reservationType === 'Walk In' ? 'walk_in' : (formData.businessSource ? formData.businessSource.toLowerCase().replace(' ', '_') : 'direct'),
         // Set checkInTime if Walk In
-        checkInTime: formData.reservationType === 'Walk In' ? new Date() : undefined,
+        checkInTime: (() => {
+          if (formData.reservationType !== 'Walk In') return undefined;
+          try {
+            const dateStr = formData.checkInDate;
+            const timeStr = formData.checkInTime || '12:00 PM'; // Default if missing
+
+            // Parse time string (e.g. "03:00 PM")
+            const [time, modifier] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':');
+
+            if (hours === '12') {
+              hours = '00';
+            }
+            if (modifier === 'PM') {
+              hours = parseInt(hours, 10) + 12;
+            }
+
+            return new Date(`${dateStr}T${hours}:${minutes}:00`);
+          } catch (e) {
+            console.error("Error parsing checkInTime", e);
+            return new Date(); // Fallback to now
+          }
+        })(),
         notes: '',
       };
 

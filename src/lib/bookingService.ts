@@ -5,11 +5,15 @@ import { db } from './firebase';
 // Using Booking interface from firestoreService
 
 // Helper function to check if two date ranges overlap
+// Helper function to check if two date ranges overlap
 const datesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
-  const s1 = new Date(start1).getTime();
-  const e1 = new Date(end1).getTime();
-  const s2 = new Date(start2).getTime();
-  const e2 = new Date(end2).getTime();
+  // Normalize to YYYY-MM-DD to avoid time/timezone issues
+  const s1 = new Date(start1).toISOString().split('T')[0];
+  const e1 = new Date(end1).toISOString().split('T')[0];
+  const s2 = new Date(start2).toISOString().split('T')[0];
+  const e2 = new Date(end2).toISOString().split('T')[0];
+
+  // Standard overlap: Start1 < End2 && Start2 < End1
   return s1 < e2 && s2 < e1;
 };
 
@@ -235,7 +239,22 @@ export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'cr
     // Auto-allocate room types before creating booking
     const bookingWithAllocatedRooms = await allocateRoomTypes(bookingData);
 
-    const bookingId = await createBooking(bookingWithAllocatedRooms);
+    // Enforce Firestore Timestamps for dates
+    const { Timestamp } = await import('firebase/firestore');
+
+    // Safety check for CheckIn/CheckOut dates
+    const checkInDate = new Date(bookingWithAllocatedRooms.checkIn);
+    const checkOutDate = new Date(bookingWithAllocatedRooms.checkOut);
+
+    const finalBookingData = {
+      ...bookingWithAllocatedRooms,
+      checkIn: Timestamp.fromDate(checkInDate),
+      checkOut: Timestamp.fromDate(checkOutDate),
+      // Ensure checkInTime is set if not present (logic similar to Walk-in but for Web)
+      checkInTime: bookingWithAllocatedRooms.checkInTime || new Date(checkInDate.toDateString() + ' 12:00:00'),
+    };
+
+    const bookingId = await createBooking(finalBookingData as any);
     if (!bookingId) {
       throw new Error('Failed to create booking');
     }

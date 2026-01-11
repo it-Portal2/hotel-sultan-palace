@@ -313,7 +313,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("🟢 Form submitted---");
+
 
     if (!agreements.privacy || !agreements.booking) {
       showToast("Please accept the terms and conditions", "error");
@@ -331,13 +331,13 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
-    console.log("🟢 Starting payment process.....");
 
     try {
       const bookingId = `BKG${Date.now()}`;
       const totalAmount = calculateTotal();
 
-      console.log("🟢 Booking details:::::", { bookingId, totalAmount });
+
+
 
       if (totalAmount <= 0) {
         showToast("Invalid booking amount", "error");
@@ -390,13 +390,13 @@ export default function CheckoutPage() {
         updatedAt: new Date(),
       };
 
-      console.log("🟢 Checking room availability......");
+
 
       // Check availability
       const { checkRoomAvailability } = await import("@/lib/bookingService");
       const availability = await checkRoomAvailability(bookingDetails);
 
-      console.log("🟢 Availability result:", availability);
+
 
       if (!availability.available) {
         showToast(availability.message, "error");
@@ -406,18 +406,10 @@ export default function CheckoutPage() {
 
       // Save booking to localStorage
       localStorage.setItem("pendingBooking", JSON.stringify(bookingDetails));
-      console.log("🟢 Booking saved to localStorage..");
 
       const baseURL = window.location.origin;
-      console.log("🟢 Base URL::::", baseURL);
 
       // Call DPO through server action
-      console.log("🔵 Calling createPaymentToken........");
-      console.log("🔵 Payment data:::", {
-        amount: totalAmount,
-        companyRef: bookingId,
-        email: guests[0].email,
-      });
 
       const paymentResult = await createPaymentToken({
         amount: totalAmount,
@@ -436,7 +428,7 @@ export default function CheckoutPage() {
         customerZip: address.zipCode || undefined,
       });
 
-      console.log("🔵 Payment result received:::", paymentResult);
+
 
       if (!paymentResult.success) {
         console.error("❌ Payment failed:::::", paymentResult.error);
@@ -446,8 +438,7 @@ export default function CheckoutPage() {
         throw new Error(paymentResult.error || "Failed to create payment");
       }
 
-      console.log("✅ Payment token created::::::", paymentResult.transToken);
-      console.log("✅ Payment URL::::::", paymentResult.paymentURL);
+
 
       // Redirect to DPO payment page
       if (!paymentResult.paymentURL) {
@@ -455,27 +446,28 @@ export default function CheckoutPage() {
       }
 
       showToast("Redirecting to secure payment page...", "success");
-      console.log("🔄 Redirecting to:::", paymentResult.paymentURL);
       window.location.href = paymentResult.paymentURL;
     } catch (err) {
-      console.error("❌ Error in handleSubmit::: ", err);
-      console.error("❌ Error type:::", typeof err);
-      console.error("❌ Error details:::", err);
-
+      console.error("Payment Error: ", err);
+      // ... error handling
       showToast(
-        `Payment processing error: ${err instanceof Error ? err.message : "Unknown error"
-        }`,
+        `Payment processing error: ${err instanceof Error ? err.message : "Unknown error"}`,
         "error"
       );
     } finally {
       setIsSubmitting(false);
-      console.log("🟢 Form submission complete:::::");
     }
   };
 
+
+
   const handlePopupClose = () => {
     setShowConfirmationPopup(false);
-    router.push("/confirmation");
+    if (popupBookingData.bookingId) {
+      router.push(`/confirmation?id=${popupBookingData.bookingId}`);
+    } else {
+      router.push("/confirmation");
+    }
   };
 
   const couponAlreadyApplied = Boolean(
@@ -1277,6 +1269,8 @@ export default function CheckoutPage() {
                     "Confirm Booking"
                   )}
                 </button>
+
+
               </form>
             </div>
           </div>

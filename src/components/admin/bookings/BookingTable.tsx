@@ -145,11 +145,11 @@ export default function BookingTable({
 
                                     {/* Rooms Column */}
                                     <td className="px-6 py-3 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900 font-medium">
-                                            {booking.rooms.length} Room{booking.rooms.length > 1 ? 's' : ''}
+                                        <div className="text-sm font-bold text-gray-900">
+                                            {booking.rooms.map(r => (r.suiteType || r.type).toUpperCase()).join(', ')}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {booking.rooms.map(r => r.suiteType).join(', ')}
+                                            {booking.rooms.map(r => r.suiteType ? (r.type === r.suiteType ? 'STANDARD RATE' : r.type) : 'STANDARD RATE').join(', ')}
                                         </div>
                                         {booking.rooms.some(r => r.allocatedRoomType) && (
                                             <div className="text-xs font-mono text-indigo-600 mt-0.5">

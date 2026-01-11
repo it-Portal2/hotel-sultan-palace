@@ -49,13 +49,21 @@ export default function AdminDashboard() {
       const todayStr = today.toDateString();
 
       // --- Calculations ---
+      const isToday = (d: any) => {
+        if (!d) return false;
+        const date = d instanceof Date ? d : new Date(d);
+        if (isNaN(date.getTime())) return false;
+        const today = new Date();
+        return date.getDate() === today.getDate() &&
+          date.getMonth() === today.getMonth() &&
+          date.getFullYear() === today.getFullYear();
+      };
+
       const arrivalsPending = bookings.filter(b => {
-        const d = (b.checkIn as any) instanceof Date ? (b.checkIn as any) : new Date(b.checkIn);
-        return d.toDateString() === todayStr && b.status === 'confirmed';
+        return isToday(b.checkIn) && b.status === 'confirmed';
       }).length;
       const arrivalsArrived = bookings.filter(b => {
-        const d = (b.checkIn as any) instanceof Date ? (b.checkIn as any) : new Date(b.checkIn);
-        return d.toDateString() === todayStr && b.status === 'checked_in';
+        return isToday(b.checkIn) && b.status === 'checked_in';
       }).length; // Simplification: Arrived today
 
       const departuresPending = bookings.filter(b => {
@@ -93,10 +101,7 @@ export default function AdminDashboard() {
       }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
       // Notifications & Activities
-      const isToday = (date: any) => {
-        const d = date instanceof Date ? date : new Date(date);
-        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-      };
+
 
       const notificationsData = {
         bookingInquiry: enquiries.filter(e => isToday(e.createdAt)).length,
@@ -120,9 +125,15 @@ export default function AdminDashboard() {
           type: 'contact',
           message: `Message from ${c.name}`,
           time: (c.createdAt as any) instanceof Date ? c.createdAt : new Date(c.createdAt),
+          status: 'Message'
+        })),
+        ...enquiries.map(e => ({
+          type: 'enquiry',
+          message: `Inquiry from ${e.name}`,
+          time: (e.createdAt as any) instanceof Date ? e.createdAt : new Date(e.createdAt),
           status: 'Inquiry'
         }))
-      ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 15);
+      ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 20);
 
       setDashboardData({
         arrivals: { pending: arrivalsPending, arrived: arrivalsArrived },

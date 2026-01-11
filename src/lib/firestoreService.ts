@@ -128,6 +128,7 @@ export interface Booking {
 
   // Essential add-ons information
   addOns: Array<{
+    id?: string;
     name: string;
     price: number;
     quantity: number;
@@ -1648,9 +1649,26 @@ export const getBooking = async (bookingId: string): Promise<Booking | null> => 
 
     if (bookingSnap.exists()) {
       const data = bookingSnap.data();
+
+      // Sanitization Helper (same as getAllBookings)
+      const safeDateToISO = (val: any): string => {
+        try {
+          if (!val) return new Date().toISOString();
+          if (val && typeof val.toDate === 'function') {
+            return val.toDate().toISOString();
+          }
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+        } catch (error) {
+          return new Date().toISOString();
+        }
+      };
+
       return {
         id: bookingSnap.id,
         ...data,
+        checkIn: safeDateToISO(data.checkIn),
+        checkOut: safeDateToISO(data.checkOut),
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Booking;
@@ -1741,9 +1759,36 @@ export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
       }
       // ==============================================================
 
+
+
+
+
+
+      // 4. Sanitize Dates (Handle Timestamp, String, or Date)
+      const safeDateToISO = (val: any): string => {
+        try {
+          if (!val) return new Date().toISOString();
+          // Handle Firestore Timestamp
+          if (val && typeof val.toDate === 'function') {
+            return val.toDate().toISOString();
+          }
+          // Handle String or Date
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+        } catch (error) {
+          return new Date().toISOString();
+        }
+      };
+
+      let finalCheckIn = safeDateToISO(data.checkIn);
+      let finalCheckOut = safeDateToISO(data.checkOut);
+      // ==============================================================
+
       return {
         id: doc.id,
         ...data,
+        checkIn: finalCheckIn, // Override with sanitized ISO
+        checkOut: finalCheckOut, // Override with sanitized ISO
         guestDetails: finalGuestDetails || { firstName: 'Unknown', lastName: 'Guest', email: '', phone: '' },
         status: finalStatus,
         rooms: finalRooms,

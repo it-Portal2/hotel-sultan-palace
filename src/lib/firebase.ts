@@ -20,27 +20,27 @@ let auth: ReturnType<typeof getAuth> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
 let messaging: Messaging | null = null;
 
-if (typeof window !== 'undefined') {
-  try {
-    app = initializeApp(firebaseConfig);
-    // Use initializeFirestore with experimentalForceLongPolling to prevent timeout errors
-    // "Backend didn't respond within 10 seconds"
-    db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-    });
-    auth = getAuth(app);
-    storage = getStorage(app);
-    // Initialize messaging only if service worker is supported
-    if ('serviceWorker' in navigator) {
-      try {
-        messaging = getMessaging(app);
-      } catch (error) {
-        console.warn('Firebase Messaging initialization failed:', error);
-      }
+try {
+  app = initializeApp(firebaseConfig);
+  // Use initializeFirestore with experimentalForceLongPolling to prevent timeout errors
+  // "Backend didn't respond within 10 seconds"
+  db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+
+  // Auth and Storage work in Node environments too usually, but safe to keep here
+  auth = getAuth(app);
+  storage = getStorage(app);
+
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    try {
+      messaging = getMessaging(app);
+    } catch (error) {
+      console.warn('Firebase Messaging initialization failed:', error);
     }
-  } catch (error) {
-    console.warn('Firebase initialization failed:', error);
   }
+} catch (error) {
+  console.warn('Firebase initialization failed:', error);
 }
 
 export { db, auth, storage, messaging };

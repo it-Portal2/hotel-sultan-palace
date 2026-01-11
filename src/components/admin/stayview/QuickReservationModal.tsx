@@ -16,8 +16,17 @@ interface QuickReservationModalProps {
 }
 
 // Helper: Normalize date to YYYY-MM-DD string for strict comparison
-const toDateStr = (d: Date | string) => {
-    const date = new Date(d);
+const toDateStr = (d: any) => {
+    if (!d) return new Date().toISOString().split('T')[0];
+    let date;
+    if (typeof d.toDate === 'function') {
+        date = d.toDate();
+    } else {
+        date = new Date(d);
+    }
+
+    if (isNaN(date.getTime())) return new Date().toISOString().split('T')[0];
+
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     return date.toISOString().split('T')[0];
 };

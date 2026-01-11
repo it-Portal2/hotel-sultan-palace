@@ -1,12 +1,22 @@
+
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircleIcon, CalendarIcon, UsersIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  CheckCircleIcon,
+  PrinterIcon,
+  HomeIcon,
+  CalendarDaysIcon,
+  UserGroupIcon,
+  MapPinIcon
+} from "@heroicons/react/24/outline";
 import { useCart } from "@/context/CartContext";
 
+// Define Booking Interface based on Firestore data
 interface BookingDetails {
   id: string;
+  bookingId: string;
   checkIn: string;
   checkOut: string;
   guests: {
@@ -47,330 +57,320 @@ interface BookingDetails {
     price: number;
     quantity: number;
   }>;
-  total: number;
+  totalAmount: number; // Note: Firestore uses totalAmount, local mock used total
   status: string;
-  bookingId: string;
 }
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const router = useRouter();
-  const { getNumberOfNights } = useCart();
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('id');
+  const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const storedBooking = localStorage.getItem("pendingBooking") || localStorage.getItem("bookingDetails");
-    if (storedBooking) {
-      try {
-        const parsed = JSON.parse(storedBooking);
-        setBookingDetails(parsed);
-      } catch (error) {
-        console.error("Error parsing booking details:", error);
-        router.push("/");
+    const fetchBooking = async () => {
+      if (!bookingId) {
+        // Fallback to local storage if no ID in URL (legacy flow)
+        const storedBooking = localStorage.getItem("pendingBooking") || localStorage.getItem("bookingDetails");
+        if (storedBooking) {
+          try {
+            setBooking(JSON.parse(storedBooking));
+          } catch (e) {
+            console.error("Parse error", e);
+          }
+        }
+        setLoading(false);
+        return;
       }
-    } else {
-      router.push("/");
-    }
-    setLoading(false);
-  }, [router]);
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "long",
+      try {
+        const res = await fetch(`/api/bookings/${bookingId}`);
+        if (!res.ok) throw new Error("Booking not found");
+        const data = await res.json();
+        setBooking(data);
+      } catch (err) {
+        console.error("Error fetching booking:", err);
+        setError("Could not retrieve booking details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooking();
+  }, [bookingId]);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "2-digit",
       month: "long",
-      day: "numeric",
       year: "numeric",
     });
+  };
+
+  const getNights = () => {
+    if (!booking) return 1;
+    const start = new Date(booking.checkIn);
+    const end = new Date(booking.checkOut);
+    const diff = end.getTime() - start.getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
+
+  // Calculate total explicitly to fix 0 issues
+  const calculateTotal = () => {
+    if (!booking) return 0;
+    const nights = getNights();
+    const roomTotal = booking.rooms?.reduce((acc, room) => acc + ((room.price || 0) * nights), 0) || 0;
+    const addonTotal = booking.addOns?.reduce((acc, addon) => acc + ((addon.price || 0) * (addon.quantity || 1)), 0) || 0;
+    return roomTotal + addonTotal;
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading confirmation...</p>
+      <div className="min-h-screen bg-[#F9F9F9] flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500 font-serif tracking-widest uppercase text-sm">Loading details...</p>
         </div>
       </div>
     );
   }
 
-  if (!bookingDetails) {
+  if (error || !booking) {
     return (
-      <div className="min-h-screen bg-[#FFFCF6] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Booking Found</h1>
-          <p className="text-gray-600 mb-6">We couldn&apos;t find your booking details.</p>
+      <div className="min-h-screen bg-[#F9F9F9] flex items-center justify-center">
+        <div className="text-center bg-white p-12 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-serif text-gray-900 mb-2">Booking Not Found</h1>
+          <p className="text-gray-500 mb-8">{error || "We couldn't locate your booking details."}</p>
           <button
             onClick={() => router.push("/")}
-            className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors"
+            className="bg-gray-900 text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-all uppercase tracking-wider text-sm font-medium w-full"
           >
-            Return Home
+            Return to Home
           </button>
         </div>
       </div>
     );
   }
 
+  const finalTotal = (booking.totalAmount && booking.totalAmount > 0) ? booking.totalAmount : calculateTotal();
+
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
+    <div className="min-h-screen bg-[#F5F5F0] pt-40 pb-20 font-sans text-gray-800 print:bg-white print:pt-0 print:pb-0">
       <style jsx global>{`
         header {
-          background-color: rgba(0, 0, 0, 0.8) !important;
-          backdrop-filter: blur(8px);
+          background-color: transparent !important;
+          backdrop-filter: none !important;
+          box-shadow: none !important;
         }
-        header * {
-          color: white !important;
+
+        @media print {
+          /* Hide everything by default */
+          body * {
+            visibility: hidden;
+          }
+          
+          /* Show only the relevant content */
+          #booking-receipt, #booking-receipt * {
+            visibility: visible;
+          }
+
+          /* Positioning the receipt at the top */
+          #booking-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            box-shadow: none !important;
+            border: none !important;
+          }
+
+          /* Specific hiding of buttons/nav just in case */
+          header, footer, .no-print {
+            display: none !important;
+          }
+
+          /* Ensure background is clean */
+          body, .min-h-screen {
+            background: white !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
         }
       `}</style>
 
-      {/* Main Content */}
-      <div className="pt-24 pb-16">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Success Header */}
-          <div className="text-center mb-12">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircleIcon className="w-10 h-10 text-green-600" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Booking Confirmed!</h1>
-            <p className="text-xl text-gray-600 mb-2">
-              Your reservation has been successfully created
-            </p>
-            <p className="text-lg font-semibold text-orange-600">
-              Booking ID: {bookingDetails.bookingId}
-            </p>
+      {/* Wrap the printable content in an ID */}
+      <div id="booking-receipt" className="max-w-4xl mx-auto px-4 sm:px-6 print:max-w-none print:px-0">
+
+        {/* Success Header Card */}
+        <div className="bg-white rounded-t-3xl shadow-xl border-b-4 border-amber-600 p-10 text-center relative overflow-hidden print:shadow-none print:border-amber-600">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-400 print:hidden"></div>
+
+          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-100 print:border-gray-200">
+            <CheckCircleIcon className="w-10 h-10 text-green-600" />
           </div>
 
-          {/* Combined Details Section */}
-          <div className="bg-[#F8F5EF] shadow-sm border border-gray-200 p-8 mb-8">
-            {/* Booking Summary */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Booking Summary</h2>
+          <h1 className="text-4xl md:text-5xl font-serif text-gray-900 mb-4 tracking-tight">Booking Confirmed</h1>
+          <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
+            Thank you, <span className="text-gray-900 font-semibold">{booking.guestDetails.firstName}</span>. Your reservation has been successfully confirmed.
+          </p>
+          <div className="mt-6 inline-flex items-center gap-2 bg-gray-50 px-6 py-2 rounded-full border border-gray-200 print:bg-white print:border-black">
+            <span className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Booking ID</span>
+            <span className="text-base font-bold text-gray-900">{booking.bookingId || booking.id}</span>
+          </div>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Dates */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <CalendarIcon className="w-6 h-6 text-orange-600 mr-3" />
-                    <h3 className="text-lg font-semibold text-gray-900">Stay Dates</h3>
-                  </div>
-                  <div className=" p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-gray-600">Check-in</p>
-                        <p className="font-medium text-gray-900">{formatDate(bookingDetails.checkIn)}</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-2">
-                          <span className="text-xs font-medium text-orange-600">→</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Check-out</p>
-                        <p className="font-medium text-gray-900">{formatDate(bookingDetails.checkOut)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        {/* Details Ticket */}
+        <div className="bg-white rounded-b-3xl shadow-xl border-t border-dashed border-gray-200 p-8 md:p-12 relative print:shadow-none print:rounded-none">
+          {/* Decorative side cutouts for ticket look - Hide in print */}
+          <div className="absolute -top-3 -left-3 w-6 h-6 bg-[#F5F5F0] rounded-full print:hidden"></div>
+          <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#F5F5F0] rounded-full print:hidden"></div>
 
-                {/* Guests */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <UsersIcon className="w-6 h-6 text-orange-600 mr-3" />
-                    <h3 className="text-lg font-semibold text-gray-900">Guests</h3>
-                  </div>
-                  <div className=" p-4">
-                    <p className="text-sm text-gray-600 mb-1">
-                      {bookingDetails.guests.adults} Adult{bookingDetails.guests.adults > 1 ? 's' : ''}
-                      {bookingDetails.guests.children > 0 && (
-                        <span>, {bookingDetails.guests.children} Child{bookingDetails.guests.children > 1 ? 'ren' : ''}</span>
-                      )}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {bookingDetails.guests.rooms} Room{bookingDetails.guests.rooms > 1 ? 's' : ''}
-                    </p>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
 
+            {/* Left Column: Summary */}
+            <div className="md:col-span-8 space-y-10">
+              {/* Stay Info */}
+              <div>
+                <h3 className="flex items-center gap-2 text-amber-700 font-bold uppercase tracking-widest text-xs mb-6 border-b border-gray-100 pb-2 print:border-gray-300">
+                  <CalendarDaysIcon className="w-4 h-4" /> Stay Details
+                </h3>
+                <div className="flex flex-col sm:flex-row gap-8">
+                  <div className="flex-1 p-4 bg-gray-50 rounded-xl border border-gray-100 text-center sm:text-left print:bg-white print:border-gray-300">
+                    <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Check-in</p>
+                    <p className="text-lg font-bold text-gray-900 font-serif">{formatDate(booking.checkIn)}</p>
+                    <p className="text-xs text-gray-500 mt-1">From 14:00</p>
+                  </div>
+                  <div className="flex-1 p-4 bg-gray-50 rounded-xl border border-gray-100 text-center sm:text-left print:bg-white print:border-gray-300">
+                    <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Check-out</p>
+                    <p className="text-lg font-bold text-gray-900 font-serif">{formatDate(booking.checkOut)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Until 11:00</p>
                   </div>
                 </div>
               </div>
 
-              {/* Room Details */}
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Room{bookingDetails.rooms?.length > 1 ? 's' : ''}</h3>
+              {/* Rooms List */}
+              <div>
+                <h3 className="flex items-center gap-2 text-amber-700 font-bold uppercase tracking-widest text-xs mb-6 border-b border-gray-100 pb-2 print:border-gray-300">
+                  Selected Accommodations
+                </h3>
                 <div className="space-y-4">
-                  {bookingDetails.rooms?.map((room, index) => (
-                    <div key={index} className="border border-gray-200 p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900 text-lg">
-                            {room.name || 'Standard Room'}
-                          </h4>
-                          <p className="text-gray-600">
-                            {room.type || 'Standard'}
-                          </p>
-                          {room.allocatedRoomType && (
-                            <div className="mt-2 pt-2 border-t border-gray-200">
-                              <p className="text-xs text-gray-500">Allocated Room:</p>
-                              <p className="text-sm font-semibold text-green-700 mt-1">
-                                {room.allocatedRoomType}
-                              </p>
-                              {room.suiteType && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {room.suiteType}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          <p className="text-sm text-gray-500 mt-2">
-                            ${(room.price || 0).toLocaleString()} per night × {getNumberOfNights()} night{getNumberOfNights() > 1 ? 's' : ''}
-                          </p>
-                        </div>
-                        <p className="text-xl font-semibold text-orange-600">
-                          ${((room.price || 0) * getNumberOfNights()).toLocaleString()}
-                        </p>
+                  {booking.rooms.map((room, idx) => (
+                    <div key={idx} className="flex justify-between items-start py-4 border-b border-gray-50 hover:bg-gray-50/50 transition-colors px-2 rounded-lg -mx-2 print:border-gray-200">
+                      <div>
+                        <p className="font-serif text-lg font-medium text-gray-900">{room.name || room.type}</p>
+                        <p className="text-sm text-gray-500 mt-1">{room.suiteType || 'Standard Suite'} • {getNights()} Night(s)</p>
+
+                        {room.allocatedRoomType && (
+                          <div className="mt-2 inline-block bg-green-50 text-green-700 text-xs px-2 py-1 rounded font-medium border border-green-100 print:border-gray-300 print:text-black">
+                            Allocated: {room.allocatedRoomType}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">${((room.price || 0) * getNights()).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400 mt-1">${room.price}/night</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Add-ons */}
-              {bookingDetails.addOns && bookingDetails.addOns.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Add-ons</h3>
-                  <div className=" p-4">
-                    <div className="space-y-3">
-                      {bookingDetails.addOns.map((addOn, index) => (
-                        <div key={`${addOn.name}-${addOn.price}-${index}`} className="flex justify-between items-center py-3 border-b border-gray-100">
-                          <div>
-                            <p className="font-medium text-gray-900">{addOn.name || 'Add-on'}</p>
-                            <p className="text-sm text-gray-600">Quantity: {addOn.quantity || 1}</p>
-                          </div>
-                          <p className="font-medium text-gray-900">
-                            ${((addOn.price || 0) * (addOn.quantity || 1)).toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Total */}
-              <div className="mt-8 border-t border-gray-200 pt-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-semibold text-gray-900">Total Amount</span>
-                  <span className="text-3xl font-bold text-orange-600">
-                    ${(bookingDetails.total || 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Guest Information */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Guest Information</h2>
-
-              <div className="border border-gray-200 p-6 mb-4 bg-white">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Primary Contact (Guest 1)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Name</p>
-                    <p className="font-medium text-gray-900">
-                      {bookingDetails.guestDetails?.prefix || ''} {bookingDetails.guestDetails?.firstName || ''} {bookingDetails.guestDetails?.lastName || ''}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-900">{bookingDetails.guestDetails?.email || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Mobile</p>
-                    <p className="font-medium text-gray-900">{bookingDetails.guestDetails?.mobile || 'Not provided'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {bookingDetails.reservationGuests && bookingDetails.reservationGuests.length > 0 && (
-                bookingDetails.reservationGuests.map((guest, index) => (
-                  <div key={index} className="border border-gray-200 p-6 mb-4 bg-white">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Guest {index + 2}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Name</p>
-                        <p className="font-medium text-gray-900">
-                          {guest.firstName} {guest.lastName}
-                        </p>
+              {/* Addons */}
+              {booking.addOns && booking.addOns.length > 0 && (
+                <div>
+                  <h3 className="flex items-center gap-2 text-amber-700 font-bold uppercase tracking-widest text-xs mb-4 border-b border-gray-100 pb-2 print:border-gray-300">
+                    Enhancements
+                  </h3>
+                  <div className="space-y-3">
+                    {booking.addOns.map((addon, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-600">{addon.name} <span className="text-xs text-gray-400">x{addon.quantity}</span></span>
+                        <span className="font-medium text-gray-900">${((addon.price || 0) * (addon.quantity || 1)).toLocaleString()}</span>
                       </div>
-                      {guest.idDocumentName && (
-                        <div>
-                          <p className="text-sm text-gray-600">ID Document</p>
-                          <p className="font-medium text-green-700 flex items-center gap-1">
-                            ✓ {guest.idDocumentName}
-                          </p>
-                        </div>
-                      )}
-                      {guest.specialNeeds && (
-                        <div className="col-span-1 md:col-span-2">
-                          <p className="text-sm text-gray-600">Special Request / Needs</p>
-                          <p className="font-medium text-gray-900">{guest.specialNeeds}</p>
-                        </div>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                ))
+                </div>
               )}
             </div>
 
-            {/* Billing Address */}
-            <div>
-              <div className="flex items-center mb-6">
-                <MapPinIcon className="w-6 h-6 text-orange-600 mr-3" />
-                <h2 className="text-2xl font-semibold text-gray-900">Billing Address</h2>
+            {/* Right Column: Totals & Actions */}
+            <div className="md:col-span-4">
+              <div className="bg-gray-900 text-white rounded-2xl p-6 shadow-xl sticky top-24 print:bg-white print:text-black print:shadow-none print:border print:border-black print:static">
+                <h4 className="text-amber-500 text-xs font-bold uppercase tracking-widest mb-6 print:text-black">Payment Summary</h4>
+
+                <div className="space-y-4 mb-6 text-sm opacity-90 print:opacity-100">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>${finalTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Taxes & Fees</span>
+                    <span>Included</span>
+                  </div>
+                  <div className="border-t border-gray-700 my-2 print:border-black"></div>
+                  <div className="flex justify-between text-lg font-serif font-bold text-white print:text-black">
+                    <span>Total</span>
+                    <span className="text-amber-400 print:text-black">${finalTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-8 no-print">
+                  <button
+                    onClick={() => router.push('/')}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-lg font-medium transition-all"
+                  >
+                    <HomeIcon className="w-4 h-4" /> Return Home
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="w-full flex items-center justify-center gap-2 bg-transparent border border-gray-600 hover:bg-gray-800 text-gray-300 py-3 rounded-lg font-medium transition-all text-xs uppercase tracking-wider"
+                  >
+                    <PrinterIcon className="w-4 h-4" /> Print Receipt
+                  </button>
+                </div>
               </div>
 
-              <div className=" p-6">
-                <p className="font-medium text-gray-900 mb-2">
-                  {bookingDetails.address?.address1 || 'Not provided'}
-                  {bookingDetails.address?.address2 && (
-                    <span>, {bookingDetails.address.address2}</span>
-                  )}
+              <div className="mt-8 border border-gray-100 rounded-xl p-5 bg-gray-50 print:border-gray-300">
+                <h4 className="flex items-center gap-2 text-gray-900 font-semibold mb-3 text-sm">
+                  <MapPinIcon className="w-4 h-4 text-amber-600 print:text-black" /> Billing Address
+                </h4>
+                <p className="text-sm text-gray-500 leading-relaxed print:text-black">
+                  {booking.address.address1}<br />
+                  {booking.address.city}, {booking.address.zipCode}<br />
+                  {booking.address.country}
                 </p>
-                <p className="text-gray-600">
-                  {bookingDetails.address?.city || 'Not provided'}, {bookingDetails.address?.zipCode || 'Not provided'}
-                </p>
-                <p className="text-gray-600">{bookingDetails.address?.country || 'Not provided'}</p>
               </div>
             </div>
-          </div>
 
-          {/* Next Steps */}
-          <div className="bg-orange-50 rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">What&apos;s Next?</h2>
-            <p className="text-gray-600 mb-6">
-              You will receive a confirmation email with all the details of your booking.
-              Please check your email for further instructions.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => router.push("/")}
-                className="bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
-              >
-                Return Home
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="bg-white text-orange-600 border border-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
-              >
-                Print Confirmation
-              </button>
-            </div>
           </div>
         </div>
       </div>
-
     </div>
+  );
+}
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F9F9F9] flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500 font-serif tracking-widest uppercase text-sm">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ConfirmationContent />
+    </Suspense>
   );
 }

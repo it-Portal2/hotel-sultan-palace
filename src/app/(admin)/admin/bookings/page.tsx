@@ -90,18 +90,26 @@ export default function AdminBookingsPage() {
     let list = bookings.slice();
     const todayStr = new Date().toISOString().slice(0, 10);
 
+    const today = new Date();
+    const isToday = (d: Date | string) => {
+      if (!d) return false;
+      const date = new Date(d);
+      if (isNaN(date.getTime())) return false;
+      return date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+    };
+
     // Tab Logic
     if (activeTab === 'arrivals') {
       // Bookings checking in today (Expected Arrivals only)
       list = list.filter(b => {
-        const checkInDate = new Date(b.checkIn).toISOString().slice(0, 10);
-        return checkInDate === todayStr && (b.status === 'confirmed' || b.status === 'pending');
+        return isToday(b.checkIn) && (b.status === 'confirmed' || b.status === 'pending');
       });
     } else if (activeTab === 'departures') {
       // Bookings checking out today (Expected & Departed)
       list = list.filter(b => {
-        const checkOutDate = new Date(b.checkOut).toISOString().slice(0, 10);
-        return checkOutDate === todayStr && (b.status === 'checked_in');
+        return isToday(b.checkOut) && (b.status === 'checked_in');
       });
     } else if (activeTab === 'in_house') {
       // Currently checked_in guests + stay_over
@@ -189,8 +197,22 @@ export default function AdminBookingsPage() {
       confirmed: bookings.filter(b => b.status === 'confirmed').length,
       cancelled: bookings.filter(b => b.status === 'cancelled').length,
       walk_in: bookings.filter(b => b.source === 'walk_in').length,
-      arrivals: bookings.filter(b => new Date(b.checkIn).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) && (b.status === 'confirmed' || b.status === 'pending')).length,
-      departures: bookings.filter(b => new Date(b.checkOut).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) && b.status === 'checked_in').length,
+      arrivals: bookings.filter(b => {
+        const d = new Date(b.checkIn);
+        const today = new Date();
+        return d.getDate() === today.getDate() &&
+          d.getMonth() === today.getMonth() &&
+          d.getFullYear() === today.getFullYear() &&
+          (b.status === 'confirmed' || b.status === 'pending');
+      }).length,
+      departures: bookings.filter(b => {
+        const d = new Date(b.checkOut);
+        const today = new Date();
+        return d.getDate() === today.getDate() &&
+          d.getMonth() === today.getMonth() &&
+          d.getFullYear() === today.getFullYear() &&
+          b.status === 'checked_in';
+      }).length,
       in_house: bookings.filter(b => b.status === 'checked_in' || b.status === 'stay_over').length,
     };
   }, [bookings]);
