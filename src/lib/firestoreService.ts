@@ -3885,9 +3885,16 @@ export const updateCheckoutBill = async (id: string, data: Partial<CheckoutBill>
 export const getRoomStatuses = async (suiteType?: SuiteType): Promise<RoomStatus[]> => {
   if (!db) return [];
   try {
-    const c = collection(db, 'roomStatuses');
-    const qy = query(c, orderBy('createdAt', 'desc'));
-    const snap = await getDocs(qy);
+    const c = collection(db, 'room_statuses');
+    let snap;
+    try {
+      const qy = query(c, orderBy('createdAt', 'desc'));
+      snap = await getDocs(qy);
+    } catch (e) {
+      console.warn('Index missing for roomStatuses, falling back to unsorted', e);
+      snap = await getDocs(c);
+    }
+
     let statuses = snap.docs.map(d => {
       const data = d.data();
       return {
@@ -3918,7 +3925,7 @@ export const getRoomStatuses = async (suiteType?: SuiteType): Promise<RoomStatus
 export const getRoomStatus = async (roomName: string): Promise<RoomStatus | null> => {
   if (!db) return null;
   try {
-    const c = collection(db, 'roomStatuses');
+    const c = collection(db, 'room_statuses');
     const qy = query(c, where('roomName', '==', roomName));
     const snap = await getDocs(qy);
     if (snap.empty) return null;
@@ -3978,7 +3985,7 @@ export const createRoomStatus = async (data: Omit<RoomStatus, 'id' | 'createdAt'
       }
     });
 
-    const c = collection(db, 'roomStatuses');
+    const c = collection(db, 'room_statuses');
     const dr = await addDoc(c, { ...cleanData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return dr.id;
   } catch (e) {
@@ -5613,7 +5620,7 @@ export const setRoomMaintenance = async (
   if (!db) return false;
   try {
     // 1. Get Room Status & Room Reference
-    const statusQuery = query(collection(db, 'roomStatuses'), where('roomName', '==', roomName));
+    const statusQuery = query(collection(db, 'room_statuses'), where('roomName', '==', roomName));
     const statusSnap = await getDocs(statusQuery);
 
     // Check if occupied
@@ -5637,7 +5644,7 @@ export const setRoomMaintenance = async (
       });
     } else {
       // Create if missing (Robust fallback matching markRoomForMaintenance)
-      await addDoc(collection(db, 'roomStatuses'), {
+      await addDoc(collection(db, 'room_statuses'), {
         roomName,
         status: 'maintenance',
         maintenanceReason: reason,

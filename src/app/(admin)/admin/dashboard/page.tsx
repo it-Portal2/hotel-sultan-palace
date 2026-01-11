@@ -8,7 +8,7 @@ import {
   getAllContactForms,
   getAllBookingEnquiries,
   getRoomStatuses,
-  getRooms,
+  getRoomTypes,
   getPendingWorkOrders,
   getLowStockInventory,
   getPendingPurchaseOrders,
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const [bookings, rooms, roomStatuses, contacts, enquiries, offers, workOrders, lowStockItems, pendingPOs] = await Promise.all([
-        getAllBookings(), getRooms(), getRoomStatuses(), getAllContactForms(), getAllBookingEnquiries(), getSpecialOffers(), getPendingWorkOrders(), getLowStockInventory(), getPendingPurchaseOrders()
+        getAllBookings(), getRoomTypes(), getRoomStatuses(), getAllContactForms(), getAllBookingEnquiries(), getSpecialOffers(), getPendingWorkOrders(), getLowStockInventory(), getPendingPurchaseOrders()
       ]);
 
       const today = new Date();
@@ -85,10 +85,30 @@ export default function AdminDashboard() {
       const vacantRooms = Math.max(0, dbTotalRooms - occupiedRooms - blockedRooms);
 
       // Housekeeping
-      const cleanRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'clean').length;
-      const dirtyRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'dirty').length;
-      const inspectedRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'inspected').length;
-      const attentionRooms = roomStatuses.filter(rs => rs.housekeepingStatus === 'needs_attention').length;
+      // Housekeeping (Logic synced with HouseStatusView - iterate over ROOMS not statuses)
+      let cleanRooms = 0;
+      let dirtyRooms = 0;
+      let inspectedRooms = 0;
+      let attentionRooms = 0;
+      let blockedRoomsHk = 0; // Housekeeping block count
+
+      rooms.forEach(room => {
+        const statusDoc = roomStatuses.find(rs => rs.roomName === room.roomName);
+        const hkStatus = statusDoc?.housekeepingStatus || 'clean'; // Default to clean
+        const isMaintenance = statusDoc?.status === 'maintenance';
+
+        if (isMaintenance) {
+          blockedRoomsHk++;
+        } else if (hkStatus === 'clean') {
+          cleanRooms++;
+        } else if (hkStatus === 'dirty') {
+          dirtyRooms++;
+        } else if (hkStatus === 'inspected') {
+          inspectedRooms++;
+        } else if (hkStatus === 'needs_attention') {
+          attentionRooms++;
+        }
+      });
 
       // Revenue
       const validBookings = bookings.filter(b => b.status !== 'cancelled');
@@ -140,7 +160,7 @@ export default function AdminDashboard() {
         departures: { pending: departuresPending, checkedOut: departuresCheckedOut },
         guestsInHouse: { adults: adultsInHouse, children: childrenInHouse },
         roomStatus: { vacant: vacantRooms, sold: occupiedRooms, dayUse: 0, complimentary: 0, blocked: blockedRooms },
-        housekeeping: { clean: cleanRooms + inspectedRooms, hkAssign: attentionRooms, dirty: dirtyRooms, block: blockedRooms },
+        housekeeping: { clean: cleanRooms + inspectedRooms, hkAssign: attentionRooms, dirty: dirtyRooms, block: blockedRoomsHk },
         notifications: notificationsData,
         activities: realActivities,
         totalRooms: dbTotalRooms, totalBookings: validBookings.length, revenueThisMonth, recentBookings: bookings.slice(0, 5), revenueTotal: totalRevenue

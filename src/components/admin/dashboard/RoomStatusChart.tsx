@@ -100,8 +100,14 @@ export default function RoomStatusChart({ roomStatus, housekeeping }: Props) {
     return (
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] h-full flex flex-col">
             <h3 className="text-lg font-bold text-gray-800 mb-6 font-display">Room Cleanliness</h3>
-            <div className="flex-grow min-h-[300px]">
-                <Bar options={options} data={data} />
+            <div className="flex-grow min-h-[300px] flex items-center justify-center">
+                {housekeeping.clean + housekeeping.dirty + housekeeping.hkAssign + roomStatus.blocked === 0 ? (
+                    <div className="text-center text-gray-400">
+                        <p className="text-sm">No room status data available</p>
+                    </div>
+                ) : (
+                    <Bar options={options} data={data} />
+                )}
             </div>
         </div>
     );

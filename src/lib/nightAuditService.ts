@@ -65,7 +65,7 @@ export const getAuditBlockers = async (businessDate: Date): Promise<AuditBlocker
 
     try {
         const bookingsRef = collection(db, 'bookings');
-        const roomsRef = collection(db, 'roomStates');
+        const roomsRef = collection(db, 'room_statuses');
 
         // Optimization: Avoid composite indexes by querying date range only and filtering status in memory
 
