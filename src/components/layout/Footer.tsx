@@ -42,15 +42,15 @@ export default function Footer() {
             {/* Unified grid: mobile stacks, desktop shows original 4 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
               {/* Branding and Social Media */}
-              <div className={`space-y-6 footer-brand ${isVisible ? 'footer-brand-visible' : ''}`}>
+              <div className={`space-y-3 footer-brand ${isVisible ? 'footer-brand-visible' : ''}`}>
                 {/* Logo */}
                 <div className={`text-white footer-logo ${isVisible ? 'footer-logo-visible' : ''}`}>
-                  <Image src="/sultan-logo.png" alt="Sultan Palace" width={48} height={48} className="h-12 w-auto" />
+                  <Image src="/sultan-logo.png" alt="Sultan Palace" width={140} height={140} className="h-32 w-auto" />
                 </div>
 
                 {/* Description */}
-                <p className={`text-white/90 text-sm leading-relaxed max-w-md footer-description ${isVisible ? 'footer-description-visible' : ''}`}>
-                  Corem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et
+                <p className={`text-white/90 text-sm leading-relaxed max-w-md footer-description mt-2 ${isVisible ? 'footer-description-visible' : ''}`}>
+                  Experience the epitome of luxury at Sultan Palace Hotel. Nestled in the heart of Zanzibar, we offer world-class hospitality, exquisite dining, and breathtaking views for an unforgettable stay.
                 </p>
 
                 {/* Social Media Icons */}
@@ -59,42 +59,42 @@ export default function Footer() {
                     href="https://wa.me/255684888111"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
-                    style={{ background: '#BE8C53', transitionDelay: '0.1s' }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#D4A373', transitionDelay: '0.1s' }}
                     aria-label="Chat on WhatsApp - +255 684 888 111"
                     title="WhatsApp: +255 684 888 111"
                   >
-                    <FaWhatsapp className="text-[#C0B194] text-base" />
+                    <FaWhatsapp className="text-white text-xl" />
                   </a>
                   <a
                     href="https://www.facebook.com/sultanpalace.znz"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
-                    style={{ background: '#BE8C53', transitionDelay: '0.2s' }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#D4A373', transitionDelay: '0.2s' }}
                   >
-                    <FaFacebookF className="text-[#C0B194] text-base" />
+                    <FaFacebookF className="text-white text-xl" />
                   </a>
                   <a
                     href="https://www.instagram.com/sultanpalace.zanzibar"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
-                    style={{ background: '#BE8C53', transitionDelay: '0.25s' }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`}
+                    style={{ background: '#D4A373', transitionDelay: '0.25s' }}
                   >
-                    <FaInstagram className="text-[#C0B194] text-base" />
+                    <FaInstagram className="text-white text-xl" />
                   </a>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#BE8C53', transitionDelay: '0.3s' }}>
-                    <FaLinkedinIn className="text-[#C0B194] text-base" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#D4A373', transitionDelay: '0.3s' }}>
+                    <FaLinkedinIn className="text-white text-xl" />
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#BE8C53', transitionDelay: '0.4s' }}>
-                    <FaTwitter className="text-[#C0B194] text-base" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#D4A373', transitionDelay: '0.4s' }}>
+                    <FaTwitter className="text-white text-xl" />
                   </div>
                 </div>
               </div>
 
               {/* Quick Links */}
-              <div className={`space-y-6 footer-links ${isVisible ? 'footer-links-visible' : ''}`}>
+              <div className={`space-y-6 footer-links pt-8 ${isVisible ? 'footer-links-visible' : ''}`}>
                 <h3 className={`text-white text-lg font-semibold uppercase tracking-wide footer-links-title ${isVisible ? 'footer-links-title-visible' : ''}`}>Quick Links</h3>
                 <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
                   <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.1s' }}><Link href="/" className="text-white hover:text-gray-300 transition-colors text-sm">Home</Link></li>
@@ -107,24 +107,24 @@ export default function Footer() {
                 </ul>
               </div>
               {/* Legal */}
-              <div className={`space-y-6 footer-legal ${isVisible ? 'footer-legal-visible' : ''}`}>
+              <div className={`space-y-6 footer-legal pt-8 ${isVisible ? 'footer-legal-visible' : ''}`}>
                 <h3 className={`text-white text-lg font-semibold uppercase tracking-wide footer-legal-title ${isVisible ? 'footer-legal-title-visible' : ''}`}>Legal</h3>
                 <ul className="grid grid-cols-2 lg:grid-cols-1 gap-y-2">
-                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.1s' }}><a href="/support" className="text-white hover:text-gray-300 transition-colors text-sm">Support</a></li>
+                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.1s' }}><Link href="/#contact-us" className="text-white hover:text-gray-300 transition-colors text-sm">Support</Link></li>
                   <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.15s' }}><Link href="/#about-zanzibar" className="text-white hover:text-gray-300 transition-colors text-sm">Faq&apos;s</Link></li>
-                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.2s' }}><a href="/privacy-policy" className="text-white hover:text-gray-300 transition-colors text-sm">Privacy Policy</a></li>
-                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.25s' }}><a href="/terms-and-conditions" className="text-white hover:text-gray-300 transition-colors text-sm">Terms And Conditions</a></li>
+                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.2s' }}><Link href="/privacy-policy" className="text-white hover:text-gray-300 transition-colors text-sm">Privacy Policy</Link></li>
+                  <li className={`footer-link-item ${isVisible ? 'footer-link-item-visible' : ''}`} style={{ transitionDelay: '0.25s' }}><Link href="/terms-and-conditions" className="text-white hover:text-gray-300 transition-colors text-sm">Terms And Conditions</Link></li>
                 </ul>
               </div>
 
               {/* Contact Us */}
-              <div className={`space-y-6 footer-contact ${isVisible ? 'footer-contact-visible' : ''}`}>
+              <div className={`space-y-6 footer-contact pt-8 ${isVisible ? 'footer-contact-visible' : ''}`}>
                 <h3 className={`text-white text-lg font-semibold uppercase tracking-wide footer-contact-title ${isVisible ? 'footer-contact-title-visible' : ''}`}>Contact Us</h3>
                 <div className="space-y-4">
                   {/* Email */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.1s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
-                      <MdEmail className="text-white text-sm" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D4A373' }}>
+                      <MdEmail className="text-white text-xl" />
                     </div>
                     <div className="flex flex-col space-y-1">
                       <a href="mailto:portalholdingsznz@gmail.com" className="text-white/90 text-sm hover:text-white transition-colors">portalholdingsznz@gmail.com</a>
@@ -134,8 +134,8 @@ export default function Footer() {
 
                   {/* Phone */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.2s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
-                      <MdPhone className="text-white text-sm" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D4A373' }}>
+                      <MdPhone className="text-white text-xl" />
                     </div>
                     <div className="flex flex-col space-y-1">
                       <a href="tel:+255684888111" className="text-white/90 text-sm hover:text-white transition-colors">+255 684 888 111</a>
@@ -146,8 +146,8 @@ export default function Footer() {
 
                   {/* Address */}
                   <div className={`flex items-start space-x-3 footer-contact-item ${isVisible ? 'footer-contact-item-visible' : ''}`} style={{ transitionDelay: '0.3s' }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#BE8C53' }}>
-                      <MdLocationOn className="text-white text-sm" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D4A373' }}>
+                      <MdLocationOn className="text-white text-xl" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-white/90 text-sm">Dongwe, East Coast, Zanzibar</span>

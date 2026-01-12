@@ -41,7 +41,7 @@ const faqItems: FaqItem[] = [
   {
     question: "What meal plan is offered?",
     answer:
-      "Baraza typically offers an all-inclusive meal plan, meaning all meals and house alcoholic and non-alcoholic beverages are included during your stay.",
+      "Sultan Palace typically offers an all-inclusive meal plan, meaning all meals and house alcoholic and non-alcoholic beverages are included during your stay.",
   },
   {
     question: "Are drinks included?",
@@ -104,8 +104,8 @@ export default function AboutZanzibar({ compact = false }: AboutZanzibarProps) {
   }, []);
 
   const toggleItem = (index: number) => {
-    setOpenItems(prev => 
-      prev.includes(index) 
+    setOpenItems(prev =>
+      prev.includes(index)
         ? prev.filter(i => i !== index)
         : [...prev, index]
     );
@@ -132,14 +132,14 @@ export default function AboutZanzibar({ compact = false }: AboutZanzibarProps) {
           sizes="100vw"
         />
       </div>
-      
+
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-8xl px-4 sm:px-6 md:px-8 lg:px-10">
         <h2 className={`text-center font-kaisei text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#655D4E] mb-8 md:mb-12 px-2 about-zanzibar-title ${isVisible ? 'about-zanzibar-title-visible' : ''}`}>
-        About Zanzibar as a Destination
+          About Zanzibar as a Destination
         </h2>
-        
-      
+
+
         <div className="w-full max-w-[900px] mx-auto">
           {(showAll ? faqItems : faqItems.slice(0, 5)).map((item, index) => (
             <div key={index} className={`border-b border-[#CBBB9D] about-zanzibar-item ${isVisible ? 'about-zanzibar-item-visible' : ''}`} style={{ transitionDelay: `${index * 0.1}s` }}>
@@ -150,15 +150,15 @@ export default function AboutZanzibar({ compact = false }: AboutZanzibarProps) {
                 <span className="font-kaisei text-[#655D4E] text-base sm:text-lg pr-2 md:pr-6 flex-1 text-left">
                   {item.question}
                 </span>
-             
+
                 <div className="text-[#BE8C53] text-3xl md:text-4xl lg:text-5xl font-light transition-transform duration-300 ease-in-out flex-shrink-0"
                   style={{ transform: openItems.includes(index) ? 'rotate(45deg)' : 'rotate(0deg)' }}
                 >
                   +
                 </div>
               </button>
-              
-             
+
+
               <div
                 className={`overflow-hidden transition-all duration-500 ease-in-out ${openItems.includes(index) ? 'max-h-[500px]' : 'max-h-0'}`}
               >

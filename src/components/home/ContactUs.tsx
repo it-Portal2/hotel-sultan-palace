@@ -105,7 +105,7 @@ export default function ContactUs() {
   };
 
   return (
-    <section ref={sectionRef} className="w-full contact-us-section">
+    <section id="contact-us" ref={sectionRef} className="w-full contact-us-section scroll-mt-60">
       {/* Top Section: Contact Form */}
       <div className="w-full bg-[#2C2B28] py-8 md:py-12 px-4 sm:px-6 md:px-8 lg:px-8 xl:px-12 2xl:px-20">
         <div className="w-full max-w-[1512px] mx-auto">

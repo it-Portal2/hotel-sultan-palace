@@ -188,7 +188,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={`w-full absolute top-0 left-0 z-[9999] font-open-sans overflow-visible ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`} style={{ position: 'absolute', zIndex: 9999 }}>
+      <header className={`w-full absolute top-0 left-0 z-[9999] font-open-sans overflow-visible ${scrolled ? "backdrop-blur-sm bg-[#0a1a2b]/40" : ""}`} style={{ position: 'absolute', zIndex: 9999 }} suppressHydrationWarning>
         {/* Black Linear Gradient Overlay at Top - 0% black to 100% transparent */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -227,20 +227,24 @@ export default function Header() {
         {/* Menu Bar Section - Logo, Social Icons, Navigation */}
         <div className="w-full px-4 md:px-6 lg:px-8 xl:px-[82px] overflow-visible relative z-10">
           <div className="flex items-center justify-between py-1 gap-2 xl:gap-4 overflow-visible">
-            <div className="flex items-center gap-2 md:gap-3 xl:gap-4 flex-shrink-0">
-              <Link href="/" className="flex-shrink-0 z-50">
-                <Image
-                  src="/sultan-logo.png"
-                  alt="Sultan Palace"
-                  width={200}
-                  height={200}
-                  priority
-                  className="!h-[50px] md:!h-[70px] xl:!h-[84px] !w-auto"
-                  style={{ height: "50px", width: "auto" }}
-                />
-              </Link>
-              {/* Social Icons - Now in Menu Bar */}
-              <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center flex-shrink-0 relative">
+              {/* Logo Container - Expanded width, moved left into padding, pushed up slightly */}
+              <div className="relative w-[120px] md:w-[160px] xl:w-[240px] h-[50px] md:h-[70px] xl:h-[84px] z-50 -ml-2 md:-ml-4 xl:-ml-8">
+                <Link href="/" className="absolute -top-1 md:-top-2 left-0 block w-full">
+                  <Image
+                    src="/sultan-logo.png"
+                    alt="Sultan Palace"
+                    width={240}
+                    height={240}
+                    priority
+                    className="!h-[120px] md:!h-[160px] xl:!h-[220px] !w-auto max-w-none object-contain"
+                    style={{ height: "auto", width: "auto" }}
+                  />
+                </Link>
+              </div>
+
+              {/* Social Icons - Shifted right with margin */}
+              <div className="flex items-center gap-2 md:gap-3 ml-4 xl:ml-8">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.name}
