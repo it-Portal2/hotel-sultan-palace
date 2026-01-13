@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { getRooms, getAllBookings, Room, Booking } from './firestoreService';
+import { getRooms, getAllBookings, Room, Booking, getRoomTypes } from './firestoreService';
 
 export interface DailyInventory {
     date: string; // YYYY-MM-DD
@@ -98,6 +98,8 @@ export const releaseRoomFromInventory = async (
 };
 
 // Check availability for a specific suite (or all rooms) in a date range
+// Check availability for a specific suite (or all rooms) in a date range
+// Check availability for a specific suite (or all rooms) in a date range
 export const checkDailyAvailability = async (
     checkIn: Date,
     checkOut: Date,
@@ -114,8 +116,6 @@ export const checkDailyAvailability = async (
         if (dates.length === 0) return [];
 
         // 1. Get all daily inventory docs for the date range
-        // Optimization: If range is huge, this might be many reads, but typically < 30 docs.
-        // We can use Promise.all to fetch them.
         const inventoryPromises = dates.map(dateStr => getDoc(doc(firestore, 'daily_inventory', dateStr)));
         const inventorySnapshots = await Promise.all(inventoryPromises);
 
@@ -130,26 +130,42 @@ export const checkDailyAvailability = async (
             }
         });
 
-        // 2. Get all rooms from system
-        const allRooms = await getRooms();
+        // 2. Get all PHYSICAL rooms from roomTypes collection
+        // The 'rooms' collection only contains metadata/definitions. 
+        // 'roomTypes' contains the actual 15 bookable units.
+        const allPhysicalRooms = await getRoomTypes();
+        console.log(`[AvailCheck] Found ${allPhysicalRooms.length} physical rooms from getRoomTypes`);
 
         // 3. Filter rooms
-        const availableRooms = allRooms.filter(room => {
+        const availableRooms = allPhysicalRooms.filter(room => {
             // Filter by suite type if requested
-            if (suiteType && room.suiteType !== suiteType) return false;
+            if (suiteType) {
+                // Direct match on the suiteType field in roomTypes collection
+                if (room.suiteType !== suiteType) {
+                    return false;
+                }
+            }
 
             // Check if occupied
-            if (occupiedRoomSet.has(room.name)) return false;
+            // We check if the specific roomName (e.g. "Papaya") is in the occupied set
+            if (occupiedRoomSet.has(room.roomName)) {
+                return false;
+            }
 
-            // Also check maintenance status (from room object or status collection?)
-            // Assuming 'status' on room object reflects CURRENT status, but for future dates we rely on inventory.
-            // If maintenance is strictly date-based, it should also be in inventory or separate check.
-            // For now, assuming standard inventory validation.
+            // Also check if the room itself is active
+            if (!room.isActive) {
+                return false;
+            }
 
             return true;
         });
 
-        return availableRooms.map(r => r.name);
+        console.log(`[AvailCheck] Checking ${suiteType || 'ALL'} for ${getDateString(checkIn)} to ${getDateString(checkOut)}`);
+        console.log(`[AvailCheck] Occupied set:`, Array.from(occupiedRoomSet));
+        console.log(`[AvailCheck] Final available: ${availableRooms.length} rooms`);
+
+        // Return the names of the available physical rooms
+        return availableRooms.map(r => r.roomName);
     } catch (error) {
         console.error('Error checking daily availability:', error);
         throw error;

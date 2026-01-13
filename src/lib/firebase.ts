@@ -22,11 +22,13 @@ let messaging: Messaging | null = null;
 
 try {
   app = initializeApp(firebaseConfig);
-  // Use initializeFirestore with experimentalForceLongPolling to prevent timeout errors
-  // "Backend didn't respond within 10 seconds"
-  db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  });
+  // Initialize standard Firestore
+  db = getFirestore(app);
+
+  if (typeof window !== 'undefined') {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    console.log(`[Firebase] Initialized with Project ID: ${projectId || 'USING DEFAULT/DEMO'}`);
+  }
 
   // Auth and Storage work in Node environments too usually, but safe to keep here
   auth = getAuth(app);

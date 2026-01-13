@@ -38,6 +38,37 @@ import BedAndChildInfoSection from '@/components/hotel/BedAndChildInfoSection'
 import LegalInfoSection from '@/components/hotel/LegalInfoSection'
 import GuestReviewsSection from '@/components/hotel/GuestReviewsSection'
 import FAQSection from '@/components/hotel/FAQSection'
+
+// Helper component for debug
+function AsyncDebugRoomTypes() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    import('@/lib/firestoreService').then(({ getRoomTypes }) => {
+      getRoomTypes()
+        .then(res => {
+          setData(res);
+          setLoading(false);
+        })
+        .catch(e => {
+          setError(e.message);
+          setLoading(false);
+        });
+    });
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-red-600">Error: {error}</div>;
+  return (
+    <div>
+      Count: {data.length}
+      <pre className="text-xs mt-2">{JSON.stringify(data.slice(0, 5).map(d => ({ id: d.id, name: d.roomName, suite: d.suiteType })), null, 2)}</pre>
+    </div>
+  );
+}
+
 function HotelContent() {
   const router = useRouter();
   const { bookingData, addRoom, updateBookingData, rooms: cartRooms } = useCart();
@@ -94,6 +125,11 @@ function HotelContent() {
           getSpecialOffers(),
           getAllGuestReviews(true) // Get only approved reviews
         ]);
+
+        if (roomsData.length === 0) {
+          if (typeof window !== 'undefined') alert("DEBUG: getRooms() returned 0 items! Check Firestore Permissions or 'rooms' collection.");
+        }
+
         setRooms(roomsData);
         setGalleryImages(galleryData);
         setSpecialOffers(offers);
@@ -108,8 +144,12 @@ function HotelContent() {
           setOverallRating(8.7); // Default rating
           setTotalReviews(0);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching data:', error);
+        // Force alert for debugging
+        if (typeof window !== 'undefined') {
+          alert(`DEBUG ERROR: ${error?.message || JSON.stringify(error)}`);
+        }
       } finally {
         setLoading(false);
       }
@@ -780,6 +820,8 @@ function HotelContent() {
           </div>
           <div ref={roomsRef} id="rooms-section" className="mt-[25px]">
             <h2 className="text-[28px] font-semibold text-[#282828] mb-[25px]">    All available rooms</h2>
+
+
             <div className="flex flex-col gap-[25px]">
               {rooms.slice(0, 3).map((room) => (
                 <div key={room.id} className="bg-white rounded-[4px] overflow-hidden lg:h-[430px]">

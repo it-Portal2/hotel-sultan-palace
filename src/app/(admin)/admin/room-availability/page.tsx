@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { getAllBookings, getRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
+import { reserveRoomInInventory, releaseRoomFromInventory } from '@/lib/availabilityService';
+import { cancelBooking } from '@/lib/bookingService';
 import { Timestamp } from 'firebase/firestore';
 import { sendBookingConfirmationEmailAction } from '@/app/actions/emailActions';
 import { useToast } from '@/context/ToastContext';
@@ -355,12 +357,13 @@ export default function RoomAvailabilityPage() {
   };
 
   const confirmUnblockRoom = async () => {
-    if (!bookingToUnblock) return;
+    if (!bookingToUnblock || !bookingToUnblock.id) return;
 
     try {
-      // @ts-ignore
-      await updateBooking(bookingToUnblock.id, { status: 'cancelled' });
-      showToast('Unblocked successfully', 'success');
+      // Use logic that releases Inventory
+      await cancelBooking(bookingToUnblock.id);
+
+      showToast('Unblocked and inventory released successfully', 'success');
       loadData(false);
       setShowUnblockConfirmation(false);
       setBookingToUnblock(null);
@@ -845,6 +848,20 @@ export default function RoomAvailabilityPage() {
       };
 
       const createdBooking = await createBooking(newBooking);
+
+      if (createdBooking) {
+        // Reserve inventory for allocated rooms
+        // This ensures Website Availability matches Admin Panel
+        const checkInDate = new Date(formData.checkInDate + 'T00:00:00');
+        const checkOutDate = new Date(formData.checkOutDate + 'T00:00:00');
+
+        for (const room of newBooking.rooms) {
+          if (room.allocatedRoomType) {
+            await reserveRoomInInventory(checkInDate, checkOutDate, room.allocatedRoomType);
+          }
+        }
+      }
+
       showToast('Reservation created successfully!', 'success');
 
       // 1. Close UI Immediately

@@ -1351,9 +1351,12 @@ export const getRooms = async (): Promise<Room[]> => {
     console.error('Error fetching rooms from Firestore:', error);
     // Fallback to sample data if Firestore fails
     console.log('Falling back to sample rooms data');
+    // ... (existing getRooms implementation)
     return sampleRooms;
   }
 };
+
+
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {
   // During build time or if db is not available, return sample data
@@ -2821,9 +2824,12 @@ export const deleteTestimonial = async (id: string): Promise<boolean> => {
 export const getRoomTypes = async (suiteType?: SuiteType): Promise<RoomType[]> => {
   if (!db) return [];
   try {
+    // 1. Try fetching from new 'roomTypes' collection
+    // We remove orderBy to ensure we get docs even if 'createdAt' is missing
     const c = collection(db, 'roomTypes');
-    const qy = suiteType ? query(c, orderBy('createdAt', 'desc')) : query(c, orderBy('createdAt', 'desc'));
+    const qy = suiteType ? query(c) : query(c);
     const snap = await getDocs(qy);
+
     let items = snap.docs.map(d => {
       const data = d.data();
       return {
@@ -2835,7 +2841,35 @@ export const getRoomTypes = async (suiteType?: SuiteType): Promise<RoomType[]> =
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as RoomType;
     });
-    if (suiteType) items = items.filter(i => i.suiteType === suiteType);
+
+    // 2. If empty, fallback to legacy 'room_types' collection
+    if (items.length === 0) {
+      console.warn('roomTypes empty, falling back to room_types');
+      const cLegacy = collection(db, 'room_types');
+      const qyLegacy = suiteType ? query(cLegacy) : query(cLegacy);
+      const snapLegacy = await getDocs(qyLegacy);
+
+      items = snapLegacy.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          suiteType: data.suiteType as SuiteType, // Ensure mapping matches
+          roomName: data.roomName || data.name, // Handle potential schema diff
+          isActive: data.isActive !== false,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as RoomType;
+      });
+    }
+
+    // Filter by suiteType (client-side to be safe)
+    if (suiteType) {
+      items = items.filter(i => i.suiteType === suiteType);
+    }
+
+    // Sort client-side
+    items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
     return items.filter(i => i.isActive);
   } catch (e) {
     console.error('Error fetching room types:', e);
