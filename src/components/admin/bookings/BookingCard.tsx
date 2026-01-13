@@ -50,7 +50,9 @@ export default function BookingCard({
     });
 
     const totalAmount = booking.totalAmount || 0;
-    const paidAmount = booking.paidAmount || 0;
+    // Fix: If status is 'paid' but amount is 0 (data sync issue), show full amount as paid
+    const isMarkedPaid = booking.paymentStatus === 'paid' && (booking.paidAmount || 0) === 0;
+    const paidAmount = isMarkedPaid ? totalAmount : (booking.paidAmount || 0);
     const balance = totalAmount - paidAmount;
 
     return (

@@ -120,6 +120,11 @@ export default function BookingTable({
                             const end = new Date(booking.checkOut);
                             const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
+                            // Fix: Handle cases where paymentStatus is 'paid' but paidAmount is 0
+                            const isMarkedPaid = booking.paymentStatus === 'paid' && (booking.paidAmount || 0) === 0;
+                            const effectivePaid = isMarkedPaid ? (booking.totalAmount || 0) : (booking.paidAmount || 0);
+                            const effectiveBalance = Math.max(0, (booking.totalAmount || 0) - effectivePaid);
+
                             return (
                                 <tr
                                     key={booking.id}
@@ -189,12 +194,12 @@ export default function BookingTable({
                                     </td>
                                     <td className="px-6 py-3 whitespace-nowrap text-right">
                                         <div className="text-sm font-medium text-emerald-600">
-                                            ${(booking.paidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            ${effectivePaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </div>
                                     </td>
                                     <td className="px-6 py-3 whitespace-nowrap text-right">
-                                        <div className={`text-sm font-bold ${(booking.totalAmount || 0) - (booking.paidAmount || 0) > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                                            ${Math.max(0, (booking.totalAmount || 0) - (booking.paidAmount || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                        <div className={`text-sm font-bold ${effectiveBalance > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                                            ${effectiveBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </div>
                                     </td>
 

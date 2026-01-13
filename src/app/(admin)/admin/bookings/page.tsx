@@ -55,19 +55,11 @@ export default function AdminBookingsPage() {
     try {
       setLoading(true);
 
-      const isAdmin = isFullAdmin || isSuperAdmin;
-      const shouldFetchAll = isAdmin && showHistory;
-
-      let startDate: Date | undefined;
-
-      if (!shouldFetchAll) {
-        const d = new Date();
-        d.setDate(d.getDate() - 7);
-        d.setHours(0, 0, 0, 0);
-        startDate = d;
-      }
-
-      const data = await getAllBookings(startDate);
+      // We now fetch all bookings to ensure advance bookings (made > 7 days ago) 
+      // appear in the list for check-in. The 'showHistory' toggle can still be used
+      // for client-side filtering if needed, or removed if redundant.
+      // For now, we prioritize data correctness for operations.
+      const data = await getAllBookings(undefined);
       setBookings(data);
     } catch (e) {
       console.error('Error loading bookings:', e);
@@ -102,14 +94,23 @@ export default function AdminBookingsPage() {
 
     // Tab Logic
     if (activeTab === 'arrivals') {
-      // Bookings checking in today (Expected Arrivals only)
+      // Bookings checking in today OR earlier but not yet checked in (Late Arrivals)
       list = list.filter(b => {
-        return isToday(b.checkIn) && (b.status === 'confirmed' || b.status === 'pending');
+        const d = new Date(b.checkIn);
+        // Reset time parts for accurate date comparison
+        const checkInDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        return checkInDate <= todayDate && (b.status === 'confirmed' || b.status === 'pending');
       });
     } else if (activeTab === 'departures') {
-      // Bookings checking out today (Expected & Departed)
+      // Bookings checking out today OR earlier but still in house (Overstay/Late Checkout)
       list = list.filter(b => {
-        return isToday(b.checkOut) && (b.status === 'checked_in');
+        const d = new Date(b.checkOut);
+        const checkOutDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        return checkOutDate <= todayDate && (b.status === 'checked_in');
       });
     } else if (activeTab === 'in_house') {
       // Currently checked_in guests + stay_over
@@ -200,17 +201,17 @@ export default function AdminBookingsPage() {
       arrivals: bookings.filter(b => {
         const d = new Date(b.checkIn);
         const today = new Date();
-        return d.getDate() === today.getDate() &&
-          d.getMonth() === today.getMonth() &&
-          d.getFullYear() === today.getFullYear() &&
+        const checkInDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        return checkInDate <= todayDate &&
           (b.status === 'confirmed' || b.status === 'pending');
       }).length,
       departures: bookings.filter(b => {
         const d = new Date(b.checkOut);
         const today = new Date();
-        return d.getDate() === today.getDate() &&
-          d.getMonth() === today.getMonth() &&
-          d.getFullYear() === today.getFullYear() &&
+        const checkOutDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        return checkOutDate <= todayDate &&
           b.status === 'checked_in';
       }).length,
       in_house: bookings.filter(b => b.status === 'checked_in' || b.status === 'stay_over').length,

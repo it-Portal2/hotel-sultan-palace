@@ -800,7 +800,15 @@ export default function RoomAvailabilityPage() {
           ratePlan: r.rateType
         })),
         addOns: [],
-        status: formData.reservationType === 'Walk In' ? 'checked_in' : (formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending'),
+        status: formData.reservationType === 'Walk In'
+          ? (() => {
+            // Fix: Only set to 'checked_in' if arrival is TODAY (or past).
+            // Future walk-ins (Desk reservations) should be 'confirmed'.
+            const checkInDate = normalizeDate(formData.checkInDate);
+            const today = normalizeDate(new Date());
+            return checkInDate > today ? 'confirmed' : 'checked_in';
+          })()
+          : (formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending'),
         totalAmount: formData.totalAmount,
         bookingId: `WALKIN-${Date.now()}`, // Or generate a better ID
         paymentStatus: formData.paidAmount >= formData.totalAmount ? 'paid' : (formData.paidAmount > 0 ? 'partial' : 'pending'),
@@ -1666,11 +1674,20 @@ export default function RoomAvailabilityPage() {
                     </div>
                     <div className="flex justify-between items-center text-gray-900 font-bold">
                       <span>Paid</span>
-                      <span>${selectedBooking.paidAmount?.toFixed(2) || '0.00'}</span>
+                      <span>${(() => {
+                        const isMarkedPaid = selectedBooking.paymentStatus === 'paid' && (selectedBooking.paidAmount || 0) === 0;
+                        const paid = isMarkedPaid ? (selectedBooking.totalAmount || 0) : (selectedBooking.paidAmount || 0);
+                        return paid.toFixed(2);
+                      })()}</span>
                     </div>
                     <div className="flex justify-between items-center text-red-500 font-bold text-base mt-2 pt-2 border-t border-gray-200">
                       <span>Balance</span>
-                      <span>${((selectedBooking.totalAmount || 0) - (selectedBooking.paidAmount || 0)).toFixed(2)}</span>
+                      <span>${(() => {
+                        const total = selectedBooking.totalAmount || 0;
+                        const isMarkedPaid = selectedBooking.paymentStatus === 'paid' && (selectedBooking.paidAmount || 0) === 0;
+                        const paid = isMarkedPaid ? total : (selectedBooking.paidAmount || 0);
+                        return Math.max(0, total - paid).toFixed(2);
+                      })()}</span>
                     </div>
                   </div>
                 </div>

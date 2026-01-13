@@ -40,8 +40,11 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
     const addOns = booking.addOns || [];
 
     // Correct Payment Logic
+    // Correct Payment Logic
     const totalAmount = booking.totalAmount || 0;
-    const paidAmount = booking.paidAmount || 0;
+    // Fix: Handle cases where paymentStatus is 'paid' but paidAmount is 0
+    const isMarkedPaid = booking.paymentStatus === 'paid' && (booking.paidAmount || 0) === 0;
+    const paidAmount = isMarkedPaid ? totalAmount : (booking.paidAmount || 0);
     const balance = totalAmount - paidAmount;
     const paymentProgress = totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0;
 
