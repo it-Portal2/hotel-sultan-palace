@@ -44,8 +44,10 @@ export default function NewSpecialOfferPage() {
   const [selectedSuites, setSelectedSuites] = useState<string[]>([]);
 
   // Discount fields
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed' | 'pay_x_stay_y'>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(10);
+  const [stayNights, setStayNights] = useState<number>(3);
+  const [payNights, setPayNights] = useState<number>(2);
 
   // Coupon configuration
   const [couponMode, setCouponMode] = useState<'none' | 'static' | 'unique_per_user'>('static');
@@ -131,7 +133,9 @@ export default function NewSpecialOfferPage() {
         roomTypes: targetAudience === 'specific_rooms' ? selectedSuites : [],
 
         discountType,
-        discountValue,
+        discountValue: discountType === 'pay_x_stay_y' ? 0 : discountValue,
+        stayNights: discountType === 'pay_x_stay_y' ? stayNights : undefined,
+        payNights: discountType === 'pay_x_stay_y' ? payNights : undefined,
 
         // Coupon Logic
         // Coupon Logic - Derived
@@ -283,6 +287,70 @@ export default function NewSpecialOfferPage() {
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Discount Configuration */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Discount Details</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
+                <select
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as any)}
+                  className="w-full h-12 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 transition-all"
+                >
+                  <option value="percentage">Percentage Discount (%)</option>
+                  <option value="fixed">Fixed Amount Discount ($)</option>
+                  <option value="pay_x_stay_y">Pay X Stay Y (e.g. Stay 3 Pay 2)</option>
+                </select>
+              </div>
+
+              {discountType === 'pay_x_stay_y' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stay Nights (Total)</label>
+                    <input
+                      type="number"
+                      min="2"
+                      value={stayNights}
+                      onChange={(e) => setStayNights(Number(e.target.value))}
+                      className="w-full h-12 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Pay Nights (Charged)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={stayNights - 1}
+                      value={payNights}
+                      onChange={(e) => setPayNights(Number(e.target.value))}
+                      className="w-full h-12 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 transition-all"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {discountType === 'percentage' ? 'Percentage (%)' : 'Amount ($)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(Number(e.target.value))}
+                    className="w-full h-12 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 transition-all"
+                  />
+                </div>
+              )}
+            </div>
+            {discountType === 'pay_x_stay_y' && (
+              <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                ℹ️ Customer stays for <strong>{stayNights} nights</strong> but only pays for <strong>{payNights} nights</strong>. They get <strong>{stayNights - payNights} night(s) free</strong>.
+              </p>
             )}
           </div>
 

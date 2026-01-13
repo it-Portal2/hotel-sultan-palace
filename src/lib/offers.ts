@@ -1,6 +1,6 @@
 import { SpecialOffer } from './firestoreService';
 
-export type DiscountType = 'percentage' | 'fixed';
+export type DiscountType = 'percentage' | 'fixed' | 'pay_x_stay_y';
 
 export interface OfferEvaluationContext {
   roomName?: string;
@@ -16,6 +16,8 @@ export interface AppliedOfferInfo {
   description: string;
   discountType: DiscountType;
   discountValue: number;
+  stayNights?: number;
+  payNights?: number;
   couponCode: string | null;
   couponMode: 'none' | 'static' | 'unique_per_user';
   startDate: string | null;
@@ -70,8 +72,29 @@ export const isSpecialOfferValid = (
 
 export const calculateDiscountAmount = (
   baseAmount: number,
-  offer: Pick<SpecialOffer, 'discountType' | 'discountValue'>
+  offer: Pick<SpecialOffer, 'discountType' | 'discountValue' | 'stayNights' | 'payNights'>,
+  nights?: number
 ): number => {
+  if (offer.discountType === 'pay_x_stay_y') {
+    if (!nights || !offer.stayNights || !offer.payNights) return 0;
+    if (nights < offer.stayNights) return 0;
+
+    // Logic: For every 'stayNights' block, we give 'stayNights - payNights' free.
+    // Example: Stay 3, Pay 2. User stays 3 nights.
+    // sets = 3 / 3 = 1.
+    // free = 1 * (3 - 2) = 1 night free.
+
+    const sets = Math.floor(nights / offer.stayNights);
+    const freeNightsPerSet = offer.stayNights - offer.payNights;
+    const totalFreeNights = sets * freeNightsPerSet;
+
+    if (totalFreeNights <= 0) return 0;
+
+    // Calculate price per night assuming baseAmount covers all 'nights'
+    const pricePerNight = baseAmount / nights;
+    return pricePerNight * totalFreeNights;
+  }
+
   if (offer.discountType === 'fixed') {
     return Math.min(baseAmount, offer.discountValue);
   }
@@ -86,6 +109,8 @@ export const buildAppliedOfferInfo = (
   description: offer.description,
   discountType: offer.discountType,
   discountValue: offer.discountValue,
+  stayNights: offer.stayNights, // Pass these through
+  payNights: offer.payNights,
   couponCode: offer.couponCode || null,
   couponMode: offer.couponMode,
   startDate: offer.startDate || null,

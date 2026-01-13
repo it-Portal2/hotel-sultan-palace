@@ -264,13 +264,7 @@ export default function CartSummary({
                     <TrashIcon className="w-4 h-4" />
                     Remove
                   </button>
-                  <button
-                    onClick={handleApplyOfferToggle}
-                    className="flex items-center gap-1"
-                  >
-                    <TagIcon className="w-4 h-4" />
-                    Apply Offer
-                  </button>
+
                 </div>
 
                 {index < addOns.length - 1 && (
@@ -508,10 +502,7 @@ export default function CartSummary({
                 <TrashIcon className="w-4 h-4" />
                 Remove
               </button>
-              <button onClick={handleApplyOfferToggle} className="flex items-center gap-1">
-                <TagIcon className="w-4 h-4" />
-                Apply Offer
-              </button>
+
             </div>
 
             {index < addOns.length - 1 && (

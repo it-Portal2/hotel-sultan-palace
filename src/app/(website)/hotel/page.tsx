@@ -265,8 +265,14 @@ function HotelContent() {
 
       specialOffers.forEach((offer) => {
         if (!isSpecialOfferValid(offer, { roomName: room.name, guestCount, now })) return;
-        const amount = calculateDiscountAmount(baseAmount, offer);
-        if (amount <= 0) return;
+        const amount = calculateDiscountAmount(baseAmount, {
+          discountType: offer.discountType,
+          discountValue: offer.discountValue,
+          stayNights: offer.stayNights,
+          payNights: offer.payNights,
+        }, nightsCount);
+        if (amount <= 0 && offer.discountType !== 'pay_x_stay_y') return;
+
         if (!bestOffer || amount > bestAmount) {
           bestOffer = offer;
           bestAmount = amount;

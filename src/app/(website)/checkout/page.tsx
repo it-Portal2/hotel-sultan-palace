@@ -476,33 +476,24 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <style jsx global>{`
-        header {
-          background-color: rgba(0, 0, 0, 0.8) !important;
-          backdrop-filter: blur(8px);
-        }
-        header * {
-          color: white !important;
-        }
-      `}</style>
+      {/* Dedicated Header Background */}
+      <div className="w-full h-[270px] bg-[#0a1a2b] absolute top-0 left-0 z-0" />
 
       {/* Navigation Section */}
-      <div className="w-full px-4 md:px-[230px] pt-[120px] md:pt-[140px] lg:pt-[165px]">
-        <div className="max-w-[1512px] mx-auto">
-          <div className="w-full lg:w-[850px]">
-            <button
-              onClick={() => router.push("/add-ons")}
-              className="flex items-center gap-5 text-black"
-            >
-              <ArrowLeftIcon className="w-6 h-6" />
-              <span className="text-xl font-semibold">Check out</span>
-            </button>
-          </div>
+      <div className="w-full max-w-[1512px] mx-auto px-4 md:px-[63px] lg:px-[120px] pt-[150px] md:pt-[200px] lg:pt-[220px] relative z-10">
+        <div className="w-full lg:w-[850px]">
+          <button
+            onClick={() => router.push("/add-ons")}
+            className="flex items-center gap-5 text-white"
+          >
+            <ArrowLeftIcon className="w-6 h-6" />
+            <span className="text-xl font-semibold">Check out</span>
+          </button>
         </div>
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div className="mt-8 pb-16">
+      <div className="mt-12 pb-16">
         <div className="w-full max-w-[1512px] mx-auto px-4 md:px-[63px] lg:px-[120px] flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Left Column - Form */}
           <div className="w-full lg:w-[850px] px-0">

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Room, SpecialOffer } from '@/lib/firestoreService';
-import { isSpecialOfferValid } from '@/lib/offers';
+import { isSpecialOfferValid, calculateDiscountAmount } from '@/lib/offers';
 
 interface AddOn {
   id: string;
@@ -30,7 +30,7 @@ type CartAddOn = AddOn;
 
 interface AppliedCoupon {
   code: string;
-  discountType: 'percentage' | 'fixed';
+  discountType: 'percentage' | 'fixed' | 'pay_x_stay_y';
   discountValue: number;
   offerId?: string;
   source: 'special' | 'discount';
@@ -38,6 +38,8 @@ interface AppliedCoupon {
   title?: string;
   targetAudience?: 'all' | 'specific_rooms';
   roomTypes?: string[];
+  stayNights?: number;
+  payNights?: number;
 }
 
 interface CartContextProps {
@@ -224,11 +226,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (eligibleAmount === 0) return 0;
 
-    if (appliedCoupon.discountType === 'percentage') {
-      return (eligibleAmount * appliedCoupon.discountValue) / 100;
-    } else {
-      return Math.min(appliedCoupon.discountValue, eligibleAmount);
-    }
+    // Pass nights to calculateDiscountAmount
+    // We construct a temporary offer object to pass to the helper
+    return calculateDiscountAmount(
+      eligibleAmount,
+      {
+        discountType: appliedCoupon.discountType,
+        discountValue: appliedCoupon.discountValue,
+        stayNights: appliedCoupon.stayNights,
+        payNights: appliedCoupon.payNights,
+      },
+      nights
+    );
   };
 
   // Calculate taxes
@@ -292,6 +301,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           discountValue: data.discountValue || 0,
           couponMode: data.couponMode || 'static',
           couponCode: data.couponCode || null,
+          stayNights: data.stayNights || undefined,
+          payNights: data.payNights || undefined,
           lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -320,6 +331,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           title: offer.title,
           targetAudience: offer.targetAudience,
           roomTypes: offer.roomTypes,
+          stayNights: offer.stayNights,
+          payNights: offer.payNights,
         });
 
         return { success: true };

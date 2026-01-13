@@ -47,8 +47,11 @@ export default function EditSpecialOfferPage() {
   const [selectedSuites, setSelectedSuites] = useState<string[]>([]);
 
   // Discount fields
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  // Discount fields
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed' | 'pay_x_stay_y'>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(10);
+  const [stayNights, setStayNights] = useState<number>(3);
+  const [payNights, setPayNights] = useState<number>(2);
 
   // Coupon configuration
   const [couponMode, setCouponMode] = useState<'none' | 'static' | 'unique_per_user'>('static');
@@ -102,6 +105,8 @@ export default function EditSpecialOfferPage() {
 
         setDiscountType(offer.discountType);
         setDiscountValue(offer.discountValue);
+        if (offer.stayNights) setStayNights(offer.stayNights);
+        if (offer.payNights) setPayNights(offer.payNights);
 
         // Handle Coupon migration
         if (offer.couponMode) {
@@ -211,7 +216,9 @@ export default function EditSpecialOfferPage() {
         roomTypes: targetAudience === 'specific_rooms' ? selectedSuites : [],
 
         discountType,
-        discountValue,
+        discountValue: discountType === 'pay_x_stay_y' ? 0 : discountValue,
+        stayNights: discountType === 'pay_x_stay_y' ? stayNights : undefined,
+        payNights: discountType === 'pay_x_stay_y' ? payNights : undefined,
 
         // Coupon Logic
         // Coupon Logic - Derived
@@ -465,19 +472,52 @@ export default function EditSpecialOfferPage() {
           {/* Discount */}
           <div className="border-t pt-4">
             <label className="block text-sm font-medium text-gray-700 mb-3">Discount Settings</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Type</label>
                 <select value={discountType} onChange={(e) => setDiscountType(e.target.value as any)} className="block w-full h-10 rounded-lg border border-gray-300 bg-gray-50/60 px-3">
                   <option value="percentage">Percentage (%)</option>
                   <option value="fixed">Fixed Amount ($)</option>
+                  <option value="pay_x_stay_y">Pay X Stay Y (e.g. Stay 3 Pay 2)</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Value</label>
-                <input type="number" min="0" value={discountValue} onChange={(e) => setDiscountValue(Number(e.target.value) || 0)} className="block w-full h-10 rounded-lg border border-gray-300 bg-gray-50/60 px-3" />
-              </div>
+
+              {discountType === 'pay_x_stay_y' ? (
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Stay Nights</label>
+                    <input
+                      type="number"
+                      min="2"
+                      value={stayNights}
+                      onChange={(e) => setStayNights(Number(e.target.value))}
+                      className="block w-full h-10 rounded-lg border border-gray-300 bg-gray-50/60 px-3"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Pay Nights</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={stayNights - 1}
+                      value={payNights}
+                      onChange={(e) => setPayNights(Number(e.target.value))}
+                      className="block w-full h-10 rounded-lg border border-gray-300 bg-gray-50/60 px-3"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Value</label>
+                  <input type="number" min="0" value={discountValue} onChange={(e) => setDiscountValue(Number(e.target.value) || 0)} className="block w-full h-10 rounded-lg border border-gray-300 bg-gray-50/60 px-3" />
+                </div>
+              )}
             </div>
+            {discountType === 'pay_x_stay_y' && (
+              <p className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">
+                ℹ️ Customer stays for <strong>{stayNights} nights</strong> but only pays for <strong>{payNights} nights</strong>.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-6 pt-6 border-t">

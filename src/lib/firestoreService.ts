@@ -292,8 +292,12 @@ export interface SpecialOffer {
   targetAudience: 'all' | 'specific_rooms';
   roomTypes: string[]; // specific room IDs or Suite Types
 
-  discountType: 'percentage' | 'fixed';
+  discountType: 'percentage' | 'fixed' | 'pay_x_stay_y';
   discountValue: number;
+
+  // Pay X Stay Y Logic
+  stayNights?: number;
+  payNights?: number;
 
   // Coupon Logic
   couponMode: 'none' | 'static' | 'unique_per_user';
@@ -2483,6 +2487,8 @@ export const getSpecialOffers = async (): Promise<SpecialOffer[]> => {
         discountValue: data.discountValue || 0,
         couponMode: data.couponMode || 'none',
         couponCode: data.couponCode || null,
+        stayNights: data.stayNights || undefined,
+        payNights: data.payNights || undefined,
         lastNotificationSentAt: data.lastNotificationSentAt?.toDate() || null,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -2520,6 +2526,8 @@ export const getSpecialOffer = async (id: string): Promise<SpecialOffer | null> 
       discountValue: data.discountValue || 0,
       couponMode: data.couponMode || 'none',
       couponCode: data.couponCode || null,
+      stayNights: data.stayNights || undefined,
+      payNights: data.payNights || undefined,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     } as SpecialOffer;

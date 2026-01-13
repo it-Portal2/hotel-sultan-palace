@@ -158,7 +158,9 @@ export default function RoomCard({
       calculateDiscountAmount(basePrice, {
         discountType: activeOffer.discountType,
         discountValue: activeOffer.discountValue,
-      })
+        stayNights: activeOffer.stayNights,
+        payNights: activeOffer.payNights,
+      }, nights)
     )
     : 0;
   const discountedPrice = Math.max(0, originalPrice - discountAmount);
@@ -291,7 +293,9 @@ export default function RoomCard({
               <div className="bg-[#3F8406] text-white rounded-[4px] text-[10px] md:text-[12px] font-semibold whitespace-nowrap px-2 py-1 md:px-3 md:py-[10px] flex items-center justify-center">
                 {activeOffer.discountType === 'percentage'
                   ? `${activeOffer.discountValue}% OFF`
-                  : `Save $${activeOffer.discountValue}`}
+                  : activeOffer.discountType === 'pay_x_stay_y'
+                    ? 'SPECIAL DEAL'
+                    : `Save $${activeOffer.discountValue}`}
               </div>
             ) : (
               <div className="bg-[#F87171] text-white rounded-[4px] text-[10px] md:text-[12px] font-semibold whitespace-nowrap px-2 py-1 md:px-3 md:py-[10px] flex items-center justify-center">
@@ -325,7 +329,10 @@ export default function RoomCard({
               <>
                 <div className="flex flex-col gap-1 w-full my-1">
                   <p className="text-[12px] md:text-[13px] font-semibold text-[#14532D] uppercase tracking-wide">
-                    {activeOffer.title || 'Special Offer'}
+                    {activeOffer.discountType === 'pay_x_stay_y' && activeOffer.stayNights && activeOffer.payNights
+                      ? `STAY ${activeOffer.stayNights.toString().padStart(2, '0')} NIGHTS AND PAY FOR ONLY ${activeOffer.payNights.toString().padStart(2, '0')} NIGHTS`
+                      : activeOffer.title || 'Special Offer'
+                    }
                   </p>
 
 

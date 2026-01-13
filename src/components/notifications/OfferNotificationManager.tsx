@@ -14,6 +14,9 @@ interface OfferToastData {
   imageUrl?: string;
   couponCode?: string | null;
   couponMode?: 'none' | 'static' | 'unique_per_user';
+  discountType?: 'percentage' | 'fixed' | 'pay_x_stay_y';
+  stayNights?: number;
+  payNights?: number;
 }
 
 // Helper to generate a unique code for user
@@ -131,6 +134,9 @@ export default function OfferNotificationManager() {
           imageUrl: offerToShow.imageUrl || undefined,
           couponCode: displayCode,
           couponMode: offerToShow.couponMode,
+          discountType: offerToShow.discountType,
+          stayNights: offerToShow.stayNights,
+          payNights: offerToShow.payNights,
         });
 
         timer = setTimeout(() => {
@@ -200,7 +206,11 @@ export default function OfferNotificationManager() {
               </div>
             )}
             <div className="space-y-1">
-              <h3 className="font-bold text-gray-900 text-lg leading-tight">{offer.title}</h3>
+              <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                {offer.discountType === 'pay_x_stay_y' && offer.stayNights && offer.payNights
+                  ? `Stay ${offer.stayNights} Nights, Pay ${offer.payNights}`
+                  : offer.title}
+              </h3>
               <p className="text-gray-600 text-sm leading-relaxed">{offer.description}</p>
             </div>
           </div>
