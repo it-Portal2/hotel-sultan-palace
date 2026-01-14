@@ -179,6 +179,12 @@ export default function CartSummary({
                     <p className="text-[15px] text-[#1D69F9] font-bold mb-2">
                       {dateRangeText}
                     </p>
+                    {room.mealPlan && (
+                      <p className="text-[14px] text-[#28a745] font-medium leading-[1.714] mb-1">
+                        Meal Plan: {room.mealPlan === 'HB' ? 'Half Board' : room.mealPlan === 'FB' ? 'Full Board' : 'Breakfast'}
+                        {room.mealPlanDetails && ` (${room.mealPlanDetails})`}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="text-[18px] font-semibold text-[#1D2A3A]">
@@ -197,6 +203,16 @@ export default function CartSummary({
                     <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
                     <div className="text-[#1D2A3A] text-[16px] font-semibold">${((room.taxes || 0) * nights * quantity).toFixed(2)}</div>
                   </div>
+                  {room.mealPlan && room.mealPlanPrice && (
+                    <div className="flex items-center gap-4 w-full justify-between md:justify-end md:w-auto">
+                      <div className="text-[#655D4E] text-[16px]">
+                        Meal Plan ({room.mealPlan})
+                      </div>
+                      <div className="text-[#1D2A3A] text-[16px] font-semibold">
+                        +${(room.mealPlanPrice * nights * quantity).toFixed(2)}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 text-[#3F3F3F] text-[16px] font-bold">

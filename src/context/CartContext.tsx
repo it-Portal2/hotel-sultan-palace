@@ -24,7 +24,12 @@ interface BookingData {
 }
 
 // Define cart item types for union of Rooms and AddOns if needed
-type CartRoom = Room & { cartItemId: string };
+type CartRoom = Room & {
+  cartItemId: string;
+  mealPlan?: 'BB' | 'HB' | 'FB';
+  mealPlanPrice?: number;
+  mealPlanDetails?: string;
+};
 
 type CartAddOn = AddOn;
 
@@ -44,7 +49,7 @@ interface AppliedCoupon {
 
 interface CartContextProps {
   rooms: CartRoom[];
-  addRoom: (room: Room, quantity?: number) => void;
+  addRoom: (room: Room, quantity?: number, options?: { mealPlan?: 'BB' | 'HB' | 'FB'; mealPlanPrice?: number; mealPlanDetails?: string }) => void;
   removeRoom: (cartItemId: string) => void;
 
   addOns: CartAddOn[];
@@ -107,13 +112,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return `${Date.now()}-${Math.random()}`;
   };
 
-  const addRoom = (room: Room, quantity: number = 1) => {
+  const addRoom = (room: Room, quantity: number = 1, options?: { mealPlan?: 'BB' | 'HB' | 'FB'; mealPlanPrice?: number; mealPlanDetails?: string }) => {
     setRooms((prevRooms) => {
       const newRooms: CartRoom[] = [];
       for (let i = 0; i < quantity; i++) {
         newRooms.push({
           ...room,
           cartItemId: generateCartItemId(),
+          mealPlan: options?.mealPlan,
+          mealPlanPrice: options?.mealPlanPrice,
+          mealPlanDetails: options?.mealPlanDetails
         });
       }
       return [...prevRooms, ...newRooms];
@@ -172,7 +180,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Calculate room total (for discounts)
+  // Calculate room total (for discounts) - Includes Meal Plan? 
+  // Usually discounts apply to Room Rate only, not Meal Plan supplements.
+  // We keep this as pure Room Price for discount calculation unless specified otherwise.
   const calculateRoomTotal = () => {
     const nights = getNumberOfNights();
     return rooms.reduce((total, room) => total + (room.price * nights), 0);
@@ -197,7 +207,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return total + item.price * multiplier * item.quantity;
     }, 0);
 
-    return roomTotal + addOnTotal;
+    // Meal Plan Total
+    const mealPlanTotal = rooms.reduce((total, room) => {
+      if (room.mealPlan && room.mealPlanPrice && bookingData) {
+        // Price is per PERSON per NIGHT
+        const guestCount = bookingData.guests.adults + bookingData.guests.children; // Simplified count if price is uniform, but requirement says Adult/Child differ.
+        // Wait, the CartRoom stores a single 'mealPlanPrice'.
+        // If the price differs for Adult/Child, we need to calculate that BEFORE passing to CartRoom, 
+        // OR CartRoom needs to store the unit prices for Adult/Child separately.
+        // Option A: `mealPlanPrice` in CartRoom is the TOTAL daily supplement for the room (calculated when adding to cart).
+        // Let's go with Option A for simplicity in Context. The Caller (RoomCard) calculates the total daily supplement.
+
+        return total + (room.mealPlanPrice * nights);
+      }
+      return total;
+    }, 0);
+
+    return roomTotal + addOnTotal + mealPlanTotal;
   };
 
   // Get discount amount
@@ -319,6 +345,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? `This offer expired on ${end.toLocaleDateString()}.`
             : 'This offer is no longer valid.';
           return { success: false, message: expiryMsg };
+        }
+
+        // Validate Stay Duration (Min/Pay/Stay logic)
+        // isSpecialOfferValid checks basic validity, but let's enforce min stay if defined in validation logic or implicit via discount type
+        const nights = getNumberOfNights();
+        // Check "stayNights" if it implies a minimum requirement (common for pay_x_stay_y)
+        if (offer.discountType === 'pay_x_stay_y' && offer.stayNights && nights < offer.stayNights) {
+          return { success: false, message: `Minimum ${offer.stayNights} nights stay required for this offer.` };
+        }
+
+        // Also check if 'minNights' property exists on offer (if added in future) or implicit logic
+
+
+        // Validate Target Rooms
+        if (offer.targetAudience === 'specific_rooms' && offer.roomTypes && offer.roomTypes.length > 0) {
+          const hasEligibleRoom = rooms.some(room => {
+            const rName = room.name.toLowerCase();
+            return offer.roomTypes!.some(target => rName.includes(target.toLowerCase()));
+          });
+
+          if (!hasEligibleRoom) {
+            return { success: false, message: 'This coupon is not valid for the rooms in your cart.' };
+          }
         }
 
         setAppliedCoupon({

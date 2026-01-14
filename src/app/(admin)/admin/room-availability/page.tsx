@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { getAllBookings, getRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus } from '@/lib/firestoreService';
+import { getAllBookings, getRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus, getMealPlanSettings, MealPlanSettings } from '@/lib/firestoreService';
 import { reserveRoomInInventory, releaseRoomFromInventory } from '@/lib/availabilityService';
 import { cancelBooking } from '@/lib/bookingService';
 import { Timestamp } from 'firebase/firestore';
@@ -144,6 +144,7 @@ export default function RoomAvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysToShow] = useState(20);
+  const [mealPlanSettings, setMealPlanSettings] = useState<MealPlanSettings | undefined>(undefined);
 
   // Calculate suite prices from Rooms collection
   const suitePriceMap = useMemo(() => {
@@ -396,16 +397,21 @@ export default function RoomAvailabilityPage() {
   const loadData = async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true);
-      const [bookingsData, allRoomTypes, roomsData, statusesData] = await Promise.all([
+      const [bookingsData, allRoomTypes, roomsData, statusesData, settingsData] = await Promise.all([
         getAllBookings(),
         Promise.all(SUITE_TYPES.map(suite => getRoomTypes(suite))).then(results => results.flat()),
         getRooms(),
-        getRoomStatuses()
+        getRoomStatuses(),
+        getMealPlanSettings()
       ]);
       setBookings(bookingsData);
       setRoomTypes(allRoomTypes);
       setRooms(roomsData);
       setRoomStatuses(statusesData);
+      if (typeof settingsData === 'object') {
+        // getMealPlanSettings returns the object directly or null
+        setMealPlanSettings(settingsData as MealPlanSettings);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -798,7 +804,12 @@ export default function RoomAvailabilityPage() {
         rooms: formData.selectedRooms.map((r: any) => ({
           type: r.roomType,
           price: r.price,
-          allocatedRoomType: r.roomName || null, // Ensure explicit null if empty
+          mealPlan: r.mealPlan,
+          mealPlanPrice: r.mealPlanPrice || 0,
+          allocatedRoomType: r.roomName || '',
+          adults: r.adults,
+          children: r.children,
+          status: 'confirmed',
           suiteType: r.roomType as SuiteType,
           ratePlan: r.rateType
         })),
@@ -1999,6 +2010,7 @@ export default function RoomAvailabilityPage() {
         availableRooms={enrichedRooms}
         bookings={bookings}
         loading={loading}
+        mealPlanSettings={mealPlanSettings}
       />
     </div >
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon, CalendarDaysIcon, PlusIcon, TrashIcon, UserIcon, ChevronDownIcon, MagnifyingGlassIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/react/24/outline';
-import { SuiteType, RoomType, Booking, Room } from '@/lib/firestoreService';
+import { SuiteType, RoomType, Booking, Room, MealPlanSettings } from '@/lib/firestoreService';
 
 interface QuickReservationModalProps {
     isOpen: boolean;
@@ -13,6 +13,7 @@ interface QuickReservationModalProps {
     availableRooms: Room[]; // Available rooms for the selected dates (or all rooms to lookup prices)
     bookings?: Booking[];
     loading?: boolean;
+    mealPlanSettings?: MealPlanSettings;
 }
 
 // Helper: Normalize date to YYYY-MM-DD string for strict comparison
@@ -45,7 +46,8 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     initialRoomName,
     availableRooms,
     bookings = [],
-    loading = false
+    loading = false,
+    mealPlanSettings
 }) => {
     const [isAdvancedMode, setIsAdvancedMode] = useState(false);
 
@@ -105,7 +107,9 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             roomName: roomNameArg || '',
             adults: 2,
             children: 0,
-            price: initialPrice
+            price: initialPrice,
+            mealPlan: 'BB',
+            mealPlanPrice: 0
         };
 
         return {
@@ -286,7 +290,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
     // Recalculate Total
     useEffect(() => {
-        const total = formData.selectedRooms.reduce((acc, room) => acc + (room.price * formData.nights), 0);
+        const total = formData.selectedRooms.reduce((acc, room) => acc + ((room.price + (room.mealPlanPrice || 0)) * formData.nights), 0);
         setFormData(prev => ({ ...prev, totalAmount: total }));
     }, [formData.selectedRooms, formData.nights]);
 
@@ -308,7 +312,9 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                     roomName: '',
                     adults: 2,
                     children: 0,
-                    price: suitePrices[defaultType] || 0
+                    price: suitePrices[defaultType] || 0,
+                    mealPlan: 'BB',
+                    mealPlanPrice: 0
                 }
             ]
         }));
@@ -332,6 +338,23 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                         if (selectedRoom && selectedRoom.price) {
                             updated.price = selectedRoom.price;
                         }
+                    }
+
+                    // Recalculate Meal Plan Price if adults/children or mealPlan changes
+                    if (mealPlanSettings && (field === 'mealPlan' || field === 'adults' || field === 'children')) {
+                        const mp = field === 'mealPlan' ? value : r.mealPlan || 'BB';
+                        const ad = field === 'adults' ? value : r.adults;
+                        const ch = field === 'children' ? value : r.children;
+
+                        let supplement = 0;
+                        if (mp === 'HB') {
+                            supplement = (ad * mealPlanSettings.adultHalfBoardPrice) + (ch * mealPlanSettings.childHalfBoardPrice);
+                        } else if (mp === 'FB') {
+                            supplement = (ad * mealPlanSettings.adultFullBoardPrice) + (ch * mealPlanSettings.childFullBoardPrice);
+                        }
+                        updated.mealPlanPrice = supplement;
+                        // Ensure mealPlan is set (if it was undefined before)
+                        if (field !== 'mealPlan' && !updated.mealPlan) updated.mealPlan = 'BB';
                     }
 
                     return updated;
@@ -628,18 +651,19 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
                         {/* Rooms Grid */}
                         <div className="bg-white p-4 rounded border border-gray-200 shadow-sm space-y-2">
-                            <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_0.3fr] gap-3 mb-1 px-1">
+                            <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_1fr_0.3fr] gap-3 mb-1 px-1">
                                 <label className="text-[10px] font-bold text-gray-700">Room Type</label>
                                 <label className="text-[10px] font-bold text-gray-700">Rate Type</label>
                                 <label className="text-[10px] font-bold text-gray-700">Room</label>
                                 <label className="text-[10px] font-bold text-gray-700">Adult</label>
                                 <label className="text-[10px] font-bold text-gray-700">Child</label>
+                                <label className="text-[10px] font-bold text-gray-700">Meal Plan</label>
                                 <label className="text-[10px] font-bold text-gray-700 text-right">Rate ($) (Tax Inc.)</label>
                                 <span className="w-5"></span>
                             </div>
 
                             {formData.selectedRooms.map((room) => (
-                                <div key={room.id} className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_0.3fr] gap-3 items-center bg-white rounded border border-gray-200 p-3 md:p-0 md:border-none mb-3 md:mb-0 shadow-sm md:shadow-none">
+                                <div key={room.id} className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_1fr_0.3fr] gap-3 items-center bg-white rounded border border-gray-200 p-3 md:p-0 md:border-none mb-3 md:mb-0 shadow-sm md:shadow-none">
                                     {/* Room Type */}
                                     <div className="relative">
                                         <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Room Type</label>
@@ -744,6 +768,21 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                             onChange={e => handleRoomChange(room.id, 'children', parseInt(e.target.value))}
                                             className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:outline-none focus:border-blue-500 text-gray-700"
                                         />
+                                    </div>
+
+                                    {/* Meal Plan */}
+                                    <div className="relative">
+                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Meal Plan</label>
+                                        <select
+                                            value={room.mealPlan || 'BB'}
+                                            onChange={e => handleRoomChange(room.id, 'mealPlan', e.target.value)}
+                                            className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700"
+                                        >
+                                            <option value="BB">BB (Included)</option>
+                                            <option value="HB">HB {mealPlanSettings ? `(+$${(room.adults * mealPlanSettings.adultHalfBoardPrice + room.children * mealPlanSettings.childHalfBoardPrice)})` : ''}</option>
+                                            <option value="FB">FB {mealPlanSettings ? `(+$${(room.adults * mealPlanSettings.adultFullBoardPrice + room.children * mealPlanSettings.childFullBoardPrice)})` : ''}</option>
+                                        </select>
+                                        <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
                                     </div>
 
                                     {/* Price */}

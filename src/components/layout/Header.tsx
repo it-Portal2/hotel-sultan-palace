@@ -4,8 +4,7 @@ import Link from "next/link";
 import {
   FaWhatsapp,
   FaFacebookF,
-  FaLinkedinIn,
-  FaTwitter,
+
   FaInstagram,
 } from "react-icons/fa";
 import {
@@ -110,8 +109,7 @@ export default function Header() {
     { name: "Whatsapp", icon: FaWhatsapp, href: "https://wa.me/255777085630", title: "WhatsApp: +255 777 085 630" },
     { name: "Facebook", icon: FaFacebookF, href: "https://www.facebook.com/sultanpalace.znz" },
     { name: "Instagram", icon: FaInstagram, href: "https://www.instagram.com/sultanpalace.zanzibar" },
-    { name: "LinkedIn", icon: FaLinkedinIn, href: "#" },
-    { name: "Twitter", icon: FaTwitter, href: "#" },
+
   ];
 
   const navLinks = [
@@ -244,7 +242,7 @@ export default function Header() {
               </div>
 
               {/* Social Icons - Shifted right with margin */}
-              <div className="flex items-center gap-2 md:gap-3 ml-4 xl:ml-8">
+              <div className="flex items-center gap-3 md:gap-4 ml-6 xl:ml-12">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.name}
@@ -255,7 +253,7 @@ export default function Header() {
                     title={link.title || link.name}
                     aria-label={link.name === "Whatsapp" ? "Chat on WhatsApp - +255 777 085 630" : link.name}
                   >
-                    <link.icon size={14} className="md:w-4 md:h-4" />
+                    <link.icon size={14} className="md:w-5 md:h-5" />
                   </Link>
                 ))}
               </div>

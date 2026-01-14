@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Room } from '@/lib/firestoreService';
+
+import { Room, MealPlanSettings } from '@/lib/firestoreService';
 import RoomDetailsModal from './RoomDetailsModal';
 import { AppliedOfferInfo, calculateDiscountAmount } from '@/lib/offers';
 import {
@@ -17,7 +18,8 @@ import {
   MdOutlineAcUnit as AcIcon,
   MdOutlineBalcony as BalconyIcon,
   MdOutlinePrivacyTip as PrivateSuiteIcon,
-  MdOutlineRoomService as RoomIcon
+  MdOutlineRoomService as RoomIcon,
+  MdFreeBreakfast
 } from 'react-icons/md';
 import { TbRulerMeasure as SizeIcon } from 'react-icons/tb';
 import { IoMdFlower as GardenIcon } from 'react-icons/io';
@@ -31,11 +33,13 @@ interface RoomCardProps {
   checkOut: Date | null;
   guests: { adults: number; children: number; rooms: number };
   onGuestChange: (key: 'adults' | 'children' | 'rooms', delta: number) => void;
-  onReserve: (room: Room, roomCount: number, guests: { adults: number; children: number; rooms: number }) => void;
+
+  onReserve: (room: Room, roomCount: number, guests: { adults: number; children: number; rooms: number }, options?: { mealPlan?: 'BB' | 'HB' | 'FB', mealPlanPrice?: number, mealPlanDetails?: string }) => void;
   formatDate: (date: Date | null) => string;
   availableRoomCount?: number;
   activeOffer?: AppliedOfferInfo | null;
   nights: number;
+  mealPlanSettings: MealPlanSettings;
 }
 
 const GuestControl = ({ label, value, onIncrease, onDecrease, min, max }: {
@@ -82,10 +86,14 @@ export default function RoomCard({
   availableRoomCount,
   activeOffer,
   nights,
+  mealPlanSettings,
 }: RoomCardProps) {
   const router = useRouter();
   const [localRoomCount, setLocalRoomCount] = useState(1);
+
   const [localGuests, setLocalGuests] = useState(globalGuests); // Local state for independent control
+  const [selectedMealPlan, setSelectedMealPlan] = useState<'BB' | 'HB' | 'FB'>('BB');
+  const [halfBoardType, setHalfBoardType] = useState<'lunch' | 'dinner'>('dinner');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
 
@@ -219,7 +227,7 @@ export default function RoomCard({
 
   return (
     <>
-      <div className="flex flex-col lg:grid lg:grid-cols-[1.5fr_1fr_1fr] h-full min-h-0">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1.5fr_1fr_1fr] min-h-0 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
         <div className="p-4 md:p-[20px] lg:p-[30px] flex flex-col justify-between space-y-4 min-h-0">
           <div>
@@ -280,7 +288,8 @@ export default function RoomCard({
           </div>
         </div>
 
-        <div className={`relative flex flex-col justify-center border-[1.5px] p-3 md:p-[14px] w-full lg:w-[376px] min-h-[300px] h-auto bg-[#EBFDED] border-[#88B988]`}>
+
+        <div className={`relative flex flex-col justify-start gap-4 border-[1.5px] p-3 md:p-[14px] w-full lg:w-[376px] h-auto self-start bg-[#EBFDED] border-[#88B988] mt-[25px] lg:mt-[40px]`}>
 
           <div className="absolute top-2 right-2 md:top-[8px] md:right-[14px]">
             <span className="text-[11px] md:text-[13px] font-light text-[rgba(0,0,0,0.83)]">
@@ -304,27 +313,58 @@ export default function RoomCard({
             )}
           </div>
 
-          <div className="flex flex-col">
-            <p className="text-[12px] md:text-[14px] font-semibold text-[#000000] mb-[10px] pr-16 bg-transparent">
-              Price for {nights} {nights > 1 ? 'nights' : 'night'}, {localGuests.adults} {localGuests.adults > 1 ? 'adults' : 'adult'}
-              {localRoomCount > 1 && `, ${localRoomCount} rooms`}
-            </p>
-            <div className="flex items-baseline gap-[5px] mb-[10px] relative">
-              {activeOffer ? (
-                <>
-                  <span className="text-[12px] md:text-[14px] text-[#FF0000] line-through font-medium">
-                    ${originalPrice}
-                  </span>
-                  <span className="text-[18px] md:text-[20px] font-bold text-[#232323]">
-                    ${discountedPrice}
-                  </span>
-                </>
-              ) : (
-                <span className="text-[20px] font-bold text-[#232323]">
-                  ${originalPrice}
-                </span>
-              )}
-            </div>
+          <div className="flex flex-col h-full justify-start pt-5 md:pt-6 pl-2">
+            {/* Price Calculation with Meal Plan */}
+            {(() => {
+              const roomPrice = room.price * nights * localRoomCount;
+
+              let mealSupplement = 0;
+              if (selectedMealPlan === 'HB') {
+                mealSupplement = (localGuests.adults * mealPlanSettings.adultHalfBoardPrice + localGuests.children * mealPlanSettings.childHalfBoardPrice) * nights;
+              } else if (selectedMealPlan === 'FB') {
+                mealSupplement = (localGuests.adults * mealPlanSettings.adultFullBoardPrice + localGuests.children * mealPlanSettings.childFullBoardPrice) * nights;
+              }
+
+              const discountAmount = activeOffer
+                ? Math.round(
+                  calculateDiscountAmount(roomPrice, {
+                    discountType: activeOffer.discountType,
+                    discountValue: activeOffer.discountValue,
+                    stayNights: activeOffer.stayNights,
+                    payNights: activeOffer.payNights,
+                  }, nights)
+                )
+                : 0;
+
+              const finalRoomPrice = Math.max(0, roomPrice - discountAmount);
+              const totalPrice = finalRoomPrice + mealSupplement;
+
+              return (
+                <div className="flex flex-col items-start">
+                  <p className="text-[12px] md:text-[14px] font-semibold text-[#000000] mb-[5px] pr-16 bg-transparent">
+                    Price for {nights} {nights > 1 ? 'nights' : 'night'}, {localGuests.adults} {localGuests.adults > 1 ? 'adults' : 'adult'}
+                    {localRoomCount > 1 && `, ${localRoomCount} rooms`}
+                  </p>
+                  <div className="flex items-baseline gap-[5px] mb-[5px] relative">
+                    {activeOffer && discountAmount > 0 ? (
+                      <>
+                        <span className="text-[12px] md:text-[14px] text-[#FF0000] line-through font-medium">
+                          ${Math.round(roomPrice + mealSupplement)}
+                        </span>
+                        <span className="text-[18px] md:text-[20px] font-bold text-[#232323]">
+                          ${Math.round(totalPrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[20px] font-bold text-[#232323]">
+                        ${Math.round(totalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {activeOffer ? (
               <>
                 <div className="flex flex-col gap-1 w-full my-1">
@@ -334,7 +374,6 @@ export default function RoomCard({
                       : activeOffer.title || 'Special Offer'
                     }
                   </p>
-
 
                   {/* Coupon Code Logic - Static Only */}
                   {activeOffer.couponMode === 'static' && activeOffer.couponCode && (
@@ -384,33 +423,32 @@ export default function RoomCard({
                 No special offers currently available for this room
               </p>
             )}
-          </div>
 
+            <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[8px] mt-[8px]">
+              + ${(room.taxes || 0) * nights} taxes and charge
+            </span>
 
-          <span className="text-[11px] md:text-[12px] font-normal text-[#636468] mb-[10px] mt-[10px]">
-            + ${(room.taxes || 0) * nights} taxes and charge
-          </span>
-
-          <div className="space-y-[6px] md:space-y-[9px] mt-[12px] md:mt-[18px]">
-            <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
-              <DoneIcon className="text-[#489219] text-[15px] md:text-[17px] flex-shrink-0" />
-              <span className="break-words">{getCancellationText()}</span>
-            </div>
-            <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
-              <DoneIcon className="text-[#489219] text-[15px] md:text-[17px] flex-shrink-0" />
-              <span className="break-words">No prepayment needed – pay at the property</span>
-            </div>
-            <div className="flex items-center gap-[8px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
-              <NoCreditCardIcon className="text-[#489219] text-[11px] md:text-[12px] flex-shrink-0" />
-              <span className="break-words">No credit card Needed</span>
-            </div>
-            <div className="flex items-center gap-[7px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
-              <NoCreditCardIcon className="text-[#489219] text-[13px] md:text-[15px] flex-shrink-0" />
-              <span className="break-words">Breakfast included</span>
-            </div>
-            <div className="flex items-center gap-[7px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
-              <ChildIcon className="text-[#489219] text-[13px] md:text-[15px] flex-shrink-0" />
-              <span className="break-words">Free stay for your child</span>
+            <div className="space-y-[4px] md:space-y-[6px] mt-2">
+              <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
+                <DoneIcon className="text-[#489219] text-[15px] md:text-[17px] flex-shrink-0" />
+                <span className="break-words">{getCancellationText()}</span>
+              </div>
+              <div className="flex items-center gap-[5px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
+                <DoneIcon className="text-[#489219] text-[15px] md:text-[17px] flex-shrink-0" />
+                <span className="break-words">No prepayment needed – pay at the property</span>
+              </div>
+              <div className="flex items-center gap-[8px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
+                <NoCreditCardIcon className="text-[#489219] text-[11px] md:text-[12px] flex-shrink-0" />
+                <span className="break-words">No credit card Needed</span>
+              </div>
+              <div className="flex items-center gap-[7px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
+                <MdFreeBreakfast className="text-[#489219] text-[13px] md:text-[15px] flex-shrink-0" />
+                <span className="break-words">Breakfast included</span>
+              </div>
+              <div className="flex items-center gap-[7px] text-[#484848] text-[12px] md:text-[14px] font-semibold">
+                <ChildIcon className="text-[#489219] text-[13px] md:text-[15px] flex-shrink-0" />
+                <span className="break-words">Free stay for your child</span>
+              </div>
             </div>
           </div>
         </div>
@@ -469,6 +507,92 @@ export default function RoomCard({
               min={0}
               max={totalCapacity - localGuests.adults}
             />
+
+          </div>
+
+          {/* Meal Plan Selection */}
+          <div className="space-y-3 mt-auto">
+            <p className="text-[13px] font-semibold text-[#323232]">Upgrade your meal plan:</p>
+
+            {/* Half Board Option */}
+            <div className={`border rounded-[6px] transition-all p-3 cursor-pointer ${selectedMealPlan === 'HB'
+              ? 'border-[#1D69F9] bg-[#F0F6FF]'
+              : 'border-[#E0E0E0] bg-white hover:border-[#B0B0B0]'
+              }`}
+              onClick={() => setSelectedMealPlan(prev => prev === 'HB' ? 'BB' : 'HB')}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedMealPlan === 'HB' ? 'border-[#1D69F9]' : 'border-[#A0A0A0]'
+                    }`}>
+                    {selectedMealPlan === 'HB' && <div className="w-2.5 h-2.5 rounded-full bg-[#1D69F9]" />}
+                  </div>
+                  <span className={`text-[13px] font-medium ${selectedMealPlan === 'HB' ? 'text-[#1D69F9]' : 'text-[#323232]'}`}>
+                    Half Board
+                  </span>
+                </div>
+                <span className="text-[12px] font-semibold text-[#1D69F9]">
+                  +${mealPlanSettings.adultHalfBoardPrice}/adult
+                  {mealPlanSettings.childHalfBoardPrice > 0 && `, +$${mealPlanSettings.childHalfBoardPrice}/child`}
+                </span>
+              </div>
+              <p className="text-[10px] text-[#666] ml-6 leading-tight">
+                Includes Breakfast & Dinner (or Lunch)
+              </p>
+
+              {/* Lunch/Dinner Selection for HB */}
+              {selectedMealPlan === 'HB' && (
+                <div className="ml-6 mt-2 flex gap-3" onClick={e => e.stopPropagation()}>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`hb-type-${room.id}`}
+                      className="w-3 h-3 text-[#1D69F9] focus:ring-[#1D69F9]"
+                      checked={halfBoardType === 'dinner'}
+                      onChange={() => setHalfBoardType('dinner')}
+                    />
+                    <span className="text-[11px] text-[#323232]">Dinner</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`hb-type-${room.id}`}
+                      className="w-3 h-3 text-[#1D69F9] focus:ring-[#1D69F9]"
+                      checked={halfBoardType === 'lunch'}
+                      onChange={() => setHalfBoardType('lunch')}
+                    />
+                    <span className="text-[11px] text-[#323232]">Lunch</span>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Full Board Option */}
+            <div className={`border rounded-[6px] transition-all p-3 cursor-pointer ${selectedMealPlan === 'FB'
+              ? 'border-[#1D69F9] bg-[#F0F6FF]'
+              : 'border-[#E0E0E0] bg-white hover:border-[#B0B0B0]'
+              }`}
+              onClick={() => setSelectedMealPlan(prev => prev === 'FB' ? 'BB' : 'FB')}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedMealPlan === 'FB' ? 'border-[#1D69F9]' : 'border-[#A0A0A0]'
+                    }`}>
+                    {selectedMealPlan === 'FB' && <div className="w-2.5 h-2.5 rounded-full bg-[#1D69F9]" />}
+                  </div>
+                  <span className={`text-[13px] font-medium ${selectedMealPlan === 'FB' ? 'text-[#1D69F9]' : 'text-[#323232]'}`}>
+                    Full Board
+                  </span>
+                </div>
+                <span className="text-[12px] font-semibold text-[#1D69F9]">
+                  +${mealPlanSettings.adultFullBoardPrice}/adult
+                  {mealPlanSettings.childFullBoardPrice > 0 && `, +$${mealPlanSettings.childFullBoardPrice}/child`}
+                </span>
+              </div>
+              <p className="text-[10px] text-[#666] ml-6 leading-tight">
+                Includes Breakfast, Lunch & Dinner
+              </p>
+            </div>
           </div>
 
           <button
@@ -477,10 +601,28 @@ export default function RoomCard({
                 alert('No rooms available for the selected dates. Please choose different dates.');
                 return;
               }
-              await onReserve(room, localRoomCount, localGuests);
+
+              let dailySupplement = 0;
+              if (selectedMealPlan === 'HB') {
+                dailySupplement = (localGuests.adults * mealPlanSettings.adultHalfBoardPrice + localGuests.children * mealPlanSettings.childHalfBoardPrice);
+              } else if (selectedMealPlan === 'FB') {
+                dailySupplement = (localGuests.adults * mealPlanSettings.adultFullBoardPrice + localGuests.children * mealPlanSettings.childFullBoardPrice);
+              }
+
+              const avgDailySupplementPerRoom = localRoomCount > 0 ? dailySupplement / localRoomCount : 0;
+
+              // Capture the HB preference if needed (Lunch vs Dinner)
+              // For now we just pass the plan type as the backend might not support meal preference yet
+              // or we can append it? keeping it simple strictly per type schema for now.
+
+              await onReserve(room, localRoomCount, localGuests, {
+                mealPlan: selectedMealPlan,
+                mealPlanPrice: avgDailySupplementPerRoom,
+                mealPlanDetails: selectedMealPlan === 'HB' ? halfBoardType : undefined
+              });
             }}
             disabled={availableRoomCount !== undefined && availableRoomCount === 0}
-            className={`w-full font-medium py-2 md:py-[10px] rounded-[7px] transition-colors text-[16px] md:text-[20px] mt-auto ${availableRoomCount !== undefined && availableRoomCount === 0
+            className={`w-full font-medium py-2 md:py-[10px] rounded-[7px] transition-colors text-[16px] md:text-[20px] mt-4 ${availableRoomCount !== undefined && availableRoomCount === 0
               ? 'bg-gray-400 text-white cursor-not-allowed'
               : 'bg-[#1D69F9] text-white hover:bg-[#1a5ae0]'
               }`}
@@ -488,7 +630,7 @@ export default function RoomCard({
             {availableRoomCount !== undefined && availableRoomCount === 0 ? 'Not Available' : 'Reserve'}
           </button>
         </div>
-      </div>
+      </div >
       <RoomDetailsModal
         room={room}
         isOpen={isModalOpen}

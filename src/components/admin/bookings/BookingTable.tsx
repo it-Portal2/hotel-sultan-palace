@@ -154,7 +154,15 @@ export default function BookingTable({
                                             {booking.rooms.map(r => (r.suiteType || r.type).toUpperCase()).join(', ')}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {booking.rooms.map(r => r.suiteType ? (r.type === r.suiteType ? 'STANDARD RATE' : r.type) : 'STANDARD RATE').join(', ')}
+                                            {booking.rooms.map(r => {
+                                                const mealPlanMap: Record<string, string> = {
+                                                    'BB': 'Bed & Breakfast',
+                                                    'HB': 'Half Board',
+                                                    'FB': 'Full Board'
+                                                };
+                                                const rateText = r.mealPlan ? mealPlanMap[r.mealPlan] : (r.ratePlan || 'Standard Rate');
+                                                return r.suiteType ? (r.type === r.suiteType ? rateText : `${r.type} - ${rateText}`) : rateText;
+                                            }).join(', ')}
                                         </div>
                                         {booking.rooms.some(r => r.allocatedRoomType) && (
                                             <div className="text-xs font-mono text-indigo-600 mt-0.5">

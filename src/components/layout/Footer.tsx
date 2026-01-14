@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { FaWhatsapp, FaFacebookF, FaInstagram } from 'react-icons/fa';
 import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 
 export default function Footer() {
@@ -54,7 +54,7 @@ export default function Footer() {
                 </p>
 
                 {/* Social Media Icons */}
-                <div className={`flex space-x-4 footer-social ${isVisible ? 'footer-social-visible' : ''}`}>
+                <div className={`flex space-x-8 footer-social ${isVisible ? 'footer-social-visible' : ''}`}>
                   <a
                     href="https://wa.me/255684888111"
                     target="_blank"
@@ -84,12 +84,8 @@ export default function Footer() {
                   >
                     <FaInstagram className="text-white text-xl" />
                   </a>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#D4A373', transitionDelay: '0.3s' }}>
-                    <FaLinkedinIn className="text-white text-xl" />
-                  </div>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-105 cursor-pointer footer-social-icon ${isVisible ? 'footer-social-icon-visible' : ''}`} style={{ background: '#D4A373', transitionDelay: '0.4s' }}>
-                    <FaTwitter className="text-white text-xl" />
-                  </div>
+
+
                 </div>
               </div>
 

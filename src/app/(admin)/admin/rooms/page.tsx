@@ -10,6 +10,8 @@ import RestrictedAction from '@/components/admin/RestrictedAction';
 import RoomStats from '@/components/admin/rooms/RoomStats';
 import RoomTable from '@/components/admin/rooms/RoomTable';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import MealPlanSettingsModal from '@/components/admin/rooms/MealPlanSettingsModal';
+import { CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 export default function AdminRoomsPage() {
   const { isReadOnly } = useAdminRole();
@@ -19,6 +21,7 @@ export default function AdminRoomsPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMealSettings, setShowMealSettings] = useState(false);
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -98,13 +101,22 @@ export default function AdminRoomsPage() {
             </button>
           </RestrictedAction>
         ) : (
-          <Link
-            href="/admin/rooms/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF6A00] text-white shadow-lg shadow-orange-200 hover:bg-[#e65f00] transition-colors font-bold text-sm"
-          >
-            <PlusIcon className="h-5 w-5" />
-            Add New Room
-          </Link>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowMealSettings(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors shadow-sm rounded-md font-semibold text-sm"
+            >
+              <CurrencyDollarIcon className="h-5 w-5 text-gray-500" />
+              Meal Plan Rates
+            </button>
+            <Link
+              href="/admin/rooms/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF6A00] text-white shadow-lg shadow-orange-200 hover:bg-[#e65f00] transition-colors font-bold text-sm rounded-md"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Add New Room
+            </Link>
+          </div>
         )}
       </div>
 
@@ -140,6 +152,11 @@ export default function AdminRoomsPage() {
         message="Are you sure you want to delete this room definition? This cannot be undone."
         confirmText={deleting === confirmId ? 'Deleting...' : 'Delete'}
         cancelText="Cancel"
+      />
+
+      <MealPlanSettingsModal
+        isOpen={showMealSettings}
+        onClose={() => setShowMealSettings(false)}
       />
     </div>
   );

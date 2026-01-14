@@ -15,7 +15,8 @@ import {
   writeBatch,
   arrayUnion,
   arrayRemove,
-  Timestamp
+  Timestamp,
+  setDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -140,6 +141,8 @@ export interface Booking {
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
     status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out' | 'no_show' | 'maintenance' | 'stay_over';
     ratePlan?: string;
+    mealPlan?: 'BB' | 'HB' | 'FB';
+    mealPlanPrice?: number;
   }>;
 
   // Essential add-ons information
@@ -694,6 +697,64 @@ export interface RoomType {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ==================== Meal Plan Settings ====================
+
+export interface MealPlanSettings {
+  adultHalfBoardPrice: number;
+  adultFullBoardPrice: number;
+  childHalfBoardPrice: number;
+  childFullBoardPrice: number;
+}
+
+export const getMealPlanSettings = async (): Promise<MealPlanSettings> => {
+  if (!db) {
+    console.warn('Firestore is not initialized.');
+    return {
+      adultHalfBoardPrice: 30,
+      adultFullBoardPrice: 50,
+      childHalfBoardPrice: 20,
+      childFullBoardPrice: 30
+    };
+  }
+  try {
+    const docRef = doc(db, 'settings', 'meal_plans');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as MealPlanSettings;
+    }
+    // Default values if not set
+    return {
+      adultHalfBoardPrice: 30,
+      adultFullBoardPrice: 50,
+      childHalfBoardPrice: 20,
+      childFullBoardPrice: 30
+    };
+  } catch (error) {
+    console.error('Error fetching meal plan settings:', error);
+    return {
+      adultHalfBoardPrice: 30,
+      adultFullBoardPrice: 50,
+      childHalfBoardPrice: 20,
+      childFullBoardPrice: 30
+    };
+  }
+};
+
+export const updateMealPlanSettings = async (settings: MealPlanSettings): Promise<boolean> => {
+  if (!db) {
+    console.error('Firestore is not initialized.');
+    return false;
+  }
+  try {
+    const docRef = doc(db, 'settings', 'meal_plans');
+    await setDoc(docRef, settings, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error updating meal plan settings:', error);
+    return false;
+  }
+};
 
 // ==================== Inventory Management Interfaces ====================
 

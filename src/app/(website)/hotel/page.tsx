@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
-import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getAllGuestReviews, getSpecialOffers, SpecialOffer } from '@/lib/firestoreService';
+import { getRooms, Room, getGalleryImages, GalleryImage, SuiteType, getAllGuestReviews, getSpecialOffers, SpecialOffer, getMealPlanSettings, MealPlanSettings } from '@/lib/firestoreService';
 import { AppliedOfferInfo, buildAppliedOfferInfo, calculateDiscountAmount, isSpecialOfferValid } from '@/lib/offers';
 import { getAvailableRoomCount } from '@/lib/bookingService';
 import {
@@ -75,6 +75,7 @@ function HotelContent() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
+  const [mealPlanSettings, setMealPlanSettings] = useState<MealPlanSettings | null>(null);
   const [activeOffersByRoom, setActiveOffersByRoom] = useState<Record<string, AppliedOfferInfo | null>>({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -119,11 +120,12 @@ function HotelContent() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [roomsData, galleryData, offers, reviews] = await Promise.all([
+        const [roomsData, galleryData, offers, reviews, mealSettings] = await Promise.all([
           getRooms(),
           getGalleryImages(),
           getSpecialOffers(),
-          getAllGuestReviews(true) // Get only approved reviews
+          getAllGuestReviews(true), // Get only approved reviews
+          getMealPlanSettings()
         ]);
 
         if (roomsData.length === 0) {
@@ -133,6 +135,7 @@ function HotelContent() {
         setRooms(roomsData);
         setGalleryImages(galleryData);
         setSpecialOffers(offers);
+        setMealPlanSettings(mealSettings);
 
         // Calculate overall rating from reviews
         if (reviews.length > 0) {
@@ -354,7 +357,7 @@ function HotelContent() {
     });
   };
 
-  const addToCart = async (room: Room, roomCount: number = 1, guestsInput?: { adults: number; children: number; rooms: number }) => {
+  const addToCart = async (room: Room, roomCount: number = 1, guestsInput?: { adults: number; children: number; rooms: number }, options?: { mealPlan?: 'BB' | 'HB' | 'FB'; mealPlanPrice?: number; mealPlanDetails?: string }) => {
     if (!tempCheckIn || !tempCheckOut) {
       return;
     }
@@ -441,7 +444,7 @@ function HotelContent() {
       }
 
       // Add ONLY the needed amount to cart
-      addRoom(room, needed);
+      addRoom(room, needed, options);
       router.push('/add-ons');
     } catch (error) {
       console.error('Error checking availability:', error);
@@ -459,23 +462,47 @@ function HotelContent() {
     );
   }
 
+  const defaultMealSettings: MealPlanSettings = {
+    adultHalfBoardPrice: 30,
+    adultFullBoardPrice: 50,
+    childHalfBoardPrice: 20,
+    childFullBoardPrice: 30
+  };
+
   const containerPad = '';
-
-
 
   const comforts = [
     { icon: MdFreeBreakfast, category: 'Breakfast', title: 'Delightful Breakfast' },
     { icon: MdLandscape, category: 'View', title: 'Breathtaking Horizons' },
     { icon: MdAirportShuttle, category: 'Airport Shuttle', title: 'Taste the Luxury' },
     { icon: MdSpa, category: 'Spa', title: 'Relax & Rejuvenate' },
-    // { icon: MdFitnessCenter, category: 'Gym', title: 'Stay Fit Daily' },
     { icon: MdSportsTennis, category: 'Activities', title: 'Fun Every Day' },
     { icon: MdPool, category: 'Pool', title: 'Dive & Unwind' },
-    // { icon: MdRestaurant, category: 'Dining', title: 'Taste the Luxury' },
-    // { icon: MdKingBed, category: 'Stay', title: 'Comfort Redefined' },
     { icon: MdLocalBar, category: 'Bar / Lounge', title: 'Sip & Chill' },
-    // { icon: MdFamilyRestroom, category: 'Family Zone', title: 'Joy Together' },
   ];
+  // ...
+  <div className="w-full">
+    <div className="flex flex-col gap-[30px]" ref={roomsRef}>
+      {rooms.map((room) => (
+        <div key={room.id} className="bg-white rounded-[2px] border border-[#d6d6d6] overflow-hidden min-h-0">
+          <RoomCard
+            room={room}
+            checkIn={tempCheckIn}
+            checkOut={tempCheckOut}
+            guests={bookingData ? bookingData.guests : tempGuests}
+            onGuestChange={changeGuest}
+            onReserve={addToCart}
+            formatDate={formatDateObj}
+            availableRoomCount={availableRoomCounts[room.id]}
+            activeOffer={activeOffersByRoom[room.id]}
+            nights={getStayNights()}
+            mealPlanSettings={mealPlanSettings || defaultMealSettings}
+            key={room.id}
+          />
+        </div>
+      ))}
+    </div>
+  </div>
 
 
   return (
@@ -824,7 +851,7 @@ function HotelContent() {
 
             <div className="flex flex-col gap-[25px]">
               {rooms.slice(0, 3).map((room) => (
-                <div key={room.id} className="bg-white rounded-[4px] overflow-hidden lg:h-[430px]">
+                <div key={room.id} className="bg-white rounded-[4px] overflow-hidden lg:min-h-[430px] h-auto">
                   <RoomCard
                     room={room}
                     checkIn={tempCheckIn}
@@ -836,6 +863,7 @@ function HotelContent() {
                     availableRoomCount={availableRoomCounts[room.id]}
                     activeOffer={activeOffersByRoom[room.id] || undefined}
                     nights={getStayNights()}
+                    mealPlanSettings={mealPlanSettings || { adultHalfBoardPrice: 0, childHalfBoardPrice: 0, adultFullBoardPrice: 0, childFullBoardPrice: 0 }}
                   />
                 </div>
               ))}
