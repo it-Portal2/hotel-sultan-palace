@@ -71,8 +71,11 @@ export default function NoShowReportPage() {
                 if (!hasType) return false;
             }
 
-            // 6. Rate Type
-            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
+            // 6. Meal Plan
+            if (filters.rateTypeId) {
+                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                if (!hasMealPlan) return false;
+            }
 
             return true;
         });
@@ -176,7 +179,7 @@ export default function NoShowReportPage() {
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Res. No</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Booking Date</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest Name</th>
-                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Rate Type</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Meal Plan</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Arr.</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Dpt.</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black text-right">Charges</th>
@@ -223,7 +226,9 @@ export default function NoShowReportPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-xs text-gray-700">{rateTypes.find(r => r.id === b.rateTypeId)?.name || '-'}</span>
+                                                    <span className="text-xs text-gray-700">
+                                                        {b.rooms[0]?.mealPlan === 'HB' ? 'Half Board' : b.rooms[0]?.mealPlan === 'FB' ? 'Full Board' : b.rooms[0]?.mealPlan || '-'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
                                                     {new Date(b.checkIn).toLocaleDateString()}
@@ -297,7 +302,7 @@ export default function NoShowReportPage() {
                     <li><strong>Res. No :</strong> Reservation no of booking</li>
                     <li><strong>Booking Date :</strong> Booking date on which reservation has been taken in the system</li>
                     <li><strong>Guest Name :</strong> Name of the Guest</li>
-                    <li><strong>Rate Type :</strong> Rate Type of booking</li>
+                    <li><strong>Meal Plan :</strong> Meal Plan of booking</li>
                     <li><strong>Arr. :</strong> Arrival Date of booking in property's short format set in the configuration panel</li>
                     <li><strong>Dpt :</strong> Departure Date of a booking in property's short format set in the configuration panel</li>
                     <li><strong>Folio No :</strong> Folio No of a booking</li>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { XMarkIcon, CalendarDaysIcon, PlusIcon, TrashIcon, UserIcon, ChevronDownIcon, MagnifyingGlassIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/react/24/outline';
-import { SuiteType, RoomType, Booking, Room, MealPlanSettings } from '@/lib/firestoreService';
+import { XMarkIcon, PlusIcon, TrashIcon, UserIcon, ChevronDownIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline';
+import { SuiteType, RoomType, Booking, Room, MealPlanSettings, ActiveCoupon, getAllActiveCoupons } from '@/lib/firestoreService';
+import { calculateDiscountAmount } from '@/lib/offers';
 
 interface QuickReservationModalProps {
     isOpen: boolean;
@@ -10,7 +11,7 @@ interface QuickReservationModalProps {
     initialSuiteType?: SuiteType;
     initialRoomName?: string;
     roomTypes: RoomType[];
-    availableRooms: Room[]; // Available rooms for the selected dates (or all rooms to lookup prices)
+    availableRooms: Room[];
     bookings?: Booking[];
     loading?: boolean;
     mealPlanSettings?: MealPlanSettings;
@@ -103,7 +104,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         const initialRoomEntry = {
             id: Date.now().toString(),
             roomType: initialSuite,
-            rateType: '',
+
             roomName: roomNameArg || '',
             adults: 2,
             children: 0,
@@ -162,6 +163,20 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
     // Lazy Initialization of Form Data
     const [formData, setFormData] = useState(() => getInitialFormData(initialDate, initialRoomName, initialSuiteType));
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [coupons, setCoupons] = useState<ActiveCoupon[]>([]);
+    const [selectedCoupon, setSelectedCoupon] = useState<ActiveCoupon | null>(null);
+    const [showDiscountInput, setShowDiscountInput] = useState(false);
+
+    // Fetch coupons on mount
+    useEffect(() => {
+        const fetchCoupons = async () => {
+            const activeCoupons = await getAllActiveCoupons();
+            setCoupons(activeCoupons);
+        };
+        fetchCoupons();
+    }, []);
 
 
     // --- DYNAMIC AVAILABILITY LOGIC ---
@@ -228,12 +243,10 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             suiteType: t,
             price: suitePrices[t] || 0,
             roomName: '',
-            rateType: 'Standard Rate',
             adults: 2,
             children: 0,
             roomNumber: '',
             amenities: [],
-            images: [],
             description: ''
         } as unknown as RoomType)); // Cast to avoid full type warnings
     }, [suitePrices]);
@@ -264,8 +277,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                     const isBooked = foundRoom?.isBooked;
                     const isStillAvailable = foundRoom && !isBooked;
 
-                    // Edge Case: If I just initialized the form with "Jasmine", and strictly "Jasmine" is free, it should be in dynamicAvailableRooms.
-                    // If it is NOT in dynamicAvailableRooms, it means it's booked.
                     if (!isStillAvailable) {
                         hasChanges = true;
                         return { ...room, roomName: '' };
@@ -288,14 +299,31 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         }
     }, [isOpen, initialDate, initialRoomName, initialSuiteType, availableRooms, suitePrices]);
 
-    // Recalculate Total
+    // Recalculate Total including discount
+    // Recalculate Total including discount - REFACTORED FOR ROOM ONLY DISCOUNT
     useEffect(() => {
-        const total = formData.selectedRooms.reduce((acc, room) => acc + ((room.price + (room.mealPlanPrice || 0)) * formData.nights), 0);
+        const currentRooms = formData.selectedRooms;
+
+        // 1. Calculate Room Total (Subject to Discount)
+        const roomDailyTotal = currentRooms.reduce((acc, r) => acc + (r.price || 0), 0);
+        const roomTotalForStay = roomDailyTotal * formData.nights;
+
+        // 2. Calculate Meal Plan Total (Excluded from Discount)
+        const mealPlanDailyTotal = calculateMealPlanDailyTotal(currentRooms, mealPlanSettings);
+        const mealPlanTotalForStay = mealPlanDailyTotal * formData.nights;
+
+        // 3. Calculate Discount on ROOM PRICE ONLY
+        let discountAmount = 0;
+        if (selectedCoupon) {
+            discountAmount = calculateDiscountAmount(roomTotalForStay, selectedCoupon, formData.nights);
+        }
+
+        // 4. Final Total
+        const total = Math.max(0, (roomTotalForStay - discountAmount) + mealPlanTotalForStay);
+
         setFormData(prev => ({ ...prev, totalAmount: total }));
-    }, [formData.selectedRooms, formData.nights]);
 
-
-
+    }, [formData.selectedRooms, formData.nights, mealPlanSettings, selectedCoupon]);
 
 
     const handleAddRoom = () => {
@@ -308,7 +336,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                 {
                     id: Date.now().toString(),
                     roomType: defaultType,
-                    rateType: 'Standard Rate',
                     roomName: '',
                     adults: 2,
                     children: 0,
@@ -340,7 +367,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                         }
                     }
 
-                    // Recalculate Meal Plan Price if adults/children or mealPlan changes
+                    // Recalculate Meal Plan Price
                     if (mealPlanSettings && (field === 'mealPlan' || field === 'adults' || field === 'children')) {
                         const mp = field === 'mealPlan' ? value : r.mealPlan || 'BB';
                         const ad = field === 'adults' ? value : r.adults;
@@ -353,7 +380,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                             supplement = (ad * mealPlanSettings.adultFullBoardPrice) + (ch * mealPlanSettings.childFullBoardPrice);
                         }
                         updated.mealPlanPrice = supplement;
-                        // Ensure mealPlan is set (if it was undefined before)
                         if (field !== 'mealPlan' && !updated.mealPlan) updated.mealPlan = 'BB';
                     }
 
@@ -373,10 +399,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         }
     };
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // ... existing code ...
-
     const handleSubmit = async () => {
         if (!formData.guestFirstName && !formData.guestLastName) {
             alert("Please enter a Guest Name");
@@ -385,705 +407,337 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
         try {
             setIsSubmitting(true);
-            await onSubmit(formData);
-            // Modal closing is handled by parent, but we reset state just in case
+            const bookingData: any = { ...formData };
+
+            if (selectedCoupon) {
+                // REFACTORED: Discount on Room Only
+                const roomDailyTotal = formData.selectedRooms.reduce((acc, r: any) => acc + (r.price || 0), 0);
+                const roomTotalForStay = roomDailyTotal * formData.nights;
+
+                // Meal Plan not needed for discount calc, but needed for final (already in totalAmount)
+                // const mealPlanTotal = getMealPlanTotal() * formData.nights; 
+
+                let discountAmount = calculateDiscountAmount(roomTotalForStay, selectedCoupon, formData.nights);
+
+                bookingData.discount = {
+                    code: selectedCoupon.code,
+                    amount: discountAmount,
+                    discountType: selectedCoupon.discountType,
+                    discountValue: selectedCoupon.discountValue,
+                };
+            }
+
+            await onSubmit(bookingData);
         } catch (error) {
             console.error("Submission failed", error);
         } finally {
-            // If parent closes modal, component unmounts. If not, we stop loading.
             setIsSubmitting(false);
         }
     };
 
+    const calculateMealPlanDailyTotal = (rooms: any[], settings?: MealPlanSettings) => {
+        return rooms.reduce((acc, r) => {
+            let supplement = 0;
+            if (settings) {
+                if (r.mealPlan === 'HB') supplement = (r.adults * settings.adultHalfBoardPrice) + (r.children * settings.childHalfBoardPrice);
+                if (r.mealPlan === 'FB') supplement = (r.adults * settings.adultFullBoardPrice) + (r.children * settings.childFullBoardPrice);
+            }
+            return acc + supplement;
+        }, 0);
+    };
+
+    const getMealPlanTotal = () => calculateMealPlanDailyTotal(formData.selectedRooms, mealPlanSettings);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className={`bg-[#f8f9fa] shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-sm overflow-hidden font-sans text-sm
-                    ${isAdvancedMode ? 'w-full max-w-[95vw] h-[95vh]' : 'w-full max-w-5xl h-auto max-h-[90vh]'}
+                className={`bg-[#f8f9fa] shadow-2xl transition-all duration-300 ease-in-out flex flex-col rounded-lg overflow-hidden font-sans
+                    ${isAdvancedMode ? 'w-full max-w-7xl h-[85vh]' : 'w-full max-w-6xl h-auto max-h-[90vh]'}
                 `}
             >
-
                 {/* Header */}
-                <div className="bg-white px-6 py-3 border-b border-gray-200 flex justify-between items-center flex-shrink-0 shadow-sm z-10">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        {isAdvancedMode ? <span onClick={() => setIsAdvancedMode(false)} className="cursor-pointer flex items-center gap-1"><span className="text-gray-400">{'<'}</span> Add Reservation</span> : 'Quick Reservation'}
+                <div className="bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0 shadow-sm z-10">
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        {isAdvancedMode ? 'Complete Reservation' : 'Quick Reservation'}
                     </h3>
-                    <div className="flex items-center gap-3">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full">
+                        <XMarkIcon className="h-6 w-6" />
+                    </button>
+                </div>
 
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                            <XMarkIcon className="h-6 w-6" />
+                {/* Main Content (Scrollable) */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+
+                    {/* Top Config Section */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            {/* Date Picker */}
+                            <div className="col-span-12 md:col-span-6 flex items-stretch border border-gray-300 rounded-md overflow-hidden h-12">
+                                <div className="flex-1 px-3 py-1 flex flex-col justify-center border-r border-gray-200 hover:bg-gray-50 transition-colors">
+                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Check-in</label>
+                                    <input type="date" value={formData.checkInDate} onChange={e => setFormData({ ...formData, checkInDate: e.target.value })} className="bg-transparent text-gray-800 font-bold text-sm focus:outline-none w-full" />
+                                </div>
+                                <div className="w-14 bg-blue-50 flex flex-col items-center justify-center text-blue-700 border-r border-gray-200">
+                                    <span className="text-sm font-extrabold leading-none">{formData.nights}</span>
+                                    <span className="text-[9px] uppercase font-bold opacity-70">Nights</span>
+                                </div>
+                                <div className="flex-1 px-3 py-1 flex flex-col justify-center hover:bg-gray-50 transition-colors">
+                                    <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Check-out</label>
+                                    <input type="date" min={formData.checkInDate} value={formData.checkOutDate} onChange={e => setFormData({ ...formData, checkOutDate: e.target.value })} className="bg-transparent text-gray-800 font-bold text-sm focus:outline-none w-full" />
+                                </div>
+                            </div>
+
+                            {/* Reservation Type */}
+                            <div className="col-span-12 md:col-span-3">
+                                <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">Type</label>
+                                <select value={formData.reservationType} onChange={e => setFormData({ ...formData, reservationType: e.target.value })} className="w-full h-10 pl-3 pr-8 bg-white border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 appearance-none shadow-sm">
+                                    <option>Walk In</option>
+                                    <option>Confirm Booking</option>
+                                    <option>Tentative</option>
+                                    <option>Waitlist</option>
+                                </select>
+                            </div>
+
+                            {/* Source (Simple Mode) */}
+                            {!isAdvancedMode && (
+                                <div className="col-span-12 md:col-span-3">
+                                    <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">Source</label>
+                                    <select value={formData.businessSource} onChange={e => setFormData({ ...formData, businessSource: e.target.value })} className="w-full h-10 pl-3 pr-8 bg-white border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 appearance-none shadow-sm">
+                                        <option value="">- Select Source -</option>
+                                        <option value="Direct">Direct</option>
+                                        <option value="Agoda">Agoda</option>
+                                        <option value="Booking.com">Booking.com</option>
+                                        <option value="Expedia">Expedia</option>
+                                        <option value="Walk In">Walk In</option>
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Advanced Fields */}
+                        {isAdvancedMode && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-top-2">
+                                <div>
+                                    <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">Booking Source</label>
+                                    <select value={formData.bookingSource} onChange={e => setFormData({ ...formData, bookingSource: e.target.value })} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-md text-xs text-gray-700">
+                                        <option value="Direct">Direct</option>
+                                        <option value="OTA">OTA</option>
+                                        <option value="Booking Engine">Booking Engine</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">Business Source</label>
+                                    <select value={formData.businessSource} onChange={e => setFormData({ ...formData, businessSource: e.target.value })} className="w-full h-9 px-3 bg-gray-50 border border-gray-300 rounded-md text-xs text-gray-700">
+                                        <option value="Direct">Direct</option>
+                                        <option value="Agoda">Agoda</option>
+                                        <option value="Booking.com">Booking.com</option>
+                                        <option value="Expedia">Expedia</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-1 md:col-span-3 flex flex-wrap gap-x-6 gap-y-3 pt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.rateOffered} onChange={e => setFormData({ ...formData, rateOffered: e.target.checked })} className="rounded border-gray-300 text-blue-600" /> <span className="text-xs text-gray-600">Contract Rate</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.bookAllAvailable} onChange={e => setFormData({ ...formData, bookAllAvailable: e.target.checked })} className="rounded border-gray-300 text-blue-600" /> <span className="text-xs text-gray-600">Book All Available</span></label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Rooms Grid */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                        <div className="hidden md:grid grid-cols-12 gap-4 pb-2 border-b border-gray-100 px-1">
+                            <div className="col-span-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Room Type</div>
+                            <div className="col-span-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Room</div>
+                            <div className="col-span-1 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-center">Adl</div>
+                            <div className="col-span-1 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-center">Chd</div>
+                            <div className="col-span-2 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Meal Plan</div>
+                            <div className="col-span-2 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-right">Rate ($)</div>
+                        </div>
+
+                        {formData.selectedRooms.map((room) => (
+                            <div key={room.id} className="relative group grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-gray-50 md:bg-white rounded-md border border-gray-200 p-4 md:p-0 md:border-none">
+                                <div className="md:col-span-3">
+                                    <select value={room.roomType} onChange={e => {
+                                        const newType = e.target.value as SuiteType;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            selectedRooms: prev.selectedRooms.map(r => r.id === room.id ? { ...r, roomType: newType, roomName: '', price: suitePrices[newType] || 0 } : r)
+                                        }));
+                                    }} className="w-full pl-2 pr-6 py-2 bg-white border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none text-gray-700 shadow-sm">
+                                        <option value="">-- Select Type --</option>
+                                        {availableRoomTypes.map(type => <option key={type.id || type.suiteType} value={type.suiteType}>{type.suiteType}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="md:col-span-3">
+                                    <select value={room.roomName} onChange={e => handleRoomChange(room.id, 'roomName', e.target.value)} className="w-full pl-2 pr-6 py-2 bg-white border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none text-gray-700 shadow-sm">
+                                        <option value="">-- Assign --</option>
+                                        {dynamicAvailableRooms.filter(r => r.suiteType === room.roomType).map(r => {
+                                            // @ts-ignore
+                                            const isUnavailable = r.isBooked;
+                                            return <option key={r.id} value={r.name} disabled={isUnavailable} className={isUnavailable ? 'text-gray-400 bg-gray-50' : ''}>{r.name} {isUnavailable ? '(Unavailable)' : ''}</option>;
+                                        })}
+                                    </select>
+                                </div>
+
+                                <div className="md:col-span-1"><input type="number" min="1" value={room.adults} onChange={e => handleRoomChange(room.id, 'adults', parseInt(e.target.value))} className="w-full px-2 py-2 bg-white border border-gray-300 rounded-md text-xs text-center shadow-sm" /></div>
+                                <div className="md:col-span-1"><input type="number" min="0" value={room.children} onChange={e => handleRoomChange(room.id, 'children', parseInt(e.target.value))} className="w-full px-2 py-2 bg-white border border-gray-300 rounded-md text-xs text-center shadow-sm" /></div>
+                                <div className="md:col-span-2">
+                                    <select value={room.mealPlan || 'BB'} onChange={e => handleRoomChange(room.id, 'mealPlan', e.target.value)} className="w-full pl-2 pr-6 py-2 bg-white border border-gray-300 rounded-md text-xs shadow-sm">
+                                        <option value="BB">BB</option>
+                                        <option value="HB">HB</option>
+                                        <option value="FB">FB</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2 flex items-center gap-2">
+                                    <input type="number" value={room.price || ''} onChange={e => handleRoomChange(room.id, 'price', parseFloat(e.target.value))} className="w-full pl-2 pr-2 py-2 bg-indigo-50/50 border border-indigo-100 rounded-md text-xs text-right font-bold text-indigo-700 shadow-sm" />
+                                    <button onClick={() => handleRemoveRoom(room.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0" title="Remove Room"><TrashIcon className="h-4 w-4" /></button>
+                                </div>
+                            </div>
+                        ))}
+
+                        <div className="flex flex-col md:flex-row justify-between items-center pt-4 border-t border-gray-100 mt-2 gap-4">
+                            <div className="flex flex-col gap-3 w-full md:w-auto">
+                                <div className="flex gap-3">
+                                    <button onClick={handleAddRoom} className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-blue-400 text-blue-600 text-xs font-bold uppercase rounded-md hover:bg-blue-50 transition-all hover:border-solid">
+                                        <PlusIcon className="w-3.5 h-3.5" /> Add Room
+                                    </button>
+                                    <button onClick={() => setShowDiscountInput(!showDiscountInput)} className={`flex items-center gap-1.5 px-3 py-2 border text-xs font-bold uppercase rounded-md transition-all ${selectedCoupon ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                                        {selectedCoupon ? 'Discount Applied' : 'Add Discount'}
+                                    </button>
+                                </div>
+                                {showDiscountInput && (
+                                    <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3 shadow-sm">
+                                        <label className="text-xs font-bold text-yellow-800 uppercase tracking-wide">Apply:</label>
+                                        <select value={selectedCoupon?.code || ''} onChange={(e) => {
+                                            const code = e.target.value;
+                                            const coupon = coupons.find(c => c.code === code) || null;
+                                            setSelectedCoupon(coupon);
+                                        }} className="text-xs border border-yellow-300 rounded px-2 py-1.5 bg-white focus:ring-2 focus:ring-yellow-200 outline-none flex-1 min-w-[200px]">
+                                            <option value="">- Select Offer -</option>
+                                            {coupons.map(c => <option key={c.id} value={c.code}>{c.title} ({c.code}) - {c.discountType === 'percentage' ? `${c.discountValue}%` : `$${c.discountValue}`} Off</option>)}
+                                        </select>
+                                        {selectedCoupon && <button onClick={() => { setSelectedCoupon(null); setShowDiscountInput(false); }} className="text-yellow-600 hover:text-red-500 p-1"><XMarkIcon className="w-4 h-4" /></button>}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col items-end gap-1">
+                                {selectedCoupon && (
+                                    <div className="flex gap-4 items-center justify-end text-green-600">
+                                        <span className="text-xs font-medium">Discount ({selectedCoupon.code}):</span>
+                                        <span className="text-sm font-bold">
+
+                                            - $ {(() => {
+                                                const roomDailyTotal = formData.selectedRooms.reduce((acc, r) => acc + (r.price || 0), 0);
+                                                const roomTotalForStay = roomDailyTotal * formData.nights;
+                                                // Discount solely on Room Price
+                                                return calculateDiscountAmount(roomTotalForStay, selectedCoupon, formData.nights).toFixed(2);
+                                            })()}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex gap-4 items-center">
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Estimated</span>
+                                    <span className="text-2xl font-black text-gray-800 tracking-tight">${formData.totalAmount.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Guest Information */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                        <h4 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-100 pb-2 flex items-center gap-2">
+                            <UserIcon className="w-4 h-4" /> Guest Details
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                            <div className="col-span-12 md:col-span-5 flex gap-0">
+                                <div className="w-24">
+                                    <select value={formData.guestTitle} onChange={e => setFormData({ ...formData, guestTitle: e.target.value })} className="w-full pl-3 pr-6 py-2.5 bg-gray-50 border border-gray-300 rounded-l-md text-sm">
+                                        <option>Mr.</option>
+                                        <option>Ms.</option>
+                                        <option>Mrs.</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <input type="text" value={formData.guestFirstName} onChange={e => setFormData({ ...formData, guestFirstName: e.target.value })} placeholder="Guest Name" className="w-full px-4 py-2.5 bg-white border-y border-r border-l-0 border-gray-300 rounded-r-md text-sm" />
+                                </div>
+                            </div>
+                            <div className="col-span-12 md:col-span-3">
+                                <input type="tel" value={formData.guestMobile} onChange={e => setFormData({ ...formData, guestMobile: e.target.value })} placeholder="Mobile Number" className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm" />
+                            </div>
+                            <div className="col-span-12 md:col-span-4">
+                                <input type="email" value={formData.guestEmail} onChange={e => setFormData({ ...formData, guestEmail: e.target.value })} placeholder="Email Address" className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm" />
+                            </div>
+                        </div>
+
+                        {isAdvancedMode && (
+                            <div className="mt-5 pt-4 border-t border-gray-100 animate-in slide-in-from-top-2">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                                    <div className="col-span-12">
+                                        <input type="text" value={formData.guestAddress} onChange={e => setFormData({ ...formData, guestAddress: e.target.value })} placeholder="Street Address" className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm mb-3" />
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            <input type="text" placeholder="Country" value={formData.guestCountry} onChange={e => setFormData({ ...formData, guestCountry: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                                            <input type="text" placeholder="State" value={formData.guestState} onChange={e => setFormData({ ...formData, guestState: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                                            <input type="text" placeholder="City" value={formData.guestCity} onChange={e => setFormData({ ...formData, guestCity: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                                            <input type="text" placeholder="Zip" value={formData.guestZip} onChange={e => setFormData({ ...formData, guestZip: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Payment / Billing Section (Visible in main flow now, ensuring 'fields' are seen) */}
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex flex-col justify-between gap-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Paid Amount ($)</label>
+                                <input type="number" min="0" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })} className="w-32 pl-3 pr-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-bold shadow-sm" />
+                            </div>
+                            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-md border border-gray-200 shadow-sm">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Balance Due</label>
+                                <span className={`text-lg font-black ${(formData.totalAmount - formData.paidAmount) > 0.01 ? 'text-red-600' : 'text-green-600'}`}>
+                                    ${(formData.totalAmount - formData.paidAmount).toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Extra Billing Options for Advanced View */}
+                        {isAdvancedMode && (
+                            <div className="pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-500 mb-1 block">Bill To</label>
+                                    <select value={formData.billTo} onChange={e => setFormData({ ...formData, billTo: e.target.value })} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-xs">
+                                        <option>Guest</option>
+                                        <option>Company</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.taxExempt} onChange={e => setFormData({ ...formData, taxExempt: e.target.checked })} className="rounded border-gray-300" /> <span className="text-xs">Tax Exempt</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.paymentMode} onChange={e => setFormData({ ...formData, paymentMode: e.target.checked })} className="rounded border-gray-300" /> <span className="text-xs">Pay Mode</span></label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+
+                {/* Footer */}
+                <div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center z-10 shrink-0">
+                    <button onClick={() => setIsAdvancedMode(!isAdvancedMode)} className="px-5 py-2.5 bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold uppercase tracking-wider rounded-md hover:bg-gray-100 transition-colors shadow-sm">
+                        {isAdvancedMode ? 'Standard View' : 'More Options'}
+                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-md hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">Cancel</button>
+                        <button onClick={handleSubmit} disabled={loading || isSubmitting} className="px-8 py-2.5 bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-md shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50">
+                            {isAdvancedMode ? 'Confirm Reservation' : (loading || isSubmitting ? 'Processing...' : 'Quick Confirm')}
                         </button>
                     </div>
                 </div>
-
-                <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-                    {/* Left Main Content */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-
-                        {/* Top Row: Dates & Config */}
-                        <div className="bg-white p-4 rounded border border-gray-200 shadow-sm space-y-4">
-
-                            {/* Row 1: Check-in / Checkout */}
-                            <div className="flex flex-wrap md:flex-nowrap gap-4 items-end">
-                                {/* Check In */}
-                                <div className="flex-1 min-w-[250px] flex items-center gap-0 border border-gray-300 rounded p-0 relative">
-                                    <div className="flex-1 px-3 py-1">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide block mb-0.5">Check-in</label>
-                                        <div className="flex items-center justify-between">
-                                            <input
-                                                type="date"
-                                                value={formData.checkInDate}
-                                                onChange={e => setFormData({ ...formData, checkInDate: e.target.value })}
-                                                className="bg-transparent text-gray-900 font-bold focus:outline-none text-sm w-full"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="w-px h-8 bg-gray-200"></div>
-                                    <div className="w-24 px-2">
-                                        <input
-                                            type="text"
-                                            value={formData.checkInTime}
-                                            onChange={e => setFormData({ ...formData, checkInTime: e.target.value })}
-                                            className="w-full bg-transparent text-gray-500 text-xs focus:outline-none text-right"
-                                        />
-                                    </div>
-                                    <div className="absolute right-full mr-2 hidden md:block">
-                                        {/* Optional calendar icon outside */}
-                                    </div>
-                                </div>
-
-                                {/* Nights Badge */}
-                                <div className="flex flex-col items-center justify-center px-2">
-                                    <div className="bg-[#2c3e50] text-white w-10 h-10 flex flex-col items-center justify-center rounded shadow-sm leading-none">
-                                        <span className="text-sm font-bold">{formData.nights}</span>
-                                        <span className="text-[8px] uppercase">Nights</span>
-                                    </div>
-                                </div>
-
-                                {/* Check Out */}
-                                <div className="flex-1 min-w-[250px] flex items-center gap-0 border border-gray-300 rounded p-0">
-                                    <div className="flex-1 px-3 py-1">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide block mb-0.5">Check-out</label>
-                                        <input
-                                            type="date"
-                                            value={formData.checkOutDate}
-                                            onChange={e => setFormData({ ...formData, checkOutDate: e.target.value })}
-                                            min={formData.checkInDate}
-                                            className="bg-transparent text-gray-900 font-bold focus:outline-none text-sm w-full"
-                                        />
-                                    </div>
-                                    <div className="w-px h-8 bg-gray-200"></div>
-                                    <div className="w-24 px-2">
-                                        <input
-                                            type="text"
-                                            value={formData.checkOutTime}
-                                            onChange={e => setFormData({ ...formData, checkOutTime: e.target.value })}
-                                            className="w-full bg-transparent text-gray-500 text-xs focus:outline-none text-right"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Counts & Type */}
-                                {isAdvancedMode && (
-                                    <>
-                                        <div className="w-16">
-                                            <label className="text-[10px] text-gray-500 block mb-1">Room(s)</label>
-                                            <div className="border border-gray-300 rounded px-2 py-1.5 bg-white text-center text-xs font-bold">
-                                                {formData.selectedRooms.length}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 min-w-[150px]">
-                                            <label className="text-[10px] text-gray-500 block mb-1">Reservation Type</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={formData.reservationType}
-                                                    onChange={e => setFormData({ ...formData, reservationType: e.target.value })}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6 key-field"
-                                                >
-                                                    <option>Confirm Booking</option>
-                                                    <option>Tentative</option>
-                                                    <option>Waitlist</option>
-                                                    <option>Walk In</option>
-                                                </select>
-                                                <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-
-                                {!isAdvancedMode && (
-                                    <div className="flex-1 min-w-[150px]">
-                                        <label className="text-[10px] font-bold text-gray-500 block mb-1">Reservation Type</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.reservationType}
-                                                onChange={e => setFormData({ ...formData, reservationType: e.target.value })}
-                                                className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
-                                            >
-                                                <option>Walk In</option>
-                                                <option>Confirm Booking</option>
-                                                <option>Tentative</option>
-
-                                            </select>
-                                            <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {!isAdvancedMode && (
-                                    <div className="flex-1 min-w-[150px]">
-                                        <label className="text-[10px] font-bold text-gray-500 block mb-1">Business Source</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.businessSource}
-                                                onChange={e => setFormData({ ...formData, businessSource: e.target.value })}
-                                                className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
-                                            >
-                                                <option value="">-Select-</option>
-                                                <option value="Direct">Direct</option>
-                                                <option value="Agoda">Agoda</option>
-                                                <option value="AUTOTECH CAR CARE LTD">AUTOTECH CAR CARE LTD</option>
-                                                <option value="Best Friends Holiday Ltd">Best Friends Holiday Ltd</option>
-                                                <option value="Booking.com">Booking.com</option>
-                                                <option value="Expedia">Expedia</option>
-                                                <option value="Internet Booking Engine">Internet Booking Engine</option>
-                                                <option value="Lappet Faced Safaris Limited">Lappet Faced Safaris Limited</option>
-                                                <option value="MSG Touristic">MSG Touristic</option>
-                                                <option value="Remote Safari Company">Remote Safari Company</option>
-                                                <option value="Safina Tours & Safaris">Safina Tours & Safaris</option>
-                                                <option value="Tour Operators">Tour Operators</option>
-                                            </select>
-                                            <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Row 2: Sources (Advanced Only) */}
-                            {isAdvancedMode && (
-                                <div className="grid grid-cols-3 gap-4 pt-2">
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 block mb-1">Booking Source</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.bookingSource}
-                                                onChange={e => setFormData({ ...formData, bookingSource: e.target.value })}
-                                                className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
-                                            >
-                                                <option value="">-Select-</option>
-                                                <option value="Direct">Direct</option>
-                                                <option value="OTA">OTA</option>
-                                                <option value="Booking Engine">Booking Engine</option>
-                                                <option value="Travel Agent">Travel Agent</option>
-                                                <option value="Company">Company</option>
-                                            </select>
-                                            <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 block mb-1">Business Source</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.businessSource}
-                                                onChange={e => setFormData({ ...formData, businessSource: e.target.value })}
-                                                className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
-                                            >
-                                                <option value="">-Select-</option>
-                                                <option value="Direct">Direct</option>
-                                                <option value="Agoda">Agoda</option>
-                                                <option value="AUTOTECH CAR CARE LTD">AUTOTECH CAR CARE LTD</option>
-                                                <option value="Best Friends Holiday Ltd">Best Friends Holiday Ltd</option>
-                                                <option value="Booking.com">Booking.com</option>
-                                                <option value="Expedia">Expedia</option>
-                                                <option value="Internet Booking Engine">Internet Booking Engine</option>
-                                                <option value="Lappet Faced Safaris Limited">Lappet Faced Safaris Limited</option>
-                                                <option value="MSG Touristic">MSG Touristic</option>
-                                                <option value="Remote Safari Company">Remote Safari Company</option>
-                                                <option value="Safina Tours & Safaris">Safina Tours & Safaris</option>
-                                                <option value="Tour Operators">Tour Operators</option>
-                                            </select>
-                                            <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 block mb-1">Market Code</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.marketCode}
-                                                onChange={e => setFormData({ ...formData, marketCode: e.target.value })}
-                                                className="w-full border border-gray-300 rounded px-2 py-1.5 bg-white text-xs appearance-none pr-6"
-                                            >
-                                                <option value="">-Select-</option>
-                                                <option value="OTA(Online Travel Agent)">OTA(Online Travel Agent)</option>
-
-                                            </select>
-                                            <ChevronDownIcon className="w-3 h-3 absolute right-2 top-2 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Row 3: Checkboxes (Advanced Only) */}
-                            {isAdvancedMode && (
-                                <div className="flex flex-wrap gap-6 pt-2 items-center">
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-[11px] text-gray-600">Rate Offered:</label>
-                                        <input type="checkbox" checked={formData.rateOffered} onChange={e => setFormData({ ...formData, rateOffered: e.target.checked })} className="rounded-sm border-gray-300 w-3.5 h-3.5 text-blue-600" />
-                                        <span className="text-[11px] text-gray-400">Contract</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <input type="checkbox" checked={formData.bookAllAvailable} onChange={e => setFormData({ ...formData, bookAllAvailable: e.target.checked })} className="rounded-sm border-gray-300 w-3.5 h-3.5 text-blue-600" />
-                                        <span className="text-[11px] text-gray-600">Book All Available Rooms</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <input type="checkbox" checked={formData.quickGroupBooking} onChange={e => setFormData({ ...formData, quickGroupBooking: e.target.checked })} className="rounded-sm border-gray-300 w-3.5 h-3.5 text-blue-600" />
-                                        <span className="text-[11px] text-gray-600">Quick Group Booking</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <input type="checkbox" checked={formData.complimentaryRoom} onChange={e => setFormData({ ...formData, complimentaryRoom: e.target.checked })} className="rounded-sm border-gray-300 w-3.5 h-3.5 text-blue-600" />
-                                        <span className="text-[11px] text-gray-600">Complimentary Room</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Rooms Grid */}
-                        <div className="bg-white p-4 rounded border border-gray-200 shadow-sm space-y-2">
-                            <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_1fr_0.3fr] gap-3 mb-1 px-1">
-                                <label className="text-[10px] font-bold text-gray-700">Room Type</label>
-                                <label className="text-[10px] font-bold text-gray-700">Rate Type</label>
-                                <label className="text-[10px] font-bold text-gray-700">Room</label>
-                                <label className="text-[10px] font-bold text-gray-700">Adult</label>
-                                <label className="text-[10px] font-bold text-gray-700">Child</label>
-                                <label className="text-[10px] font-bold text-gray-700">Meal Plan</label>
-                                <label className="text-[10px] font-bold text-gray-700 text-right">Rate ($) (Tax Inc.)</label>
-                                <span className="w-5"></span>
-                            </div>
-
-                            {formData.selectedRooms.map((room) => (
-                                <div key={room.id} className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1.5fr_0.5fr_0.5fr_1fr_1fr_0.3fr] gap-3 items-center bg-white rounded border border-gray-200 p-3 md:p-0 md:border-none mb-3 md:mb-0 shadow-sm md:shadow-none">
-                                    {/* Room Type */}
-                                    <div className="relative">
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Room Type</label>
-                                        <select
-                                            value={room.roomType}
-                                            onChange={e => {
-                                                const newType = e.target.value as SuiteType;
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    selectedRooms: prev.selectedRooms.map(r => {
-                                                        if (r.id === room.id) {
-                                                            const sampleRoom = availableRooms.find(ar => ar.suiteType === newType);
-                                                            const newPrice = sampleRoom ? sampleRoom.price : 0;
-                                                            return { ...r, roomType: newType, roomName: '', price: newPrice };
-                                                        }
-                                                        return r;
-                                                    })
-                                                }));
-                                            }}
-                                            className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700"
-                                        >
-                                            <option value="">-- Select Type --</option>
-                                            {/* Force show current selection if missing */}
-                                            {room.roomType && !availableRoomTypes.some(t => t.suiteType === room.roomType) && (
-                                                <option value={room.roomType}>{room.roomType} (Unavailable)</option>
-                                            )}
-                                            {availableRoomTypes.map(type => (
-                                                <option key={type.id || type.suiteType} value={type.suiteType}>{type.suiteType}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
-                                    </div>
-
-                                    {/* Rate Plan */}
-                                    <div className="relative">
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Rate Plan</label>
-                                        <select
-                                            value={room.rateType}
-                                            onChange={e => handleRoomChange(room.id, 'rateType', e.target.value)}
-                                            className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700"
-                                        >
-                                            <option value="">-Select-</option>
-                                            <option value="Bed and Breakfast">Bed and Breakfast</option>
-                                            <option value="Full Board">Full Board</option>
-                                            <option value="Half Board">Half Board</option>
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
-                                    </div>
-
-                                    {/* Room Number - Dynamic Filtering */}
-                                    <div className="relative">
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Room No.</label>
-                                        <select
-                                            value={room.roomName}
-                                            onChange={e => handleRoomChange(room.id, 'roomName', e.target.value)}
-                                            className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700"
-                                        >
-                                            <option value="">-- Assign --</option>
-                                            {/* Force show current selection if missing */}
-                                            {room.roomName && !dynamicAvailableRooms.some(r => r.name === room.roomName) && (
-                                                <option value={room.roomName}>{room.roomName} (Unavailable)</option>
-                                            )}
-                                            {dynamicAvailableRooms
-                                                .filter(r => r.suiteType === room.roomType)
-                                                .map(r => {
-                                                    // @ts-ignore - isBooked added dynamically in useMemo above
-                                                    const isUnavailable = r.isBooked;
-                                                    return (
-                                                        <option
-                                                            key={r.id}
-                                                            value={r.name}
-                                                            disabled={isUnavailable}
-                                                            className={isUnavailable ? 'text-gray-400 bg-gray-50' : ''}
-                                                        >
-                                                            {r.name} {isUnavailable ? '(Unavailable)' : ''}
-                                                        </option>
-                                                    );
-                                                })}
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
-                                    </div>
-
-                                    {/* Adult */}
-                                    <div>
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Adults</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={room.adults}
-                                            onChange={e => handleRoomChange(room.id, 'adults', parseInt(e.target.value))}
-                                            className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:outline-none focus:border-blue-500 text-gray-700"
-                                        />
-                                    </div>
-
-                                    {/* Child */}
-                                    <div>
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Children</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={room.children}
-                                            onChange={e => handleRoomChange(room.id, 'children', parseInt(e.target.value))}
-                                            className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:outline-none focus:border-blue-500 text-gray-700"
-                                        />
-                                    </div>
-
-                                    {/* Meal Plan */}
-                                    <div className="relative">
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Meal Plan</label>
-                                        <select
-                                            value={room.mealPlan || 'BB'}
-                                            onChange={e => handleRoomChange(room.id, 'mealPlan', e.target.value)}
-                                            className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700"
-                                        >
-                                            <option value="BB">BB (Included)</option>
-                                            <option value="HB">HB {mealPlanSettings ? `(+$${(room.adults * mealPlanSettings.adultHalfBoardPrice + room.children * mealPlanSettings.childHalfBoardPrice)})` : ''}</option>
-                                            <option value="FB">FB {mealPlanSettings ? `(+$${(room.adults * mealPlanSettings.adultFullBoardPrice + room.children * mealPlanSettings.childFullBoardPrice)})` : ''}</option>
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
-                                    </div>
-
-                                    {/* Price */}
-                                    <div className="relative">
-                                        <label className="md:hidden text-[10px] font-bold text-gray-500 mb-1 block">Price ($)</label>
-                                        <input
-                                            type="number"
-                                            value={room.price || ''}
-                                            onChange={e => {
-                                                const val = parseFloat(e.target.value);
-                                                handleRoomChange(room.id, 'price', isNaN(val) ? 0 : val);
-                                            }}
-                                            className="w-full pl-2 pr-2 py-1.5 bg-gray-50 border border-gray-300 rounded-sm text-xs text-right focus:outline-none focus:border-blue-500 text-gray-700"
-                                        />
-                                    </div>
-
-                                    {/* Remove */}
-                                    <button onClick={() => handleRemoveRoom(room.id)} className="text-red-300 hover:text-red-500 flex justify-center">
-                                        <TrashIcon className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            ))}
-
-                            <div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-2">
-                                <div className="flex gap-2">
-                                    <button onClick={handleAddRoom} className="px-3 py-1.5 border border-blue-400 text-blue-500 text-xs font-medium rounded-sm hover:bg-blue-50 transition-colors">
-                                        Add Room
-                                    </button>
-                                    {isAdvancedMode && (
-                                        <button className="px-3 py-1.5 border border-gray-300 text-gray-500 text-xs font-medium rounded-sm hover:bg-gray-50 transition-colors">
-                                            Add Discount
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="text-right flex gap-4 items-center">
-                                    <span className="text-xs font-bold text-gray-600">Total</span>
-                                    <span className="text-sm font-bold text-red-500">${formData.totalAmount.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            {/* Payment & Balance Row */}
-                            <div className="flex justify-end items-center gap-6 pt-2 pb-1 px-1 border-t border-gray-100 mt-2">
-                                <div className="flex items-center gap-2">
-                                    <label className="text-xs font-bold text-gray-600">Total Bill:</label>
-                                    <span className="text-sm font-bold text-gray-800">${formData.totalAmount.toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <label className="text-xs font-bold text-gray-600">Paid Amount ($):</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={formData.paidAmount}
-                                        onChange={e => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })}
-                                        className="w-24 px-2 py-1 bg-white border border-gray-300 rounded-sm text-xs text-right font-bold focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <label className="text-xs font-bold text-gray-600">Balance ($):</label>
-                                    <span className={`text-sm font-bold ${(formData.totalAmount - formData.paidAmount) > 0.01 ? 'text-red-600' : 'text-green-600'}`}>
-                                        ${(formData.totalAmount - formData.paidAmount).toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Guest Information - Basic */}
-                        <div className="bg-white p-4 rounded border border-gray-200 shadow-sm">
-                            <h4 className="text-[11px] font-bold text-gray-600 mb-3 uppercase tracking-wide">Guest Information</h4>
-                            <div className="grid grid-cols-12 gap-4">
-                                {/* Name Combined */}
-                                <div className="col-span-12 md:col-span-5 flex gap-2">
-                                    <div className="w-20">
-                                        <label className="text-[10px] text-gray-500 block mb-1">Guest Name</label>
-                                        <div className="relative">
-                                            <select
-                                                value={formData.guestTitle}
-                                                onChange={e => setFormData({ ...formData, guestTitle: e.target.value })}
-                                                className="w-full pl-2 pr-5 py-2 bg-white border border-gray-300 rounded-sm text-xs appearance-none text-gray-700"
-                                            >
-                                                <option>Mr.</option>
-                                                <option>Ms.</option>
-                                                <option>Mrs.</option>
-                                                <option>Dr.</option>
-                                            </select>
-                                            <ChevronDownIcon className="absolute right-1 top-2.5 h-3 w-3 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="text-[10px] text-gray-500 block mb-1">&nbsp;</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={formData.guestFirstName}
-                                                onChange={e => setFormData({ ...formData, guestFirstName: e.target.value })}
-                                                placeholder="Guest Name (First Last)"
-                                                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                                            />
-                                            {/* <UserIcon className="absolute right-2 top-2 h-4 w-4 text-gray-300" /> */}
-                                        </div>
-                                    </div>
-                                    <button className="self-end mb-1 p-1 text-gray-400 hover:text-blue-500 border border-gray-300 rounded-sm"><UserIcon className="w-4 h-4" /></button>
-                                </div>
-
-                                {/* Mobile */}
-                                <div className="col-span-12 md:col-span-3">
-                                    <label className="text-[10px] text-gray-500 block mb-1">Mobile</label>
-                                    <input
-                                        type="tel"
-                                        value={formData.guestMobile}
-                                        onChange={e => setFormData({ ...formData, guestMobile: e.target.value })}
-                                        placeholder="Mobile"
-                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                                    />
-                                </div>
-
-                                {/* Email */}
-                                <div className="col-span-12 md:col-span-4">
-                                    <label className="text-[10px] text-gray-500 block mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={formData.guestEmail}
-                                        onChange={e => setFormData({ ...formData, guestEmail: e.target.value })}
-                                        placeholder="Email"
-                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Address & Extended Info - CONDITIONAL RENDER */}
-                            {isAdvancedMode && (
-                                <div className="mt-4 pt-0 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="grid grid-cols-12 gap-4">
-                                        <div className="col-span-12">
-                                            <label className="text-[10px] text-gray-500 mb-1 block">Address</label>
-                                            <input
-                                                type="text"
-                                                value={formData.guestAddress}
-                                                onChange={e => setFormData({ ...formData, guestAddress: e.target.value })}
-                                                placeholder="Street Address"
-                                                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs mb-2 text-gray-700"
-                                            />
-                                            <div className="grid grid-cols-4 gap-4">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Country"
-                                                    value={formData.guestCountry}
-                                                    onChange={e => setFormData({ ...formData, guestCountry: e.target.value })}
-                                                    className="px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs text-gray-700"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="State"
-                                                    value={formData.guestState}
-                                                    onChange={e => setFormData({ ...formData, guestState: e.target.value })}
-                                                    className="px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs text-gray-700"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="City"
-                                                    value={formData.guestCity}
-                                                    onChange={e => setFormData({ ...formData, guestCity: e.target.value })}
-                                                    className="px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs text-gray-700"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Zip"
-                                                    value={formData.guestZip}
-                                                    onChange={e => setFormData({ ...formData, guestZip: e.target.value })}
-                                                    className="px-3 py-2 bg-white border border-gray-300 rounded-sm text-xs text-gray-700"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 space-y-2">
-                                        <h4 className="text-[11px] font-bold text-gray-600 mb-2 uppercase tracking-wide">Other Information</h4>
-                                        <div className="flex items-center gap-6">
-                                            <div className="flex items-center gap-1.5">
-                                                <input type="checkbox" checked={formData.emailBookingVouchers} onChange={e => setFormData({ ...formData, emailBookingVouchers: e.target.checked })} className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                <label className="text-[11px] text-gray-600">Email Booking Vouchers</label>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <input type="checkbox" checked={formData.sendEmailAtCheckout} onChange={e => setFormData({ ...formData, sendEmailAtCheckout: e.target.checked })} className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                <label className="text-[11px] text-gray-600">Send email at Check-out</label>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <input type="checkbox" checked={formData.accessToGuestPortal} onChange={e => setFormData({ ...formData, accessToGuestPortal: e.target.checked })} className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                <label className="text-[11px] text-gray-600">Access To Guest Portal</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                    </div >
-
-                    {/* Right Sidebar - Billing Summary - CONDITIONAL RENDER */}
-                    {
-                        isAdvancedMode && (
-                            <div className="w-full md:w-[320px] bg-white border-t md:border-t-0 md:border-l border-gray-200 shadow-xl flex flex-col z-20 animate-in slide-in-from-right-10 duration-300 flex-shrink-0">
-                                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white">
-                                    <h4 className="font-bold text-gray-700 text-sm">Billing Summary</h4>
-
-                                </div>
-
-                                <div className="p-5 flex-1 overflow-y-auto space-y-5 bg-gray-50/50">
-                                    {/* Dates Summary */}
-                                    <div className="flex justify-between items-center text-center pb-4 border-b border-gray-200">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase">Check-in</p>
-                                            <p className="text-sm font-bold text-gray-800 mt-1">{formData.checkInDate || '--/--/--'}</p>
-                                        </div>
-                                        <div className="text-gray-300 text-lg">→</div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-500 uppercase">Check-out</p>
-                                            <p className="text-sm font-bold text-gray-800 mt-1">{formData.checkOutDate || '--/--/--'}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Cost Breakdown */}
-                                    <div className="space-y-2 pb-4 border-b border-gray-200">
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-gray-600 font-medium">Room Charges</span>
-                                            <span className="font-bold text-gray-800">{formData.totalAmount.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-gray-600 font-medium">Taxes</span>
-                                            <span className="font-bold text-gray-800">0.00</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm font-bold pt-2 text-gray-900 border-t border-gray-200 mt-2">
-                                            <span>Due Amount</span>
-                                            <span>${formData.totalAmount.toFixed(2)}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Bill To */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-gray-500 mb-1 block">Bill To</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={formData.billTo}
-                                                    onChange={e => setFormData({ ...formData, billTo: e.target.value })}
-                                                    className="w-full pl-2 pr-6 py-1.5 bg-white border border-gray-300 rounded text-xs appearance-none"
-                                                >
-                                                    <option>-Select-</option>
-                                                    <option>Guest</option>
-                                                    <option>Company</option>
-                                                </select>
-                                                <ChevronDownIcon className="absolute right-1 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center pt-5">
-                                            <input type="checkbox" checked={formData.taxExempt} onChange={e => setFormData({ ...formData, taxExempt: e.target.checked })} className="rounded-sm border-gray-300 w-3.5 h-3.5 text-blue-600 mr-2" />
-                                            <label className="text-xs text-gray-600">Tax Exempt</label>
-                                        </div>
-                                    </div>
-
-                                    {/* Payment Mode */}
-                                    <div className="flex items-center gap-2 mt-4">
-                                        <input type="checkbox" checked={formData.paymentMode} onChange={e => setFormData({ ...formData, paymentMode: e.target.checked })} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
-                                        <label className="text-xs text-gray-700 font-medium">Payment Mode</label>
-                                    </div>
-
-                                </div>
-                            </div>
-                        )
-                    }
-                </div >
-
-                {/* Footer Buttons */}
-                < div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center z-10 shrink-0" >
-                    <button
-                        onClick={() => setIsAdvancedMode(!isAdvancedMode)}
-                        className="px-4 py-2 bg-white border border-blue-400 text-blue-500 text-xs font-bold uppercase rounded hover:bg-blue-50 transition-colors shadow-sm"
-                    >
-                        {isAdvancedMode ? 'Less Options' : 'More Options'}
-                    </button>
-
-                    <div className="flex gap-3">
-                        {isAdvancedMode && (
-                            <button
-                                onClick={onClose}
-                                className="px-5 py-2 bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase rounded hover:bg-gray-50 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        )}
-                        <button
-                            onClick={handleSubmit}
-                            disabled={loading || isSubmitting}
-                            className="px-6 py-2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded shadow-md hover:bg-blue-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isAdvancedMode ? 'Reserve' : (loading || isSubmitting ? 'Processing...' : 'Confirm')}
-                        </button>
-                    </div>
-                </div >
-
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 

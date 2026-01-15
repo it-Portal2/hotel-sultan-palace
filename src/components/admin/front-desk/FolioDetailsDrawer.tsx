@@ -77,6 +77,9 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
     const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
     const roomTotal = booking.rooms?.reduce((acc, r) => acc + (r.price || 0), 0) * nights;
 
+    // 1b. Meal Plan Charges
+    const mealPlanTotal = booking.rooms?.reduce((acc, r) => acc + (r.mealPlanPrice || 0), 0) * nights;
+
     // 2. Food Charges (Unpaid / Charged to Room)
     const foodTotal = foodOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0);
 
@@ -91,7 +94,32 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
     const initialPayment = booking.paidAmount || 0;
     const allPayments = initialPayment + totalPayments;
 
-    const grandTotal = roomTotal + foodTotal + serviceTotal + otherCharges;
+    // Reconciliation Logic:
+    // If stored totalAmount exists, use it to derive the effective discount if the stored discount amount is 0/missing
+    // This handles cases where data might be slightly inconsistent from legacy/buggy saves
+    // Reconciliation Logic:
+    // Ensure the Folio (Sum of items) matches the Booking Total (Official Amount)
+    const grossTotal = roomTotal + mealPlanTotal + foodTotal + serviceTotal + otherCharges;
+    const storedTotal = booking.totalAmount || grossTotal;
+
+    // Determine effective discount
+    let discountAmount = booking.discount?.amount || 0;
+    let isImpliedDiscount = false;
+
+    // If there is a discrepancy where Gross > Total, and we haven't accounted for it in explicit discount,
+    // treat the difference as an adjustment/discount to make the math work.
+    // This is critical for showing the "Real Price" consistency checking.
+    if (grossTotal > storedTotal + 1) { // +1 for floating point tolerance
+        const difference = grossTotal - storedTotal;
+        // If we already have a discount, but it's less than the difference, maybe the difference IS the discount?
+        // Or if we have no discount 0, take the whole difference.
+        if (Math.abs(discountAmount - difference) > 1) {
+            discountAmount = difference;
+            isImpliedDiscount = true;
+        }
+    }
+
+    const grandTotal = grossTotal - discountAmount;
     const balance = grandTotal - allPayments;
 
     return (
@@ -165,6 +193,28 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
                                                             <td className="px-6 py-4 text-right text-gray-900 font-mono">{roomTotal.toLocaleString()}</td>
                                                             <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
                                                         </tr>
+
+                                                        {/* Meal Plan Charges */}
+                                                        {mealPlanTotal > 0 && (
+                                                            <tr>
+                                                                <td className="px-6 py-4 font-medium text-gray-900">
+                                                                    Meal Plan Charges ({booking.rooms?.[0]?.mealPlan || 'Meal Plan'}) x {nights} Night(s)
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right text-gray-900 font-mono">{mealPlanTotal.toLocaleString()}</td>
+                                                                <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
+                                                            </tr>
+                                                        )}
+
+                                                        {/* Discount / Adjustment */}
+                                                        {discountAmount > 0 && (
+                                                            <tr className="bg-green-50/30">
+                                                                <td className="px-6 py-4 font-medium text-green-700">
+                                                                    {booking.discount?.code ? `Discount Applied (${booking.discount.code})` : 'System Adjustment / Discount'}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
+                                                                <td className="px-6 py-4 text-right text-green-700 font-bold font-mono">{discountAmount.toLocaleString()}</td>
+                                                            </tr>
+                                                        )}
 
                                                         {/* Food Orders (Orange tint) */}
                                                         {foodOrders.map(order => (

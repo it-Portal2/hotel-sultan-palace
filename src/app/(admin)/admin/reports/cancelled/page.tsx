@@ -70,8 +70,11 @@ export default function CancelledReportPage() {
                 if (!hasType) return false;
             }
 
-            // 7. Rate Type
-            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
+            // 7. Meal Plan
+            if (filters.rateTypeId) {
+                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                if (!hasMealPlan) return false;
+            }
 
             return true;
         });
@@ -173,6 +176,7 @@ export default function CancelledReportPage() {
                                 <tr>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest / Company</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Source / Agent</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Meal Plan</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Arrival Date</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Cancelled On</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Reason</th>
@@ -216,6 +220,11 @@ export default function CancelledReportPage() {
                                                             <span className="text-[10px] text-blue-600 print:text-black">{agent}</span>
                                                         )}
                                                     </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs text-gray-700">
+                                                        {b.rooms[0]?.mealPlan === 'HB' ? 'Half Board' : b.rooms[0]?.mealPlan === 'FB' ? 'Full Board' : b.rooms[0]?.mealPlan || '-'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs text-gray-600 print:text-black">
                                                     <div className="flex items-center gap-1.5">
@@ -288,7 +297,7 @@ export default function CancelledReportPage() {
                     <li><strong>Res. No :</strong> Reservation no of booking</li>
                     <li><strong>Booking Date :</strong> Booking date on which reservation has been taken in the system</li>
                     <li><strong>Guest Name :</strong> Name of the Guest</li>
-                    <li><strong>Rate Type :</strong> Rate Type of booking</li>
+                    <li><strong>Meal Plan :</strong> Meal Plan of booking</li>
                     <li><strong>Arr. :</strong> Arrival Date of booking in property's short format set in the configuration panel</li>
                     <li><strong>Dpt :</strong> Departure Date of a booking in property's short format set in the configuration panel</li>
                     <li><strong>Folio No :</strong> Folio No of a booking</li>

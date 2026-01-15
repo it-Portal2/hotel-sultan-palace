@@ -179,12 +179,7 @@ export default function CartSummary({
                     <p className="text-[15px] text-[#1D69F9] font-bold mb-2">
                       {dateRangeText}
                     </p>
-                    {room.mealPlan && (
-                      <p className="text-[14px] text-[#28a745] font-medium leading-[1.714] mb-1">
-                        Meal Plan: {room.mealPlan === 'HB' ? 'Half Board' : room.mealPlan === 'FB' ? 'Full Board' : 'Breakfast'}
-                        {room.mealPlanDetails && ` (${room.mealPlanDetails})`}
-                      </p>
-                    )}
+
                   </div>
                   <div className="text-right">
                     <div className="text-[18px] font-semibold text-[#1D2A3A]">
@@ -204,9 +199,23 @@ export default function CartSummary({
                     <div className="text-[#1D2A3A] text-[16px] font-semibold">${((room.taxes || 0) * nights * quantity).toFixed(2)}</div>
                   </div>
                   {room.mealPlan && room.mealPlanPrice && (
-                    <div className="flex items-center gap-4 w-full justify-between md:justify-end md:w-auto">
-                      <div className="text-[#655D4E] text-[16px]">
-                        Meal Plan ({room.mealPlan})
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pt-4 border-t border-dashed border-gray-200 w-full">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-green-50 rounded text-green-600">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-[#423B2D] text-[16px] font-semibold">
+                            Meal Plan: {room.mealPlan === 'HB' ? 'Half Board' : room.mealPlan === 'FB' ? 'Full Board' : room.mealPlan}
+                          </div>
+                          {room.mealPlanDetails && (
+                            <div className="text-[13px] text-[#655D4E]">
+                              Included: {room.mealPlanDetails}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="text-[#1D2A3A] text-[16px] font-semibold">
                         +${(room.mealPlanPrice * nights * quantity).toFixed(2)}
@@ -457,7 +466,32 @@ export default function CartSummary({
                 <div className="text-[#655D4E] text-[16px]">Taxes and Fees</div>
                 <div className="text-[#1D2A3A] text-[16px] font-semibold">${((room.taxes || 0) * nights * quantity).toFixed(2)}</div>
               </div>
+              {room.mealPlan && room.mealPlanPrice && (
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pt-4 border-t border-dashed border-gray-200 w-full">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-green-50 rounded text-green-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-[#423B2D] text-[16px] font-semibold">
+                        Meal Plan: {room.mealPlan === 'HB' ? 'Half Board' : room.mealPlan === 'FB' ? 'Full Board' : room.mealPlan}
+                      </div>
+                      {room.mealPlanDetails && (
+                        <div className="text-[13px] text-[#655D4E]">
+                          Included: {room.mealPlanDetails}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-[#1D2A3A] text-[16px] font-semibold">
+                    +${(room.mealPlanPrice * nights * quantity).toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
+
 
             <div className="flex flex-wrap items-center gap-4 text-[#3F3F3F] text-[16px] font-bold">
               <button onClick={handleEditRoom} className="flex items-center gap-1">
@@ -622,15 +656,17 @@ export default function CartSummary({
 
       <div className="w-full border-t border-dashed border-[#AFAFAF] my-6" />
 
-      {showCheckoutButton && (
-        <button
-          onClick={handleCheckout}
-          className="w-full bg-[#1D69F9] text-white py-3 px-6 font-semibold text-[20px] hover:bg-[#1352c8] transition-colors"
-        >
-          Checkout
-        </button>
-      )}
-    </div>
+      {
+        showCheckoutButton && (
+          <button
+            onClick={handleCheckout}
+            className="w-full bg-[#1D69F9] text-white py-3 px-6 font-semibold text-[20px] hover:bg-[#1352c8] transition-colors"
+          >
+            Checkout
+          </button>
+        )
+      }
+    </div >
   );
 }
 

@@ -811,7 +811,10 @@ export default function RoomAvailabilityPage() {
           children: r.children,
           status: 'confirmed',
           suiteType: r.roomType as SuiteType,
-          ratePlan: r.rateType
+          ratePlan: (() => {
+            const map: Record<string, string> = { 'BB': 'Bed & Breakfast', 'HB': 'Half Board', 'FB': 'Full Board', 'AI': 'All Inclusive', 'RO': 'Room Only' };
+            return map[r.mealPlan] || r.mealPlan || 'Bed & Breakfast';
+          })()
         })),
         addOns: [],
         status: formData.reservationType === 'Walk In'

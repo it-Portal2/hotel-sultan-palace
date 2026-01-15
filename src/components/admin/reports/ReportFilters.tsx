@@ -56,7 +56,6 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
     // Master Data State
     const [travelAgents, setTravelAgents] = useState<TravelAgent[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
-    const [rateTypes, setRateTypes] = useState<RateType[]>([]);
     const [reservationTypes, setReservationTypes] = useState<ReservationType[]>([]);
     const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
     // UI State for Collapsible Filters (More Options)
@@ -83,7 +82,7 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
         { id: 'market', label: 'Market Code', default: false },
         { id: 'business_source', label: 'Business Source', default: false },
         { id: 'meal_plan', label: 'Meal Plan', default: false },
-        { id: 'rate_type', label: 'Rate Type', default: false },
+        { id: 'rate_type', label: 'Rate Type', default: false }, // Keeping for safety if needed or remove? logic uses rateTypeId for meal plan now
     ];
 
     // Config for "Remarks" (Arrival List)
@@ -95,7 +94,7 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
         endDate: new Date().toISOString().split('T')[0],
         companyId: '',
         travelAgentId: '',
-        rateTypeId: '',
+        rateTypeId: '', // Using this field for Meal Plan ID now
         reservationTypeId: '',
         showAmount: 'Rent Per Night',
         remarks: ['Check In', 'Check Out'], // Default checked
@@ -118,7 +117,7 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
 
     useEffect(() => {
         const init = async () => {
-            await ensureDefaultRateTypes();
+            // ensureDefaultRateTypes(); // Removed as rate types are not used in filters anymore
             loadMasterData();
         };
         init();
@@ -126,20 +125,14 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
 
     const loadMasterData = async () => {
         try {
-            const [ta, co, rt, rst, rooms] = await Promise.all([
+            const [ta, co, rst, rooms] = await Promise.all([
                 getMasterData<TravelAgent>('travelAgents'),
                 getMasterData<Company>('companies'),
-                getMasterData<RateType>('rateTypes'),
                 getMasterData<ReservationType>('reservationTypes'),
                 getRoomTypes()
             ]);
             setTravelAgents(ta);
             setCompanies(co);
-
-            // Deduplicate Rate Types by Name
-            const uniqueRates = Array.from(new Map(rt.map(r => [r.name, r])).values());
-            setRateTypes(uniqueRates);
-
             setReservationTypes(rst);
 
             // Deduplicate Room Types by Name
@@ -252,10 +245,14 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className={LABEL_STYLE}>Rate Type</label>
+                        <label className={LABEL_STYLE}>Meal Plan</label>
                         <select className={INPUT_STYLE} value={filters.rateTypeId} onChange={(e) => handleChange('rateTypeId', e.target.value)}>
                             <option value="">--Select--</option>
-                            {rateTypes.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                            <option value="BB">Bed & Breakfast</option>
+                            <option value="HB">Half Board</option>
+                            <option value="FB">Full Board</option>
+                            <option value="AI">All Inclusive</option>
+                            <option value="RO">Room Only</option>
                         </select>
                     </div>
 

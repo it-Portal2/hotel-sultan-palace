@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
@@ -50,6 +49,9 @@ interface BookingDetails {
     type: string;
     allocatedRoomType?: string;
     suiteType?: string;
+    mealPlan?: string;
+    mealPlanPrice?: number;
+    mealPlanDetails?: string;
   }>;
   addOns: Array<{
     id: string;
@@ -266,21 +268,48 @@ function ConfirmationContent() {
                 </h3>
                 <div className="space-y-4">
                   {booking.rooms.map((room, idx) => (
-                    <div key={idx} className="flex justify-between items-start py-4 border-b border-gray-50 hover:bg-gray-50/50 transition-colors px-2 rounded-lg -mx-2 print:border-gray-200">
-                      <div>
-                        <p className="font-serif text-lg font-medium text-gray-900">{room.name || room.type}</p>
-                        <p className="text-sm text-gray-500 mt-1">{room.suiteType || 'Standard Suite'} • {getNights()} Night(s)</p>
+                    <div key={idx} className="flex flex-col py-4 border-b border-gray-50 hover:bg-gray-50/50 transition-colors px-2 rounded-lg -mx-2 print:border-gray-200">
+                      <div className="flex justify-between items-start w-full">
+                        <div>
+                          <p className="font-serif text-lg font-medium text-gray-900">{room.name || room.type}</p>
+                          <p className="text-sm text-gray-500 mt-1">{room.suiteType || 'Standard Suite'} • {getNights()} Night(s)</p>
 
-                        {room.allocatedRoomType && (
-                          <div className="mt-2 inline-block bg-green-50 text-green-700 text-xs px-2 py-1 rounded font-medium border border-green-100 print:border-gray-300 print:text-black">
-                            Allocated: {room.allocatedRoomType}
+                          {room.allocatedRoomType && (
+                            <div className="mt-2 inline-block bg-green-50 text-green-700 text-xs px-2 py-1 rounded font-medium border border-green-100 print:border-gray-300 print:text-black">
+                              Allocated: {room.allocatedRoomType}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-gray-900">${((room.price || 0) * getNights()).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400 mt-1">${room.price}/night</p>
+                        </div>
+                      </div>
+
+                      {room.mealPlan && room.mealPlanPrice && (
+                        <div className="mt-3 flex justify-between items-start py-3 bg-green-50/50 rounded-lg px-3 print:border print:border-green-100 w-full">
+                          <div className="flex items-start gap-2">
+                            <div className="mt-0.5 text-green-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                Meal Plan: {room.mealPlan === 'HB' ? 'Half Board' : room.mealPlan === 'FB' ? 'Full Board' : room.mealPlan}
+                              </p>
+                              {room.mealPlanDetails && (
+                                <p className="text-xs text-green-700 mt-0.5">
+                                  Included: {room.mealPlanDetails}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">${((room.price || 0) * getNights()).toLocaleString()}</p>
-                        <p className="text-xs text-gray-400 mt-1">${room.price}/night</p>
-                      </div>
+                          <div className="text-right">
+                            <p className="font-medium text-gray-900">+${((room.mealPlanPrice || 0) * getNights()).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

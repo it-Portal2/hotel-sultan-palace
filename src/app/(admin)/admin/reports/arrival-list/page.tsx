@@ -51,14 +51,17 @@ export default function ArrivalListPage() {
                 if (!hasType) return false;
             }
 
-            // 8. Rate Type
-            if (filters.rateTypeId && b.rateTypeId !== filters.rateTypeId) return false;
+            // 8. Meal Plan
+            if (filters.rateTypeId) {
+                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                if (!hasMealPlan) return false;
+            }
 
             // 9. Rate Range
             if (filters.rateFrom && b.totalAmount < Number(filters.rateFrom)) return false;
             if (filters.rateTo && b.totalAmount > Number(filters.rateTo)) return false;
 
-            // 8. Business Source (Mock)
+            // 10. Business Source (Mock)
             if (filters.businessSource && (b as any).businessSource !== filters.businessSource) return false;
 
             return true;
@@ -163,6 +166,7 @@ export default function ArrivalListPage() {
                                 <tr>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Res. No</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Guest</th>
+                                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Meal Plan</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Room</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Rate</th>
                                     <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">Arrival</th>
@@ -174,7 +178,7 @@ export default function ArrivalListPage() {
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {filteredBookings.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-gray-400 italic">
+                                        <td colSpan={9} className="px-6 py-12 text-center text-gray-400 italic">
                                             No arrivals found for the selected criteria.
                                         </td>
                                     </tr>
@@ -190,6 +194,11 @@ export default function ArrivalListPage() {
                                                 <td className="px-6 py-4">
                                                     <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors print:text-black">
                                                         {b.guestDetails.lastName}, {b.guestDetails.firstName}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs text-gray-700">
+                                                        {b.rooms[0]?.mealPlan === 'HB' ? 'Half Board' : b.rooms[0]?.mealPlan === 'FB' ? 'Full Board' : b.rooms[0]?.mealPlan || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -245,6 +254,7 @@ export default function ArrivalListPage() {
                 <ul className="text-xs text-gray-600 space-y-1">
                     <li><strong>Res. no :</strong> Reservation number and remark of booking</li>
                     <li><strong>Guest :</strong> Name of the guest.</li>
+                    <li><strong>Meal Plan :</strong> Meal Plan of booking</li>
                     <li><strong>Room :</strong> Room number and room name of booking</li>
                     <li><strong>Rate :</strong> Total rate of booking.</li>
                     <li><strong>Arrival :</strong> Arrival date and arrival time of booking</li>

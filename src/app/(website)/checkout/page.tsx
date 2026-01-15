@@ -373,9 +373,12 @@ export default function CheckoutPage() {
         })),
         rooms: rooms.map((room) => ({
           name: room.name,
-          type: room.type || "Standard Room",
+          type: room.type,
           price: room.price,
-          suiteType: room.suiteType || (room.name.includes('Imperial') ? 'Imperial Suite' : room.name.includes('Garden') ? 'Garden Suite' : 'Ocean Suite')
+          suiteType: room.suiteType || (room.name.includes('Imperial') ? 'Imperial Suite' : room.name.includes('Garden') ? 'Garden Suite' : 'Ocean Suite'),
+          mealPlan: room.mealPlan,
+          mealPlanPrice: room.mealPlanPrice,
+          mealPlanDetails: room.mealPlanDetails
         })),
         addOns: addOns.map((addon) => ({
           name: addon.name,

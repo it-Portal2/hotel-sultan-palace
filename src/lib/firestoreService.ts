@@ -184,6 +184,14 @@ export interface Booking {
   notes?: string;
   guestIdProof?: string;
 
+  // Discount/Coupon
+  discount?: {
+    code: string;
+    amount: number;
+    discountType: 'percentage' | 'fixed' | 'pay_x_stay_y';
+    discountValue: number;
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -718,7 +726,8 @@ export const getMealPlanSettings = async (): Promise<MealPlanSettings> => {
     };
   }
   try {
-    const docRef = doc(db, 'settings', 'meal_plans');
+    // UPDATED: Using 'mealPlans' collection as requested
+    const docRef = doc(db, 'mealPlans', 'setting');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       return docSnap.data() as MealPlanSettings;
@@ -747,7 +756,8 @@ export const updateMealPlanSettings = async (settings: MealPlanSettings): Promis
     return false;
   }
   try {
-    const docRef = doc(db, 'settings', 'meal_plans');
+    // UPDATED: Using 'meal_plans' collection as requested
+    const docRef = doc(db, 'meal_plans', 'meal_plan_rates');
     await setDoc(docRef, settings, { merge: true });
     return true;
   } catch (error) {
@@ -5885,5 +5895,77 @@ export const updateWorkOrder = async (id: string, updates: Partial<WorkOrder>): 
   } catch (e) {
     console.error("Error updating work order:", e);
     return false;
+  }
+};
+
+export interface ActiveCoupon {
+  id: string;
+  code: string;
+  title: string;
+  discountType: 'percentage' | 'fixed' | 'pay_x_stay_y';
+  discountValue: number;
+  source: 'special' | 'discount';
+  minPersons?: number | null;
+  targetAudience?: 'all' | 'specific_rooms';
+  roomTypes?: string[];
+  stayNights?: number;
+  payNights?: number;
+}
+
+export const getAllActiveCoupons = async (): Promise<ActiveCoupon[]> => {
+  if (!db) return [];
+  try {
+    const coupons: ActiveCoupon[] = [];
+    const now = new Date();
+
+    // 1. Fetch Special Offers
+    const specialOffersRef = collection(db, 'specialOffers');
+    const specialQuery = query(specialOffersRef, where('isActive', '==', true));
+    const specialSnapshot = await getDocs(specialQuery);
+
+    specialSnapshot.forEach(doc => {
+      const data = doc.data() as SpecialOffer;
+      // Check expiry
+      if (data.endDate && new Date(data.endDate) < now) return;
+      if (!data.couponCode) return; // Only manual coupons
+
+      coupons.push({
+        id: doc.id,
+        code: data.couponCode,
+        title: data.title,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        source: 'special',
+        minPersons: data.minPersons,
+        targetAudience: data.targetAudience,
+        roomTypes: data.roomTypes,
+        stayNights: data.stayNights,
+        payNights: data.payNights
+      });
+    });
+
+    // 2. Fetch Simple Discounts
+    const discountsRef = collection(db, 'discounts');
+    const discountQuery = query(discountsRef, where('isActive', '==', true));
+    const discountSnapshot = await getDocs(discountQuery);
+
+    discountSnapshot.forEach(doc => {
+      const data = doc.data() as DiscountOffer;
+      if (!data.couponCode) return;
+
+      coupons.push({
+        id: doc.id,
+        code: data.couponCode,
+        title: `${data.discountPercent}% Off`,
+        discountType: 'percentage',
+        discountValue: data.discountPercent,
+        source: 'discount'
+      });
+    });
+
+    return coupons;
+  } catch (error) {
+    console.error("Error fetching active coupons:", error);
+    return [];
   }
 };

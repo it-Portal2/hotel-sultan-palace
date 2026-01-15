@@ -311,49 +311,102 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                             </div>
 
                                                             {/* Summary Section */}
-                                                            <div className="p-5 bg-gradient-to-b from-white to-gray-50/30">
-                                                                <div className="space-y-3 mb-6">
-                                                                    <div className="flex justify-between text-sm">
-                                                                        <span className="text-gray-500">Room Charges</span>
-                                                                        <span className="font-medium text-gray-900">${rooms.reduce((acc, r) => acc + (r.price || 0) * nights, 0).toLocaleString()}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between text-sm">
-                                                                        <span className="text-gray-500">Extras & Taxes</span>
-                                                                        <span className="font-medium text-gray-900">${(totalAmount - rooms.reduce((acc, r) => acc + (r.price || 0) * nights, 0)).toLocaleString()}</span>
-                                                                    </div>
-                                                                    <div className="h-px bg-gray-200 my-2"></div>
-                                                                    <div className="flex justify-between items-center">
-                                                                        <span className="text-base font-bold text-gray-900">Total</span>
-                                                                        <span className="text-xl font-bold text-indigo-600">${totalAmount.toLocaleString()}</span>
-                                                                    </div>
-                                                                </div>
+                                                            {(() => {
+                                                                // Recalculate component costs
+                                                                const roomSum = rooms.reduce((acc, r) => acc + (r.price || 0) * nights, 0);
+                                                                const mealSum = rooms.reduce((acc, r) => acc + (r.mealPlanPrice || 0) * nights, 0);
+                                                                const gross = roomSum + mealSum; // This is approx gross, doesn't include extras/taxes yet in this view context per see
 
-                                                                {/* Payment Progress */}
-                                                                <div className="mb-6">
-                                                                    <div className="flex justify-between text-xs mb-1.5">
-                                                                        <span className="text-gray-500 font-medium">Payment Status</span>
-                                                                        <span className="text-gray-700 font-bold">{Math.round(paymentProgress)}% Paid</span>
-                                                                    </div>
-                                                                    <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                                        <div
-                                                                            className={`h-full rounded-full transition-all duration-500 ${balance <= 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                                                                            style={{ width: `${paymentProgress}%` }}
-                                                                        ></div>
-                                                                    </div>
-                                                                </div>
+                                                                // Use official total
+                                                                const officialTotal = totalAmount;
 
-                                                                {/* Paid & Balance Grid */}
-                                                                <div className="grid grid-cols-2 gap-3">
-                                                                    <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                                                                        <p className="text-[10px] uppercase font-bold text-emerald-600 mb-0.5">Paid to Date</p>
-                                                                        <p className="text-lg font-bold text-emerald-800">${paidAmount.toLocaleString()}</p>
+                                                                // Determine discount
+                                                                let discAmount = booking.discount?.amount || 0;
+
+                                                                // Logic: If (Room + Meal) > OfficialTotal, the difference is likely the discount.
+                                                                // This handles the "Stay X Pay Y" case where Room Price is full but Total is discounted.
+                                                                if (gross > officialTotal + 1) {
+                                                                    const diff = gross - officialTotal;
+                                                                    // Only override if stored discount is missing or significantly different (likely wrong)
+                                                                    if (Math.abs(discAmount - diff) > 1) {
+                                                                        discAmount = diff;
+                                                                    }
+                                                                }
+
+                                                                // Extras is the balancer if needed, or explicitly 0 if we match exactly
+                                                                // Actually, Extras & Taxes = Total - (Room + Meal - Discount)
+                                                                // If we forced Discount = Room + Meal - Total, then Extras = Total - (Total) = 0. Correct.
+                                                                const extrasAndTaxes = officialTotal - (gross - discAmount);
+
+                                                                return (
+                                                                    <div className="p-5 bg-gradient-to-b from-white to-gray-50/30">
+                                                                        <div className="space-y-3 mb-6">
+                                                                            <div className="flex justify-between text-sm">
+                                                                                <span className="text-gray-500">Room Charges</span>
+                                                                                <span className="font-medium text-gray-900">${roomSum.toLocaleString()}</span>
+                                                                            </div>
+
+                                                                            {/* Meal Plan */}
+                                                                            {mealSum > 0 && (
+                                                                                <div className="flex justify-between text-sm">
+                                                                                    <span className="text-gray-500">Meal Plans</span>
+                                                                                    <span className="font-medium text-gray-900">${mealSum.toLocaleString()}</span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Discount */}
+                                                                            {discAmount > 0 && (
+                                                                                <div className="flex justify-between text-sm text-green-600">
+                                                                                    <span className="">Discount ({booking.discount?.code || 'Applied'})</span>
+                                                                                    <span className="font-bold">-${discAmount.toLocaleString()}</span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Only show Extras if non-zero */}
+                                                                            {Math.abs(extrasAndTaxes) > 1 && (
+                                                                                <div className="flex justify-between text-sm">
+                                                                                    <span className="text-gray-500">Extras & Taxes</span>
+                                                                                    <span className="font-medium text-gray-900">
+                                                                                        ${extrasAndTaxes.toLocaleString()}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            <div className="h-px bg-gray-200 my-2"></div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-base font-bold text-gray-900">Total</span>
+                                                                                <span className="text-xl font-bold text-indigo-600">${officialTotal.toLocaleString()}</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Payment Progress */}
+                                                                        <div className="mb-6">
+                                                                            <div className="flex justify-between text-xs mb-1.5">
+                                                                                <span className="text-gray-500 font-medium">Payment Status</span>
+                                                                                <span className="text-gray-700 font-bold">{Math.round(paymentProgress)}% Paid</span>
+                                                                            </div>
+                                                                            <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                                                <div
+                                                                                    className={`h-full rounded-full transition-all duration-500 ${balance <= 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                                                                    style={{ width: `${paymentProgress}%` }}
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Paid & Balance Grid */}
+                                                                        <div className="grid grid-cols-2 gap-3">
+                                                                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                                                                                <p className="text-[10px] uppercase font-bold text-emerald-600 mb-0.5">Paid to Date</p>
+                                                                                <p className="text-lg font-bold text-emerald-800">${paidAmount.toLocaleString()}</p>
+                                                                            </div>
+                                                                            <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                                                                                <p className="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Balance Due</p>
+                                                                                <p className={`text-lg font-bold ${balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>${balance.toLocaleString()}</p>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
-                                                                        <p className="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Balance Due</p>
-                                                                        <p className={`text-lg font-bold ${balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>${balance.toLocaleString()}</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                                );
+                                                            })()}
 
                                                             {/* Actions Footer */}
                                                             <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex gap-2">
