@@ -259,7 +259,7 @@ export default function Header() {
               </div>
             </div>
 
-            <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 text-white text-[14px] xl:text-[16px] font-semibold font-open-sans flex-1 min-w-0 overflow-visible" style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
+            <nav className="hidden min-[1400px]:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 text-white text-[14px] xl:text-[16px] font-semibold font-open-sans flex-1 min-w-0 overflow-visible" style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
               {navLinks.map((item) => (
                 <div
                   key={item.label}
@@ -437,7 +437,7 @@ export default function Header() {
               <div className="hidden md:block">
                 <BookNowButton size="sm" className="px-4 md:px-6 lg:px-8 xl:px-[40px] 2xl:px-[53px] py-2 md:py-2.5 lg:py-3 xl:py-[14px] rounded-[9px] text-[12px] md:text-[14px] lg:text-[15px] xl:text-[16px] h-auto md:h-[45px] lg:h-[49px] w-fit whitespace-nowrap" />
               </div>
-              <div className="lg:hidden z-50 flex items-center gap-3">
+              <div className="min-[1400px]:hidden z-50 flex items-center gap-3">
                 <MobileCartIndicator variant="header" />
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -454,7 +454,7 @@ export default function Header() {
 
       <div
         className={`
-        lg:hidden fixed top-0 left-0 w-full h-screen bg-[#0a1a2b] z-[10002]
+        min-[1400px]:hidden fixed top-0 left-0 w-full h-screen bg-[#0a1a2b] z-[10002]
         transition-transform duration-300 ease-in-out
         ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}
         flex flex-col
