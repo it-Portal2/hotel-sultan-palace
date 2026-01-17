@@ -59,6 +59,8 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
         remark: ''
     });
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
     useEffect(() => {
         // Load rooms
         const fetchRooms = async () => {
@@ -125,6 +127,13 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Final Validation Check
+        if (Object.values(errors).some(err => err)) {
+            showToast("Please fix the errors before saving", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const data: any = {
@@ -235,8 +244,11 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Category</label>
                                         <select
-                                            value={formData.category}
-                                            onChange={e => setFormData({ ...formData, category: e.target.value as any })}
+                                            value={['electronics', 'clothing', 'personal', 'documents'].includes(formData.category) ? formData.category : 'other'}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, category: val === 'other' ? '' : val });
+                                            }}
                                             className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent"
                                         >
                                             <option value="">-Select-</option>
@@ -244,11 +256,20 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             <option value="clothing">Clothing</option>
                                             <option value="personal">Personal Accessories</option>
                                             <option value="documents">Documents</option>
-                                            <option value="other">Other</option>
+                                            <option value="other">Other / Custom</option>
                                         </select>
+                                        {(!['electronics', 'clothing', 'personal', 'documents', ''].includes(formData.category) || formData.category === '' && !['electronics', 'clothing', 'personal', 'documents'].includes(formData.category)) && (
+                                            <input
+                                                type="text"
+                                                placeholder="Specify Category"
+                                                value={formData.category}
+                                                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                className="w-full h-8 mt-2 px-2 border-b border-gray-300 text-xs focus:border-[#FF6A00] outline-none bg-transparent"
+                                            />
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Item Color</label>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Item Color / Description</label>
                                         <input
                                             type="text"
                                             placeholder="Color"
@@ -310,11 +331,21 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             </select>
                                             <input
                                                 type="number"
+                                                min="0"
                                                 placeholder="0.00"
                                                 value={formData.itemValue}
-                                                onChange={e => setFormData({ ...formData, itemValue: e.target.value })}
-                                                className="flex-1 h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent"
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setFormData({ ...formData, itemValue: val });
+                                                    if (parseFloat(val) < 0) {
+                                                        setErrors(prev => ({ ...prev, itemValue: "Value cannot be negative" }));
+                                                    } else {
+                                                        setErrors(prev => ({ ...prev, itemValue: "" }));
+                                                    }
+                                                }}
+                                                className={`flex-1 h-10 px-3 rounded-none border-b-2 ${errors.itemValue ? 'border-red-500' : 'border-gray-200'} focus:border-[#FF6A00] outline-none text-sm bg-transparent`}
                                             />
+                                            {errors.itemValue && <span className="text-xs text-red-500 absolute -bottom-4 left-0">{errors.itemValue}</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -322,10 +353,7 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
 
                             {/* Complaint / Finder Info */}
                             <div className="bg-white p-6 rounded-none border border-gray-200 shadow-sm">
-                                <h4 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <span className="w-1 h-6 bg-blue-600"></span>
-                                    {currentType === 'lost' ? 'Complaint Information' : 'Found Information'}
-                                </h4>
+
 
                                 <h4 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-2">
                                     <span className="w-1 h-6 bg-blue-600"></span>
@@ -350,9 +378,18 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             type="tel"
                                             placeholder="Phone"
                                             value={formData.guestPhone}
-                                            onChange={e => setFormData({ ...formData, guestPhone: e.target.value })}
-                                            className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, guestPhone: val });
+                                                if (val && !/^[\d\s+\-()]*$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, guestPhone: "Invalid phone characters" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, guestPhone: "" }));
+                                                }
+                                            }}
+                                            className={`w-full h-10 px-3 rounded-none border-b-2 ${errors.guestPhone ? 'border-red-500' : 'border-gray-200'} focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400`}
                                         />
+                                        {errors.guestPhone && <p className="text-xs text-red-500 mt-1">{errors.guestPhone}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Email</label>
@@ -360,9 +397,18 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             type="email"
                                             placeholder="Email"
                                             value={formData.guestEmail}
-                                            onChange={e => setFormData({ ...formData, guestEmail: e.target.value })}
-                                            className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, guestEmail: val });
+                                                if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, guestEmail: "Invalid email format" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, guestEmail: "" }));
+                                                }
+                                            }}
+                                            className={`w-full h-10 px-3 rounded-none border-b-2 ${errors.guestEmail ? 'border-red-500' : 'border-gray-200'} focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400`}
                                         />
+                                        {errors.guestEmail && <p className="text-xs text-red-500 mt-1">{errors.guestEmail}</p>}
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Address</label>
@@ -411,9 +457,19 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             type="text"
                                             placeholder="Zip"
                                             value={formData.guestZip}
-                                            onChange={e => setFormData({ ...formData, guestZip: e.target.value })}
-                                            className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, guestZip: val });
+                                                // Real-time Numeric Check for Zip
+                                                if (val && !/^\d+$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, guestZip: "Zip code must be numeric" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, guestZip: "" }));
+                                                }
+                                            }}
+                                            className={`w-full h-10 px-3 rounded-none border-b-2 ${errors.guestZip ? 'border-red-500' : 'border-gray-200'} focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400`}
                                         />
+                                        {errors.guestZip && <p className="text-xs text-red-500 mt-1">{errors.guestZip}</p>}
                                     </div>
                                 </div>
 

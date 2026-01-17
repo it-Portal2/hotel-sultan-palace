@@ -117,15 +117,14 @@ export default function TodaysOperations({ arrivals, departures, guestsInHouse, 
 
             {/* Revenue */}
             <StatCard
-                title="Revenue (M)"
+                title="Revenue"
                 icon={CurrencyDollarIcon}
-                mainValue={revenue.month}
+                mainValue={revenue.total}
                 prefix="$"
                 colorClass="text-violet-600"
                 bgClass="bg-violet-50"
                 subStats={[
-                    { label: 'Month Total', value: `$${revenue.month.toLocaleString()}` },
-                    { label: 'YTD', value: `$${(revenue.total / 1000).toFixed(1)}k` }
+                    { label: 'Total', value: `$${revenue.total.toLocaleString()}` }
                 ]}
             />
         </div>

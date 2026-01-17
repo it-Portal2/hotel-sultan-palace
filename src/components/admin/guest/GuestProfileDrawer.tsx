@@ -34,13 +34,17 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
         notes: ''
     });
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
     useEffect(() => {
+        if (!isOpen) return;
+
         if (guest) {
             setFormData({
-                firstName: guest.firstName,
-                lastName: guest.lastName,
-                email: guest.email,
-                phone: guest.phone,
+                firstName: guest.firstName || '',
+                lastName: guest.lastName || '',
+                email: guest.email || '',
+                phone: guest.phone || '',
                 nationality: guest.nationality || '',
                 street: guest.address?.street || '',
                 city: guest.address?.city || '',
@@ -69,33 +73,41 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                 preferences: '',
                 notes: ''
             });
+            setErrors({});
         }
     }, [guest, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validation Check
+        if (Object.values(errors).some(err => err)) {
+            showToast("Please fix the errors before saving", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            const guestData: any = { // Typo fix: removed duplicate any
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                email: formData.email,
-                phone: formData.phone,
-                nationality: formData.nationality,
+            const guestData: any = {
+                firstName: formData.firstName || '',
+                lastName: formData.lastName || '',
+                email: formData.email || '',
+                phone: formData.phone || '',
+                nationality: formData.nationality || '',
                 address: {
-                    street: formData.street,
-                    city: formData.city,
-                    state: formData.state,
-                    zipCode: formData.zipCode,
-                    country: formData.country,
+                    street: formData.street || '',
+                    city: formData.city || '',
+                    state: formData.state || '',
+                    zipCode: formData.zipCode || '',
+                    country: formData.country || '',
                 },
-                idDocumentType: formData.idDocumentType,
-                idDocumentNumber: formData.idDocumentNumber,
-                preferences: formData.preferences,
-                notes: formData.notes,
+                idDocumentType: formData.idDocumentType || 'Passport',
+                idDocumentNumber: formData.idDocumentNumber || '',
+                preferences: formData.preferences || '',
+                notes: formData.notes || '',
                 // Stats default for new
-                totalStays: guest ? guest.totalStays : 0,
-                totalRevenue: guest ? guest.totalRevenue : 0,
+                totalStays: guest ? (guest.totalStays || 0) : 0,
+                totalRevenue: guest ? (guest.totalRevenue || 0) : 0,
             };
 
             if (guest) {
@@ -165,9 +177,18 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                                             type="email"
                                             required
                                             value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, email: val });
+                                                if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, email: "Invalid email format" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, email: "" }));
+                                                }
+                                            }}
+                                            className={`w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none ${errors.email ? 'border-red-500' : ''}`}
                                         />
+                                        {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number</label>
@@ -175,9 +196,18 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                                             type="tel"
                                             required
                                             value={formData.phone}
-                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, phone: val });
+                                                if (val && !/^[\d\s+\-()]*$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, phone: "Invalid characters" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, phone: "" }));
+                                                }
+                                            }}
+                                            className={`w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none ${errors.phone ? 'border-red-500' : ''}`}
                                         />
+                                        {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-bold text-gray-700 mb-2">Nationality</label>
@@ -230,9 +260,18 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                                         <input
                                             type="text"
                                             value={formData.zipCode}
-                                            onChange={e => setFormData({ ...formData, zipCode: e.target.value })}
-                                            className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none"
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, zipCode: val });
+                                                if (val && !/^\d*$/.test(val)) {
+                                                    setErrors(prev => ({ ...prev, zipCode: "Must be numeric" }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, zipCode: "" }));
+                                                }
+                                            }}
+                                            className={`w-full rounded-xl border-gray-300 shadow-sm focus:border-[#FF6A00] focus:ring-[#FF6A00] py-3 px-4 bg-gray-50 focus:bg-white transition-all outline-none ${errors.zipCode ? 'border-red-500' : ''}`}
                                         />
+                                        {errors.zipCode && <p className="text-xs text-red-500 mt-1">{errors.zipCode}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">Country</label>
@@ -249,7 +288,7 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
                             {/* ID & Preferences */}
                             <section>
                                 <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6 border-b border-gray-100 pb-3 flex items-center gap-2">
-                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs">03</span> ID & Preferences
+                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs">03</span> Additional Details (Optional)
                                 </h4>
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>

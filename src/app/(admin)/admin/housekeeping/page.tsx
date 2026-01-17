@@ -119,7 +119,13 @@ export default function HousekeepingPage() {
   const handleUnblockRoom = async (roomStatusId: string) => {
     if (isReadOnly) return;
     try {
-      await resolveRoomMaintenance(roomStatusId);
+      // Fix: resolveRoomMaintenance expects roomName, not ID.
+      const status = roomStatuses.find(r => r.id === roomStatusId);
+      if (!status) {
+        throw new Error("Room status not found for ID: " + roomStatusId);
+      }
+
+      await resolveRoomMaintenance(status.roomName);
       await loadData();
       showToast('Maintenance completed', 'success');
     } catch (error) {

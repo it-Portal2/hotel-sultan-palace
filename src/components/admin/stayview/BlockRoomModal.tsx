@@ -48,6 +48,7 @@ export default function BlockRoomModal({
     const [isSelectAll, setIsSelectAll] = useState(false);
     const [customReason, setCustomReason] = useState('');
     const [activeReason, setActiveReason] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     // Dropdown states
     const [showRoomDropdown, setShowRoomDropdown] = useState(false);
@@ -78,6 +79,7 @@ export default function BlockRoomModal({
                     setSelectedRooms([initialData.roomName]);
                 }
                 setReason(initialData.reason || '');
+                setActiveReason(initialData.reason || '');
             } else {
                 // Defaults
                 const today = new Date().toISOString().split('T')[0];
@@ -141,6 +143,15 @@ export default function BlockRoomModal({
     };
 
     const handleSave = () => {
+        if (selectedRooms.length === 0) {
+            setError("Please select at least one room.");
+            return;
+        }
+        if (!activeReason && !reason) {
+            setError("Please select or enter a reason.");
+            return;
+        }
+
         onSave({
             ranges: dateRanges,
             suiteType: suiteType as SuiteType,
@@ -368,6 +379,11 @@ export default function BlockRoomModal({
                         Apply
                     </button>
                 </div>
+                {error && (
+                    <div className="px-6 pb-4">
+                        <p className="text-red-500 text-sm font-medium">{error}</p>
+                    </div>
+                )}
             </div>
         </div>
     );

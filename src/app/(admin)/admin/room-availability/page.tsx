@@ -318,6 +318,7 @@ export default function RoomAvailabilityPage() {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredBarRect, setHoveredBarRect] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+  const [editingRoomName, setEditingRoomName] = useState<string | null>(null); // State for maintenance room name tracking
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -361,16 +362,31 @@ export default function RoomAvailabilityPage() {
     if (!bookingToUnblock || !bookingToUnblock.id) return;
 
     try {
-      // Use logic that releases Inventory
-      await cancelBooking(bookingToUnblock.id);
+      // Fix: Check if it's a maintenance block (ID starts with 'maintenance-' or status is 'maintenance')
+      if (bookingToUnblock.status === 'maintenance' || bookingToUnblock.id.startsWith('maintenance-')) {
+        // Extract room name from the mock booking object
+        // The mock booking might not have the ID we expect for the room status, 
+        // BUT the maintenance logic uses `completeRoomMaintenance(roomName)`
+        // We stored roomName in allocatedRoomType of the first room.
+        const roomName = bookingToUnblock.rooms[0]?.allocatedRoomType;
+        if (roomName) {
+          await completeRoomMaintenance(roomName);
+          showToast('Maintenance block removed successfully', 'success');
+        } else {
+          throw new Error("Could not determine room name for maintenance block");
+        }
+      } else {
+        // Standard Booking Cancellation
+        await cancelBooking(bookingToUnblock.id);
+        showToast('Booking cancelled and inventory released', 'success');
+      }
 
-      showToast('Unblocked and inventory released successfully', 'success');
       loadData(false);
       setShowUnblockConfirmation(false);
       setBookingToUnblock(null);
     } catch (err) {
       console.error(err);
-      showToast('Failed to unblock', 'error');
+      showToast('Failed to unblock/cancel', 'error');
     }
   };
 
@@ -479,6 +495,7 @@ export default function RoomAvailabilityPage() {
           checkIn: status.maintenanceStartDate,
           checkOut: status.maintenanceEndDate,
           guestDetails: { firstName: '', lastName: '', prefix: '', email: '', phone: '' },
+          notes: status.maintenanceReason, // Fix: Map maintenanceReason to notes so it shows in tooltip/edit
           paymentStatus: 'paid', // Irrelevant for maintenance
           totalAmount: 0,
           paidAmount: 0,
@@ -1773,8 +1790,23 @@ export default function RoomAvailabilityPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingBookingId(hoveredBooking.id);
+                      setEditingRoomName(hoveredBooking.rooms[0]?.allocatedRoomType || null);
+                      const toDateStr = (d: any, adjustDays = 0) => {
+                        if (!d) return '';
+                        const date = new Date(d);
+                        // Set to Noon to avoid timezone shifts causing date rollover
+                        date.setHours(12, 0, 0, 0);
+                        date.setDate(date.getDate() + adjustDays); // Apply adjustment safely
+                        return date.toISOString().split('T')[0];
+                      };
+
                       setBlockRoomInitialData({
-                        ranges: [{ startDate: hoveredBooking.checkIn, endDate: hoveredBooking.checkOut }],
+                        ranges: [{
+                          startDate: toDateStr(hoveredBooking.checkIn),
+                          // Subtract 1 day from endDate because it's stored exclusively (next day) 
+                          // but the modal expects inclusive dates.
+                          endDate: toDateStr(hoveredBooking.checkOut, -1)
+                        }],
                         suiteType: hoveredBooking.rooms[0].suiteType,
                         selectedRooms: [hoveredBooking.rooms[0].allocatedRoomType || ''],
                         reason: hoveredBooking.notes
@@ -1890,9 +1922,16 @@ export default function RoomAvailabilityPage() {
                 {hasSectionAccess('front_office', 'reservations', 'read_write') && (
                   <button
                     onClick={() => {
-                      const startStr = selectedCell.date.toISOString().split('T')[0];
-                      const endDate = new Date(selectedCell.date);
-                      endDate.setDate(endDate.getDate() + 1);
+                      // Use simple YYYY-MM-DD string construction from the selectedCell date
+                      // The selectedCell.date is likely already a Date object at midnight or similar.
+                      // Let's rely on standard ISO string splitting if it's correct at source,
+                      // OR construct safely using Noon rule.
+                      const safeDate = new Date(selectedCell.date);
+                      safeDate.setHours(12, 0, 0, 0);
+                      const startStr = safeDate.toISOString().split('T')[0];
+
+                      const endDate = new Date(safeDate);
+                      endDate.setDate(endDate.getDate() + 1); // Next day
                       const endStr = endDate.toISOString().split('T')[0];
 
                       setBlockRoomInitialData({
@@ -1953,9 +1992,18 @@ export default function RoomAvailabilityPage() {
         onSave={async (data) => {
           try {
             // Check if editing an existing block
+            // Check if editing an existing block
             if (editingBookingId) {
-              await updateBooking(editingBookingId, { status: 'cancelled' });
+              if (editingBookingId.startsWith('maintenance-') && editingRoomName) {
+                // If it's a maintenance block, we "complete" (delete) the old one
+                // completeRoomMaintenance expects roomName.
+                await completeRoomMaintenance(editingRoomName);
+              } else {
+                // Legacy or Actual Booking
+                await updateBooking(editingBookingId, { status: 'cancelled' });
+              }
               setEditingBookingId(null);
+              setEditingRoomName(null);
             }
 
             // Loop through all selected rooms and ranges to create maintenance statuses

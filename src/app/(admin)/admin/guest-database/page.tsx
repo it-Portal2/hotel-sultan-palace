@@ -117,7 +117,9 @@ export default function GuestDatabasePage() {
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-bold text-gray-900">{guest.firstName} {guest.lastName}</div>
-                                                    <div className="text-xs text-gray-500">ID: {guest.idDocumentNumber || 'N/A'}</div>
+                                                    {guest.idDocumentNumber && (
+                                                        <div className="text-xs text-gray-500">ID: {guest.idDocumentNumber}</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
@@ -130,8 +132,8 @@ export default function GuestDatabasePage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{guest.nationality || 'Unknown'}</div>
-                                            <div className="text-xs text-gray-500">{guest.address?.city}, {guest.address?.country}</div>
+                                            <div className="text-sm text-gray-900">{guest.nationality || '-'}</div>
+                                            <div className="text-xs text-gray-500">{guest.address?.city ? `${guest.address.city}, ` : ''}{guest.address?.country || ''}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">{guest.totalStays} Stays</div>

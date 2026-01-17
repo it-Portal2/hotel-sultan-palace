@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RoomStatus, RoomType, SuiteType, Room } from '@/lib/firestoreService';
 import BlockRoomModal, { BlockRoomData } from '@/components/admin/stayview/BlockRoomModal';
-import { WrenchIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { WrenchIcon, TrashIcon, PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface MaintenanceBlockViewProps {
     roomStatuses: RoomStatus[];
@@ -23,6 +23,8 @@ export default function MaintenanceBlockView({
     isLoading
 }: MaintenanceBlockViewProps) {
     const [showBlockModal, setShowBlockModal] = useState(false);
+    const [editingBlock, setEditingBlock] = useState<{ id: string, isBooking: boolean, data: BlockRoomData } | null>(null);
+    const [blockToUnblock, setBlockToUnblock] = useState<{ id: string, isBooking: boolean, roomName: string } | null>(null);
 
     // 1. Filter Rooms currently in maintenance from RoomStatus
     const maintenanceRooms = roomStatuses.filter(r => r.status === 'maintenance').map(s => ({
@@ -63,8 +65,48 @@ export default function MaintenanceBlockView({
     const allMaintenanceBlocks = [...maintenanceRooms, ...maintenanceBookings];
 
     const handleSaveBlock = async (data: BlockRoomData) => {
-        await onBlockRoom(data);
-        setShowBlockModal(false);
+        try {
+            // If editing, remove the old block first
+            if (editingBlock) {
+                await onUnblockRoom(editingBlock.id, editingBlock.isBooking);
+            }
+            await onBlockRoom(data);
+            setShowBlockModal(false);
+            setEditingBlock(null);
+        } catch (error) {
+            console.error("Error saving block:", error);
+        }
+    };
+
+    const handleEditClick = (block: any) => {
+        const toDateStr = (d: any, adjustDays = 0) => {
+            if (!d) return '';
+            const date = new Date(d);
+            // Set to Noon to avoid timezone shifts
+            date.setHours(12, 0, 0, 0);
+            date.setDate(date.getDate() + adjustDays);
+            return date.toISOString().split('T')[0];
+        };
+
+        const initialData: BlockRoomData = {
+            ranges: [{
+                startDate: toDateStr(block.startDate),
+                // Subtract 1 day from endDate because it's stored exclusively (next day)
+                endDate: toDateStr(block.endDate, -1)
+            }],
+            suiteType: block.suiteType,
+            selectedRooms: [block.roomName],
+            reason: block.reason
+        };
+
+        setEditingBlock({ id: block.id, isBooking: block.isBooking, data: initialData });
+        setShowBlockModal(true);
+    };
+
+    const confirmUnblock = async () => {
+        if (!blockToUnblock) return;
+        await onUnblockRoom(blockToUnblock.id, blockToUnblock.isBooking);
+        setBlockToUnblock(null);
     };
 
     if (isLoading) return <div className="p-8 text-center text-gray-500">Loading maintenance blocks...</div>;
@@ -78,7 +120,10 @@ export default function MaintenanceBlockView({
                     <p className="text-sm text-gray-500">Manage room blocks for maintenance or repairs.</p>
                 </div>
                 <button
-                    onClick={() => setShowBlockModal(true)}
+                    onClick={() => {
+                        setEditingBlock(null);
+                        setShowBlockModal(true);
+                    }}
                     className="bg-[#FF6A00] text-white px-4 py-2 text-sm font-bold rounded shadow hover:bg-[#e65f00] transition-colors flex items-center gap-2"
                 >
                     <WrenchIcon className="w-4 h-4" />
@@ -124,10 +169,16 @@ export default function MaintenanceBlockView({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={() => onUnblockRoom(block.id, block.isBooking)}
+                                            onClick={() => setBlockToUnblock({ id: block.id, isBooking: block.isBooking, roomName: block.roomName })}
                                             className="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 bg-red-50 px-3 py-1 rounded hover:bg-red-100 transition-colors"
                                         >
                                             Unblock
+                                        </button>
+                                        <button
+                                            onClick={() => handleEditClick(block)}
+                                            className="ml-2 text-blue-600 hover:text-blue-800 font-semibold text-xs border border-blue-200 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100 transition-colors"
+                                        >
+                                            <PencilSquareIcon className="w-4 h-4" />
                                         </button>
                                     </td>
                                 </tr>
@@ -173,11 +224,18 @@ export default function MaintenanceBlockView({
                                 </div>
 
                                 <button
-                                    onClick={() => onUnblockRoom(block.id, block.isBooking)}
+                                    onClick={() => setBlockToUnblock({ id: block.id, isBooking: block.isBooking, roomName: block.roomName })}
                                     className="w-full flex justify-center items-center gap-2 py-2.5 bg-red-50 text-red-600 font-bold text-sm rounded-lg border border-red-100 hover:bg-red-100 active:scale-[0.98] transition-all"
                                 >
                                     <TrashIcon className="w-4 h-4" />
                                     Unblock Room
+                                </button>
+                                <button
+                                    onClick={() => handleEditClick(block)}
+                                    className="w-full flex justify-center items-center gap-2 py-2.5 bg-blue-50 text-blue-600 font-bold text-sm rounded-lg border border-blue-100 hover:bg-blue-100 active:scale-[0.98] transition-all"
+                                >
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                    Edit Block
                                 </button>
                             </div>
                         </div>
@@ -191,7 +249,37 @@ export default function MaintenanceBlockView({
                 onSave={handleSaveBlock}
                 rooms={rooms}
                 suiteTypes={suiteTypes}
+                initialData={editingBlock?.data}
             />
+
+            {/* Unblock Confirmation Modal */}
+            {blockToUnblock && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setBlockToUnblock(null)}>
+                    <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm border border-gray-200" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+                            <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Unblock {blockToUnblock.roomName}?</h3>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            Are you sure you want to remove this maintenance block? This action cannot be undone.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setBlockToUnblock(null)}
+                                className="flex-1 px-4 py-2 bg-white text-gray-700 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmUnblock}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none shadow-sm"
+                            >
+                                Confirm Unblock
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

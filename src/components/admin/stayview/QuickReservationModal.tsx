@@ -168,6 +168,41 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     const [coupons, setCoupons] = useState<ActiveCoupon[]>([]);
     const [selectedCoupon, setSelectedCoupon] = useState<ActiveCoupon | null>(null);
     const [showDiscountInput, setShowDiscountInput] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Validation Logic
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+        let isValid = true;
+
+        if (!formData.guestFirstName.trim()) {
+            newErrors.guestFirstName = "First Name is required";
+            isValid = false;
+        }
+
+        if (!formData.guestLastName.trim()) {
+            newErrors.guestLastName = "Last Name is required";
+            isValid = false;
+        }
+
+        if (formData.guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guestEmail)) {
+            newErrors.guestEmail = "Invalid email format";
+            isValid = false;
+        }
+
+        if (formData.guestMobile && !/^[\d\s+\-()]+$/.test(formData.guestMobile)) {
+            newErrors.guestMobile = "Invalid phone number";
+            isValid = false;
+        }
+
+        if (formData.paidAmount < 0) {
+            newErrors.paidAmount = "Paid amount cannot be negative";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
 
     // Fetch coupons on mount
     useEffect(() => {
@@ -400,8 +435,8 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (!formData.guestFirstName && !formData.guestLastName) {
-            alert("Please enter a Guest Name");
+        if (!validateForm()) {
+            // Optional: Scroll to error or show toast? For now, visual feedback is enough.
             return;
         }
 
@@ -661,14 +696,42 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                     </select>
                                 </div>
                                 <div className="flex-1">
-                                    <input type="text" value={formData.guestFirstName} onChange={e => setFormData({ ...formData, guestFirstName: e.target.value })} placeholder="Guest Name" className="w-full px-4 py-2.5 bg-white border-y border-r border-l-0 border-gray-300 rounded-r-md text-sm" />
+                                    <input type="text" value={formData.guestFirstName} onChange={e => {
+                                        setFormData({ ...formData, guestFirstName: e.target.value });
+                                        if (errors.guestFirstName) setErrors(prev => ({ ...prev, guestFirstName: '' }));
+                                    }} placeholder="Guest Name" className={`w-full px-4 py-2.5 bg-white border-y border-r border-l-0 ${errors.guestFirstName ? 'border-red-500' : 'border-gray-300'} rounded-r-md text-sm`} />
+                                    {errors.guestFirstName && <p className="text-xs text-red-500 mt-1">{errors.guestFirstName}</p>}
                                 </div>
                             </div>
                             <div className="col-span-12 md:col-span-3">
-                                <input type="tel" value={formData.guestMobile} onChange={e => setFormData({ ...formData, guestMobile: e.target.value })} placeholder="Mobile Number" className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm" />
+                                <input type="tel" value={formData.guestMobile} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData({ ...formData, guestMobile: val });
+
+                                    // Real-time validation for Phone
+                                    if (val && !/^[\d\s+\-()]*$/.test(val)) {
+                                        setErrors(prev => ({ ...prev, guestMobile: "Invalid characters in phone number" }));
+                                    } else {
+                                        setErrors(prev => ({ ...prev, guestMobile: '' }));
+                                    }
+                                }} placeholder="Mobile Number" className={`w-full px-4 py-2.5 bg-white border ${errors.guestMobile ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm`} />
+                                {errors.guestMobile && <p className="text-xs text-red-500 mt-1">{errors.guestMobile}</p>}
                             </div>
                             <div className="col-span-12 md:col-span-4">
-                                <input type="email" value={formData.guestEmail} onChange={e => setFormData({ ...formData, guestEmail: e.target.value })} placeholder="Email Address" className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm" />
+                                <input type="email" value={formData.guestEmail} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData({ ...formData, guestEmail: val });
+
+                                    // Real-time validation for Email
+                                    // Use a slightly looser regex for "while typing" to avoid annoying errors for incomplete input?
+                                    // User asked for immediate "wrong input" detection.
+                                    if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                                        setErrors(prev => ({ ...prev, guestEmail: "Invalid email format" }));
+                                    } else {
+                                        setErrors(prev => ({ ...prev, guestEmail: '' }));
+                                    }
+                                }} placeholder="Email Address" className={`w-full px-4 py-2.5 bg-white border ${errors.guestEmail ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm`} />
+                                {errors.guestEmail && <p className="text-xs text-red-500 mt-1">{errors.guestEmail}</p>}
                             </div>
                         </div>
 
@@ -694,7 +757,19 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Paid Amount ($)</label>
-                                <input type="number" min="0" value={formData.paidAmount} onChange={e => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })} className="w-32 pl-3 pr-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-bold shadow-sm" />
+                                <div>
+                                    <input type="number" min="0" value={formData.paidAmount} onChange={e => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        setFormData({ ...formData, paidAmount: val });
+
+                                        if (val < 0) {
+                                            setErrors(prev => ({ ...prev, paidAmount: 'Amount cannot be negative' }));
+                                        } else {
+                                            setErrors(prev => ({ ...prev, paidAmount: '' }));
+                                        }
+                                    }} className={`w-32 pl-3 pr-3 py-2 bg-white border ${errors.paidAmount ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm font-bold shadow-sm`} />
+                                    {errors.paidAmount && <p className="text-xs text-red-500 mt-1 absolute">{errors.paidAmount}</p>}
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-md border border-gray-200 shadow-sm">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Balance Due</label>

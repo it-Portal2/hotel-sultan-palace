@@ -5710,7 +5710,7 @@ export const getGuests = async (): Promise<GuestProfile[]> => {
 };
 
 export const addGuest = async (guest: Omit<GuestProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
-  if (!db) return;
+  if (!db) throw new Error("Firestore not initialized");
   try {
     await addDoc(collection(db, 'guests'), {
       ...guest,
@@ -5724,7 +5724,7 @@ export const addGuest = async (guest: Omit<GuestProfile, 'id' | 'createdAt' | 'u
 };
 
 export const updateGuest = async (id: string, data: Partial<GuestProfile>) => {
-  if (!db) return;
+  if (!db) throw new Error("Firestore not initialized");
   try {
     const docRef = doc(db, 'guests', id);
     await updateDoc(docRef, {
@@ -5757,7 +5757,7 @@ export const getLostFoundItems = async (): Promise<LostFoundItem[]> => {
 };
 
 export const addLostFoundItem = async (item: Omit<LostFoundItem, 'id' | 'createdAt' | 'updatedAt'>) => {
-  if (!db) return;
+  if (!db) throw new Error("Firestore not initialized");
   try {
     await addDoc(collection(db, 'lostFoundItems'), {
       ...item,
@@ -5771,7 +5771,7 @@ export const addLostFoundItem = async (item: Omit<LostFoundItem, 'id' | 'created
 };
 
 export const updateLostFoundItem = async (id: string, data: Partial<LostFoundItem>) => {
-  if (!db) return;
+  if (!db) throw new Error("Firestore not initialized");
   try {
     const docRef = doc(db, 'lostFoundItems', id);
     await updateDoc(docRef, {
