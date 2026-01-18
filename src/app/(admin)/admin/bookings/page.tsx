@@ -3,11 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getAllBookings, Booking, updateBooking, checkInGuest, checkOutGuest, getSystemLocks } from '@/lib/firestoreService';
 import { cancelBooking, confirmBooking } from '@/lib/bookingService';
+import { sendBookingCancellationEmailAction } from '@/app/actions/emailActions';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAdminRole } from '@/context/AdminRoleContext';
 import { useToast } from '@/context/ToastContext';
 import BookingTable from '@/components/admin/bookings/BookingTable';
-import BookingDetailsModal from '@/components/admin/bookings/BookingDetailsModal'; // Keep for now if needed, or remove if fully replaced.
 import BookingDetailsDrawer from '@/components/admin/bookings/BookingDetailsDrawer';
 import CheckInModal, { CheckInData } from '@/components/admin/front-desk/CheckInModal';
 import CheckOutModal, { CheckOutData } from '@/components/admin/front-desk/CheckOutModal';
@@ -24,6 +24,7 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Booking | null>(null);
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
+  const [isDrawerEditMode, setIsDrawerEditMode] = useState(false); // New State
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -54,11 +55,6 @@ export default function AdminBookingsPage() {
   const refreshData = async () => {
     try {
       setLoading(true);
-
-      // We now fetch all bookings to ensure advance bookings (made > 7 days ago) 
-      // appear in the list for check-in. The 'showHistory' toggle can still be used
-      // for client-side filtering if needed, or removed if redundant.
-      // For now, we prioritize data correctness for operations.
       const data = await getAllBookings(undefined);
       setBookings(data);
     } catch (e) {
@@ -83,14 +79,6 @@ export default function AdminBookingsPage() {
     const todayStr = new Date().toISOString().slice(0, 10);
 
     const today = new Date();
-    const isToday = (d: Date | string) => {
-      if (!d) return false;
-      const date = new Date(d);
-      if (isNaN(date.getTime())) return false;
-      return date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear();
-    };
 
     // Tab Logic
     if (activeTab === 'arrivals') {
@@ -260,7 +248,15 @@ export default function AdminBookingsPage() {
     try {
       if (type === 'cancel') {
         await cancelBooking(booking.id);
-        showToast('Booking cancelled successfully', 'success');
+
+        // NEW: Send Cancellation Email
+        const emailRes = await sendBookingCancellationEmailAction(booking);
+        if (emailRes.success) {
+          showToast('Booking cancelled & email sent', 'success');
+        } else {
+          showToast('Booking cancelled but email failed: ' + emailRes.error, 'warning');
+        }
+
       } else if (type === 'confirm') {
         await confirmBooking(booking.id);
         showToast('Booking confirmed successfully', 'success');
@@ -459,7 +455,7 @@ export default function AdminBookingsPage() {
             })}
           </nav>
 
-          {/* Right: Actions Toolbar - Pushed to right with ml-auto if needed, or justify-between on parent handles it */}
+          {/* Right: Actions Toolbar */}
           <div className="flex items-center gap-3 py-3 w-full xl:w-auto overflow-x-auto no-scrollbar justify-end flex-1 ml-4">
 
             {/* Search */}
@@ -551,12 +547,18 @@ export default function AdminBookingsPage() {
             loading={loading}
             onSelect={(b) => {
               setSelected(b);
+              setIsDrawerEditMode(false);
               setShowDetailsDrawer(true);
             }}
-            page={1} // Static page 1
-            pageSize={paginated.length} // Full size
+            onEdit={(b) => {
+              setSelected(b);
+              setIsDrawerEditMode(true); // Open in Edit Mode
+              setShowDetailsDrawer(true);
+            }}
+            page={1}
+            pageSize={paginated.length}
             total={filtered.length}
-            onPageChange={() => { }} // No-op
+            onPageChange={() => { }}
             onCheckIn={handleCheckInClick}
             onCheckOut={(b) => handleStatusUpdate('check_out', b)}
             onStayOver={(b) => {
@@ -588,6 +590,7 @@ export default function AdminBookingsPage() {
                     booking={booking}
                     onSelect={(b) => {
                       setSelected(b);
+                      setIsDrawerEditMode(false);
                       setShowDetailsDrawer(true);
                     }}
                     onCheckIn={handleCheckInClick}
@@ -613,10 +616,12 @@ export default function AdminBookingsPage() {
             booking={selected}
             onClose={() => {
               setShowDetailsDrawer(false);
-              // We keep 'selected' for a moment for animation or just clear it
               setTimeout(() => setSelected(null), 300);
             }}
             isOpen={showDetailsDrawer}
+            initialIsEditing={isDrawerEditMode}
+            onUpdate={refreshData}
+            onCancelBooking={(b) => handleStatusUpdate('cancel', b)}
           />
         )
       }

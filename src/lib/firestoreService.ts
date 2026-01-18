@@ -1964,7 +1964,10 @@ export const syncGuestProfile = async (guestDetails: Booking['guestDetails'], ad
         },
         idDocumentType: guestDetails.idType || '',
         idDocumentNumber: guestDetails.idNumber || '',
-        totalStays: additionalData.isCheckIn ? 1 : 0,
+        // FIX: If creating a new guest from syncGuestProfile, it implies they have at least 1 booking (the one triggering this sync).
+        // If isCheckIn is true, it's definitely a stay. If false (e.g. pending), it's a booking.
+        // We set to 1 to count this booking.
+        totalStays: 1,
         totalRevenue: additionalData.totalAmount || 0,
         lastStayDate: additionalData.isCheckIn ? new Date() : null,
         createdAt: serverTimestamp(),
@@ -1973,6 +1976,75 @@ export const syncGuestProfile = async (guestDetails: Booking['guestDetails'], ad
     }
   } catch (error) {
     console.error('Error syncing guest profile:', error);
+  }
+};
+
+export const recalculateGuestStats = async (): Promise<{ success: boolean; message: string }> => {
+  if (!db) return { success: false, message: 'Database not available' };
+
+  try {
+    const [allGuests, allBookings] = await Promise.all([
+      getGuests(),
+      getAllBookings()
+    ]);
+
+    const batchSize = 100;
+    let batch = writeBatch(db);
+    let count = 0;
+    let updatedCount = 0;
+
+    for (const guest of allGuests) {
+      // Find matches by email or phone
+      const guestBookings = allBookings.filter(b => {
+        // Handle standard nested guestDetails
+        const bEmail = b.guestDetails?.email?.toLowerCase();
+        const bPhone = b.guestDetails?.phone?.replace(/\D/g, '');
+
+        // Handle potential flat legacy fields (fallback)
+        const flatEmail = (b as any).guestEmail?.toLowerCase();
+        const flatPhone = (b as any).guestPhone?.replace(/\D/g, '');
+
+        const gEmail = guest.email?.toLowerCase();
+        const gPhone = guest.phone?.replace(/\D/g, '');
+
+        const emailMatch = gEmail && (bEmail === gEmail || flatEmail === gEmail);
+        const phoneMatch = gPhone && (bPhone === gPhone || flatPhone === gPhone);
+
+        return emailMatch || phoneMatch;
+      });
+
+
+      const totalStays = guestBookings.length;
+      const totalRevenue = guestBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+
+      // Update if different
+      if (totalStays !== guest.totalStays || Math.abs(totalRevenue - (guest.totalRevenue || 0)) > 1) {
+        const guestRef = doc(db, 'guests', guest.id);
+        batch.update(guestRef, {
+          totalStays,
+          totalRevenue,
+          updatedAt: serverTimestamp()
+        });
+        updatedCount++;
+        count++;
+
+        if (count >= batchSize) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    return { success: true, message: `Successfully synced stats for ${updatedCount} guests.` };
+
+  } catch (error: any) {
+    console.error('Error recalculating guest stats:', error);
+    return { success: false, message: error.message || 'Failed to recalculate stats' };
   }
 };
 

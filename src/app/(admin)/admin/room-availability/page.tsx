@@ -365,28 +365,43 @@ export default function RoomAvailabilityPage() {
       // Fix: Check if it's a maintenance block (ID starts with 'maintenance-' or status is 'maintenance')
       if (bookingToUnblock.status === 'maintenance' || bookingToUnblock.id.startsWith('maintenance-')) {
         // Extract room name from the mock booking object
-        // The mock booking might not have the ID we expect for the room status, 
-        // BUT the maintenance logic uses `completeRoomMaintenance(roomName)`
-        // We stored roomName in allocatedRoomType of the first room.
         const roomName = bookingToUnblock.rooms[0]?.allocatedRoomType;
+        console.log(`Unblocking maintenance for room: ${roomName}, ID: ${bookingToUnblock.id}`);
+
         if (roomName) {
-          await completeRoomMaintenance(roomName);
-          showToast('Maintenance block removed successfully', 'success');
+          const success = await completeRoomMaintenance(roomName);
+          if (success) {
+            showToast('Maintenance block removed successfully', 'success');
+          } else {
+            // If Firestore returns false, it usually means 'Room status not found' in the backend logs
+            // This might happen if 'roomName' doesn't match a document in 'room_statuses'.
+            console.error(`completeRoomMaintenance returned false for ${roomName}. Check if room_statuses doc exists with roomName='${roomName}'`);
+            throw new Error(`Failed to remove maintenance block. Room status not found for ${roomName}.`);
+          }
         } else {
           throw new Error("Could not determine room name for maintenance block");
         }
       } else {
         // Standard Booking Cancellation
-        await cancelBooking(bookingToUnblock.id);
-        showToast('Booking cancelled and inventory released', 'success');
+        console.log(`Cancelling regular booking: ${bookingToUnblock.id}`);
+        try {
+          await cancelBooking(bookingToUnblock.id);
+          showToast('Booking cancelled and inventory released', 'success');
+        } catch (bookingError: any) {
+          console.error("cancelBooking failed:", bookingError);
+          if (bookingError?.message?.includes('not found')) {
+            throw new Error("Booking not found in database. It may have already been cancelled.");
+          }
+          throw bookingError;
+        }
       }
 
       loadData(false);
       setShowUnblockConfirmation(false);
       setBookingToUnblock(null);
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to unblock/cancel', 'error');
+    } catch (err: any) {
+      console.error('Error in confirmUnblockRoom:', err);
+      showToast(err.message || 'Failed to unblock/cancel', 'error');
     }
   };
 

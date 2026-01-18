@@ -24,6 +24,7 @@ interface BookingTableProps {
     onCheckOut?: (booking: Booking) => void;
     onStayOver?: (booking: Booking) => void;
     onCancel?: (booking: Booking) => void;
+    onEdit?: (booking: Booking) => void;
 }
 
 export default function BookingTable({
@@ -37,7 +38,8 @@ export default function BookingTable({
     onCheckIn,
     onCheckOut,
     onStayOver,
-    onCancel
+    onCancel,
+    onEdit
 }: BookingTableProps) {
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -266,7 +268,7 @@ export default function BookingTable({
                                                             <Menu.Item>
                                                                 {({ active }) => (
                                                                     <button
-                                                                        onClick={() => onSelect(booking)}
+                                                                        onClick={() => onEdit ? onEdit(booking) : onSelect(booking)}
                                                                         className={`${active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'} group flex w-full items-center px-4 py-2 text-sm`}
                                                                     >
                                                                         Edit Booking

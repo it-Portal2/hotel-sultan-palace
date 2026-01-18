@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon, PlusIcon, TrashIcon, UserIcon, ChevronDownIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline';
-import { SuiteType, RoomType, Booking, Room, MealPlanSettings, ActiveCoupon, getAllActiveCoupons } from '@/lib/firestoreService';
+import { SuiteType, RoomType, Booking, Room, MealPlanSettings, ActiveCoupon, getAllActiveCoupons, getGuests } from '@/lib/firestoreService';
 import { calculateDiscountAmount } from '@/lib/offers';
+import { useToast } from '@/context/ToastContext';
 
 interface QuickReservationModalProps {
     isOpen: boolean;
@@ -50,6 +51,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     loading = false,
     mealPlanSettings
 }) => {
+    const { showToast } = useToast();
     const [isAdvancedMode, setIsAdvancedMode] = useState(false);
 
     // Default prices map based on room type
@@ -169,6 +171,12 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     const [selectedCoupon, setSelectedCoupon] = useState<ActiveCoupon | null>(null);
     const [showDiscountInput, setShowDiscountInput] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [isSearchingGuest, setIsSearchingGuest] = useState(false);
+    const [guestQuery, setGuestQuery] = useState('');
+    const [guestSearchResult, setGuestSearchResult] = useState<any>(null);
+
+
 
     // Validation Logic
     const validateForm = () => {
@@ -436,7 +444,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
     const handleSubmit = async () => {
         if (!validateForm()) {
-            // Optional: Scroll to error or show toast? For now, visual feedback is enough.
+            showToast('Please fix the errors in the form', 'error');
             return;
         }
 
@@ -483,6 +491,83 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
     const getMealPlanTotal = () => calculateMealPlanDailyTotal(formData.selectedRooms, mealPlanSettings);
 
+
+    // Guest Auto-fill Logic
+    // Guest Auto-fill Logic
+    const handleGuestSearch = async () => {
+        if (!guestQuery || guestQuery.length < 3) {
+            showToast('Please enter at least 3 digits to search', 'error');
+            return;
+        }
+
+        setIsSearchingGuest(true);
+        setGuestSearchResult(null);
+        try {
+            const allGuests = await getGuests();
+            const normalize = (s: string) => s?.replace(/\D/g, '') || '';
+            const searchNum = normalize(guestQuery);
+
+            const found = allGuests.find(g => {
+                const gPhone = normalize(g.phone);
+                // Match Phone or ID (if available, assuming idDocumentNumber property existence valid or loose check)
+                // For safety, checking phone primarily as requested
+                return gPhone.includes(searchNum);
+            });
+
+            if (found) {
+                setGuestSearchResult(found);
+                showToast('Guest found! Review and click Auto-fill.', 'success');
+            } else {
+                showToast('No guest found.', 'error');
+            }
+        } catch (error) {
+            console.error("Guest lookup failed", error);
+        } finally {
+            setIsSearchingGuest(false);
+        }
+    };
+
+    const applyGuestData = () => {
+        if (!guestSearchResult) return;
+        const found = guestSearchResult;
+
+        setFormData(prev => ({
+            ...prev,
+            guestFirstName: found.firstName || '',
+            guestLastName: found.lastName || '',
+            guestEmail: found.email || '',
+            guestMobile: found.phone || '',
+            guestAddress: found.address?.street || '',
+            guestCity: found.address?.city || '',
+            guestCountry: found.address?.country || '',
+            guestZip: found.address?.zipCode || '',
+            guestState: found.address?.state || '',
+            guestTitle: found.idDocumentType === 'Passport' ? 'Mr.' : 'Mr.',
+        }));
+        showToast('Guest details applied to form.', 'success');
+        setGuestSearchResult(null);
+        setGuestQuery('');
+    };
+
+
+
+    const handleCancelClick = () => {
+        const isDirty = (formData.guestFirstName && formData.guestFirstName.trim().length > 0) ||
+            (formData.guestLastName && formData.guestLastName.trim().length > 0) ||
+            formData.selectedRooms.length > 1;
+        if (isDirty) {
+            setShowCancelConfirm(true);
+        } else {
+            onClose();
+        }
+    };
+
+    const confirmCancel = () => {
+        setShowCancelConfirm(false);
+        onClose();
+    };
+
+
     if (!isOpen) return null;
 
     return (
@@ -504,6 +589,46 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
                 {/* Main Content (Scrollable) */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+
+                    {/* Guest Lookup Section */}
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col gap-3 mb-2">
+                        <label className="text-xs font-bold text-blue-800 uppercase tracking-wider flex items-center gap-2">
+                            <UserIcon className="h-4 w-4" /> Guest Lookup
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="Enter Mobile Number or ID"
+                                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={guestQuery}
+                                onChange={(e) => setGuestQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleGuestSearch()}
+                            />
+                            <button
+                                onClick={handleGuestSearch}
+                                disabled={isSearchingGuest}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {isSearchingGuest ? 'Searching...' : 'Search'}
+                            </button>
+                        </div>
+
+                        {/* Search Result Card */}
+                        {guestSearchResult && (
+                            <div className="bg-white p-3 rounded border border-blue-200 shadow-sm flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                                <div>
+                                    <p className="text-sm font-bold text-gray-800">{guestSearchResult.firstName} {guestSearchResult.lastName}</p>
+                                    <p className="text-xs text-gray-500">{guestSearchResult.phone} • {guestSearchResult.email}</p>
+                                </div>
+                                <button
+                                    onClick={applyGuestData}
+                                    className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider hover:bg-green-700"
+                                >
+                                    Auto-fill Form
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Top Config Section */}
                     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
@@ -805,15 +930,43 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                         {isAdvancedMode ? 'Standard View' : 'More Options'}
                     </button>
                     <div className="flex gap-3">
-                        <button onClick={onClose} className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-md hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">Cancel</button>
+                        <button onClick={handleCancelClick} className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wider rounded-md hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">Cancel</button>
                         <button onClick={handleSubmit} disabled={loading || isSubmitting} className="px-8 py-2.5 bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-md shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50">
                             {isAdvancedMode ? 'Confirm Reservation' : (loading || isSubmitting ? 'Processing...' : 'Quick Confirm')}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Custom Cancel Confirmation Modal */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 border-l-4 border-red-500">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Discard Booking?</h3>
+                        <p className="text-sm text-gray-600 mb-6">
+                            You have unsaved changes. Are you sure you want to cancel this reservation? All entered data will be lost.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                            >
+                                Keep Editing
+                            </button>
+                            <button
+                                onClick={confirmCancel}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 shadow-sm"
+                            >
+                                Discard & Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default QuickReservationModal;
+
+

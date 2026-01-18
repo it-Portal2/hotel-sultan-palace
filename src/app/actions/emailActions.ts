@@ -1,6 +1,6 @@
 'use server';
 
-import { sendEmail, generateBookingConfirmationEmail, generateBookingEnquiryEmail } from '@/lib/emailService';
+import { sendEmail, generateBookingConfirmationEmail, generateBookingEnquiryEmail, generateBookingCancellationEmail } from '@/lib/emailService';
 import { Booking } from '@/lib/firestoreService';
 
 export async function sendBookingConfirmationEmailAction(booking: Booking): Promise<{ success: boolean; error?: string }> {
@@ -57,6 +57,35 @@ export async function sendContactEmailAction(contactData: { name: string; email:
         }
     } catch (error: any) {
         console.error('Unexpected error in sendContactEmailAction:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function sendBookingCancellationEmailAction(booking: Booking, reason?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const guestEmail = booking.guestDetails?.email;
+
+        if (!guestEmail) {
+            console.warn('No guest email provided for booking cancellation.');
+            return { success: false, error: 'No guest email provided.' };
+        }
+
+        const htmlContent = generateBookingCancellationEmail(booking, reason);
+
+        const result = await sendEmail({
+            to: guestEmail,
+            subject: `Booking Cancelled - ${booking.bookingId}`,
+            html: htmlContent,
+        });
+
+        if (result.success) {
+            return { success: true };
+        } else {
+            console.error('Failed to send booking cancellation email:', result.error);
+            return { success: false, error: result.error };
+        }
+    } catch (error: any) {
+        console.error('Unexpected error in sendBookingCancellationEmailAction:', error);
         return { success: false, error: error.message };
     }
 }

@@ -1,9 +1,10 @@
-import React, { Fragment } from 'react';
-import { Booking } from '@/lib/firestoreService';
+import React, { Fragment, useState, useEffect } from 'react';
+import { Booking, updateBooking as updateBookingFirestore } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
-import SettlementModal from '../front-desk/SettlementModal'; // Adjust path if needed
+import SettlementModal from '../front-desk/SettlementModal';
 import FolioDetailsDrawer from '../front-desk/FolioDetailsDrawer';
+import { generateInvoiceHTML } from '@/utils/invoiceGenerator';
 import { Dialog, Transition } from '@headlessui/react';
 import {
     XMarkIcon,
@@ -17,38 +18,63 @@ import {
     PrinterIcon,
     PaperAirplaneIcon,
     ChatBubbleLeftRightIcon,
+    LinkIcon,
     IdentificationIcon,
     ClockIcon,
     BuildingOfficeIcon,
     TagIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    PencilSquareIcon,
+    TrashIcon
 } from '@heroicons/react/24/outline';
 
 interface BookingDetailsDrawerProps {
     booking: Booking;
     onClose: () => void;
     isOpen: boolean;
+    initialIsEditing?: boolean;
+    onUpdate?: () => void; // Callback to refresh parent list
+    onCancelBooking?: (booking: Booking) => void; // Parent handler for cancellation
 }
 
-export default function BookingDetailsDrawer({ booking, onClose, isOpen }: BookingDetailsDrawerProps) {
+export default function BookingDetailsDrawer({
+    booking: initialBooking,
+    onClose,
+    isOpen,
+    initialIsEditing = false,
+    onUpdate,
+    onCancelBooking
+}: BookingDetailsDrawerProps) {
     const { showToast } = useToast();
     const router = useRouter();
-    const [isSettlementModalOpen, setIsSettlementModalOpen] = React.useState(false);
 
+    // Local state for booking data to support immediate edits
+    const [booking, setBooking] = useState<Booking>(initialBooking);
+    const [isEditing, setIsEditing] = useState(initialIsEditing);
+    const [saving, setSaving] = useState(false);
+
+    // Update local state when prop changes
+    useEffect(() => {
+        setBooking(initialBooking);
+    }, [initialBooking]);
+
+    // Initial edit mode from prop
+    useEffect(() => {
+        setIsEditing(initialIsEditing);
+    }, [initialIsEditing]);
+
+    const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
+    const [showFolioDrawer, setShowFolioDrawer] = useState(false);
+
+    // Derived Data
     const guests = booking.guests || { adults: 0, children: 0, rooms: 1 };
     const rooms = booking.rooms || [];
     const addOns = booking.addOns || [];
-
-    // Correct Payment Logic
-    // Correct Payment Logic
     const totalAmount = booking.totalAmount || 0;
-    // Fix: Handle cases where paymentStatus is 'paid' but paidAmount is 0
     const isMarkedPaid = booking.paymentStatus === 'paid' && (booking.paidAmount || 0) === 0;
     const paidAmount = isMarkedPaid ? totalAmount : (booking.paidAmount || 0);
     const balance = totalAmount - paidAmount;
     const paymentProgress = totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0;
-
-    // Derived Data
     const nights = Math.max(1, Math.ceil((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / (1000 * 60 * 60 * 24)));
     const createdDate = booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : 'N/A';
     const sourceLabel = booking.source ? booking.source.replace('_', ' ').toUpperCase() : 'DIRECT';
@@ -64,21 +90,78 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
         }
     };
 
+    // --- ACTIONS ---
+
     const handlePrintInvoice = () => {
-        showToast("Invoice sent to printer queue...", "success");
-        // Logic to generate PDF or print
+        try {
+            const invoiceHTML = generateInvoiceHTML(booking);
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(invoiceHTML);
+                printWindow.document.close();
+            } else {
+                showToast("Popup blocked. Please allow popups to print invoice.", "error");
+            }
+        } catch (error) {
+            console.error("Print failed", error);
+            showToast("Failed to generate invoice", "error");
+        }
     };
 
     const handleSendEmail = () => {
-        showToast(`Invoice emailed to ${booking.guestDetails.email}`, "success");
-        // Logic to call email API
+        // This is a placeholder for sending the invoice email manually.
+        // Currently we only have automatic emails.
+        showToast(`Email feature for manual sending not yet implemented.`, "info");
     };
 
-    const [showFolioDrawer, setShowFolioDrawer] = React.useState(false);
+    const handleSaveChanges = async () => {
+        try {
+            setSaving(true);
+            await updateBookingFirestore(booking.id, {
+                guestDetails: booking.guestDetails,
+                address: booking.address,
+                notes: booking.notes
+            });
+            showToast("Booking updated successfully", "success");
+            setIsEditing(false);
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error("Update failed", error);
+            showToast("Failed to update booking", "error");
+        } finally {
+            setSaving(false);
+        }
+    };
 
-    const handleViewFolio = () => {
-        // onClose(); // Keep parent open for context, or close if preferred. Let's keep context as specificed "like Add Payment"
-        setShowFolioDrawer(true);
+    // --- RENDER HELPERS ---
+
+    const renderEditableInput = (
+        label: string,
+        value: string | undefined,
+        onChange: (val: string) => void,
+        type: string = "text",
+        placeholder: string = ""
+    ) => {
+        if (!isEditing) {
+            return (
+                <div>
+                    <label className="text-xs text-gray-500 font-medium uppercase">{label}</label>
+                    <p className="text-sm font-bold text-gray-900 truncate">{value || '-'}</p>
+                </div>
+            );
+        }
+        return (
+            <div>
+                <label className="text-xs text-blue-600 font-bold uppercase mb-1 block">{label}</label>
+                <input
+                    type={type}
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full px-2 py-1.5 border border-blue-300 rounded text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                />
+            </div>
+        );
     };
 
     return (
@@ -131,20 +214,22 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                             <span className="flex items-center gap-1">
                                                                 <ClockIcon className="h-3 w-3" /> Created: {createdDate}
                                                             </span>
-                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                            <span className="flex items-center gap-1">
-                                                                <TagIcon className="h-3 w-3" /> Source: {sourceLabel}
-                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <button onClick={handlePrintInvoice} className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                                        <PrinterIcon className="h-4 w-4" /> Print Invoice
+                                                <div className="flex items-center gap-2">
+                                                    {/* Edit Toggle */}
+                                                    {!isEditing && booking.status !== 'cancelled' && (
+                                                        <button onClick={() => setIsEditing(true)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                                                            <PencilSquareIcon className="h-4 w-4" /> Edit
+                                                        </button>
+                                                    )}
+
+                                                    {/* Print & Email */}
+                                                    <button onClick={handlePrintInvoice} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                                        <PrinterIcon className="h-4 w-4" /> Print
                                                     </button>
-                                                    <button onClick={handleSendEmail} className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                                        <PaperAirplaneIcon className="h-4 w-4" /> Email
-                                                    </button>
+
                                                     <button
                                                         type="button"
                                                         className="rounded-full p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors focus:outline-none"
@@ -155,20 +240,45 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                 </div>
                                             </div>
 
-                                            {/* Content - Scrollable */}
+                                            {/* Content */}
                                             <div className="flex-1 overflow-y-auto p-6">
-                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                {/* Edit Mode Save/Cancel Bar */}
+                                                {isEditing && (
+                                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex justify-between items-center shadow-sm animate-in fade-in slide-in-from-top-2">
+                                                        <div className="flex items-center gap-2 text-blue-800 text-sm font-semibold">
+                                                            <PencilSquareIcon className="h-5 w-5" /> Editing Booking Details
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setBooking(initialBooking); // Revert
+                                                                    setIsEditing(false);
+                                                                }}
+                                                                className="px-4 py-1.5 bg-white text-gray-600 border border-gray-300 rounded-md text-xs font-bold uppercase hover:bg-gray-50"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleSaveChanges}
+                                                                disabled={saving}
+                                                                className="px-4 py-1.5 bg-blue-600 text-white border border-blue-600 rounded-md text-xs font-bold uppercase hover:bg-blue-700 disabled:opacity-50"
+                                                            >
+                                                                {saving ? 'Saving...' : 'Save Changes'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                                    {/* LEFT COLUMN (2/3) */}
+                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                    {/* Left Column */}
                                                     <div className="lg:col-span-2 space-y-6">
 
-                                                        {/* Guest Card */}
+                                                        {/* Guest Details */}
                                                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                                             <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                                                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                                                                     <UserIcon className="h-4 w-4 text-gray-500" /> Guest Details
                                                                 </h3>
-                                                                {/* Check-in status indicator? */}
                                                             </div>
                                                             <div className="p-5">
                                                                 <div className="flex flex-col sm:flex-row gap-6">
@@ -176,46 +286,26 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                                         <div className="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-100 to-blue-50 border-2 border-white shadow-sm flex items-center justify-center text-2xl font-bold text-indigo-600">
                                                                             {booking.guestDetails.firstName?.[0]}
                                                                         </div>
-                                                                        {booking.guestIdProof && (
-                                                                            <span className="px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-bold rounded border border-green-200 flex items-center gap-1">
-                                                                                <IdentificationIcon className="h-3 w-3" /> ID Verified
-                                                                            </span>
-                                                                        )}
                                                                     </div>
-                                                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
-                                                                        <div>
-                                                                            <label className="text-xs text-gray-500 font-medium uppercase">Full Name</label>
-                                                                            <p className="text-sm font-bold text-gray-900">{booking.guestDetails.firstName} {booking.guestDetails.lastName}</p>
+
+                                                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                                                                        {renderEditableInput("First Name", booking.guestDetails.firstName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, firstName: v } }))}
+                                                                        {renderEditableInput("Last Name", booking.guestDetails.lastName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, lastName: v } }))}
+                                                                        {renderEditableInput("Email", booking.guestDetails.email, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, email: v } }), "email")}
+                                                                        {renderEditableInput("Phone", booking.guestDetails.phone, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, phone: v } }), "tel")}
+
+                                                                        <div className="sm:col-span-2">
+                                                                            {renderEditableInput("Address", booking.address?.address1, (v) => setBooking({ ...booking, address: { ...(booking.address || {}), address1: v } as any }))}
                                                                         </div>
-                                                                        <div>
-                                                                            <label className="text-xs text-gray-500 font-medium uppercase">Email</label>
-                                                                            <div className="flex items-center gap-1.5 text-sm text-gray-900">
-                                                                                <EnvelopeIcon className="h-3.5 w-3.5 text-gray-400" /> {booking.guestDetails.email}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-xs text-gray-500 font-medium uppercase">Phone</label>
-                                                                            <div className="flex items-center gap-1.5 text-sm text-gray-900">
-                                                                                <PhoneIcon className="h-3.5 w-3.5 text-gray-400" /> {booking.guestDetails.phone}
-                                                                            </div>
-                                                                        </div>
-                                                                        {booking.address && (
-                                                                            <div>
-                                                                                <label className="text-xs text-gray-500 font-medium uppercase">Address</label>
-                                                                                <div className="flex items-start gap-1.5 text-sm text-gray-900">
-                                                                                    <MapPinIcon className="h-3.5 w-3.5 text-gray-400 mt-0.5" />
-                                                                                    <span className="line-clamp-2">
-                                                                                        {[booking.address.address1, booking.address.city, booking.address.country].filter(Boolean).join(', ')}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
+
+                                                                        {renderEditableInput("City", booking.address?.city, (v) => setBooking({ ...booking, address: { ...(booking.address || {}), city: v } as any }))}
+                                                                        {renderEditableInput("Country", booking.address?.country, (v) => setBooking({ ...booking, address: { ...(booking.address || {}), country: v } as any }))}
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* Stay Details Card */}
+                                                        {/* Stay Info (View Only for now, editing dates is complex logic) */}
                                                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                                             <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
                                                                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -227,46 +317,27 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                                     <div className="text-center">
                                                                         <p className="text-xs text-gray-500 font-bold uppercase mb-1">Check-in</p>
                                                                         <p className="text-lg font-bold text-indigo-900">{new Date(booking.checkIn).toLocaleDateString()}</p>
-                                                                        <p className="text-xs text-indigo-600">{new Date(booking.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                                                     </div>
-                                                                    <div className="h-px flex-1 bg-indigo-200 mx-4 relative">
-                                                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 py-1 rounded-full border border-indigo-200 text-xs font-bold text-indigo-700 shadow-sm">
-                                                                            {nights} Night{nights !== 1 ? 's' : ''}
-                                                                        </div>
+                                                                    <div className="text-center">
+                                                                        <p className="text-xs text-indigo-700 font-bold uppercase mb-1">{nights} Nights</p>
+                                                                        <div className="h-0.5 w-16 bg-indigo-200"></div>
                                                                     </div>
                                                                     <div className="text-center">
                                                                         <p className="text-xs text-gray-500 font-bold uppercase mb-1">Check-out</p>
                                                                         <p className="text-lg font-bold text-indigo-900">{new Date(booking.checkOut).toLocaleDateString()}</p>
-                                                                        <p className="text-xs text-indigo-600">{new Date(booking.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                                                     </div>
                                                                 </div>
 
                                                                 <div>
-                                                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Room Allocations</h4>
-                                                                    <div className="space-y-3">
+                                                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Allocated Rooms</h4>
+                                                                    <div className="space-y-2">
                                                                         {rooms.map((r, i) => (
-                                                                            <div key={i} className="flex justify-between items-center bg-white border border-gray-200 rounded-lg p-3 hover:border-indigo-300 transition-colors">
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-                                                                                        <BuildingOfficeIcon className="h-5 w-5" />
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <p className="text-sm font-bold text-gray-900">{r.suiteType}</p>
-                                                                                        <p className="text-xs text-gray-500">{r.ratePlan || 'Standard Rate'}</p>
-                                                                                    </div>
+                                                                            <div key={i} className="flex justify-between items-center bg-white border border-gray-200 rounded p-3">
+                                                                                <div>
+                                                                                    <span className="font-bold text-gray-800">{r.suiteType}</span>
+                                                                                    {r.allocatedRoomType && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">Room {r.allocatedRoomType}</span>}
                                                                                 </div>
-                                                                                <div className="text-right">
-                                                                                    {r.allocatedRoomType ? (
-                                                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                                                                            Room {r.allocatedRoomType}
-                                                                                        </span>
-                                                                                    ) : (
-                                                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                                                            Unassigned
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <p className="text-sm font-bold text-gray-900 mt-1">${r.price?.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">/night</span></p>
-                                                                                </div>
+                                                                                <span className="text-sm font-medium text-gray-600">${r.price}/night</span>
                                                                             </div>
                                                                         ))}
                                                                     </div>
@@ -274,32 +345,34 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                             </div>
                                                         </div>
 
-                                                        {/* Extras Card */}
-                                                        {addOns.length > 0 && (
-                                                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                                                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-                                                                    <h3 className="text-sm font-bold text-gray-800">Extras & Add-ons</h3>
-                                                                </div>
-                                                                <div className="p-5">
-                                                                    <div className="space-y-2">
-                                                                        {addOns.map((a, i) => (
-                                                                            <div key={i} className="flex justify-between items-center text-sm py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 px-2 rounded">
-                                                                                <span className="text-gray-700 font-medium">{a.name} <span className="text-gray-400 text-xs ml-1">(x{a.quantity})</span></span>
-                                                                                <span className="font-bold text-gray-900">${(a.price * a.quantity).toLocaleString()}</span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
+                                                        {/* Notes */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                                            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+                                                                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                                    <ChatBubbleLeftRightIcon className="h-4 w-4 text-gray-500" /> Notes
+                                                                </h3>
                                                             </div>
-                                                        )}
+                                                            <div className="p-5">
+                                                                {isEditing ? (
+                                                                    <textarea
+                                                                        value={booking.notes || ''}
+                                                                        onChange={(e) => setBooking({ ...booking, notes: e.target.value })}
+                                                                        className="w-full h-24 p-3 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                                                                        placeholder="Add booking notes here..."
+                                                                    />
+                                                                ) : (
+                                                                    <p className="text-sm text-gray-600 italic bg-yellow-50 p-3 rounded border border-yellow-100">
+                                                                        {booking.notes || "No notes available."}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
 
                                                     </div>
 
-
-                                                    {/* RIGHT COLUMN (1/3) */}
+                                                    {/* Right Column - Financials & Actions */}
                                                     <div className="space-y-6">
-
-                                                        {/* Financial Summary Card */}
+                                                        {/* Payment Card */}
                                                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                                             <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                                                                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -309,161 +382,56 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                                                                     {balance <= 0 ? 'PAID' : 'PENDING'}
                                                                 </span>
                                                             </div>
-
-                                                            {/* Summary Section */}
-                                                            {(() => {
-                                                                // Recalculate component costs
-                                                                const roomSum = rooms.reduce((acc, r) => acc + (r.price || 0) * nights, 0);
-                                                                const mealSum = rooms.reduce((acc, r) => acc + (r.mealPlanPrice || 0) * nights, 0);
-                                                                const gross = roomSum + mealSum; // This is approx gross, doesn't include extras/taxes yet in this view context per see
-
-                                                                // Use official total
-                                                                const officialTotal = totalAmount;
-
-                                                                // Determine discount
-                                                                let discAmount = booking.discount?.amount || 0;
-
-                                                                // Logic: If (Room + Meal) > OfficialTotal, the difference is likely the discount.
-                                                                // This handles the "Stay X Pay Y" case where Room Price is full but Total is discounted.
-                                                                if (gross > officialTotal + 1) {
-                                                                    const diff = gross - officialTotal;
-                                                                    // Only override if stored discount is missing or significantly different (likely wrong)
-                                                                    if (Math.abs(discAmount - diff) > 1) {
-                                                                        discAmount = diff;
-                                                                    }
-                                                                }
-
-                                                                // Extras is the balancer if needed, or explicitly 0 if we match exactly
-                                                                // Actually, Extras & Taxes = Total - (Room + Meal - Discount)
-                                                                // If we forced Discount = Room + Meal - Total, then Extras = Total - (Total) = 0. Correct.
-                                                                const extrasAndTaxes = officialTotal - (gross - discAmount);
-
-                                                                return (
-                                                                    <div className="p-5 bg-gradient-to-b from-white to-gray-50/30">
-                                                                        <div className="space-y-3 mb-6">
-                                                                            <div className="flex justify-between text-sm">
-                                                                                <span className="text-gray-500">Room Charges</span>
-                                                                                <span className="font-medium text-gray-900">${roomSum.toLocaleString()}</span>
-                                                                            </div>
-
-                                                                            {/* Meal Plan */}
-                                                                            {mealSum > 0 && (
-                                                                                <div className="flex justify-between text-sm">
-                                                                                    <span className="text-gray-500">Meal Plans</span>
-                                                                                    <span className="font-medium text-gray-900">${mealSum.toLocaleString()}</span>
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Discount */}
-                                                                            {discAmount > 0 && (
-                                                                                <div className="flex justify-between text-sm text-green-600">
-                                                                                    <span className="">Discount ({booking.discount?.code || 'Applied'})</span>
-                                                                                    <span className="font-bold">-${discAmount.toLocaleString()}</span>
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Only show Extras if non-zero */}
-                                                                            {Math.abs(extrasAndTaxes) > 1 && (
-                                                                                <div className="flex justify-between text-sm">
-                                                                                    <span className="text-gray-500">Extras & Taxes</span>
-                                                                                    <span className="font-medium text-gray-900">
-                                                                                        ${extrasAndTaxes.toLocaleString()}
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-
-                                                                            <div className="h-px bg-gray-200 my-2"></div>
-                                                                            <div className="flex justify-between items-center">
-                                                                                <span className="text-base font-bold text-gray-900">Total</span>
-                                                                                <span className="text-xl font-bold text-indigo-600">${officialTotal.toLocaleString()}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Payment Progress */}
-                                                                        <div className="mb-6">
-                                                                            <div className="flex justify-between text-xs mb-1.5">
-                                                                                <span className="text-gray-500 font-medium">Payment Status</span>
-                                                                                <span className="text-gray-700 font-bold">{Math.round(paymentProgress)}% Paid</span>
-                                                                            </div>
-                                                                            <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                                                <div
-                                                                                    className={`h-full rounded-full transition-all duration-500 ${balance <= 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                                                                                    style={{ width: `${paymentProgress}%` }}
-                                                                                ></div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Paid & Balance Grid */}
-                                                                        <div className="grid grid-cols-2 gap-3">
-                                                                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                                                                                <p className="text-[10px] uppercase font-bold text-emerald-600 mb-0.5">Paid to Date</p>
-                                                                                <p className="text-lg font-bold text-emerald-800">${paidAmount.toLocaleString()}</p>
-                                                                            </div>
-                                                                            <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
-                                                                                <p className="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Balance Due</p>
-                                                                                <p className={`text-lg font-bold ${balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>${balance.toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })()}
-
-                                                            {/* Actions Footer */}
-                                                            <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex gap-2">
-                                                                <button
-                                                                    onClick={() => setIsSettlementModalOpen(true)}
-                                                                    className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm"
-                                                                >
-                                                                    Add Payment
-                                                                </button>
-                                                                <button
-                                                                    onClick={handleViewFolio}
-                                                                    className="flex-1 py-2 bg-white text-gray-700 border border-gray-300 text-xs font-bold rounded-lg hover:bg-gray-50 transition shadow-sm"
-                                                                >
-                                                                    View Folio
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Internal Notes Card */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                                            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-                                                                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                                    <ChatBubbleLeftRightIcon className="h-4 w-4 text-gray-500" /> Notes
-                                                                </h3>
-                                                            </div>
                                                             <div className="p-5">
-                                                                {booking.notes ? (
-                                                                    <p className="text-sm text-gray-600 italic bg-yellow-50 p-3 rounded border border-yellow-100">
-                                                                        "{booking.notes}"
-                                                                    </p>
-                                                                ) : (
-                                                                    <p className="text-xs text-gray-400 text-center py-4 italic">No notes available for this booking.</p>
-                                                                )}
+                                                                <div className="space-y-3 mb-4">
+                                                                    <div className="flex justify-between text-sm">
+                                                                        <span className="text-gray-500">Total Amount</span>
+                                                                        <span className="font-bold text-gray-900">${totalAmount.toLocaleString()}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between text-sm text-emerald-600">
+                                                                        <span className="">Paid</span>
+                                                                        <span className="font-bold">-${paidAmount.toLocaleString()}</span>
+                                                                    </div>
+                                                                    <div className="h-px bg-gray-200"></div>
+                                                                    <div className="flex justify-between text-lg font-bold">
+                                                                        <span className="text-gray-900">Balance</span>
+                                                                        <span className={balance > 0 ? 'text-red-600' : 'text-green-600'}>${balance.toLocaleString()}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <button onClick={() => setIsSettlementModalOpen(true)} className="py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">
+                                                                        Add Payment
+                                                                    </button>
+                                                                    <button onClick={() => setShowFolioDrawer(true)} className="py-2 bg-white text-gray-700 border border-gray-300 text-xs font-bold rounded hover:bg-gray-50">
+                                                                        View Folio
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* Quick Info / Metadata */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-gray-500">Booking ID</span>
-                                                                <span className="font-mono text-gray-900">{booking.bookingId || booking.id.slice(0, 8)}</span>
+                                                        {/* Danger Zone: Cancel */}
+                                                        {booking.status !== 'cancelled' && (
+                                                            <div className="bg-red-50 rounded-xl p-5 border border-red-100 mt-6">
+                                                                <h4 className="text-xs font-bold text-red-800 uppercase mb-2">Cancellation</h4>
+                                                                <p className="text-xs text-red-600 mb-4">Cancelling will release rooms and notify the guest.</p>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm("Are you sure you want to cancel this booking? This action cannot be undone efficiently.")) {
+                                                                            if (onCancelBooking) onCancelBooking(booking);
+                                                                            onClose(); // Close drawer after triggering cancel
+                                                                        }
+                                                                    }}
+                                                                    className="w-full py-2 bg-white border border-red-300 text-red-600 text-xs font-bold rounded hover:bg-red-600 hover:text-white transition-colors"
+                                                                >
+                                                                    Cancel Booking
+                                                                </button>
                                                             </div>
-                                                            <div className="h-px bg-gray-100"></div>
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-gray-500">Source</span>
-                                                                <span className="font-medium text-gray-900 bg-gray-100 px-2 py-0.5 rounded">{sourceLabel}</span>
-                                                            </div>
-                                                            <div className="h-px bg-gray-100"></div>
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-gray-500">Staff</span>
-                                                                <span className="font-medium text-gray-900">{booking.checkInStaff || 'System'}</span>
-                                                            </div>
-                                                        </div>
-
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
+
                                         </div>
                                     </Dialog.Panel>
                                 </Transition.Child>
@@ -473,13 +441,13 @@ export default function BookingDetailsDrawer({ booking, onClose, isOpen }: Booki
                 </Dialog>
             </Transition.Root>
 
-            {/* Settlement Modal */}
             <SettlementModal
                 open={isSettlementModalOpen}
                 onClose={() => setIsSettlementModalOpen(false)}
                 booking={booking}
                 onPaymentSuccess={() => {
                     setIsSettlementModalOpen(false);
+                    if (onUpdate) onUpdate(); // Refresh parent to get new totals?
                 }}
             />
 
