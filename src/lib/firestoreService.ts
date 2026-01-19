@@ -3360,7 +3360,7 @@ export const createMenuCategory = async (data: Omit<MenuCategory, 'id' | 'create
     Object.entries(data).forEach(([k, v]) => {
       if (v !== undefined) clean[k] = v;
     });
-    const dr = await addDoc(c, { ...clean, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    const dr = await addDoc(c, { ...clean, order: 0, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return dr.id;
   } catch (e) {
     console.error('Error creating menu category:', e);
@@ -4798,19 +4798,24 @@ export const upsertGuestProfile = async (data: {
 };
 
 // Helper function to check-out a guest
+export interface CheckOutParams {
+  staffName: string;
+  depositReturned: boolean;
+  notes?: string;
+  housekeepingPriority?: HousekeepingTask['priority'];
+  housekeepingAssignee?: string;
+  scheduledTime?: Date;
+}
+
+// Helper function to check-out a guest
 export const checkOutGuest = async (
   bookingId: string,
-  staffName: string,
-  depositReturned: boolean = false,
-  notes?: string,
-  housekeepingOptions?: {
-    priority?: HousekeepingTask['priority'];
-    assignedTo?: string;
-    scheduledTime?: Date;
-  },
+  params: CheckOutParams,
   roomIndex?: number
 ): Promise<boolean> => {
   if (!db) return false;
+  const { staffName, depositReturned = false, notes, housekeepingPriority, housekeepingAssignee, scheduledTime } = params;
+
   try {
     const booking = await getBooking(bookingId);
     if (!booking) {
@@ -4923,11 +4928,11 @@ export const checkOutGuest = async (
           roomName,
           suiteType: suiteType as SuiteType,
           taskType: 'checkout_cleaning',
-          priority: housekeepingOptions?.priority || 'high',
+          priority: housekeepingPriority || 'high',
           status: 'pending',
           bookingId,
-          assignedTo: housekeepingOptions?.assignedTo,
-          scheduledTime: housekeepingOptions?.scheduledTime || new Date(),
+          assignedTo: housekeepingAssignee,
+          scheduledTime: scheduledTime || new Date(),
         });
       } catch (e) {
         console.error('Error creating housekeeping task:', e);

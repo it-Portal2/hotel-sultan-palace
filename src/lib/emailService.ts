@@ -241,7 +241,7 @@ const calculateNights = (checkIn: string, checkOut: string): number => {
 
 // Email Templates
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.sultanpalacehotelznz.com'; // Fallback to assumed production domain or localhost
+const BASE_URL = 'https://www.sultanpalacehotelznz.com'; // Always use production domain for emails
 
 // Social Links & Assets
 const SOCIAL_LINKS = {

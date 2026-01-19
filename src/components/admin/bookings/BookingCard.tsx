@@ -211,10 +211,24 @@ export default function BookingCard({
 
                 {/* Room / Rate Type */}
                 <div className="mb-4">
-                    <div className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Room / Rate Type</div>
-                    <div className="text-xs text-gray-800 font-bold uppercase leading-tight">
-                        {booking.rooms[0]?.allocatedRoomType || booking.roomNumber || booking.rooms[0]?.suiteType || 'Unassigned'}
-                        <span className="text-gray-400 font-normal"> / {booking.rooms[0]?.ratePlan || 'Standard Rate'}</span>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Room / Rate Type</div>
+                            <div className="text-xs text-gray-800 font-bold uppercase leading-tight">
+                                {booking.rooms[0]?.allocatedRoomType || booking.roomNumber || booking.rooms[0]?.suiteType || 'Unassigned'}
+                                <span className="text-gray-400 font-normal"> / {booking.rooms[0]?.ratePlan || 'Standard Rate'}</span>
+                            </div>
+                        </div>
+                        {/* NEW: Status Badge for Grid View */}
+                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :
+                                booking.status === 'checked_in' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    booking.status === 'checked_out' ? 'bg-gray-100 text-gray-600 border-gray-200' :
+                                        booking.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                                            booking.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                'bg-gray-50 text-gray-600 border-gray-200'
+                            }`}>
+                            {booking.status.replace('_', ' ')}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { XMarkIcon, PlusIcon, TrashIcon, UserIcon, ChevronDownIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline';
-import { SuiteType, RoomType, Booking, Room, MealPlanSettings, ActiveCoupon, getAllActiveCoupons, getGuests } from '@/lib/firestoreService';
+import { SuiteType, RoomType, Booking, Room, MealPlanSettings, ActiveCoupon, getAllActiveCoupons, getGuests, GuestProfile } from '@/lib/firestoreService';
 import { calculateDiscountAmount } from '@/lib/offers';
 import { useToast } from '@/context/ToastContext';
 
@@ -53,6 +53,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 }) => {
     const { showToast } = useToast();
     const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+    const lastToastRef = useRef(0); // Debounce ref for toast messages
 
     // Default prices map based on room type
     const suitePrices = useMemo(() => {
@@ -174,7 +175,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [isSearchingGuest, setIsSearchingGuest] = useState(false);
     const [guestQuery, setGuestQuery] = useState('');
-    const [guestSearchResult, setGuestSearchResult] = useState<any>(null);
+    const [guestSearchResult, setGuestSearchResult] = useState<GuestProfile | null>(null);
 
 
 
@@ -340,7 +341,8 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         if (isOpen && initialDate) {
             setFormData(getInitialFormData(initialDate, initialRoomName, initialSuiteType, availableRooms));
         }
-    }, [isOpen, initialDate, initialRoomName, initialSuiteType, availableRooms, suitePrices]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, initialDate ? initialDate.toISOString() : null, initialRoomName, initialSuiteType]); // Fix: Use ISO string for stable comparison instead of object reference
 
     // Recalculate Total including discount
     // Recalculate Total including discount - REFACTORED FOR ROOM ONLY DISCOUNT
@@ -527,7 +529,14 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         }
     };
 
-    const applyGuestData = () => {
+    const applyGuestData = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Debounce Toast: Prevent double firing within 1 second
+        if (Date.now() - lastToastRef.current < 1000) return;
+        lastToastRef.current = Date.now();
+
         if (!guestSearchResult) return;
         const found = guestSearchResult;
 
@@ -539,12 +548,9 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             guestMobile: found.phone || '',
             guestAddress: found.address?.street || '',
             guestCity: found.address?.city || '',
-            guestCountry: found.address?.country || '',
-            guestZip: found.address?.zipCode || '',
-            guestState: found.address?.state || '',
-            guestTitle: found.idDocumentType === 'Passport' ? 'Mr.' : 'Mr.',
         }));
-        showToast('Guest details applied to form.', 'success');
+
+        showToast('Guest details applied successfully.', 'success');
         setGuestSearchResult(null);
         setGuestQuery('');
     };
@@ -622,6 +628,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                 </div>
                                 <button
                                     onClick={applyGuestData}
+                                    type="button"
                                     className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider hover:bg-green-700"
                                 >
                                     Auto-fill Form
@@ -812,9 +819,9 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                             <UserIcon className="w-4 h-4" /> Guest Details
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                            <div className="col-span-12 md:col-span-5 flex gap-0">
-                                <div className="w-24">
-                                    <select value={formData.guestTitle} onChange={e => setFormData({ ...formData, guestTitle: e.target.value })} className="w-full pl-3 pr-6 py-2.5 bg-gray-50 border border-gray-300 rounded-l-md text-sm">
+                            <div className="col-span-12 md:col-span-4 flex gap-1">
+                                <div className="w-20">
+                                    <select value={formData.guestTitle} onChange={e => setFormData({ ...formData, guestTitle: e.target.value })} className="w-full pl-2 pr-6 py-2.5 bg-gray-50 border border-gray-300 rounded-l-md text-sm">
                                         <option>Mr.</option>
                                         <option>Ms.</option>
                                         <option>Mrs.</option>
@@ -824,34 +831,38 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                     <input type="text" value={formData.guestFirstName} onChange={e => {
                                         setFormData({ ...formData, guestFirstName: e.target.value });
                                         if (errors.guestFirstName) setErrors(prev => ({ ...prev, guestFirstName: '' }));
-                                    }} placeholder="Guest Name" className={`w-full px-4 py-2.5 bg-white border-y border-r border-l-0 ${errors.guestFirstName ? 'border-red-500' : 'border-gray-300'} rounded-r-md text-sm`} />
+                                    }} placeholder="First Name" className={`w-full px-3 py-2.5 bg-white border-y border-r border-l-0 ${errors.guestFirstName ? 'border-red-500' : 'border-gray-300'} rounded-r-md text-sm`} />
                                     {errors.guestFirstName && <p className="text-xs text-red-500 mt-1">{errors.guestFirstName}</p>}
                                 </div>
                             </div>
-                            <div className="col-span-12 md:col-span-3">
+
+                            <div className="col-span-12 md:col-span-4">
+                                <input type="text" value={formData.guestLastName} onChange={e => {
+                                    setFormData({ ...formData, guestLastName: e.target.value });
+                                    if (errors.guestLastName) setErrors(prev => ({ ...prev, guestLastName: '' }));
+                                }} placeholder="Last Name" className={`w-full px-4 py-2.5 bg-white border ${errors.guestLastName ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm`} />
+                                {errors.guestLastName && <p className="text-xs text-red-500 mt-1">{errors.guestLastName}</p>}
+                            </div>
+
+                            <div className="col-span-12 md:col-span-4">
                                 <input type="tel" value={formData.guestMobile} onChange={e => {
                                     const val = e.target.value;
                                     setFormData({ ...formData, guestMobile: val });
-
-                                    // Real-time validation for Phone
                                     if (val && !/^[\d\s+\-()]*$/.test(val)) {
-                                        setErrors(prev => ({ ...prev, guestMobile: "Invalid characters in phone number" }));
+                                        setErrors(prev => ({ ...prev, guestMobile: "Invalid phone" }));
                                     } else {
                                         setErrors(prev => ({ ...prev, guestMobile: '' }));
                                     }
                                 }} placeholder="Mobile Number" className={`w-full px-4 py-2.5 bg-white border ${errors.guestMobile ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm`} />
                                 {errors.guestMobile && <p className="text-xs text-red-500 mt-1">{errors.guestMobile}</p>}
                             </div>
-                            <div className="col-span-12 md:col-span-4">
+
+                            <div className="col-span-12">
                                 <input type="email" value={formData.guestEmail} onChange={e => {
                                     const val = e.target.value;
                                     setFormData({ ...formData, guestEmail: val });
-
-                                    // Real-time validation for Email
-                                    // Use a slightly looser regex for "while typing" to avoid annoying errors for incomplete input?
-                                    // User asked for immediate "wrong input" detection.
                                     if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                                        setErrors(prev => ({ ...prev, guestEmail: "Invalid email format" }));
+                                        setErrors(prev => ({ ...prev, guestEmail: "Invalid email" }));
                                     } else {
                                         setErrors(prev => ({ ...prev, guestEmail: '' }));
                                     }

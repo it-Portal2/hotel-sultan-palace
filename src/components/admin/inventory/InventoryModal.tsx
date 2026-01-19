@@ -105,8 +105,39 @@ export default function InventoryModal({
         setLocationSuggestions(LOCATION_SUGGESTIONS[deptSlug] || []);
     }, [formData.department, departments]);
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name.trim()) newErrors.name = "Item Name is required";
+        if (!formData.sku.trim()) newErrors.sku = "SKU is required";
+
+        if (formData.currentStock === '' || parseFloat(formData.currentStock) < 0) {
+            newErrors.currentStock = "Valid stock required";
+        }
+
+        if (formData.unitCost === '' || parseFloat(formData.unitCost) < 0) {
+            newErrors.unitCost = "Valid cost required";
+        }
+
+        if (formData.minStockLevel && parseFloat(formData.minStockLevel) < 0) newErrors.minStockLevel = "Cannot be negative";
+        if (formData.maxStockLevel && parseFloat(formData.maxStockLevel) < 0) newErrors.maxStockLevel = "Cannot be negative";
+        if (formData.reorderPoint && parseFloat(formData.reorderPoint) < 0) newErrors.reorderPoint = "Cannot be negative";
+
+        if (formData.conversionFactor && parseFloat(formData.conversionFactor) < 1) {
+            newErrors.conversionFactor = "Must be >= 1";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateForm()) return;
+
         onSave({
             ...formData,
             unit: formData.unit as any,
@@ -187,10 +218,14 @@ export default function InventoryModal({
                                     type="text"
                                     required
                                     value={formData.sku}
-                                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all uppercase placeholder:normal-case font-mono text-sm"
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, sku: e.target.value });
+                                        if (errors.sku) setErrors({ ...errors, sku: '' });
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all uppercase placeholder:normal-case font-mono text-sm ${errors.sku ? 'border-red-500' : 'border-gray-200'}`}
                                     placeholder="e.g. BEV-001"
                                 />
+                                {errors.sku && <p className="text-xs text-red-500 mt-1">{errors.sku}</p>}
                             </div>
                         </div>
 
@@ -201,9 +236,13 @@ export default function InventoryModal({
                                 required
                                 placeholder="e.g. Absolut Vodka 750ml"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all shadow-sm"
+                                onChange={(e) => {
+                                    setFormData({ ...formData, name: e.target.value });
+                                    if (errors.name) setErrors({ ...errors, name: '' });
+                                }}
+                                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all shadow-sm ${errors.name ? 'border-red-500' : 'border-gray-200'}`}
                             />
+                            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                         </div>
                     </div>
                 </div>
@@ -222,9 +261,13 @@ export default function InventoryModal({
                                     min="0"
                                     step="any"
                                     value={formData.currentStock}
-                                    onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none font-bold text-gray-900"
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, currentStock: e.target.value });
+                                        if (errors.currentStock) setErrors({ ...errors, currentStock: '' });
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none font-bold text-gray-900 ${errors.currentStock ? 'border-red-500' : 'border-gray-200'}`}
                                 />
+                                {errors.currentStock && <span className="absolute -bottom-5 left-0 text-xs text-red-500">{errors.currentStock}</span>}
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                     <select
                                         value={formData.unit}
@@ -257,9 +300,13 @@ export default function InventoryModal({
                                     min="0"
                                     step="any"
                                     value={formData.unitCost}
-                                    onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
-                                    className="w-full pl-7 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none"
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, unitCost: e.target.value });
+                                        if (errors.unitCost) setErrors({ ...errors, unitCost: '' });
+                                    }}
+                                    className={`w-full pl-7 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none ${errors.unitCost ? 'border-red-500' : 'border-gray-200'}`}
                                 />
+                                {errors.unitCost && <span className="absolute -bottom-5 left-0 text-xs text-red-500">{errors.unitCost}</span>}
                             </div>
                         </div>
                     </div>

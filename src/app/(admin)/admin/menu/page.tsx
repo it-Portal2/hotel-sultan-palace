@@ -48,6 +48,7 @@ export default function AdminMenuPage() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatParent, setNewCatParent] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -98,7 +99,7 @@ export default function AdminMenuPage() {
     if (!newCatName || !newCatLabel) return;
     try {
       // Optimistic / Immediate Update
-      const newId = await createMenuCategory({ name: newCatName, label: newCatLabel, parentId: null });
+      const newId = await createMenuCategory({ name: newCatName, label: newCatLabel, parentId: newCatParent });
 
       if (newId) {
         setCategories(prev => [
@@ -107,7 +108,7 @@ export default function AdminMenuPage() {
             id: newId,
             name: newCatName,
             label: newCatLabel,
-            parentId: null,
+            parentId: newCatParent,
             createdAt: new Date(),
             updatedAt: new Date()
           }
@@ -117,6 +118,7 @@ export default function AdminMenuPage() {
       setIsCategoryModalOpen(false);
       setNewCatName("");
       setNewCatLabel("");
+      setNewCatParent(null);
       // fetchData(); // Optional: still fetch to ensure consistency, but we already updated UI
       showToast('Category created', 'success');
     } catch (err) {
@@ -474,26 +476,58 @@ export default function AdminMenuPage() {
                 </button>
               </div>
               <form onSubmit={handleAddCategory} className="p-5 space-y-4">
+                {/* 1. Category Name */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Internal Name (Slug)</label>
-                  <input
-                    required
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-                    placeholder="e.g. main_course"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Display Label</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category Name</label>
                   <input
                     required
                     value={newCatLabel}
-                    onChange={e => setNewCatLabel(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setNewCatLabel(val);
+                      // Auto-generate code if user hasn't typed one manually (heuristic: matches old auto-gen)
+                      // Or just always auto-gen for simplicity unless we desire complex logic. 
+                      // Let's simpler: Update name -> Update slug
+                      setNewCatName(val.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''));
+                    }}
                     placeholder="e.g. Main Course"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm"
                   />
                 </div>
+
+                {/* 2. Parent Category Selection */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Parent Category (Optional)</label>
+                  <div className="relative">
+                    <select
+                      value={newCatParent || ""}
+                      onChange={e => setNewCatParent(e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm appearance-none bg-white"
+                    >
+                      <option value="">None (Top Level)</option>
+                      {categories.filter(c => !c.parentId).map(c => (
+                        <option key={c.id} value={c.id}>{c.label}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Select a parent if this is a sub-category (e.g. &quot;Steak&quot; under &quot;Main Course&quot;)</p>
+                </div>
+
+                {/* 3. Category Code (Slug) */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category Code (Auto-generated)</label>
+                  <input
+                    required
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}
+                    placeholder="e.g. main_course"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm bg-gray-50 font-mono text-gray-600"
+                  />
+                </div>
+
                 <button type="submit" className="w-full py-2.5 bg-[#FF6A00] text-white rounded-lg font-bold hover:bg-[#FF6A00]/90 transition shadow-lg shadow-orange-500/20">
                   Create Category
                 </button>

@@ -13,6 +13,7 @@ interface StaffDrawerProps {
 
 export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawerProps) {
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState<Partial<StaffMember>>({
         name: '',
         employeeId: '',
@@ -63,8 +64,39 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
         }
     }, [staff, open]);
 
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name?.trim()) newErrors.name = 'Name is required';
+        if (!formData.role) newErrors.role = 'Role is required';
+
+        if (!formData.phone?.trim()) {
+            newErrors.phone = 'Phone is required';
+        } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+            newErrors.phone = 'Invalid phone format (only digits, +, -, () allowed)';
+        }
+
+        if (!formData.email?.trim()) {
+            newErrors.email = 'Email is required';
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+            newErrors.email = 'Invalid email format';
+        }
+
+        if (formData.salary === undefined || formData.salary === null) {
+            newErrors.salary = 'Salary is required';
+        } else if (Number(formData.salary) < 0) {
+            newErrors.salary = 'Salary cannot be negative';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateForm()) return;
+
         setLoading(true);
         try {
             const payload = {
@@ -73,16 +105,23 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
                 joinDate: formData.joinDate instanceof Date ? formData.joinDate : new Date(formData.joinDate as any),
             };
 
+            let success = false;
             if (staff && staff.id) {
-                await updateStaffMember(staff.id, payload);
+                success = await updateStaffMember(staff.id, payload);
             } else {
-                await createStaffMember(payload as any);
+                const newId = await createStaffMember(payload as any);
+                success = !!newId;
             }
-            onSave();
-            onClose();
+
+            if (success) {
+                onSave();
+                onClose();
+            } else {
+                alert('Failed to save staff member. Please try again.');
+            }
         } catch (error) {
             console.error('Error saving staff:', error);
-            alert('Failed to save staff member');
+            alert('An error occurred while saving.');
         } finally {
             setLoading(false);
         }
@@ -91,6 +130,31 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Real-time validation for specific fields
+        if (name === 'phone') {
+            if (value && !/^[\d\s\-\+\(\)]*$/.test(value)) {
+                setErrors(prev => ({ ...prev, phone: 'Invalid character in phone number' }));
+            } else {
+                setErrors(prev => ({ ...prev, phone: '' }));
+            }
+        }
+
+        if (name === 'salary') {
+            if (Number(value) < 0) {
+                setErrors(prev => ({ ...prev, salary: 'Salary cannot be negative' }));
+            } else {
+                setErrors(prev => ({ ...prev, salary: '' }));
+            }
+        }
+
+        if (name === 'email') {
+            // Basic clear error on change, let submit do full check or wait for blur (simple for now)
+            if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+        }
+        if (name === 'name') {
+            if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+        }
     };
 
     if (!open) return null;
@@ -134,9 +198,10 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
                                             <h3 className="text-sm font-medium leading-6 text-gray-900">Basic Information</h3>
                                             <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                                                 <div className="sm:col-span-6">
-                                                    <label htmlFor="name" className="block text-sm font-medium leading-6 text-gray-900">Full Name</label>
+                                                    <label htmlFor="name" className="block text-sm font-medium leading-6 text-gray-900">Full Name *</label>
                                                     <div className="mt-2">
-                                                        <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6" />
+                                                        <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className={`block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ${errors.name ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-orange-600'} placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`} />
+                                                        {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
                                                     </div>
                                                 </div>
                                                 <div className="sm:col-span-3">
@@ -152,15 +217,17 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
                                                     </div>
                                                 </div>
                                                 <div className="sm:col-span-3">
-                                                    <label htmlFor="phone" className="block text-sm font-medium leading-6 text-gray-900">Phone</label>
+                                                    <label htmlFor="phone" className="block text-sm font-medium leading-6 text-gray-900">Phone *</label>
                                                     <div className="mt-2">
-                                                        <input type="tel" name="phone" id="phone" value={formData.phone} onChange={handleChange} className="block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6" />
+                                                        <input type="tel" name="phone" id="phone" value={formData.phone} onChange={handleChange} className={`block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ${errors.phone ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-orange-600'} placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`} />
+                                                        {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
                                                     </div>
                                                 </div>
                                                 <div className="sm:col-span-3">
-                                                    <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">Email</label>
+                                                    <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">Email *</label>
                                                     <div className="mt-2">
-                                                        <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className="block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6" />
+                                                        <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className={`block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ${errors.email ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-orange-600'} placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`} />
+                                                        {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -189,7 +256,8 @@ export default function StaffDrawer({ open, onClose, onSave, staff }: StaffDrawe
                                                 <div className="sm:col-span-3">
                                                     <label htmlFor="salary" className="block text-sm font-medium leading-6 text-gray-900">Salary</label>
                                                     <div className="mt-2">
-                                                        <input type="number" name="salary" id="salary" value={formData.salary} onChange={handleChange} className="block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6" />
+                                                        <input type="number" name="salary" id="salary" value={formData.salary} onChange={handleChange} className={`block w-full rounded-md border-0 px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ${errors.salary ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-orange-600'} placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`} />
+                                                        {errors.salary && <p className="mt-1 text-xs text-red-600">{errors.salary}</p>}
                                                     </div>
                                                 </div>
                                                 <div className="sm:col-span-3">

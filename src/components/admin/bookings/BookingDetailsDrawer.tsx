@@ -65,6 +65,7 @@ export default function BookingDetailsDrawer({
 
     const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
     const [showFolioDrawer, setShowFolioDrawer] = useState(false);
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
     // Derived Data
     const guests = booking.guests || { adults: 0, children: 0, rooms: 1 };
@@ -114,7 +115,37 @@ export default function BookingDetailsDrawer({
         showToast(`Email feature for manual sending not yet implemented.`, "info");
     };
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+        const { firstName, lastName, email, phone } = booking.guestDetails;
+
+        if (!firstName?.trim()) newErrors.firstName = "First Name is required";
+        if (!lastName?.trim()) newErrors.lastName = "Last Name is required";
+
+        if (!email?.trim()) {
+            newErrors.email = "Email is required";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            newErrors.email = "Invalid email format";
+        }
+
+        if (!phone?.trim()) {
+            newErrors.phone = "Phone is required";
+        } else if (!/^[\d\s\-\+\(\)]+$/.test(phone)) {
+            newErrors.phone = "Invalid phone format";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSaveChanges = async () => {
+        if (!validateForm()) {
+            showToast("Please fix the errors before saving", "error");
+            return;
+        }
+
         try {
             setSaving(true);
             await updateBookingFirestore(booking.id, {
@@ -140,7 +171,8 @@ export default function BookingDetailsDrawer({
         value: string | undefined,
         onChange: (val: string) => void,
         type: string = "text",
-        placeholder: string = ""
+        placeholder: string = "",
+        error?: string
     ) => {
         if (!isEditing) {
             return (
@@ -156,10 +188,14 @@ export default function BookingDetailsDrawer({
                 <input
                     type={type}
                     value={value || ''}
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={(e) => {
+                        onChange(e.target.value);
+                        // Clear error for this field if it exists (basic approximation, ideal would be passing field name)
+                    }}
                     placeholder={placeholder}
-                    className="w-full px-2 py-1.5 border border-blue-300 rounded text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                    className={`w-full px-2 py-1.5 border rounded text-sm outline-none focus:ring-2 focus:ring-blue-100 ${error ? 'border-red-500 bg-red-50' : 'border-blue-300'}`}
                 />
+                {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
         );
     };
@@ -289,10 +325,10 @@ export default function BookingDetailsDrawer({
                                                                     </div>
 
                                                                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
-                                                                        {renderEditableInput("First Name", booking.guestDetails.firstName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, firstName: v } }))}
-                                                                        {renderEditableInput("Last Name", booking.guestDetails.lastName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, lastName: v } }))}
-                                                                        {renderEditableInput("Email", booking.guestDetails.email, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, email: v } }), "email")}
-                                                                        {renderEditableInput("Phone", booking.guestDetails.phone, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, phone: v } }), "tel")}
+                                                                        {renderEditableInput("First Name", booking.guestDetails.firstName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, firstName: v } }), "text", "", errors.firstName)}
+                                                                        {renderEditableInput("Last Name", booking.guestDetails.lastName, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, lastName: v } }), "text", "", errors.lastName)}
+                                                                        {renderEditableInput("Email", booking.guestDetails.email, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, email: v } }), "email", "", errors.email)}
+                                                                        {renderEditableInput("Phone", booking.guestDetails.phone, (v) => setBooking({ ...booking, guestDetails: { ...booking.guestDetails, phone: v } }), "tel", "", errors.phone)}
 
                                                                         <div className="sm:col-span-2">
                                                                             {renderEditableInput("Address", booking.address?.address1, (v) => setBooking({ ...booking, address: { ...(booking.address || {}), address1: v } as any }))}
@@ -416,12 +452,7 @@ export default function BookingDetailsDrawer({
                                                                 <h4 className="text-xs font-bold text-red-800 uppercase mb-2">Cancellation</h4>
                                                                 <p className="text-xs text-red-600 mb-4">Cancelling will release rooms and notify the guest.</p>
                                                                 <button
-                                                                    onClick={() => {
-                                                                        if (confirm("Are you sure you want to cancel this booking? This action cannot be undone efficiently.")) {
-                                                                            if (onCancelBooking) onCancelBooking(booking);
-                                                                            onClose(); // Close drawer after triggering cancel
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => setShowCancelConfirmation(true)}
                                                                     className="w-full py-2 bg-white border border-red-300 text-red-600 text-xs font-bold rounded hover:bg-red-600 hover:text-white transition-colors"
                                                                 >
                                                                     Cancel Booking
@@ -458,6 +489,75 @@ export default function BookingDetailsDrawer({
                     onClose={() => setShowFolioDrawer(false)}
                 />
             )}
+
+            {/* Cancel Confirmation Modal */}
+            <Transition appear show={showCancelConfirmation} as={Fragment}>
+                <Dialog as="div" className="relative z-[60]" onClose={() => setShowCancelConfirmation(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all border-l-4 border-red-500">
+                                    <Dialog.Title
+                                        as="h3"
+                                        className="text-lg font-medium leading-6 text-gray-900 flex items-center gap-2"
+                                    >
+                                        <div className="p-2 bg-red-100 rounded-full text-red-600">
+                                            <TrashIcon className="h-5 w-5" />
+                                        </div>
+                                        Confirm Cancellation
+                                    </Dialog.Title>
+                                    <div className="mt-4">
+                                        <p className="text-sm text-gray-500">
+                                            Are you sure you want to cancel this booking? This will release the allocated rooms and cannot be easily undone.
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-6 flex justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                                            onClick={() => setShowCancelConfirmation(false)}
+                                        >
+                                            No, Keep Booking
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                                            onClick={() => {
+                                                if (onCancelBooking) onCancelBooking(booking);
+                                                setShowCancelConfirmation(false);
+                                                onClose();
+                                            }}
+                                        >
+                                            Yes, Cancel Booking
+                                        </button>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </>
     );
 }

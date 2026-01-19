@@ -143,12 +143,12 @@ export default function AdminCheckoutPage() {
     try {
       const success = await checkOutGuest(
         selectedBooking.id,
-        data.staffName,
-        data.depositReturned,
-        data.notes || undefined,
         {
-          priority: data.housekeepingPriority,
-          assignedTo: data.housekeepingAssignee || undefined,
+          staffName: data.staffName,
+          depositReturned: data.depositReturned,
+          notes: data.notes || undefined,
+          housekeepingPriority: data.housekeepingPriority,
+          housekeepingAssignee: data.housekeepingAssignee || undefined,
           scheduledTime: new Date(), // Defaults to now
         }
       );

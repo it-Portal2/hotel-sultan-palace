@@ -84,14 +84,36 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
         setLineItems(lineItems.filter((_, i) => i !== index));
     };
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!supplierId) newErrors.supplierId = "Supplier is required";
+
+        if (lineItems.length === 0) {
+            newErrors.lineItems = "At least one item is required";
+        } else {
+            lineItems.forEach((item, index) => {
+                if (!item.itemId) newErrors[`items.${index}.itemId`] = "Item is required";
+                if (item.quantity <= 0) newErrors[`items.${index}.quantity`] = "Quantity must be > 0";
+                if (item.unitCost < 0) newErrors[`items.${index}.unitCost`] = "Cost cannot be negative";
+            });
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const calculateGrandTotal = () => {
         return lineItems.reduce((sum, item) => sum + item.totalCost, 0);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!supplierId || lineItems.length === 0) {
-            showToast("Please select a supplier and add at least one item", "error");
+
+        if (!validateForm()) {
+            showToast("Please fix the validation errors", "error");
             return;
         }
 
@@ -168,14 +190,22 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                         <label className="block text-sm font-semibold text-gray-900 mb-1.5">Supplier</label>
                         <select
                             value={supplierId}
-                            onChange={(e) => setSupplierId(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm"
+                            onChange={(e) => {
+                                setSupplierId(e.target.value);
+                                if (errors.supplierId) {
+                                    const newErrors = { ...errors };
+                                    delete newErrors.supplierId;
+                                    setErrors(newErrors);
+                                }
+                            }}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm ${errors.supplierId ? 'border-red-500' : 'border-gray-200'}`}
                         >
                             <option value="">Select Supplier...</option>
                             {suppliers.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
+                        {errors.supplierId && <p className="text-xs text-red-500 mt-1">{errors.supplierId}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-1.5">Expected Delivery</label>
@@ -211,6 +241,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                             Add Item
                         </button>
                     </div>
+                    {errors.lineItems && <p className="text-xs text-red-500 mb-2">{errors.lineItems}</p>}
 
                     <div className="space-y-3">
                         {lineItems.length === 0 ? (
@@ -226,7 +257,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                         <select
                                             value={item.itemId}
                                             onChange={(e) => handleUpdateItem(index, 'itemId', e.target.value)}
-                                            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.itemId`] ? 'border-red-500' : 'border-gray-200'}`}
                                         >
                                             <option value="">Select Item...</option>
                                             {inventoryItems.map(inv => (
@@ -241,7 +272,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                             placeholder="Qty"
                                             value={item.quantity}
                                             onChange={(e) => handleUpdateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] text-center font-semibold"
+                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] text-center font-semibold ${errors[`items.${index}.quantity`] ? 'border-red-500' : 'border-gray-200'}`}
                                         />
                                     </div>
                                     <div className="w-28 relative">
@@ -253,7 +284,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                             placeholder="Cost"
                                             value={item.unitCost}
                                             onChange={(e) => handleUpdateItem(index, 'unitCost', parseFloat(e.target.value) || 0)}
-                                            className="w-full text-sm pl-5 pr-2 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                            className={`w-full text-sm pl-5 pr-2 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.unitCost`] ? 'border-red-500' : 'border-gray-200'}`}
                                         />
                                     </div>
                                     <div className="w-24 text-right font-bold text-gray-700 text-sm">

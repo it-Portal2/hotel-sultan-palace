@@ -26,8 +26,7 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
     const [rooms, setRooms] = useState<Room[]>([]);
 
     // Internal type state (if editing, use item's implicit type, else use prop)
-    const currentType = item ? (item.status === 'found' ? 'found' : 'lost') : type;
-    const title = currentType === 'lost' ? 'Add Lost Item' : 'Add Found Item';
+    // Internal type state (if editing, use item's implicit type, else use prop)
 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
@@ -55,9 +54,12 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
         currentLocation: '', // Where kept
 
         // Status
-        status: 'lost' as 'lost' | 'found' | 'returned' | 'discarded' | 'handover', // Added 'handover'
+        status: 'lost' as 'lost' | 'found' | 'returned' | 'discarded',
         remark: ''
     });
+
+    const currentType = formData.status === 'lost' ? 'lost' : 'found';
+    const title = currentType === 'lost' ? 'Add Lost Item' : (formData.status === 'found' ? 'Add Found Item' : 'Update Item Status');
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -129,7 +131,18 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
         e.preventDefault();
 
         // Final Validation Check
-        if (Object.values(errors).some(err => err)) {
+        const newErrors: Record<string, string> = {};
+        if (currentType === 'lost' && !formData.guestName) newErrors.guestName = 'Name is required';
+        if (!formData.itemName) newErrors.itemName = 'Item Name is required';
+        if (!formData.date) newErrors.date = 'Date is required';
+        if (currentType === 'found' && !formData.whoFound) newErrors.whoFound = 'Finder Name is required';
+
+        // Specific checks that might not be caught by realtime
+        if (formData.guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guestEmail)) newErrors.guestEmail = "Invalid email format";
+        if (formData.itemValue && parseFloat(formData.itemValue) < 0) newErrors.itemValue = "Value cannot be negative";
+
+        if (Object.keys(newErrors).length > 0 || Object.values(errors).some(err => err)) {
+            setErrors(prev => ({ ...prev, ...newErrors }));
             showToast("Please fix the errors before saving", "error");
             return;
         }
@@ -348,6 +361,21 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                             {errors.itemValue && <span className="text-xs text-red-500 absolute -bottom-4 left-0">{errors.itemValue}</span>}
                                         </div>
                                     </div>
+                                    {item && (
+                                        <div className="lg:col-span-1">
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Status</label>
+                                            <select
+                                                value={formData.status}
+                                                onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                                                className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent"
+                                            >
+                                                <option value="lost">Lost</option>
+                                                <option value="found">Found</option>
+                                                <option value="returned">Returned</option>
+                                                <option value="discarded">Discarded</option>
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -501,18 +529,6 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                                                     className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent placeholder-gray-400"
                                                 />
                                             </div>
-                                            <div className="md:col-span-2">
-                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Status</label>
-                                                <select
-                                                    value={formData.status}
-                                                    onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                                                    className="w-full h-10 px-3 rounded-none border-b-2 border-gray-200 focus:border-[#FF6A00] outline-none text-sm bg-transparent"
-                                                >
-                                                    <option value="found">Found</option>
-                                                    <option value="discarded">Discarded</option>
-                                                    <option value="handover">Handover / Returned</option>
-                                                </select>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -552,8 +568,8 @@ export default function LostFoundDrawer({ isOpen, onClose, item, type, onSave }:
                         </button>
                     </div>
                 </Dialog.Panel>
-            </div>
-        </Dialog>
+            </div >
+        </Dialog >
 
     );
 }

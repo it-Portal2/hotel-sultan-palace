@@ -108,8 +108,32 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
     }));
   };
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) newErrors.name = "Room Name is required";
+    if (!formData.type.trim()) newErrors.type = "Room Type is required";
+    if (!formData.description.trim()) newErrors.description = "Description is required";
+
+    if (formData.price <= 0) newErrors.price = "Price must be greater than 0";
+    if (formData.maxGuests < 1) newErrors.maxGuests = "Max Guests must be at least 1";
+
+    if (formData.cancellationFreeDays < 0) newErrors.cancellationFreeDays = "Cannot be negative";
+    if (formData.taxes < 0) newErrors.taxes = "Cannot be negative";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      showToast("Please fix the errors before saving", "error");
+      return;
+    }
 
     // If file is selected but not uploaded, upload it first
     if (selectedFile && !formData.image) {
@@ -277,11 +301,15 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     name="name"
                     id="name"
                     value={formData.name}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.name) setErrors({ ...errors, name: '' });
+                    }}
                     required
                     minLength={2}
-                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className={`mt-2 block w-full h-12 border bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="col-span-6 sm:col-span-3">
@@ -293,11 +321,15 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     name="type"
                     id="type"
                     value={formData.type}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.type) setErrors({ ...errors, type: '' });
+                    }}
                     required
                     minLength={2}
-                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className={`mt-2 block w-full h-12 border bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base ${errors.type ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.type && <p className="text-sm text-red-600 mt-1">{errors.type}</p>}
                 </div>
 
                 <div className="col-span-6 sm:col-span-3">
@@ -309,11 +341,15 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     name="price"
                     id="price"
                     value={formData.price}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.price) setErrors({ ...errors, price: '' });
+                    }}
                     required
                     min={0}
-                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className={`mt-2 block w-full h-12 border bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base ${errors.price ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.price && <p className="text-sm text-red-600 mt-1">{errors.price}</p>}
                 </div>
 
                 <div className="col-span-6 sm:col-span-3">
@@ -355,11 +391,15 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     name="maxGuests"
                     id="maxGuests"
                     value={formData.maxGuests}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.maxGuests) setErrors({ ...errors, maxGuests: '' });
+                    }}
                     required
                     min={1}
-                    className="mt-2 block w-full h-12 border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className={`mt-2 block w-full h-12 border bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base ${errors.maxGuests ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.maxGuests && <p className="text-sm text-red-600 mt-1">{errors.maxGuests}</p>}
                 </div>
 
                 <div className="col-span-6">
@@ -371,11 +411,15 @@ export default function AdminRoomForm({ roomId, isEdit = false }: AdminRoomFormP
                     id="description"
                     rows={3}
                     value={formData.description}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (errors.description) setErrors({ ...errors, description: '' });
+                    }}
                     required
                     minLength={10}
-                    className="mt-2 block w-full min-h-[140px] border border-gray-300 bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base"
+                    className={`mt-2 block w-full min-h-[140px] border bg-gray-50/60 px-4 py-3 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-base ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
                 </div>
 
                 <div className="col-span-6 sm:col-span-3">

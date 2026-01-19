@@ -25,6 +25,7 @@ export default function EmailReplyModal({
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<{ subject?: boolean; message?: boolean }>({});
 
     // Reset form when modal opens with new data
     useEffect(() => {
@@ -32,19 +33,28 @@ export default function EmailReplyModal({
             setSubject(initialSubject);
             setMessage('');
             setError(null);
+            setFieldErrors({});
             setIsSending(false);
         }
     }, [isOpen, initialSubject]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!subject.trim() || !message.trim()) {
-            setError('Please fill in all fields');
+
+        const newFieldErrors = {
+            subject: !subject.trim(),
+            message: !message.trim()
+        };
+
+        if (newFieldErrors.subject || newFieldErrors.message) {
+            setFieldErrors(newFieldErrors);
+            setError('Please fill in all required fields');
             return;
         }
 
         setIsSending(true);
         setError(null);
+        setFieldErrors({});
 
         try {
             const success = await onSend(subject, message);
@@ -109,10 +119,14 @@ export default function EmailReplyModal({
                                     id="subject"
                                     type="text"
                                     value={subject}
-                                    onChange={(e) => setSubject(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all"
+                                    onChange={(e) => {
+                                        setSubject(e.target.value);
+                                        if (fieldErrors.subject) setFieldErrors({ ...fieldErrors, subject: false });
+                                    }}
+                                    className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all ${fieldErrors.subject ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="Re: Inquiry..."
                                 />
+                                {fieldErrors.subject && <p className="text-xs text-red-500 mt-1">Subject is required</p>}
                             </div>
 
                             {/* Message Field */}
@@ -121,11 +135,15 @@ export default function EmailReplyModal({
                                 <textarea
                                     id="message"
                                     value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
+                                    onChange={(e) => {
+                                        setMessage(e.target.value);
+                                        if (fieldErrors.message) setFieldErrors({ ...fieldErrors, message: false });
+                                    }}
                                     rows={8}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all resize-none"
+                                    className={`w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all resize-none ${fieldErrors.message ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                                     placeholder="Type your reply here..."
                                 />
+                                {fieldErrors.message && <p className="text-xs text-red-500 mt-1">Message is required</p>}
                                 <p className="mt-1 text-xs text-gray-500">
                                     This message will be sent using the official Hotel Sultan Palace email template.
                                 </p>

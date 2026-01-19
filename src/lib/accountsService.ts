@@ -444,8 +444,18 @@ export const updateStaffMember = async (id: string, staffData: Partial<StaffMemb
     if (!db) return false;
     try {
         const staffRef = doc(db, 'staffMembers', id);
+
+        // Remove undefined values
+        const cleanData: any = {};
+        Object.keys(staffData).forEach(key => {
+            const value = (staffData as any)[key];
+            if (value !== undefined) {
+                cleanData[key] = value;
+            }
+        });
+
         await updateDoc(staffRef, {
-            ...staffData,
+            ...cleanData,
             updatedAt: serverTimestamp(),
         });
         return true;

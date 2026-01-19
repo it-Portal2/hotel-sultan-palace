@@ -237,10 +237,6 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">SKU</label>
-                            <input type="text" value={formData.sku || ''} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" placeholder="SKU-001" />
-                        </div>
-                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Rating (1-5)</label>
                             <input type="number" min="0" max="5" step="0.1" value={formData.rating || ''} onChange={(e) => { const value = parseFloat(e.target.value); setFormData({ ...formData, rating: isNaN(value) ? 0 : value }); }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" />
                         </div>
@@ -250,26 +246,45 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
 
             {/* Pricing & Operations Section */}
             <div>
-                <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Pricing & Operations</h3>
-                <div className="grid grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Price ($) *</label>
-                        <input type="number" required min="0" step="0.01" value={formData.price || ''} onChange={(e) => { const value = parseFloat(e.target.value); setFormData({ ...formData, price: isNaN(value) ? 0 : value }); }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" />
+                <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Pricing & Inventory</h3>
+                <div className="space-y-6">
+                    {/* Primary Pricing */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-800 mb-2">Selling Price ($) *</label>
+                            <input type="number" required min="0" step="0.01" value={formData.price || ''} onChange={(e) => { const value = parseFloat(e.target.value); setFormData({ ...formData, price: isNaN(value) ? 0 : value }); }} className="w-full px-4 py-3 text-lg font-mono font-bold border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white focus:ring-2 focus:ring-[#FF6A00]/10" placeholder="0.00" />
+                            <p className="text-xs text-gray-500 mt-1">Amount the customer pays (excluding tax)</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Prep Time (mins) *</label>
+                            <input type="number" required min="1" value={formData.preparationTime || ''} onChange={(e) => { const value = parseInt(e.target.value); setFormData({ ...formData, preparationTime: isNaN(value) ? 30 : value }); }} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" />
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Cost ($)</label>
-                        <input type="number" min="0" step="0.01" value={formData.cost || ''} onChange={(e) => { const value = parseFloat(e.target.value); setFormData({ ...formData, cost: isNaN(value) ? 0 : value }); }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" />
-                    </div>
+                    {/* Advanced / Internal Details */}
+                    <div className="bg-gray-50/80 p-5 rounded-lg border border-gray-200">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Advanced Details (Optional)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Food Cost ($)</label>
+                                <input type="number" min="0" step="0.01" value={formData.cost || ''} onChange={(e) => { const value = parseFloat(e.target.value); setFormData({ ...formData, cost: isNaN(value) ? 0 : value }); }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white" placeholder="0.00" />
+                                <p className="text-[10px] text-gray-400 mt-1">Internal cost to produce</p>
+                            </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Tax Group</label>
-                        <input type="text" value={formData.taxGroup || ''} onChange={(e) => setFormData({ ...formData, taxGroup: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" placeholder="VAT" />
-                    </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tax Rate</label>
+                                <select value={formData.taxGroup || 'VAT'} onChange={(e) => setFormData({ ...formData, taxGroup: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white">
+                                    <option value="VAT">Standard VAT (5%)</option>
+                                    <option value="No Tax">Zero Rated / Exempt</option>
+                                    <option value="Service Charge">Service Charge Only</option>
+                                </select>
+                            </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Prep Time (mins) *</label>
-                        <input type="number" required min="1" value={formData.preparationTime || ''} onChange={(e) => { const value = parseInt(e.target.value); setFormData({ ...formData, preparationTime: isNaN(value) ? 30 : value }); }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-gray-50 focus:bg-white" />
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Stock Keeping Unit (SKU)</label>
+                                <input type="text" value={formData.sku || ''} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white" placeholder="e.g. BURG-001" />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="col-span-2 flex flex-wrap gap-x-6 gap-y-3 mt-2">

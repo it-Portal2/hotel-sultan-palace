@@ -926,9 +926,24 @@ export default function RoomAvailabilityPage() {
       setBookings(prev => [...prev, bookingWithId]);
 
       // 3. Background Operations (Do not await)
+      // 3. Background Operations (Do not await)
       // Send email
       if (formData.guestEmail && formData.emailBookingVouchers) {
-        sendBookingConfirmationEmailAction(bookingWithId)
+        // Fix: Serialize booking object for Server Action (Convert Timestamps/Dates to strings/JSON)
+        // We reconstruct a clean object matching the Booking interface (where dates are strings)
+        const emailBooking = {
+          ...bookingWithId,
+          checkIn: formData.checkInDate, // Use original string 'YYYY-MM-DD'
+          checkOut: formData.checkOutDate,
+          createdAt: bookingWithId.createdAt.toISOString(),
+          updatedAt: bookingWithId.updatedAt.toISOString(),
+          checkInTime: bookingWithId.checkInTime ? bookingWithId.checkInTime.toISOString() : undefined,
+          paymentDate: bookingWithId.paymentDate ? bookingWithId.paymentDate.toISOString() : undefined,
+        };
+        // Ensure strictly plain object (removes any hidden prototype methods just in case)
+        const safeEmailBooking = JSON.parse(JSON.stringify(emailBooking));
+
+        sendBookingConfirmationEmailAction(safeEmailBooking)
           .then(() => showToast('Confirmation email sent.', 'success'))
           .catch(e => console.error("Email failed", e));
       }

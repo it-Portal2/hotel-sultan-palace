@@ -46,8 +46,36 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
         }
     }, [supplier, isOpen]);
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name.trim()) newErrors.name = "Company Name is required";
+        if (!formData.contactPerson.trim()) newErrors.contactPerson = "Contact Person is required";
+        if (!formData.address.trim()) newErrors.address = "Address is required";
+
+        if (!formData.email.trim()) {
+            newErrors.email = "Email is required";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = "Invalid email format";
+        }
+
+        if (!formData.phone.trim()) {
+            newErrors.phone = "Phone is required";
+        } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+            newErrors.phone = "Invalid phone format";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateForm()) return;
+
         setLoading(true);
         try {
             if (supplier) {
@@ -86,10 +114,14 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
                         type="text"
                         required
                         value={formData.name}
-                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all"
+                        onChange={e => {
+                            setFormData({ ...formData, name: e.target.value });
+                            if (errors.name) setErrors({ ...errors, name: '' });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all ${errors.name ? 'border-red-500' : 'border-gray-200'}`}
                         placeholder="e.g. Sysco Foods"
                     />
+                    {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                 </div>
 
                 <div>
@@ -98,10 +130,14 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
                         type="text"
                         required
                         value={formData.contactPerson}
-                        onChange={e => setFormData({ ...formData, contactPerson: e.target.value })}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all"
+                        onChange={e => {
+                            setFormData({ ...formData, contactPerson: e.target.value });
+                            if (errors.contactPerson) setErrors({ ...errors, contactPerson: '' });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all ${errors.contactPerson ? 'border-red-500' : 'border-gray-200'}`}
                         placeholder="e.g. John Doe"
                     />
+                    {errors.contactPerson && <p className="text-xs text-red-500 mt-1">{errors.contactPerson}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -111,9 +147,13 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
                             type="email"
                             required
                             value={formData.email}
-                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all"
+                            onChange={e => {
+                                setFormData({ ...formData, email: e.target.value });
+                                if (errors.email) setErrors({ ...errors, email: '' });
+                            }}
+                            className={`w-full px-4 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -121,9 +161,13 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
                             type="tel"
                             required
                             value={formData.phone}
-                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all"
+                            onChange={e => {
+                                setFormData({ ...formData, phone: e.target.value });
+                                if (errors.phone) setErrors({ ...errors, phone: '' });
+                            }}
+                            className={`w-full px-4 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
                     </div>
                 </div>
 
@@ -132,10 +176,14 @@ export default function SupplierDrawer({ isOpen, onClose, onSave, supplier }: Su
                     <textarea
                         required
                         value={formData.address}
-                        onChange={e => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all"
+                        onChange={e => {
+                            setFormData({ ...formData, address: e.target.value });
+                            if (errors.address) setErrors({ ...errors, address: '' });
+                        }}
+                        className={`w-full px-4 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] transition-all ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
                         rows={3}
                     />
+                    {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
                 </div>
 
                 <div>

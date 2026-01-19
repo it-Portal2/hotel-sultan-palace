@@ -92,17 +92,34 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
         setItems(newItems);
     };
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!selectedSupplierId) newErrors.supplierId = "Supplier is required";
+
+        if (items.length === 0) {
+            newErrors.items = "At least one item is required";
+        } else {
+            items.forEach((item, index) => {
+                if (!item.itemId) newErrors[`items.${index}.itemId`] = "Item is required";
+                if (item.quantity <= 0) newErrors[`items.${index}.quantity`] = "Quantity must be > 0";
+                if (item.unitCost < 0) newErrors[`items.${index}.unitCost`] = "Cost cannot be negative";
+            });
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const calculateTotal = () => {
         return items.reduce((sum, item) => sum + item.totalCost, 0);
     };
 
     const handleSubmit = async () => {
-        if (!selectedSupplierId) {
-            showToast("Please select a supplier", "error");
-            return;
-        }
-        if (items.length === 0 || items.some(i => !i.itemId)) {
-            showToast("Please add valid items", "error");
+        if (!validateForm()) {
+            showToast("Please fix the validation errors", "error");
             return;
         }
 
@@ -170,14 +187,22 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Supplier</label>
                                 <select
                                     value={selectedSupplierId}
-                                    onChange={e => setSelectedSupplierId(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-[#FF6A00] focus:ring-0 bg-white"
+                                    onChange={e => {
+                                        setSelectedSupplierId(e.target.value);
+                                        if (errors.supplierId) {
+                                            const newErrors = { ...errors };
+                                            delete newErrors.supplierId;
+                                            setErrors(newErrors);
+                                        }
+                                    }}
+                                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:border-[#FF6A00] focus:ring-0 bg-white ${errors.supplierId ? 'border-red-500' : 'border-gray-300'}`}
                                 >
                                     <option value="">-- Select Supplier --</option>
                                     {suppliers.map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
                                 </select>
+                                {errors.supplierId && <p className="text-xs text-red-500 mt-1">{errors.supplierId}</p>}
                             </div>
 
                             {/* Items Table */}
@@ -193,6 +218,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                         Add Item
                                     </button>
                                 </div>
+                                {errors.items && <p className="text-xs text-red-500 mb-2">{errors.items}</p>}
 
                                 <div className="space-y-2">
                                     <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 px-2 uppercase tracking-wider">
@@ -209,13 +235,14 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                 <select
                                                     value={row.itemId}
                                                     onChange={e => updateItem(index, 'itemId', e.target.value)}
-                                                    className="w-full text-sm bg-transparent border-none focus:ring-0 p-0 text-gray-900 font-medium"
+                                                    className={`w-full text-sm bg-transparent border-none focus:ring-0 p-0 font-medium ${errors[`items.${index}.itemId`] ? 'text-red-500' : 'text-gray-900'}`}
                                                 >
                                                     <option value="">Select Item...</option>
                                                     {inventoryItems.map(i => (
                                                         <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
                                                     ))}
                                                 </select>
+                                                {errors[`items.${index}.itemId`] && <p className="text-[10px] text-red-500">Required</p>}
                                             </div>
                                             <div className="col-span-2">
                                                 <input
@@ -223,7 +250,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                     min="1"
                                                     value={row.quantity}
                                                     onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
-                                                    className="w-full text-sm bg-transparent border-b border-gray-300 focus:border-[#FF6A00] outline-none py-1"
+                                                    className={`w-full text-sm bg-transparent border-b focus:border-[#FF6A00] outline-none py-1 ${errors[`items.${index}.quantity`] ? 'border-red-500 text-red-500' : 'border-gray-300'}`}
                                                     placeholder="0"
                                                 />
                                             </div>
@@ -234,7 +261,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                     step="0.01"
                                                     value={row.unitCost}
                                                     onChange={e => updateItem(index, 'unitCost', Number(e.target.value))}
-                                                    className="w-full text-sm bg-transparent border-b border-gray-300 focus:border-[#FF6A00] outline-none py-1"
+                                                    className={`w-full text-sm bg-transparent border-b focus:border-[#FF6A00] outline-none py-1 ${errors[`items.${index}.unitCost`] ? 'border-red-500 text-red-500' : 'border-gray-300'}`}
                                                     placeholder="0.00"
                                                 />
                                             </div>

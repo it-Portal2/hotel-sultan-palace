@@ -81,7 +81,14 @@ export default function GuestProfileDrawer({ isOpen, onClose, guest, onSave }: G
         e.preventDefault();
 
         // Validation Check
-        if (Object.values(errors).some(err => err)) {
+        const newErrors: Record<string, string> = {};
+        if (!formData.firstName.trim()) newErrors.firstName = "First Name is required";
+        if (!formData.lastName.trim()) newErrors.lastName = "Last Name is required";
+        if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+
+        // Check for existing errors from existing validation
+        if (Object.values(errors).some(err => err) || Object.keys(newErrors).length > 0) {
+            setErrors(prev => ({ ...prev, ...newErrors }));
             showToast("Please fix the errors before saving", "error");
             return;
         }

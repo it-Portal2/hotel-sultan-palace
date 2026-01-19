@@ -181,14 +181,44 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
         });
     };
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name.trim()) newErrors.name = 'Full Name is required';
+        if (!formData.username.trim()) newErrors.username = 'Username is required';
+
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = 'Invalid email format';
+        }
+
+        if (!user && !initialStaffId && !formData.password) {
+            newErrors.password = 'Password is required for new users';
+        }
+
+        if (formData.password && formData.password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+
+        if (formData.roles.length === 0) {
+            newErrors.roles = 'At least one role must be selected';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validateForm()) return;
+
         setLoading(true);
 
         try {
-            // Validate Roles
-            if (formData.roles.length === 0) throw new Error('At least one role must be selected');
-
             const mergedPerms = mergePermissions(formData.roles, roles);
             const primaryRole = formData.roles[0]; // For display/legacy
 
@@ -211,8 +241,6 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                 showToast('User updated successfully', 'success');
             } else {
                 // Create Mode
-                if (!formData.password) throw new Error('Password is required for new users');
-
                 const result = await createSystemUser({
                     email: formData.email,
                     password: formData.password,
@@ -294,9 +322,13 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                         type="text"
                                         required
                                         value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                        onChange={e => {
+                                            setFormData({ ...formData, name: e.target.value });
+                                            if (errors.name) setErrors({ ...errors, name: '' });
+                                        }}
+                                        className={`mt-1 w-full px-3 py-2 border rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -306,9 +338,13 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                             type="text"
                                             required
                                             value={formData.username}
-                                            onChange={e => setFormData({ ...formData, username: e.target.value })}
-                                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                            onChange={e => {
+                                                setFormData({ ...formData, username: e.target.value });
+                                                if (errors.username) setErrors({ ...errors, username: '' });
+                                            }}
+                                            className={`mt-1 w-full px-3 py-2 border rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors.username ? 'border-red-500' : 'border-gray-300'}`}
                                         />
+                                        {errors.username && <p className="text-xs text-red-500 mt-1">{errors.username}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -316,10 +352,14 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                             type="email"
                                             required
                                             value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            onChange={e => {
+                                                setFormData({ ...formData, email: e.target.value });
+                                                if (errors.email) setErrors({ ...errors, email: '' });
+                                            }}
                                             disabled={!!user} // Email is ID, harder to change
-                                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] disabled:bg-gray-100 disabled:text-gray-500"
+                                            className={`mt-1 w-full px-3 py-2 border rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] disabled:bg-gray-100 disabled:text-gray-500 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                                         />
+                                        {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
                                     </div>
                                 </div>
 
@@ -335,8 +375,11 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                                 required={!user || changePassword}
                                                 minLength={6}
                                                 value={formData.password}
-                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00]"
+                                                onChange={e => {
+                                                    setFormData({ ...formData, password: e.target.value });
+                                                    if (errors.password) setErrors({ ...errors, password: '' });
+                                                }}
+                                                className={`w-full px-3 py-2 border rounded-lg focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
                                             />
                                             <button
                                                 type="button"
@@ -346,6 +389,7 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                                 {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                                             </button>
                                         </div>
+                                        {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
                                     </div>
                                 )}
 
@@ -378,8 +422,8 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                         <label
                                             key={role.id}
                                             className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${formData.roles.includes(role.id)
-                                                    ? 'border-[#FF6A00] bg-orange-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-[#FF6A00] bg-orange-50'
+                                                : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                         >
                                             <input
@@ -398,6 +442,7 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                                         </label>
                                     ))}
                                 </div>
+                                {errors.roles && <p className="text-xs text-red-500 mt-2">{errors.roles}</p>}
                                 <p className="text-xs text-gray-400 mt-2">
                                     Permissions are merged. If multiple roles are selected, the highest access level applies for each section.
                                 </p>
