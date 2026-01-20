@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cancelBooking } from '@/lib/bookingService';
+import { sendEmail, generateBookingCancellationEmail } from '@/lib/emailService';
+import { getBooking } from '@/lib/firestoreService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,14 +20,15 @@ export async function POST(request: NextRequest) {
 
     // Send cancellation email (non-blocking)
     try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/send-cancellation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId, cancellationReason }),
-      });
-
-      if (!emailResponse.ok) {
-        console.warn('Failed to send cancellation email:', await emailResponse.text());
+      const booking = await getBooking(bookingId);
+      if (booking) {
+        const emailHtml = generateBookingCancellationEmail(booking, cancellationReason);
+        await sendEmail({
+          to: booking.guestDetails.email,
+          subject: `Booking Cancellation - ${booking.bookingId}`,
+          html: emailHtml,
+        });
+        console.log('Cancellation email sent directly');
       }
     } catch (emailError) {
       // Don't fail the booking cancellation if email fails

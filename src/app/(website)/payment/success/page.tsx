@@ -11,7 +11,7 @@ function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { bookingData, calculateTotal } = useCart();
-  
+
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'success' | 'failed' | 'pending'>('pending');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -27,7 +27,7 @@ function PaymentSuccessContent() {
   useEffect(() => {
     const verifyPayment = async () => {
       const token = searchParams?.get('TransactionToken') || searchParams?.get('ID');
-      
+
       if (!token) {
         setVerificationStatus('failed');
         setErrorMessage('Payment token not found');
@@ -42,7 +42,7 @@ function PaymentSuccessContent() {
         if (verificationResult.Result === '000') {
           // Payment successful
           setVerificationStatus('success');
-          
+
           // Create booking in database
           await createBookingFromPayment(verificationResult);
         } else {
@@ -75,10 +75,10 @@ function PaymentSuccessContent() {
       }
 
       const bookingDetails = JSON.parse(storedBooking);
-      
+
       // Calculate total amount
       const totalAmount = calculateTotal();
-      
+
       // Update booking with payment information
       const finalBookingDetails = {
         ...bookingDetails,
@@ -109,7 +109,7 @@ function PaymentSuccessContent() {
 
       // Send confirmation email (non-blocking)
       try {
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/send-confirmation`, {
+        const emailResponse = await fetch('/api/email/send-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ bookingId }),
@@ -182,7 +182,7 @@ function PaymentSuccessContent() {
           color: white !important;
         }
       `}</style>
-      
+
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
           {isVerifying ? (
@@ -227,7 +227,7 @@ function PaymentSuccessContent() {
         </div>
       </div>
 
-      
+
       {/* Booking Confirmation Popup */}
       <BookingConfirmationPopup
         isOpen={showConfirmationPopup}

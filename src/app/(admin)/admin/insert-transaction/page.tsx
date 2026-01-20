@@ -41,7 +41,12 @@ export default function InsertTransactionPage() {
 
     const handlePostCharge = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedBooking || !amount || !description) return;
+        console.log("Handle Post Charge Clicked", { selectedBooking, amount, description });
+        if (!selectedBooking || !amount || !description) {
+            console.warn("Validation Failed");
+            showToast("Please fill all fields (Guest, Amount, Description)", "error");
+            return;
+        }
         setIsSubmitting(true);
         try {
             await import('@/lib/firestoreService').then(mod => mod.addTransaction({

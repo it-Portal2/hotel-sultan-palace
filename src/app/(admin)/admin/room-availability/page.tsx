@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { getAllBookings, getRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus, getMealPlanSettings, MealPlanSettings } from '@/lib/firestoreService';
+import { getAllBookings, getAllRoomTypes, createBooking, updateBooking, getRooms, getRoomStatuses, markRoomForMaintenance, completeRoomMaintenance, Booking, SuiteType, RoomType, Room, RoomStatus, getMealPlanSettings, MealPlanSettings } from '@/lib/firestoreService';
 import { reserveRoomInInventory, releaseRoomFromInventory } from '@/lib/availabilityService';
 import { cancelBooking } from '@/lib/bookingService';
 import { Timestamp } from 'firebase/firestore';
@@ -25,8 +25,6 @@ import LegendPopover from '@/components/admin/stayview/LegendPopover';
 import RegistrationCardModal from '@/components/admin/stayview/RegistrationCardModal';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import { useAdminRole } from '@/context/AdminRoleContext';
-
-const SUITE_TYPES: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
 
 // Helper to normalize date to start of day (avoid timezone drift)
 const normalizeDate = (value: string | Date) => {
@@ -145,74 +143,77 @@ export default function RoomAvailabilityPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysToShow] = useState(20);
   const [mealPlanSettings, setMealPlanSettings] = useState<MealPlanSettings | undefined>(undefined);
+  const [suiteTypes, setSuiteTypes] = useState<SuiteType[]>([]); // Dynamic Suites
 
   // Calculate suite prices from Rooms collection
   const suitePriceMap = useMemo(() => {
-    // Default fallback prices
-    // Default fallback prices
-    const map: Record<SuiteType, number> = {
-      'Garden Suite': 0,
-      'Imperial Suite': 0,
-      'Ocean Suite': 0
-    };
-
-    // Update prices from Rooms collection (Source of Truth)
+    const map: Record<string, number> = {};
     if (rooms && rooms.length > 0) {
-      const foundSuites = new Set<string>();
-
       rooms.forEach(room => {
-        let matchedSuite: SuiteType | null = null;
+        // Robustly find the suite name this room represents or belongs to
+        // The 'rooms' collection seems to contain Suite Definitions (e.g. name="Imperial Suite")
+        // which hold the master price.
+        // @ts-ignore
+        const key = room.suiteType || room.type || room.name;
 
-        // 1. Try exact match on suiteType key (Best)
-        if (room.suiteType && SUITE_TYPES.includes(room.suiteType)) {
-          matchedSuite = room.suiteType;
-        }
-        // 2. Try matching room type string to known keys
-        else if (room.type) {
-          const typeLower = room.type.toLowerCase();
-          if (typeLower.includes('garden')) matchedSuite = 'Garden Suite';
-          else if (typeLower.includes('imperial') || typeLower.includes('sea suite')) matchedSuite = 'Imperial Suite';
-          else if (typeLower.includes('ocean')) matchedSuite = 'Ocean Suite';
-        }
-        // 3. Try matching room name/title
-        else if (room.name) {
-          const nameLower = room.name.toLowerCase();
-          if (nameLower.includes('garden')) matchedSuite = 'Garden Suite';
-          else if (nameLower.includes('imperial')) matchedSuite = 'Imperial Suite';
-          else if (nameLower.includes('ocean')) matchedSuite = 'Ocean Suite';
-        }
-
-        // Only update if we haven't found a newer definition for this suite yet
-        if (matchedSuite && !foundSuites.has(matchedSuite)) {
-          map[matchedSuite] = room.price;
-          foundSuites.add(matchedSuite);
+        if (key && typeof room.price === 'number') {
+          map[key] = room.price;
+          if (room.name && room.name !== key) map[room.name] = room.price;
+          // Normalize for Case Insensitivity
+          if (key) map[key.toLowerCase()] = room.price;
+          if (room.name) map[room.name.toLowerCase()] = room.price;
         }
       });
     }
-
     return map;
   }, [rooms]);
 
+  // Create price map from Rooms collection (real prices)
+  const roomPriceMap = useMemo(() => {
+    const map: Record<string, number> = {};
+
+    // 1. Assign prices to Room Types based on Suite Price inheritance (from Rooms collection)
+    roomTypes.forEach(rt => {
+      const suitePrice = suitePriceMap[rt.suiteType] || suitePriceMap[rt.suiteType.toLowerCase()];
+      map[rt.roomName] = suitePrice || rt.price || 0;
+    });
+
+    // 2. Override with specific room prices from 'rooms' collection
+    rooms.forEach(r => {
+      if (r.name && typeof r.price === 'number') {
+        map[r.name] = r.price;
+      }
+    });
+
+    // 3. Fallback from bookings
+    bookings.forEach(b => {
+      b.rooms.forEach(r => {
+        const key = r.allocatedRoomType || r.type;
+        // Only use booking price if we have NO other source
+        if (key && typeof r.price === 'number' && map[key] === undefined) {
+          map[key] = r.price;
+        }
+      });
+    });
+    return map;
+  }, [roomTypes, rooms, suitePriceMap, bookings]);
+
   // Enrich rooms with inferred suite type if missing
   const enrichedRooms = useMemo(() => {
-    // 1. Start with existing Rooms collection data
     const combinedRooms = [...rooms];
-
-    // 2. Augment with missing rooms from RoomTypes collection
-    // (This ensures the Dropdown has all the rooms that the Calendar shows)
-    const existingNames = new Set(rooms.map(r => r.name ? r.name.toLowerCase() : ''));
+    const existingNames = new Set(rooms.map(r => r ? (r.name || '').toLowerCase() : ''));
 
     roomTypes.forEach(rt => {
       if (rt.roomName && !existingNames.has(rt.roomName.toLowerCase())) {
         combinedRooms.push({
-          id: rt.id || rt.roomName, // Use roomName as ID if ID missing
+          id: rt.id || rt.roomName,
           name: rt.roomName,
           suiteType: rt.suiteType,
           type: rt.suiteType,
-          price: suitePriceMap[rt.suiteType] || 0,
+          // @ts-ignore
+          price: suitePriceMap[rt.suiteType] || rt.price || 0,
           amenities: [],
           description: '',
-          // Missing properties added to satisfy Room interface
           size: '0',
           view: 'Standard',
           beds: '1',
@@ -220,58 +221,22 @@ export default function RoomAvailabilityPage() {
           maxGuests: 2,
           createdAt: new Date(),
           updatedAt: new Date(),
-          // Extra properties (optional, might be used elsewhere or legacy)
-          // status: 'clean', 
-          // images: [],
-          // maxOccupancy: 2, // Map to maxGuests
         } as Room);
-        existingNames.add(rt.roomName.toLowerCase()); // Avoid duplicates within loop
+        existingNames.add(rt.roomName.toLowerCase());
       }
     });
 
     return combinedRooms.map(room => {
-      let matchedSuite: SuiteType | undefined = room.suiteType as SuiteType;
-
-      // Explicit mapping based on user's facility layout
-      const nameUpper = room.name ? room.name.toUpperCase() : '';
-
-      if (['TANGERINE', 'MANGOSTEEN', 'LYCHEE', 'JASMINE', 'DESERT ROSE', 'ANANAS'].includes(nameUpper)) {
-        matchedSuite = 'Garden Suite';
-      } else if (['PAPAYA', 'HIBISCUS', 'FRANGIPANI', 'FLAMBOYANT', 'EUCALYPTUS'].includes(nameUpper)) {
-        matchedSuite = 'Imperial Suite';
-      } else if (['PASSION FLOWER', 'OLEANDER', 'CITRONELLA', 'BOUGAINVILLEA'].includes(nameUpper)) {
-        matchedSuite = 'Ocean Suite';
-      }
-
-      if (!matchedSuite || !SUITE_TYPES.includes(matchedSuite)) {
-        // 1. Try matching room type string to known keys
-        if (room.type) {
-          const typeLower = room.type.toLowerCase();
-          if (typeLower.includes('garden')) matchedSuite = 'Garden Suite';
-          else if (typeLower.includes('imperial') || typeLower.includes('sea suite')) matchedSuite = 'Imperial Suite';
-          else if (typeLower.includes('ocean')) matchedSuite = 'Ocean Suite';
-        }
-        // 2. Try matching room name/title
-        else if (room.name) {
-          const nameLower = room.name.toLowerCase();
-          if (nameLower.includes('garden')) matchedSuite = 'Garden Suite';
-          else if (nameLower.includes('imperial')) matchedSuite = 'Imperial Suite';
-          else if (nameLower.includes('ocean')) matchedSuite = 'Ocean Suite';
-        }
-      }
-
-      const price = room.price || (matchedSuite ? suitePriceMap[matchedSuite] : 0);
-
       return {
         ...room,
-        suiteType: matchedSuite || 'Garden Suite', // Fallback to ensure it appears somewhere
-        price: price
+        suiteType: room.suiteType || 'General', // Fallback
+        price: roomPriceMap[room.name] || 0
       };
     });
-  }, [rooms, roomTypes, suitePriceMap]);
+  }, [rooms, roomTypes, roomPriceMap]);
 
 
-  const [selectedSuite, setSelectedSuite] = useState<SuiteType | 'all'>('all');
+  const [selectedSuite, setSelectedSuite] = useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showBookingPanel, setShowBookingPanel] = useState(false);
@@ -287,7 +252,7 @@ export default function RoomAvailabilityPage() {
   const [assignRoomForm, setAssignRoomForm] = useState({
     startDate: '',
     endDate: '',
-    suiteType: 'Garden Suite' as SuiteType,
+    suiteType: 'Garden Suite' as SuiteType, // Will need update if suites dynamic
     roomName: '',
     guestName: '',
     guestEmail: '',
@@ -318,13 +283,14 @@ export default function RoomAvailabilityPage() {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredBarRect, setHoveredBarRect] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
-  const [editingRoomName, setEditingRoomName] = useState<string | null>(null); // State for maintenance room name tracking
+  const [editingRoomName, setEditingRoomName] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
+  // ... (handleMarkMaintenance kept same)
   const handleMarkMaintenance = async () => {
     if (!selectedCell) return;
 
@@ -362,9 +328,7 @@ export default function RoomAvailabilityPage() {
     if (!bookingToUnblock || !bookingToUnblock.id) return;
 
     try {
-      // Fix: Check if it's a maintenance block (ID starts with 'maintenance-' or status is 'maintenance')
       if (bookingToUnblock.status === 'maintenance' || bookingToUnblock.id.startsWith('maintenance-')) {
-        // Extract room name from the mock booking object
         const roomName = bookingToUnblock.rooms[0]?.allocatedRoomType;
         console.log(`Unblocking maintenance for room: ${roomName}, ID: ${bookingToUnblock.id}`);
 
@@ -373,8 +337,6 @@ export default function RoomAvailabilityPage() {
           if (success) {
             showToast('Maintenance block removed successfully', 'success');
           } else {
-            // If Firestore returns false, it usually means 'Room status not found' in the backend logs
-            // This might happen if 'roomName' doesn't match a document in 'room_statuses'.
             console.error(`completeRoomMaintenance returned false for ${roomName}. Check if room_statuses doc exists with roomName='${roomName}'`);
             throw new Error(`Failed to remove maintenance block. Room status not found for ${roomName}.`);
           }
@@ -382,7 +344,6 @@ export default function RoomAvailabilityPage() {
           throw new Error("Could not determine room name for maintenance block");
         }
       } else {
-        // Standard Booking Cancellation
         console.log(`Cancelling regular booking: ${bookingToUnblock.id}`);
         try {
           await cancelBooking(bookingToUnblock.id);
@@ -428,9 +389,11 @@ export default function RoomAvailabilityPage() {
   const loadData = async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true);
+
+      // Fetch dynamic room types HERE
       const [bookingsData, allRoomTypes, roomsData, statusesData, settingsData] = await Promise.all([
         getAllBookings(),
-        Promise.all(SUITE_TYPES.map(suite => getRoomTypes(suite))).then(results => results.flat()),
+        getAllRoomTypes(), // Use new dynamic fetcher
         getRooms(),
         getRoomStatuses(),
         getMealPlanSettings()
@@ -440,9 +403,30 @@ export default function RoomAvailabilityPage() {
       setRooms(roomsData);
       setRoomStatuses(statusesData);
       if (typeof settingsData === 'object') {
-        // getMealPlanSettings returns the object directly or null
         setMealPlanSettings(settingsData as MealPlanSettings);
       }
+
+      // Derive unique Suites from room types and rooms
+      const uniqueSuites = new Set<string>();
+
+      // 1. From RoomTypes (Configuration)
+      allRoomTypes.forEach(rt => {
+        if (rt.suiteType) uniqueSuites.add(rt.suiteType);
+      });
+
+      // 2. From Rooms (Physical rooms might have types not in RoomTypes config yet)
+      roomsData.forEach(r => {
+        if (r.suiteType) uniqueSuites.add(r.suiteType);
+      });
+
+      const suiteList = Array.from(uniqueSuites).sort() as SuiteType[];
+      setSuiteTypes(suiteList);
+
+      // Update default in form if needed
+      if (suiteList.length > 0) {
+        setAssignRoomForm(prev => ({ ...prev, suiteType: suiteList[0] }));
+      }
+
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -461,18 +445,23 @@ export default function RoomAvailabilityPage() {
 
   // Group room types by suite
   const roomsBySuite = useMemo(() => {
-    const grouped: Record<SuiteType, RoomType[]> = {
-      'Garden Suite': [],
-      'Imperial Suite': [],
-      'Ocean Suite': []
-    };
+    const grouped: Record<string, RoomType[]> = {};
+
+    // Initialize for all known suites to ensure they exist in the object
+    suiteTypes.forEach(suite => {
+      grouped[suite] = [];
+    });
+
     roomTypes.forEach(rt => {
-      if (rt.suiteType && grouped[rt.suiteType]) {
+      if (rt.suiteType) {
+        if (!grouped[rt.suiteType]) {
+          grouped[rt.suiteType] = [];
+        }
         grouped[rt.suiteType].push(rt);
       }
     });
     return grouped;
-  }, [roomTypes]);
+  }, [roomTypes, suiteTypes]);
 
   // Calculate booking bars for each room
   const bookingBars = useMemo(() => {
@@ -538,33 +527,13 @@ export default function RoomAvailabilityPage() {
   }, [bookings, roomStatuses]);
 
   // Create price map from Rooms collection (real prices)
-  const roomPriceMap = useMemo(() => {
-    const map: Record<string, number> = {};
 
-    // Assign suite prices to all rooms in that suite
-    roomTypes.forEach(rt => {
-      if (suitePriceMap[rt.suiteType]) {
-        map[rt.roomName] = suitePriceMap[rt.suiteType];
-      }
-    });
-
-    // Fallback: get prices from bookings if not in rooms
-    bookings.forEach(b => {
-      b.rooms.forEach(r => {
-        const key = r.allocatedRoomType || r.type;
-        if (key && typeof r.price === 'number' && !map[key]) {
-          map[key] = r.price;
-        }
-      });
-    });
-    return map;
-  }, [roomTypes, suitePriceMap, bookings]);
 
   // Calculate availability for each room and date
   const roomAvailability = useMemo(() => {
     const availability: Record<string, Record<string, { available: boolean; booking?: Booking; blocked?: boolean }>> = {};
 
-    SUITE_TYPES.forEach(suiteType => {
+    suiteTypes.forEach(suiteType => {
       roomsBySuite[suiteType].forEach(room => {
         availability[room.roomName] = {};
         dateRange.dates.forEach(date => {
@@ -734,7 +703,7 @@ export default function RoomAvailabilityPage() {
   const filteredRooms = useMemo(() => {
     let filtered: RoomType[] = [];
 
-    const suitesToShow = selectedSuite === 'all' ? SUITE_TYPES : [selectedSuite];
+    const suitesToShow = selectedSuite === 'all' ? suiteTypes : [selectedSuite];
     suitesToShow.forEach(suite => {
       filtered.push(...roomsBySuite[suite]);
     });
@@ -810,6 +779,15 @@ export default function RoomAvailabilityPage() {
     try {
       const totalGuests = formData.selectedRooms.reduce((acc: number, r: any) => acc + r.adults + r.children, 0);
 
+      // Determine Status Logic (Centralized)
+      const bookingStatus = formData.reservationType === 'Walk In'
+        ? (() => {
+          const checkInDate = normalizeDate(formData.checkInDate);
+          const today = normalizeDate(new Date());
+          return checkInDate > today ? 'confirmed' : 'checked_in';
+        })()
+        : (formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending');
+
       const newBooking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
         checkIn: Timestamp.fromDate(new Date(formData.checkInDate + 'T00:00:00')) as any,
         checkOut: Timestamp.fromDate(new Date(formData.checkOutDate + 'T00:00:00')) as any,
@@ -841,7 +819,7 @@ export default function RoomAvailabilityPage() {
           allocatedRoomType: r.roomName || '',
           adults: r.adults,
           children: r.children,
-          status: 'confirmed',
+          status: bookingStatus, // Sync with Booking Status
           suiteType: r.roomType as SuiteType,
           ratePlan: (() => {
             const map: Record<string, string> = { 'BB': 'Bed & Breakfast', 'HB': 'Half Board', 'FB': 'Full Board', 'AI': 'All Inclusive', 'RO': 'Room Only' };
@@ -849,15 +827,7 @@ export default function RoomAvailabilityPage() {
           })()
         })),
         addOns: [],
-        status: formData.reservationType === 'Walk In'
-          ? (() => {
-            // Fix: Only set to 'checked_in' if arrival is TODAY (or past).
-            // Future walk-ins (Desk reservations) should be 'confirmed'.
-            const checkInDate = normalizeDate(formData.checkInDate);
-            const today = normalizeDate(new Date());
-            return checkInDate > today ? 'confirmed' : 'checked_in';
-          })()
-          : (formData.reservationType === 'Confirm Booking' ? 'confirmed' : 'pending'),
+        status: bookingStatus,
         totalAmount: formData.totalAmount,
         bookingId: `WALKIN-${Date.now()}`, // Or generate a better ID
         paymentStatus: formData.paidAmount >= formData.totalAmount ? 'paid' : (formData.paidAmount > 0 ? 'partial' : 'pending'),
@@ -1047,7 +1017,6 @@ export default function RoomAvailabilityPage() {
       </div>
     );
   }
-
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col bg-white overflow-hidden">
       {/* Unified Controls Bar */}
@@ -1108,7 +1077,7 @@ export default function RoomAvailabilityPage() {
             className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#FF6A00] focus:ring-1 focus:ring-[#FF6A00] flex-grow md:flex-grow-0"
           >
             <option value="all">All Room Types</option>
-            {SUITE_TYPES.map(suite => (
+            {suiteTypes.map(suite => (
               <option key={suite} value={suite}>{suite}</option>
             ))}
           </select>
@@ -1198,7 +1167,7 @@ export default function RoomAvailabilityPage() {
 
           {/* Room Rows */}
           <div className="bg-white">
-            {SUITE_TYPES.map((suiteType, suiteIdx) => {
+            {suiteTypes.map((suiteType, suiteIdx) => {
               const suiteRooms = filteredRooms.filter(r => r.suiteType === suiteType);
               if (suiteRooms.length === 0) return null;
 
@@ -1220,7 +1189,7 @@ export default function RoomAvailabilityPage() {
                             const avail = roomAvailability[room.roomName]?.[dateStr];
                             return avail?.available;
                           }).length;
-                          const priceKey = suiteRooms[0]?.roomName;
+                          const priceKey = suiteRooms.find(r => roomPriceMap[r.roomName] > 0)?.roomName || suiteRooms[0]?.roomName;
                           const price = (priceKey && roomPriceMap[priceKey]) || 0;
 
                           const bgColor = 'bg-[#F3F4F6]';
@@ -2075,7 +2044,7 @@ export default function RoomAvailabilityPage() {
         }}
         initialData={blockRoomInitialData}
         rooms={enrichedRooms} // Pass enriched rooms so dropdown can filter all options
-        suiteTypes={SUITE_TYPES}
+        suiteTypes={suiteTypes}
       />
 
 

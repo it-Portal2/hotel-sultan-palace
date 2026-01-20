@@ -130,22 +130,23 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 if (status === 'maintenance') {
                     blocked++;
                 } else if (status === 'checked_in') {
-                    // Fix: Exclude CLEAN rooms from Due Out stats
-                    const isClean = statuses.find(s => s.roomName === room.roomName)?.housekeepingStatus === 'clean';
-                    if (isDueOut && !isClean) {
+                    // It is Occupied
+                    occupied++;
+
+
+
+                    if (isDueOut) {
                         dueOut++;
-                        occupied++;
-                    } else {
-                        occupied++;
                     }
                 } else if (status === 'confirmed') {
                     reserved++;
+
+                    vacant++;
                 } else {
                     occupied++;
                 }
             } else {
-                // No active booking found in [Start, End)
-                // Check Due Out only (checking out today)
+
                 const dueOutBooking = allBookings.find(b => {
                     if (b.status !== 'checked_in') return false;
                     // Matches Room
@@ -155,12 +156,10 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
 
                 const isClean = statuses.find(s => s.roomName === room.roomName)?.housekeepingStatus === 'clean';
 
-                if (dueOutBooking && !isClean) {
+                if (dueOutBooking) {
+                    // It is occupied (checked in)
+                    occupied++;
                     dueOut++;
-                    occupied++;
-                } else if (dueOutBooking) {
-                    // Is due out but Clean -> Count as Occupied
-                    occupied++;
                 } else if (isInMaintenance) {
                     blocked++;
                 } else {
@@ -168,6 +167,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 }
             }
         });
+
 
         return { totalRooms: totalRoomsCount, vacant, occupied, reserved, blocked, dirty, dueOut };
     }, [rooms, allBookings, statuses]);
@@ -217,13 +217,6 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
             }
         }
 
-        // Visual Assignment
-        // Note: Booking overrides Status usually, unless booking IS maintenance type
-        // Actually, in RoomAvailability, Collision checks:
-        // 1. Booking Collision?
-        // 2. Room Block Collision?
-        // 3. Status Maintenance?
-        // Priority is Booking -> Block -> Maintenance
 
         if (booking) {
             // Handling Booking Types
@@ -243,8 +236,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 const isDueOut = checkOutDate.getTime() === today.getTime();
 
                 if (booking.status === 'checked_in') {
-                    // Fix: If room is marked CLEAN, do not show as "Due Out" (Red).
-                    // User considers "Clean" as ready/done. Show as Occupied (Blue) until actual system checkout.
+
                     if (isDueOut && housekeeping !== 'clean') {
                         status = 'due_out';
                         colorClass = 'bg-red-50 text-red-700 border-red-200';
@@ -449,7 +441,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                     onUpdate={() => loadData()}
                     activeBooking={selectedRoomData.booking}
                     roomMetadata={selectedRoomData.room}
-                    hideActions={true} // STRICTLY READ-ONLY for Room View
+                    hideActions={true}
                 />
             )}
         </div>

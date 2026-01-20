@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import type { PurchaseOrder, Supplier, InventoryItem } from '@/lib/firestoreService';
 import { createPurchaseOrder, updatePurchaseOrder } from '@/lib/inventoryService';
 import Drawer from '@/components/ui/Drawer';
-import { PlusIcon, TrashIcon, CalculatorIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CalculatorIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import { Timestamp } from 'firebase/firestore';
+import { generatePurchaseOrderHTML } from '@/utils/invoiceGenerator';
 
 interface PurchaseOrderDrawerProps {
     po: PurchaseOrder | null;
@@ -41,7 +42,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
             // Assuming simple structure for now or manual add
             setLineItems(po.items?.map(i => ({
                 itemId: i.itemId,
-                description: i.itemName,
+                description: i.name,
                 quantity: i.quantity,
                 unitCost: i.unitCost,
                 totalCost: i.totalCost
@@ -109,6 +110,23 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
         return lineItems.reduce((sum, item) => sum + item.totalCost, 0);
     };
 
+    const handlePrint = () => {
+        if (!po) return;
+        try {
+            const html = generatePurchaseOrderHTML(po);
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+            } else {
+                showToast("Popup blocked. Please allow popups to print.", "error");
+            }
+        } catch (error) {
+            console.error("Print failed", error);
+            showToast("Failed to generate print view", "error");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -126,7 +144,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                 status: po ? po.status : 'draft',
                 items: lineItems.map(i => ({
                     itemId: i.itemId,
-                    itemName: i.description,
+                    name: i.description,
                     quantity: i.quantity,
                     unitCost: i.unitCost,
                     totalCost: i.totalCost
@@ -172,6 +190,16 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                         >
                             Cancel
                         </button>
+                        {po && (
+                            <button
+                                onClick={handlePrint}
+                                type="button"
+                                className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            >
+                                <PrinterIcon className="w-5 h-5" />
+                                <span className="hidden sm:inline">Print</span>
+                            </button>
+                        )}
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting}

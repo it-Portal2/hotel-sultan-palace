@@ -34,13 +34,13 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
             // Fetch Food Orders
             if (booking.foodOrderIds && booking.foodOrderIds.length > 0) {
                 const orders = await Promise.all(booking.foodOrderIds.map(id => getFoodOrder(id)));
-                // Filter valid, non-cancelled, unrelated to direct payment if needed
-                // Logic: Exclude Cancelled, Voided, and Paid orders (same as Checkout)
+                // Filter valid, non-cancelled orders
+                // Logic: Include unpaid orders too (they might be charged to room).
+                // Previously filtered by `paymentStatus !== 'paid'` which hid receptionist orders.
                 const validOrders = orders.filter(o =>
                     o !== null &&
                     o.status !== 'cancelled' &&
-                    o.status !== 'voided' &&
-                    o.paymentStatus !== 'paid'
+                    o.status !== 'voided'
                 ) as FoodOrder[];
                 setFoodOrders(validOrders);
             } else {
@@ -87,37 +87,48 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
     const serviceTotal = guestServices.reduce((acc, s) => acc + (s.totalAmount || s.amount || 0), 0);
 
     // 4. Transactions (Charges & Payments)
-    const otherCharges = transactions.filter(t => t.type === 'charge').reduce((acc, t) => acc + (t.amount || 0), 0);
-    const totalPayments = transactions.filter(t => t.type === 'payment').reduce((acc, t) => acc + (t.amount || 0), 0);
+    // Deduplication: Filter out transactions that are already accounted for in Food Orders or Guest Services
+    // Assumption: System generated transactions for services start with 'SVC-' or 'ORD-' or are linked via ID.
+    // Ideally we match by ID, but reference pattern is a good backup.
+    const serviceTransactionIds = new Set(guestServices.map(s => s.transactionId).filter(Boolean));
+    const foodTransactionIds = new Set(foodOrders.map(f => (f as any).transactionId).filter(Boolean)); // If food orders have transaction link
 
-    // 5. Booking Initial Payment
-    const initialPayment = booking.paidAmount || 0;
-    const allPayments = initialPayment + totalPayments;
+    const uniqueTransactions = transactions.filter(t => {
+        if (t.type !== 'charge') return true; // Keep payments
 
-    // Reconciliation Logic:
-    // If stored totalAmount exists, use it to derive the effective discount if the stored discount amount is 0/missing
-    // This handles cases where data might be slightly inconsistent from legacy/buggy saves
-    // Reconciliation Logic:
-    // Ensure the Folio (Sum of items) matches the Booking Total (Official Amount)
+        // 1. Direct Link Check
+        if (serviceTransactionIds.has(t.id)) return false;
+
+        // 2. Reference Prefix Check (SVC-XXXXXX)
+        if (t.reference?.startsWith('SVC-') && guestServices.some(s => t.reference?.includes(s.id.slice(-6).toUpperCase()))) return false;
+        if (t.reference?.startsWith('ORD-') && foodOrders.some(f => f.orderNumber && t.reference?.includes(f.orderNumber))) return false;
+
+
+        const isServiceDuplicate = guestServices.some(s => {
+            const serviceName = (s.serviceType || '').toLowerCase().replace('_', ' ');
+            const txDesc = (t.description || '').toLowerCase();
+            return txDesc.includes(serviceName) || txDesc.includes('service charge');
+
+        });
+
+        if (isServiceDuplicate && t.category !== 'room_charge') return false;
+
+        return true;
+    });
+
+    const otherCharges = uniqueTransactions.filter(t => t.type === 'charge').reduce((acc, t) => acc + (t.amount || 0), 0);
+    const totalPayments = uniqueTransactions.filter(t => t.type === 'payment').reduce((acc, t) => acc + (t.amount || 0), 0);
+
+    const unaccountedPaidAmount = Math.max(0, (booking.paidAmount || 0) - totalPayments);
+    const allPayments = totalPayments + unaccountedPaidAmount;
+
     const grossTotal = roomTotal + mealPlanTotal + foodTotal + serviceTotal + otherCharges;
     const storedTotal = booking.totalAmount || grossTotal;
 
-    // Determine effective discount
     let discountAmount = booking.discount?.amount || 0;
     let isImpliedDiscount = false;
 
-    // If there is a discrepancy where Gross > Total, and we haven't accounted for it in explicit discount,
-    // treat the difference as an adjustment/discount to make the math work.
-    // This is critical for showing the "Real Price" consistency checking.
-    if (grossTotal > storedTotal + 1) { // +1 for floating point tolerance
-        const difference = grossTotal - storedTotal;
-        // If we already have a discount, but it's less than the difference, maybe the difference IS the discount?
-        // Or if we have no discount 0, take the whole difference.
-        if (Math.abs(discountAmount - difference) > 1) {
-            discountAmount = difference;
-            isImpliedDiscount = true;
-        }
-    }
+
 
     const grandTotal = grossTotal - discountAmount;
     const balance = grandTotal - allPayments;
@@ -241,7 +252,7 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
                                                         ))}
 
                                                         {/* Other Transactions */}
-                                                        {transactions.map(t => (
+                                                        {uniqueTransactions.map(t => (
                                                             <tr key={t.id} className={t.type === 'payment' ? 'bg-emerald-50/30' : ''}>
                                                                 <td className="px-6 py-4 text-gray-900">
                                                                     <span className="block font-medium">{t.description}</span>
@@ -261,12 +272,12 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
                                                             </tr>
                                                         ))}
 
-                                                        {/* Initial Booking Payment */}
-                                                        {initialPayment > 0 && (
+                                                        {/* Initial Booking Payment (Only if not fully covered by transactions) */}
+                                                        {unaccountedPaidAmount > 0 && (
                                                             <tr className="bg-emerald-50/30">
                                                                 <td className="px-6 py-4 font-medium text-emerald-800">Advance Deposit / Initial Payment</td>
                                                                 <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
-                                                                <td className="px-6 py-4 text-right text-emerald-700 font-bold font-mono">{initialPayment.toLocaleString()}</td>
+                                                                <td className="px-6 py-4 text-right text-emerald-700 font-bold font-mono">{unaccountedPaidAmount.toLocaleString()}</td>
                                                             </tr>
                                                         )}
 

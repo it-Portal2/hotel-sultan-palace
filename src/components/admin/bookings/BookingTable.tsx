@@ -329,7 +329,7 @@ export default function BookingTable({
                                                                     )}
                                                                 </Menu.Item>
                                                             )}
-                                                            {['pending', 'confirmed'].includes(booking.status) && onCancel && (
+                                                            {['pending', 'confirmed', 'walk_in'].includes(booking.status) && onCancel && (
                                                                 <Menu.Item>
                                                                     {({ active }) => (
                                                                         <button

@@ -21,7 +21,7 @@ import {
 import { db } from './firebase';
 
 // Interfaces
-export type SuiteType = 'Garden Suite' | 'Imperial Suite' | 'Ocean Suite';
+export type SuiteType = string;
 
 export interface Room {
   id: string;
@@ -696,15 +696,7 @@ export interface CheckInOutRecord {
 
 
 
-export interface RoomType {
-  id: string;
-  suiteType: SuiteType;
-  roomName: string; // e.g., "DESERT ROSE", "EUCALYPTUS", "BOUGAINVILLEA"
-  amenities?: string[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 // ==================== Meal Plan Settings ====================
 
@@ -789,6 +781,17 @@ export interface InventoryCategory {
   name: string; // machine name (slug) - used for filtering
   label: string; // display label
   createdAt: Date;
+  isActive?: boolean;
+}
+
+export interface InventoryLocation {
+  id: string;
+  name: string;
+  type: 'store' | 'outlet' | 'kitchen';
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type InventoryDepartment = string;
@@ -841,21 +844,21 @@ export interface PurchaseOrder {
   poNumber: string; // Auto-generated e.g., PO-2024-001
   supplierId: string;
   supplierName: string;
-  status: 'draft' | 'sent' | 'received' | 'partially_received' | 'cancelled';
+  status: 'draft' | 'ordered' | 'received' | 'cancelled';
+  type?: 'standard' | 'market_expense'; // Added to distinguish regular POs from direct market purchases
 
   items: Array<{
     itemId: string;
-    itemName: string;
+    name: string;
     quantity: number;
     unitCost: number;
     totalCost: number;
-    receivedQuantity?: number; // For partial delivery
   }>;
 
-  subtotal: number;
-  taxAmount?: number;
-  shippingCost?: number;
+  subtotal?: number;
   totalAmount: number;
+  paymentMethod?: 'cash' | 'card' | 'bank_transfer';
+  targetLocationId?: string;
 
   expectedDeliveryDate?: Date;
   actualDeliveryDate?: Date;
@@ -1394,6 +1397,77 @@ const resolveRoomImage = (data: { name?: string; type?: string; image?: string }
   // Final fallback
   return roomImages.gardenSuite;
 };
+
+// Room Types CRUD
+export interface RoomTypeData {
+  id: string;
+  roomName: string;
+  suiteType: SuiteType;
+  price: number;
+  description?: string;
+  amenities?: string[];
+  maxOccupancy?: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type RoomType = RoomTypeData;
+
+export const getAllRoomTypes = async (): Promise<RoomTypeData[]> => {
+  if (!db) return [];
+  try {
+    // 1. Try fetching from new 'roomTypes' collection
+    const q = query(collection(db, 'roomTypes'), orderBy('roomName', 'asc'));
+    const snapshot = await getDocs(q);
+
+    let items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        roomName: data.roomName || '',
+        suiteType: data.suiteType || 'Garden Suite', // Default fallback
+        price: data.price || 0,
+        description: data.description || '',
+        amenities: data.amenities || [],
+        maxOccupancy: data.maxOccupancy || 2,
+        isActive: data.isActive !== false,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+      } as RoomTypeData;
+    });
+
+    // 2. If empty, fallback to legacy 'room_types' collection (Restoring user's previous data state)
+    if (items.length === 0) {
+      console.warn(' getAllRoomTypes: roomTypes empty, falling back to room_types');
+      const qLegacy = query(collection(db, 'room_types'), orderBy('name', 'asc')); // 'name' was often used in legacy
+      const snapshotLegacy = await getDocs(qLegacy);
+
+      items = snapshotLegacy.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          roomName: data.roomName || data.name || '',
+          suiteType: data.suiteType || 'Garden Suite',
+          price: data.price || 0,
+          description: data.description || '',
+          amenities: data.amenities || [],
+          maxOccupancy: data.maxOccupancy || 2,
+          isActive: data.isActive !== false,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+        } as RoomTypeData;
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error('Error fetching room types:', error);
+    return [];
+  }
+};
+
+
 
 // Rooms CRUD Operations
 export const getRooms = async (): Promise<Room[]> => {
@@ -2979,6 +3053,10 @@ export const getRoomTypes = async (suiteType?: SuiteType): Promise<RoomType[]> =
         id: d.id,
         suiteType: data.suiteType as SuiteType,
         roomName: data.roomName,
+        price: data.price || 0,
+        description: data.description || '',
+        amenities: data.amenities || [],
+        maxOccupancy: data.maxOccupancy || 2,
         isActive: data.isActive !== false,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -2998,6 +3076,10 @@ export const getRoomTypes = async (suiteType?: SuiteType): Promise<RoomType[]> =
           id: d.id,
           suiteType: data.suiteType as SuiteType, // Ensure mapping matches
           roomName: data.roomName || data.name, // Handle potential schema diff
+          price: data.price || 0,
+          description: data.description || '',
+          amenities: data.amenities || [],
+          maxOccupancy: data.maxOccupancy || 2,
           isActive: data.isActive !== false,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -3071,6 +3153,10 @@ export const getRoomType = async (id: string): Promise<RoomType | null> => {
       id: s.id,
       suiteType: data.suiteType as SuiteType,
       roomName: data.roomName,
+      price: data.price || 0,
+      description: data.description || '',
+      amenities: data.amenities || [],
+      maxOccupancy: data.maxOccupancy || 2,
       isActive: data.isActive !== false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -3519,9 +3605,23 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
       const booking = await getBooking(data.bookingId);
       if (booking) {
         const foodOrderIds = booking.foodOrderIds || [];
+        // Only update if not already linked (though create should be unique)
         if (!foodOrderIds.includes(dr.id)) {
+          const currentTotal = booking.totalAmount || 0;
+          // If the order is "charged" to room, we should add it. 
+          // Usually creation implies a charge unless paid immediately by cash?
+          // The folio logic sums ALL valid orders.
+          // However, if it's "dine-in" and paid by cash, it might not go to room bill?
+          // But here we are just linking it. The folio viewer calculates the total based on linked items.
+          // The CRITICAL part is that `booking.totalAmount` is often used as a "source of truth" for the total bill value in some views.
+          // So we should increment it.
+          // Note: Ensure we don't double count if we update it later. But create is a safe place.
+          const orderTotal = data.totalAmount || 0;
+
           await updateBooking(data.bookingId, {
-            foodOrderIds: [...foodOrderIds, dr.id]
+            foodOrderIds: [...foodOrderIds, dr.id],
+            totalAmount: currentTotal + orderTotal,
+            updatedAt: new Date()
           });
         }
       }
@@ -3927,13 +4027,24 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
 
     const roomCharges = (booking.rooms || []).reduce((sum, room) => sum + (room.price * nights), 0);
 
-    // Get food orders
-    const foodOrders = booking.foodOrderIds ? await Promise.all(
-      booking.foodOrderIds.map(id => getFoodOrder(id))
-    ) : [];
 
-    // Filter out Cancelled, Voided, or already Paid orders
-    const validFoodOrders = (foodOrders.filter(o => o !== null) as FoodOrder[]).filter(o =>
+
+    // 2. Robust Fetching: Query collections directly by bookingId to handle missing links
+    const [
+      foodOrdersSnap,
+      guestServicesSnap,
+      transactions
+    ] = await Promise.all([
+      getDocs(query(collection(db, 'foodOrders'), where('bookingId', '==', bookingId))),
+      getDocs(query(collection(db, 'guestServices'), where('bookingId', '==', bookingId))),
+      getFolioTransactions(bookingId)
+    ]);
+
+    // Process Food Orders
+    const foodOrders = foodOrdersSnap.docs
+      .map(d => ({ id: d.id, ...d.data() } as FoodOrder));
+
+    const validFoodOrders = foodOrders.filter(o =>
       o.status !== 'cancelled' &&
       o.status !== 'voided' &&
       o.paymentStatus !== 'paid'
@@ -3941,34 +4052,47 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
 
     const foodCharges = validFoodOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
-    // Get guest services
-    // Get guest services
-    const services = booking.guestServiceIds ? await Promise.all(
-      booking.guestServiceIds.map(id => getGuestService(id))
-    ) : [];
+    // Process Guest Services
+    const services = guestServicesSnap.docs
+      .map(d => ({ id: d.id, ...d.data() } as GuestService));
 
-    // Filter services: Exclude Cancelled services
-    const validServices = (services.filter(s => s !== null) as GuestService[]).filter(s =>
+    const validServices = services.filter(s =>
       s.status !== 'cancelled'
     );
 
     const serviceCharges = validServices.reduce((sum, service) => sum + (service.totalAmount || service.amount || 0), 0);
 
-    // Get folio transactions (real-time payments and charges)
-    const transactions = await getFolioTransactions(bookingId);
-
-    // Calculate additional charges from transactions (e.g., ad-hoc charges)
-    const transactionCharges = transactions
-      .filter(t => t.type === 'charge')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    // Calculate total payments from transactions
-    const transactionPayments = transactions
-      .filter(t => t.type === 'payment')
-      .reduce((sum, t) => sum + t.amount, 0);
 
     // Add-ons charges
     const addOnsCharges = (booking.addOns || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
+
+    // DEDUPLICATION LOGIC (Same as FolioDetailsDrawer)
+    // Filter out transactions that are already accounted for in Food Orders or Guest Services
+    const serviceTransactionIds = new Set(validServices.map(s => s.transactionId).filter(Boolean));
+    const foodTransactionIds = new Set(validFoodOrders.map(f => (f as any).transactionId).filter(Boolean));
+
+    const uniqueTransactions = transactions.filter(t => {
+      if (t.type !== 'charge') return true; // Keep payments always (payments don't double count against charges)
+
+      // Check if this transaction is linked to a loaded service
+      if (serviceTransactionIds.has(t.id)) return false;
+
+      // Heuristic: Check reference prefix if ID link missing (Backup)
+      if (t.reference?.startsWith('SVC-') && validServices.some(s => t.reference?.includes(s.id.slice(-6).toUpperCase()))) return false;
+      if (t.reference?.startsWith('ORD-') && validFoodOrders.some(f => f.orderNumber && t.reference?.includes(f.orderNumber))) return false;
+
+      return true;
+    });
+
+    // Calculate additional charges from UNIQUE transactions
+    const transactionCharges = uniqueTransactions
+      .filter(t => t.type === 'charge')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Calculate total payments from ALL transactions (payments are valid)
+    const transactionPayments = transactions
+      .filter(t => t.type === 'payment')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     // Calculate taxes (Removed hardcoded 10% as per user request)
     const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges + transactionCharges;
@@ -4000,13 +4124,23 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       roomCharges,
       foodCharges,
       serviceCharges,
-      facilitiesCharges: 0, // Can be extended
+      facilitiesCharges: 0,
       addOnsCharges,
+      customCharges: transactionCharges, // Store manual charges amount
       taxes,
+      discount: booking.discount?.amount || 0,
       totalAmount,
       paidAmount: alreadyPaid,
       balance: balance,
       paymentStatus: paymentStatus,
+      transactions: transactionCharges > 0 ? transactions.filter(t => t.type === 'charge').map(t => ({
+        id: t.id,
+        date: t.date || new Date(),
+        description: t.description || '',
+        amount: t.amount || 0,
+        type: t.type,
+        category: t.category || 'General'
+      })) : [], // Store manual transactions for display
       roomDetails: (booking.rooms || []).map(room => ({
         roomType: room.type || '',
         nights: nights || 0,
@@ -4033,15 +4167,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         price: addon.price || 0,
         total: (addon.price || 0) * (addon.quantity || 0),
       })),
-      customCharges: transactionCharges,
-      transactions: transactions.map(t => ({
-        id: t.id,
-        date: t.date || new Date(),
-        description: t.description || '',
-        amount: t.amount || 0,
-        type: t.type,
-        category: t.category || 'General'
-      })),
+
     };
 
     // Remove undefined values before saving to Firestore
@@ -4166,7 +4292,7 @@ export const updateRoomStatus = async (id: string, data: Partial<RoomStatus>): P
       }
     });
 
-    const r = doc(db, 'roomStatuses', id);
+    const r = doc(db, 'room_statuses', id);
     await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
   } catch (e) {
@@ -5366,12 +5492,20 @@ export const getMasterData = async <T>(collectionName: string): Promise<T[]> => 
     const colRef = collection(db, collectionName);
     const q = query(colRef, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    })) as T[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        roomName: data.roomName || '',
+        suiteType: data.suiteType || 'Garden Suite', // Default fallback
+        price: data.price || 0,
+        description: data.description || '',
+        amenities: data.amenities || [],
+        maxOccupancy: data.maxOccupancy || 2,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+      } as T; // Changed from RoomTypeData to T to maintain generic signature
+    });
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
     return [];
@@ -5633,13 +5767,61 @@ export interface FolioTransaction {
   createdAt: Date;
 }
 
+// Helper to record ledger entry internally to avoid circular dependency
+const recordLedgerTransaction = async (
+  amount: number,
+  type: 'income' | 'expense',
+  category: string,
+  description: string,
+  paymentMethod: string,
+  referenceId: string
+) => {
+  if (!db) return;
+  try {
+    await addDoc(collection(db, 'accountsLedger'), {
+      amount,
+      entryType: type,
+      category,
+      description,
+      paymentMethod,
+      referenceId,
+      date: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      status: 'cleared',
+      accountsReceivable: false,
+      accountsPayable: false
+    });
+  } catch (e) {
+    console.error("Error recording ledger:", e);
+  }
+};
+
 export const addFolioTransaction = async (transaction: Omit<FolioTransaction, 'id' | 'createdAt'>) => {
   if (!db) return;
   try {
-    await addDoc(collection(db, 'folioTransactions'), {
+    const docRef = await addDoc(collection(db, 'folioTransactions'), {
       ...transaction,
       createdAt: serverTimestamp()
     });
+
+    // Auto-record to Ledger if it's a payment
+    if (transaction.type === 'payment') {
+      const method = (transaction.code || '').toLowerCase();
+      let payMethod = 'cash';
+      if (method.includes('card') || method.includes('visa') || method.includes('master')) payMethod = 'card';
+      else if (method.includes('bank') || method.includes('transfer')) payMethod = 'bank_transfer';
+      else if (method.includes('online') || method.includes('mpesa')) payMethod = 'online';
+
+      await recordLedgerTransaction(
+        transaction.amount,
+        'income',
+        'room_booking', // Default category for folio payments
+        `Folio Payment: ${transaction.description}`,
+        payMethod,
+        docRef.id
+      );
+    }
   } catch (error) {
     console.error("Error adding transaction", error);
     throw error;
@@ -5689,6 +5871,17 @@ export const addTransaction = async (data: Omit<FolioTransaction, 'id' | 'create
         // We defer complex status logic to the bill generation or periodic checks
         await updateBooking(data.bookingId, {
           paidAmount: newPaid,
+          updatedAt: new Date()
+        });
+      }
+    } else if (data.type === 'charge') {
+      // If it's a charge, update the booking's totalAmount so it reflects in the folio correctly
+      const booking = await getBooking(data.bookingId);
+      if (booking) {
+        const currentTotal = booking.totalAmount || 0;
+        const newTotal = currentTotal + data.amount;
+        await updateBooking(data.bookingId, {
+          totalAmount: newTotal,
           updatedAt: new Date()
         });
       }
@@ -5786,11 +5979,35 @@ export const getGuests = async (): Promise<GuestProfile[]> => {
   }
 };
 
+const cleanUndefined = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Date) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(v => cleanUndefined(v)).filter(v => v !== undefined);
+  }
+
+  const result: any = {};
+  Object.keys(obj).forEach(key => {
+    const value = obj[key];
+    if (value !== undefined) {
+      result[key] = cleanUndefined(value);
+    }
+  });
+  return result;
+};
+
 export const addGuest = async (guest: Omit<GuestProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
   if (!db) throw new Error("Firestore not initialized");
   try {
+    const cleanedGuest = cleanUndefined(guest);
     await addDoc(collection(db, 'guests'), {
-      ...guest,
+      ...cleanedGuest,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -5804,8 +6021,9 @@ export const updateGuest = async (id: string, data: Partial<GuestProfile>) => {
   if (!db) throw new Error("Firestore not initialized");
   try {
     const docRef = doc(db, 'guests', id);
+    const cleanedData = cleanUndefined(data);
     await updateDoc(docRef, {
-      ...data,
+      ...cleanedData,
       updatedAt: serverTimestamp()
     });
   } catch (error) {

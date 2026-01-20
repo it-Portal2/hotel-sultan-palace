@@ -26,6 +26,7 @@ export default function PurchaseOrdersTab() {
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [confirmReceiveId, setConfirmReceiveId] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -69,6 +70,7 @@ export default function PurchaseOrdersTab() {
         const order = orders.find(o => o.id === confirmReceiveId);
         if (!order) return;
 
+        setIsProcessing(true);
         try {
             // For now, auto-receive all items fully. 
             // In a more advanced version, we'd show a "Receive Modal" to confirm quantities.
@@ -80,6 +82,7 @@ export default function PurchaseOrdersTab() {
             console.error(error);
             showToast("Failed to receive order", "error");
         } finally {
+            setIsProcessing(false);
             setConfirmReceiveId(null);
         }
     };
@@ -260,8 +263,9 @@ export default function PurchaseOrdersTab() {
                 onConfirm={handleReceive}
                 title="Confirm Receipt"
                 message="Are you sure you want to mark this order as received? This will automatically update the stock levels for all items in this order."
-                confirmText="Receive Items"
+                confirmText={isProcessing ? "Processing..." : "Receive Items"}
                 cancelText="Cancel"
+                disabled={isProcessing}
             />
         </div>
     );

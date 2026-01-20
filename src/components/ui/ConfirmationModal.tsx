@@ -10,6 +10,7 @@ interface ConfirmationModalProps {
     confirmText?: string;
     cancelText?: string;
     type?: 'danger' | 'warning' | 'info';
+    disabled?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -20,7 +21,8 @@ export default function ConfirmationModal({
     message,
     confirmText = 'Confirm',
     cancelText = 'Cancel',
-    type = 'danger'
+    type = 'danger',
+    disabled = false
 }: ConfirmationModalProps) {
     if (!isOpen) return null;
 
@@ -94,8 +96,9 @@ export default function ConfirmationModal({
                 <div className="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3">
                     <button
                         type="button"
-                        className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-semibold shadow-sm sm:ml-3 sm:w-auto sm:text-sm ${config.buttonBg} ${config.buttonText}`}
+                        className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-semibold shadow-sm sm:ml-3 sm:w-auto sm:text-sm ${config.buttonBg} ${config.buttonText} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={onConfirm}
+                        disabled={disabled}
                     >
                         {confirmText}
                     </button>

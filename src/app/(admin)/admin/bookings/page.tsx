@@ -69,6 +69,26 @@ export default function AdminBookingsPage() {
     refreshData();
   }, [showHistory]); // Re-fetch when toggle changes
 
+  // Auto-open booking from URL
+  const bookingIdParam = searchParams?.get('id');
+  useEffect(() => {
+    if (bookings.length > 0 && bookingIdParam) {
+      const found = bookings.find(b => b.id === bookingIdParam);
+      if (found) {
+        setSelected(found);
+        setShowDetailsDrawer(true);
+        // Ensure the tab containing this booking is active if possible, or just stay on 'all'
+        // If it's cancelled, we might need to switch to 'cancelled' tab if it's filtered out?
+        // But 'all' tab shows everything usually? 
+        // Our 'filtered' logic for 'all' tab: 
+        // if (status === 'all' && activeTab === 'all') list = list.filter(b => b.status !== 'maintenance' ...)
+        // If it's maintenance, it might be hidden. 
+        // But invalid/maintenance blocks usually use 'id' param only if coming from calendar.
+        // For invoices, it's a booking.
+      }
+    }
+  }, [bookings, bookingIdParam]);
+
   // Set page to 1 when filters change
   useEffect(() => {
     setPage(1);

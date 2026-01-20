@@ -600,6 +600,27 @@ export default function AdminCheckoutPage() {
                   </div>
                 )}
 
+                {/* NEW: Custom Charges / Transactions Section */}
+                {checkoutBill.customCharges > 0 && (
+                  <div className="mb-4 border-b border-gray-100 pb-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm font-semibold text-gray-700">Custom Charges & Transactions</span>
+                      <span className="text-sm font-bold text-gray-900">${checkoutBill.customCharges.toFixed(2)}</span>
+                    </div>
+                    {/* Access transactions from checkoutBill if available, otherwise just show total */}
+                    {/* Note: checkoutBill interface likely needs 'transactions' array to show details. */}
+                    {/* Ideally, we should update generateCheckoutBill to include transaction details in the bill object. */}
+                    {/* For now, checking if 'transactions' exists on bill object (it was added in recent updates implicitly via spread perhaps?) */}
+                    {/* If not, we just show the total. But let's try to map if present. */}
+                    {(checkoutBill as any).transactions?.filter((t: any) => t.type === 'charge').map((t: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center py-1 text-xs text-gray-600 pl-4 mt-1">
+                        <span>{t.description || 'Custom Charge'} ({new Date(t.date).toLocaleDateString()})</span>
+                        <span>${t.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {checkoutBill.addOnsCharges > 0 && (
                   <div className="mb-4 border-b border-gray-100 pb-3">
                     <div className="flex justify-between items-center py-2">

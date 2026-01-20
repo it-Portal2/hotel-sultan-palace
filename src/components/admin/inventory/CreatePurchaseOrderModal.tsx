@@ -132,12 +132,11 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                 supplierName: supplier?.name || 'Unknown',
                 items: items.map(i => ({
                     itemId: i.itemId,
-                    itemName: i.itemName,
+                    name: i.itemName,
                     quantity: Number(i.quantity),
                     unitCost: Number(i.unitCost),
                     totalCost: Number(i.totalCost)
                 })),
-                subtotal: calculateTotal(),
                 totalAmount: calculateTotal(), // + Tax if needed
                 notes,
                 createdBy: 'Admin' // Should be user ID

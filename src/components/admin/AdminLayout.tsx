@@ -274,9 +274,18 @@ function AdminLayoutContent({
 
   // Effect to reset open groups when navigationGroups change
   useEffect(() => {
-    setOpenGroups(getInitialOpenGroups());
+
+
+    const newInitial = getInitialOpenGroups();
+
+    setOpenGroups(prev => {
+      const nextState = { ...prev };
+
+
+      return newInitial;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigationGroups, pathname]); // Re-eval when path changes to keep sync? checking user intent.. active tab should stay open.
+  }, [navigationGroups, pathname]);
 
   const roleLabels: Record<string, string> = {
     super_admin: 'System Administrator',

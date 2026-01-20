@@ -98,8 +98,8 @@ export default function POSCreatePage() {
 
     // Calculations
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.10;
-    const total = subtotal + tax;
+    const tax = 0;
+    const total = subtotal;
 
     // Submit Logic
     const handleSubmitOrder = async () => {

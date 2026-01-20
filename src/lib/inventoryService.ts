@@ -24,7 +24,8 @@ import type {
     FoodOrder,
     LowStockAlert,
     InventoryCategory,
-    Department
+    Department,
+    InventoryLocation
 } from './firestoreService';
 
 // ==================== CATEGORIES ====================
@@ -97,6 +98,61 @@ export const seedDefaultDepartments = async (): Promise<void> => {
     if (toCreate.length === 0) return;
 
     await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
+    await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
+};
+
+// ==================== LOCATIONS ====================
+
+export const getInventoryLocations = async (): Promise<InventoryLocation[]> => {
+    if (!db) return [];
+    try {
+        const q = query(collection(db, 'inventoryLocations'), orderBy('name', 'asc'));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryLocation));
+    } catch (e) {
+        console.error("Error fetching locations:", e);
+        return [];
+    }
+};
+
+export const createInventoryLocation = async (data: Omit<InventoryLocation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = await addDoc(collection(db, 'inventoryLocations'), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const updateInventoryLocation = async (id: string, data: Partial<InventoryLocation>): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'inventoryLocations', id);
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+export const deleteInventoryLocation = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    await deleteDoc(doc(db, 'inventoryLocations', id));
+};
+
+export const seedDefaultLocations = async (): Promise<void> => {
+    const defaults = [
+        { name: "Main Store", type: "store" },
+        { name: "Main Kitchen", type: "kitchen" },
+        { name: "Beach Bar", type: "outlet" },
+        { name: "Pool Bar", type: "outlet" },
+        { name: "Housekeeping Store", type: "store" }
+    ];
+    const existing = await getInventoryLocations();
+    if (existing.length > 0) return;
+
+    await Promise.all(defaults.map(loc => createInventoryLocation({
+        name: loc.name,
+        type: loc.type as any,
+        isActive: true,
+        description: "Default location"
+    })));
 };
 
 // ==================== SUPPLIERS ====================
@@ -186,6 +242,12 @@ export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId
         if (!poSnap.exists()) throw new Error("PO not found");
 
         const po = poSnap.data() as PurchaseOrder;
+
+        // Idempotency Check: Don't process if already received
+        if (po.status === 'received') {
+            console.warn(`PO ${po.poNumber} already received. Skipping.`);
+            return;
+        }
 
         // Update Inventory and Create Transactions
         for (const item of receivedItems) {

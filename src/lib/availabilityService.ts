@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { getRooms, getAllBookings, Room, Booking, getRoomTypes } from './firestoreService';
+import { getRooms, getAllBookings, Room, Booking, getAllRoomTypes } from './firestoreService';
 
 export interface DailyInventory {
     date: string; // YYYY-MM-DD
@@ -133,8 +133,8 @@ export const checkDailyAvailability = async (
         // 2. Get all PHYSICAL rooms from roomTypes collection
         // The 'rooms' collection only contains metadata/definitions. 
         // 'roomTypes' contains the actual 15 bookable units.
-        const allPhysicalRooms = await getRoomTypes();
-        console.log(`[AvailCheck] Found ${allPhysicalRooms.length} physical rooms from getRoomTypes`);
+        const allPhysicalRooms = await getAllRoomTypes();
+        console.log(`[AvailCheck] Found ${allPhysicalRooms.length} physical rooms from getAllRoomTypes`);
 
         // 3. Filter rooms
         const availableRooms = allPhysicalRooms.filter(room => {
@@ -146,14 +146,11 @@ export const checkDailyAvailability = async (
                 }
             }
 
+
+
             // Check if occupied
             // We check if the specific roomName (e.g. "Papaya") is in the occupied set
             if (occupiedRoomSet.has(room.roomName)) {
-                return false;
-            }
-
-            // Also check if the room itself is active
-            if (!room.isActive) {
                 return false;
             }
 

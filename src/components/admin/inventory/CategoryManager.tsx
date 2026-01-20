@@ -106,13 +106,13 @@ export default function CategoryManager({ categories, isOpen, onClose, onRefresh
                     </h3>
 
                     <div className="space-y-2">
-                        {categories.length === 0 ? (
+                        {categories.filter(c => c.isActive !== false).length === 0 ? (
                             <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                 <FolderIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                                 <p className="text-gray-400 text-sm">No categories found.</p>
                             </div>
                         ) : (
-                            categories.map(cat => (
+                            categories.filter(c => c.isActive !== false).map(cat => (
                                 <div key={cat.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm group hover:border-[#FF6A00]/30 transition-all">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-orange-50 text-[#FF6A00] rounded-lg">

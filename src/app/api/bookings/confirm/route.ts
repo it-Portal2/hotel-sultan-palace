@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { confirmBooking } from '@/lib/bookingService';
+import { sendEmail, generateBookingConfirmationEmail } from '@/lib/emailService';
+import { getBooking } from '@/lib/firestoreService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,16 +18,18 @@ export async function POST(request: NextRequest) {
     // Confirm booking
     await confirmBooking(bookingId);
 
+
     // Send confirmation email (non-blocking)
     try {
-      const confirmationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/send-confirmation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId }),
-      });
-
-      if (!confirmationResponse.ok) {
-        console.warn('Failed to send confirmation email:', await confirmationResponse.text());
+      const booking = await getBooking(bookingId);
+      if (booking) {
+        const emailHtml = generateBookingConfirmationEmail(booking);
+        await sendEmail({
+          to: booking.guestDetails.email,
+          subject: `Booking Confirmation - ${booking.bookingId}`,
+          html: emailHtml,
+        });
+        console.log('Confirmation email sent directly');
       }
     } catch (emailError) {
       // Don't fail the booking confirmation if email fails

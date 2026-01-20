@@ -47,6 +47,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     initialSuiteType,
     initialRoomName,
     availableRooms,
+    roomTypes = [], // Default to empty array if not passed
     bookings = [],
     loading = false,
     mealPlanSettings
@@ -58,11 +59,17 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
     // Default prices map based on room type
     const suitePrices = useMemo(() => {
         const prices: Record<string, number> = {};
+        // First pass: Collect valid prices. 
+        // We prioritize finding ANY valid price over a 0 from a misconfigured room.
         availableRooms.forEach(r => {
-            if (r.suiteType && r.price) {
-                prices[r.suiteType] = r.price;
+            if (r.suiteType && r.price && r.price > 0) {
+                // If we don't have a price yet, or the current one is 0, take this one
+                if (!prices[r.suiteType]) {
+                    prices[r.suiteType] = r.price;
+                }
             }
         });
+        // Second pass: Ensure even rooms with 0 price don't overwrite if we found one
         return prices;
     }, [availableRooms]);
 
@@ -125,6 +132,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
             // Advanced Fields
             reservationType: 'Walk In',
+            status: 'checked_in', // Default to checked_in for Walk In
             businessSource: 'Direct',
             bookingSource: 'Direct',
             marketCode: 'Direct',
@@ -209,6 +217,14 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             isValid = false;
         }
 
+        // Validate Room Selection (Essential for Walk-In / In-House visibility on Grid)
+        const hasUnassignedRooms = formData.selectedRooms.some(r => !r.roomName);
+        if (hasUnassignedRooms) {
+            newErrors.roomSelection = "Please assign a room number for all selected rooms";
+            showToast("Please assign a room number for all selected rooms", "error"); // Immediate feedback
+            isValid = false;
+        }
+
         setErrors(newErrors);
         return isValid;
     };
@@ -278,22 +294,21 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
     }, [availableRooms, bookings, reservationDates]); // STRICT DEPENDENCIES
 
-    // 3. Filter Room Types - Show Standard Types
+    // 3. Filter Room Types - Show Dynamic Types
     const availableRoomTypes = useMemo(() => {
-        // STRICT: Hardcoded 3 types as requested by user to allow selecting them even if no data exists
-        const standardTypes: SuiteType[] = ['Garden Suite', 'Imperial Suite', 'Ocean Suite'];
-        return standardTypes.map(t => ({
-            id: t,
-            suiteType: t,
-            price: suitePrices[t] || 0,
+        // Use props.roomTypes as source of truth
+        return roomTypes.map((rt: RoomType) => ({
+            id: rt.id,
+            suiteType: rt.suiteType,
+            price: rt.price || suitePrices[rt.suiteType] || 0,
             roomName: '',
             adults: 2,
             children: 0,
             roomNumber: '',
-            amenities: [],
-            description: ''
-        } as unknown as RoomType)); // Cast to avoid full type warnings
-    }, [suitePrices]);
+            amenities: rt.amenities || [],
+            description: rt.description || ''
+        } as unknown as RoomType));
+    }, [roomTypes, suitePrices]);
 
     // Calculate nights when dates change
     useEffect(() => {
@@ -406,7 +421,9 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
 
                     // Update price if specific room is selected (in case it differs from base suite price)
                     if (field === 'roomName' && value) {
-                        const selectedRoom = availableRooms.find(room => room.name === value);
+                        const selectedRoom = availableRooms.find(room =>
+                            (room.name || '').toLowerCase() === (value || '').toLowerCase()
+                        );
                         if (selectedRoom && selectedRoom.price) {
                             updated.price = selectedRoom.price;
                         }
@@ -453,6 +470,23 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
         try {
             setIsSubmitting(true);
             const bookingData: any = { ...formData };
+
+            // Dynamic Status Logic for Walk-In
+            // If Walk-In is for TODAY, it's Checked In. If Future, it's Confirmed.
+            if (formData.reservationType === 'Walk In') {
+                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+                // formData.checkInDate is already YYYY-MM-DD from input type='date'
+
+                if (formData.checkInDate === todayStr) {
+                    bookingData.status = 'checked_in';
+                } else {
+                    bookingData.status = 'confirmed';
+                }
+            } else if (formData.reservationType === 'Confirm Booking') {
+                bookingData.status = 'confirmed';
+            } else if (formData.reservationType === 'Tentative') {
+                bookingData.status = 'tentative'; // Assumed status
+            }
 
             if (selectedCoupon) {
                 // REFACTORED: Discount on Room Only
@@ -659,7 +693,14 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                             {/* Reservation Type */}
                             <div className="col-span-12 md:col-span-3">
                                 <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">Type</label>
-                                <select value={formData.reservationType} onChange={e => setFormData({ ...formData, reservationType: e.target.value })} className="w-full h-10 pl-3 pr-8 bg-white border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 appearance-none shadow-sm">
+                                <select value={formData.reservationType} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData({
+                                        ...formData,
+                                        reservationType: val,
+                                        status: val === 'Walk In' ? 'checked_in' : 'confirmed'
+                                    })
+                                }} className="w-full h-10 pl-3 pr-8 bg-white border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 appearance-none shadow-sm">
                                     <option>Walk In</option>
                                     <option>Confirm Booking</option>
                                     <option>Tentative</option>
@@ -948,6 +989,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                     </div>
                 </div>
             </div>
+
 
             {/* Custom Cancel Confirmation Modal */}
             {showCancelConfirm && (

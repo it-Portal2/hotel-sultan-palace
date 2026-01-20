@@ -1,19 +1,36 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { getLedgerEntries, getFinancialSummary, createLedgerEntry } from '@/lib/accountsService';
-import type { LedgerEntry, FinancialSummary } from '@/lib/firestoreService';
-import { PlusIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { getLedgerEntries, getFinancialSummary, createLedgerEntry, getSalesInvoices, getPurchaseBills } from '@/lib/accountsService';
+import type { LedgerEntry, FinancialSummary, Booking, PurchaseOrder } from '@/lib/firestoreService';
+import { PlusIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, BanknotesIcon, DocumentTextIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import AccountEntryDrawer from '@/components/admin/accounts/AccountEntryDrawer';
 import { useSearchParams } from 'next/navigation';
+import { updatePurchaseOrder } from '@/lib/inventoryService';
+import { useToast } from '@/context/ToastContext';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import BookingDetailsDrawer from '@/components/admin/bookings/BookingDetailsDrawer';
+import PurchaseOrderDrawer from '@/components/admin/inventory/PurchaseOrderDrawer';
+import { getSuppliers, getInventoryItems } from '@/lib/inventoryService';
+import type { Supplier, InventoryItem } from '@/lib/firestoreService';
 
 export default function AccountsPage() {
-    const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
+    const { showToast } = useToast();
+    const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'bills' | 'transactions'>('overview');
     const [entries, setEntries] = useState<LedgerEntry[]>([]);
+    const [invoices, setInvoices] = useState<Booking[]>([]);
+    const [bills, setBills] = useState<PurchaseOrder[]>([]);
     const [summary, setSummary] = useState<FinancialSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [showBookingDrawer, setShowBookingDrawer] = useState(false);
+    const [selectedBill, setSelectedBill] = useState<PurchaseOrder | null>(null);
+    const [showBillDrawer, setShowBillDrawer] = useState(false);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+    const [payBillId, setPayBillId] = useState<string | null>(null);
 
     // Filters
     const [dateFilter, setDateFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
@@ -37,6 +54,23 @@ export default function AccountsPage() {
             // Fetch Entries (limit to recent 50 for performance, or by date)
             const entriesData = await getLedgerEntries(startDate, now);
             setEntries(entriesData);
+
+            // Fetch Invoices (Sales)
+            const invoicesData = await getSalesInvoices(startDate, now);
+            setInvoices(invoicesData);
+
+            // Fetch Bills (Purchases)
+            const billsData = await getPurchaseBills(startDate, now);
+            setBills(billsData);
+
+            // Fetch Suppliers & Items for Drawer context
+            // We do this in parallel to avoid waterfalls
+            const [suppliersData, itemsData] = await Promise.all([
+                getSuppliers(),
+                getInventoryItems()
+            ]);
+            setSuppliers(suppliersData);
+            setInventoryItems(itemsData);
         } catch (error) {
             console.error("Error fetching accounts data:", error);
         } finally {
@@ -59,6 +93,27 @@ export default function AccountsPage() {
             alert("Failed to create entry. Please try again.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleMarkPaid = (bill: PurchaseOrder) => {
+        setPayBillId(bill.id);
+    };
+
+    const confirmPayment = async () => {
+        if (!payBillId) return;
+        try {
+            // Mark as 'bank_transfer' or prompt user. For now default to 'bank_transfer' or 'cash'
+            await updatePurchaseOrder(payBillId, { paymentMethod: 'bank_transfer', status: 'received' });
+            // Note: status might already be 'received', paymentMethod is what tracks payment
+
+            showToast("Bill marked as paid", "success");
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            showToast("Failed to update payment status", "error");
+        } finally {
+            setPayBillId(null);
         }
     };
 
@@ -92,17 +147,37 @@ export default function AccountsPage() {
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'overview'
-                            ? 'bg-gray-100 text-gray-900'
-                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                 >
                     Overview
                 </button>
                 <button
+                    onClick={() => setActiveTab('invoices')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${activeTab === 'invoices'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                >
+                    <DocumentTextIcon className="w-4 h-4 mr-2" />
+                    Guest Invoices
+                </button>
+                <button
+                    onClick={() => setActiveTab('bills')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${activeTab === 'bills'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                >
+                    <ShoppingBagIcon className="w-4 h-4 mr-2" />
+                    Vendor Bills
+                </button>
+                <button
                     onClick={() => setActiveTab('transactions')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'transactions'
-                            ? 'bg-gray-100 text-gray-900'
-                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                 >
                     Transactions
@@ -204,6 +279,169 @@ export default function AccountsPage() {
                         </div>
                     )}
 
+                    {/* INVOICES TAB (Active Sales) */}
+                    {activeTab === 'invoices' && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-900">Guest Checkout Invoices</h3>
+                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                                    Generated from Bookings
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left tracking-wider">Date</th>
+                                            <th className="px-6 py-3 text-left tracking-wider">Guest Name</th>
+                                            <th className="px-6 py-3 text-left tracking-wider">Room</th>
+                                            <th className="px-6 py-3 text-center tracking-wider">Nights</th>
+                                            <th className="px-6 py-3 text-right tracking-wider">Total Amount</th>
+                                            <th className="px-6 py-3 text-center tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-right tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {invoices.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                                                    No invoices found for this period.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            invoices.map((inv) => (
+                                                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {new Date(inv.checkOut).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {inv.guestDetails ? `${inv.guestDetails.firstName} ${inv.guestDetails.lastName}` : 'Guest'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {inv.roomNumber || 'N/A'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                                                        {(() => {
+                                                            const start = new Date(inv.checkIn).getTime();
+                                                            const end = new Date(inv.checkOut).getTime();
+                                                            if (isNaN(start) || isNaN(end)) return '-';
+                                                            const nights = Math.ceil((end - start) / (1000 * 3600 * 24));
+                                                            return nights > 0 ? nights : 1;
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">
+                                                        {formatCurrency(inv.totalAmount || 0)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${inv.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                                                            inv.paymentStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            {inv.paymentStatus || 'pending'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedBooking(inv);
+                                                                setShowBookingDrawer(true);
+                                                            }}
+                                                            className="text-orange-600 hover:text-orange-900"
+                                                        >
+                                                            View
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* BILLS TAB (Purchase Orders) */}
+                    {activeTab === 'bills' && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-900">Vendor Purchase Bills</h3>
+                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                                    Generated from Purchase Orders
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left tracking-wider">Date</th>
+                                            <th className="px-6 py-3 text-left tracking-wider">PO Number</th>
+                                            <th className="px-6 py-3 text-left tracking-wider">Supplier</th>
+                                            <th className="px-6 py-3 text-center tracking-wider">Items</th>
+                                            <th className="px-6 py-3 text-right tracking-wider">Total Cost</th>
+                                            <th className="px-6 py-3 text-center tracking-wider">Pay Status</th>
+                                            <th className="px-6 py-3 text-right tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {bills.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                                                    No purchase bills found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            bills.map((bill) => (
+                                                <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                                                        {bill.poNumber}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {bill.supplierName}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                                                        {bill.items?.length || 0}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-red-600">
+                                                        {formatCurrency(bill.totalAmount)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${bill.paymentMethod ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
+                                                            {bill.paymentMethod ? 'Paid' : 'Unpaid'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex justify-end gap-2">
+                                                            {!bill.paymentMethod && (
+                                                                <button
+                                                                    onClick={() => handleMarkPaid(bill)}
+                                                                    className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-2 py-1 rounded text-xs border border-green-200"
+                                                                >
+                                                                    Mark Paid
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedBill(bill);
+                                                                    setShowBillDrawer(true);
+                                                                }}
+                                                                className="text-orange-600 hover:text-orange-900"
+                                                            >
+                                                                View
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {/* TRANSACTIONS TAB */}
                     {activeTab === 'transactions' && (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -278,14 +516,53 @@ export default function AccountsPage() {
                         </div>
                     )}
                 </>
-            )}
+            )
+            }
 
-            {/* Drawer */}
+            {/* Booking Details Drawer */}
+            {
+                selectedBooking && (
+                    <BookingDetailsDrawer
+                        isOpen={showBookingDrawer}
+                        onClose={() => {
+                            setShowBookingDrawer(false);
+                            setTimeout(() => setSelectedBooking(null), 300);
+                        }}
+                        booking={selectedBooking}
+                        onUpdate={fetchData}
+                        onCancelBooking={() => { }}
+                    />
+                )
+            }
+
+            {/* Vendor Bill Drawer */}
+            <PurchaseOrderDrawer
+                isOpen={showBillDrawer}
+                onClose={() => {
+                    setShowBillDrawer(false);
+                    setTimeout(() => setSelectedBill(null), 300);
+                }}
+                onSave={fetchData}
+                po={selectedBill}
+                suppliers={suppliers}
+                inventoryItems={inventoryItems}
+            />
+
             <AccountEntryDrawer
                 open={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
                 onSave={handleCreateEntry}
             />
-        </div>
+
+            <ConfirmationModal
+                isOpen={!!payBillId}
+                onClose={() => setPayBillId(null)}
+                onConfirm={confirmPayment}
+                title="Record Payment"
+                message="Are you sure you want to mark this vendor bill as PAID? This currently assumes a standard Bank Transfer."
+                confirmText="Mark as Paid"
+                type="info"
+            />
+        </div >
     );
 }

@@ -37,7 +37,7 @@ export default function PurchaseOrdersPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'draft': return 'bg-gray-100 text-gray-700';
-            case 'sent': return 'bg-blue-100 text-blue-700';
+            case 'ordered': return 'bg-blue-100 text-blue-700'; // Fixed from 'sent'
             case 'received': return 'bg-green-100 text-green-700';
             case 'cancelled': return 'bg-red-100 text-red-700';
             default: return 'bg-gray-100 text-gray-700';
@@ -103,10 +103,10 @@ export default function PurchaseOrdersPage() {
                                         {/* In real app, View details page */}
                                         <button className="text-blue-600 hover:text-blue-900">View</button>
 
-                                        {po.status === 'sent' && (
+                                        {po.status === 'ordered' && (
                                             <button
                                                 className="text-green-600 hover:text-green-900 font-medium"
-                                                onClick={() => {/* Navigate to Receive Page */ }}
+                                                onClick={() => showToast("Receive feature coming soon", "info")}
                                             >
                                                 Receive
                                             </button>

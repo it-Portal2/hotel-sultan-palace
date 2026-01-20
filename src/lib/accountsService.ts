@@ -20,7 +20,9 @@ import type {
     FinancialSummary,
     StaffMember,
     StaffAttendance,
-    AuditLog
+    AuditLog,
+    Booking,
+    PurchaseOrder
 } from './firestoreService';
 
 export type {
@@ -29,7 +31,9 @@ export type {
     FinancialSummary,
     StaffMember,
     StaffAttendance,
-    AuditLog
+    AuditLog,
+    Booking,
+    PurchaseOrder
 };
 
 // ==================== Accounts Management CRUD Operations ====================
@@ -630,6 +634,90 @@ export const getAuditLogs = async (
         return logs;
     } catch (error) {
         console.error('Error fetching audit logs:', error);
+        return [];
+    }
+};
+
+// ==================== Invoices & Bills Aggregation ====================
+
+// Get all sales invoices (from Guest Bookings)
+export const getSalesInvoices = async (startDate?: Date, endDate?: Date): Promise<Booking[]> => {
+    if (!db) return [];
+    try {
+        const bookingsRef = collection(db, 'bookings');
+        const q = query(bookingsRef, orderBy('checkOut', 'desc'));
+
+        const querySnapshot = await getDocs(q);
+        let bookings = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Ensure dates are converted if they are timestamps
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+                checkIn: data.checkIn?.toDate ? data.checkIn.toDate().toISOString() : (typeof data.checkIn === 'string' ? data.checkIn : new Date(data.checkIn || Date.now()).toISOString()),
+                checkOut: data.checkOut?.toDate ? data.checkOut.toDate().toISOString() : (typeof data.checkOut === 'string' ? data.checkOut : new Date(data.checkOut || Date.now()).toISOString()),
+            } as Booking;
+        });
+
+        // Filter for those that act as invoices (e.g. checked_out or have bill)
+        bookings = bookings.filter(b => b.status === 'checked_out' || (b as any).checkoutBillId);
+
+        // Filter by date range (using checkOut date as the "Invoice Date")
+        if (startDate || endDate) {
+            bookings = bookings.filter(b => {
+                const invoiceDate = new Date(b.checkOut);
+                if (startDate && invoiceDate < startDate) return false;
+                if (endDate && invoiceDate > endDate) return false;
+                return true;
+            });
+        }
+
+        return bookings;
+    } catch (error) {
+        console.error('Error fetching sales invoices:', error);
+        return [];
+    }
+};
+
+// Get all purchase bills (from Purchase Orders)
+export const getPurchaseBills = async (startDate?: Date, endDate?: Date): Promise<PurchaseOrder[]> => {
+    if (!db) return [];
+    try {
+        const poRef = collection(db, 'purchaseOrders');
+        // We want POs that are received (completed).
+        const q = query(poRef, orderBy('createdAt', 'desc'));
+
+        const querySnapshot = await getDocs(q);
+        let pos = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now()),
+                expectedDeliveryDate: data.expectedDeliveryDate?.toDate ? data.expectedDeliveryDate.toDate() : undefined,
+                actualDeliveryDate: data.actualDeliveryDate?.toDate ? data.actualDeliveryDate.toDate() : undefined,
+            } as PurchaseOrder;
+        });
+
+        // Filter for received/completed
+        pos = pos.filter(p => p.status === 'received');
+
+        // Filter by date range
+        if (startDate || endDate) {
+            pos = pos.filter(p => {
+                const billDate = p.actualDeliveryDate || p.createdAt;
+                if (startDate && billDate < startDate) return false;
+                if (endDate && billDate > endDate) return false;
+                return true;
+            });
+        }
+
+        return pos;
+    } catch (error) {
+        console.error('Error fetching purchase bills:', error);
         return [];
     }
 };

@@ -1,10 +1,17 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { createMenuItem, updateMenuItem, MenuItem, getMenuCategories, MenuCategory } from '@/lib/firestoreService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useToast } from '@/context/ToastContext';
+import {
+    MenuItem,
+    MenuCategory,
+    getMenuCategories,
+    createMenuItem,
+    updateMenuItem
+} from '@/lib/firestoreService';
 
 interface MenuFormProps {
     initialData?: MenuItem | null;
@@ -13,6 +20,7 @@ interface MenuFormProps {
 }
 
 export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormProps) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -40,53 +48,107 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
         modifiers: []
     });
 
+    // Fetch categories on mount
     useEffect(() => {
         (async () => {
             try {
                 const cats = await getMenuCategories();
                 setCategories(cats);
-
-                if (initialData) {
-                    setFormData({
-                        name: initialData.name,
-                        description: initialData.description,
-                        price: initialData.price,
-                        category: initialData.category,
-                        subcategory: initialData.subcategory || '',
-                        sku: initialData.sku || '',
-                        taxGroup: initialData.taxGroup || 'VAT',
-                        cost: initialData.cost || 0,
-                        hasDiscount: initialData.hasDiscount || false,
-                        openPrice: initialData.openPrice || false,
-                        image: initialData.image || '',
-                        isVegetarian: initialData.isVegetarian,
-                        isAvailable: initialData.isAvailable,
-                        preparationTime: initialData.preparationTime,
-                        rating: initialData.rating || 0,
-                        isSpecial: initialData.isSpecial || false,
-                        discountPercent: initialData.discountPercent || 0,
-                        hasVariants: initialData.hasVariants || false,
-                        variants: initialData.variants || [],
-                        modifiers: initialData.modifiers || []
-                    });
-                } else if (cats.length) {
-                    // Pre-select first category for new items
-                    const parentCats = cats.filter(c => !c.parentId);
-                    const first = parentCats[0];
-                    if (first) {
-                        const subcats = cats.filter(c => c.parentId === first.id);
-                        setFormData(prev => ({
-                            ...prev,
-                            category: (first.name as MenuItem['category']),
-                            subcategory: subcats[0]?.name || '',
-                        }));
-                    }
-                }
             } catch (error) {
                 console.error("Error fetching categories", error);
+                showToast('Failed to load categories', 'error');
             }
         })();
-    }, [initialData]);
+    }, []);
+
+    // Sync formData with initialData or set defaults
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                name: initialData.name,
+                description: initialData.description,
+                price: initialData.price,
+                category: initialData.category,
+                subcategory: initialData.subcategory || '',
+                sku: initialData.sku || '',
+                taxGroup: initialData.taxGroup || 'VAT',
+                cost: initialData.cost || 0,
+                hasDiscount: initialData.hasDiscount || false,
+                openPrice: initialData.openPrice || false,
+                image: initialData.image || '',
+                isVegetarian: initialData.isVegetarian,
+                isAvailable: initialData.isAvailable,
+                preparationTime: initialData.preparationTime,
+                rating: initialData.rating || 0,
+                isSpecial: initialData.isSpecial || false,
+                discountPercent: initialData.discountPercent || 0,
+                hasVariants: initialData.hasVariants || false,
+                variants: initialData.variants || [],
+                modifiers: initialData.modifiers || []
+            });
+        } else {
+            // Reset logic for Add New
+            setFormData(prev => {
+                // If we already have a category (e.g. from user input) don't overwrite? 
+                // Actually, if initialData becomes null (drawer closed/re-opened for Add), we should reset.
+                // But we need categories to pick the default.
+
+                // If categories are loaded, pick the first one
+                if (categories.length > 0) {
+                    const parentCats = categories.filter(c => !c.parentId);
+                    const first = parentCats[0];
+                    const subcats = first ? categories.filter(c => c.parentId === first.id) : [];
+
+                    return {
+                        name: '',
+                        description: '',
+                        price: 0,
+                        category: (first?.name as MenuItem['category']) || '' as MenuItem['category'],
+                        subcategory: subcats[0]?.name || '',
+                        sku: '',
+                        taxGroup: 'VAT',
+                        cost: 0,
+                        hasDiscount: false,
+                        openPrice: false,
+                        image: '',
+                        isVegetarian: false,
+                        isAvailable: true,
+                        preparationTime: 30,
+                        rating: 0,
+                        isSpecial: false,
+                        discountPercent: 0,
+                        hasVariants: false,
+                        variants: [],
+                        modifiers: []
+                    };
+                }
+
+                // Fallback reset if categories not loaded yet
+                return {
+                    name: '',
+                    description: '',
+                    price: 0,
+                    category: '' as MenuItem['category'],
+                    subcategory: '',
+                    sku: '',
+                    taxGroup: 'VAT',
+                    cost: 0,
+                    hasDiscount: false,
+                    openPrice: false,
+                    image: '',
+                    isVegetarian: false,
+                    isAvailable: true,
+                    preparationTime: 30,
+                    rating: 0,
+                    isSpecial: false,
+                    discountPercent: 0,
+                    hasVariants: false,
+                    variants: [],
+                    modifiers: []
+                };
+            });
+        }
+    }, [initialData, categories]); // Re-run if initialData switches or categories load (to set default)
 
     const categoryOptions = useMemo(() => {
         return categories.filter(c => !c.parentId);
@@ -102,19 +164,34 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
         if (!file) return;
 
         if (!storage) {
-            alert('Storage not initialized. Please retry.');
+            showToast('Storage not initialized. Please refresh.', 'error');
             return;
         }
 
         setUploading(true);
         try {
-            const storageRef = ref(storage, `menu-items/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
+            // Sanitize filename and create unique path
+            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const storageRef = ref(storage, `menu-items/${Date.now()}_${safeName}`);
+
+            // Add metadata for better browser handling and potential CORS fixes
+            const metadata = {
+                contentType: file.type
+            };
+
+            await uploadBytes(storageRef, file, metadata);
             const url = await getDownloadURL(storageRef);
             setFormData({ ...formData, image: url });
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            alert('Failed to upload image');
+            showToast('Image uploaded successfully', 'success');
+        } catch (error: any) {
+            console.error('Error uploading image detailed:', error);
+            if (error.code) {
+                console.error('Error Code:', error.code);
+            }
+            if (error.serverResponse) {
+                console.error('Server Response:', error.serverResponse);
+            }
+            showToast(`Failed to upload image: ${error.message || 'Unknown error'}`, 'error');
         } finally {
             setUploading(false);
         }
@@ -181,7 +258,7 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
                 await updateMenuItem(initialData.id, formData);
             } else {
                 if (categories.length === 0) {
-                    alert('Please create categories first before adding menu items.');
+                    showToast('Please create categories first before adding menu items.', 'error');
                     return;
                 }
                 await createMenuItem(formData);
@@ -189,7 +266,7 @@ export default function MenuForm({ initialData, onSuccess, onCancel }: MenuFormP
             onSuccess();
         } catch (error) {
             console.error('Error saving menu item:', error);
-            alert('Failed to save menu item');
+            showToast('Failed to save menu item', 'error');
         } finally {
             setLoading(false);
         }

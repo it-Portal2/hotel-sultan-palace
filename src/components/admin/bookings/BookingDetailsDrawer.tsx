@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { Booking, updateBooking as updateBookingFirestore } from '@/lib/firestoreService';
+import { Booking, updateBooking as updateBookingFirestore, getFoodOrder, getGuestService } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import SettlementModal from '../front-desk/SettlementModal';
@@ -93,9 +93,33 @@ export default function BookingDetailsDrawer({
 
     // --- ACTIONS ---
 
-    const handlePrintInvoice = () => {
+    const handlePrintInvoice = async () => {
         try {
-            const invoiceHTML = generateInvoiceHTML(booking);
+            // Fetch additional details
+            let foodOrders: any[] = [];
+            let guestServices: any[] = [];
+
+            if (booking.foodOrderIds && booking.foodOrderIds.length > 0) {
+                const orders = await Promise.all(booking.foodOrderIds.map(id => getFoodOrder(id)));
+                // Filter: Include all valid orders regardless of payment status (so unpaid/charged-to-room orders appear)
+                foodOrders = orders.filter(o => o !== null && o.status !== 'cancelled' && o.status !== 'voided');
+            }
+
+            if (booking.guestServiceIds && booking.guestServiceIds.length > 0) {
+                const services = await Promise.all(booking.guestServiceIds.map(id => getGuestService(id)));
+                guestServices = services.filter(s => s !== null && s.status !== 'cancelled');
+            }
+
+            let transactions: any[] = [];
+            try {
+                // Dynamic import to avoid circular dependency if needed, though direct import is fine if handled correctly
+                const { getFolioTransactions } = await import('@/lib/firestoreService');
+                transactions = await getFolioTransactions(booking.id);
+            } catch (err) {
+                console.error("Failed to fetch transactions", err);
+            }
+
+            const invoiceHTML = generateInvoiceHTML(booking, foodOrders, guestServices, transactions);
             const printWindow = window.open('', '_blank');
             if (printWindow) {
                 printWindow.document.write(invoiceHTML);
@@ -447,7 +471,7 @@ export default function BookingDetailsDrawer({
                                                         </div>
 
                                                         {/* Danger Zone: Cancel */}
-                                                        {booking.status !== 'cancelled' && (
+                                                        {booking.status !== 'cancelled' && booking.status !== 'checked_out' && (
                                                             <div className="bg-red-50 rounded-xl p-5 border border-red-100 mt-6">
                                                                 <h4 className="text-xs font-bold text-red-800 uppercase mb-2">Cancellation</h4>
                                                                 <p className="text-xs text-red-600 mb-4">Cancelling will release rooms and notify the guest.</p>

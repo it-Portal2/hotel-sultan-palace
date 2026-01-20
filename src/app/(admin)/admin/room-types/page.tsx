@@ -22,7 +22,7 @@ export default function AdminRoomTypesPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({ suiteType: 'Garden Suite' as SuiteType, roomName: '', isActive: true });
+  const [formData, setFormData] = useState({ suiteType: 'Garden Suite' as SuiteType, roomName: '', isActive: true, price: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSuite, setSelectedSuite] = useState<SuiteType | 'all'>('all');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export default function AdminRoomTypesPage() {
       }
 
       for (const roomName of toAdd) {
-        await createRoomType({ suiteType, roomName, isActive: true });
+        await createRoomType({ suiteType, roomName, isActive: true, price: 0 });
       }
 
       showToast(`Added ${toAdd.length} room type(s) for ${suiteType}`, 'success');
@@ -123,11 +123,11 @@ export default function AdminRoomTypesPage() {
         showToast('Room type updated successfully', 'success');
         setEditing(null);
       } else {
-        await createRoomType(formData);
+        await createRoomType({ ...formData, price: 0 });
         showToast('Room type created successfully', 'success');
         setShowAddForm(false);
       }
-      setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true });
+      setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true, price: 0 });
       await loadRoomTypes();
     } catch (e) {
       console.error('Error saving room type:', e);
@@ -140,7 +140,8 @@ export default function AdminRoomTypesPage() {
     setFormData({
       suiteType: roomType.suiteType,
       roomName: roomType.roomName,
-      isActive: roomType.isActive
+      isActive: roomType.isActive,
+      price: roomType.price || 0
     });
     setShowAddForm(false);
   };
@@ -236,7 +237,7 @@ export default function AdminRoomTypesPage() {
           ) : (
             <button
               onClick={() => {
-                setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true });
+                setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true, price: 0 });
                 setShowAddForm(true);
                 setEditing(null);
               }}
@@ -341,7 +342,7 @@ export default function AdminRoomTypesPage() {
                 onClick={() => {
                   setShowAddForm(false);
                   setEditing(null);
-                  setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true });
+                  setFormData({ suiteType: 'Garden Suite', roomName: '', isActive: true, price: 0 });
                 }}
                 className="px-4 py-2 border-b-2 border-gray-200 text-gray-700 hover:border-gray-300 transition-colors"
               >
