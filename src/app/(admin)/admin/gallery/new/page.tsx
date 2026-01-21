@@ -10,8 +10,9 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
 import BackButton from '@/components/admin/BackButton';
+import { getGalleryImages, GalleryImage } from '@/lib/firestoreService';
 
-const TYPES: {label:string; value: GalleryType}[] = [
+const TYPES: { label: string; value: GalleryType }[] = [
   { label: 'Villas', value: 'villas' },
   { label: 'Pool', value: 'pool' },
   { label: 'Spa', value: 'spa' },
@@ -28,6 +29,12 @@ export default function NewGalleryImagePage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [existingImages, setExistingImages] = useState<GalleryImage[]>([]);
+  const [currentOriginalFilename, setCurrentOriginalFilename] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    getGalleryImages().then(setExistingImages);
+  }, []);
 
   useEffect(() => {
     if (!auth) return;
@@ -47,6 +54,19 @@ export default function NewGalleryImagePage() {
       setTimeout(() => router.push('/admin/login'), 1500);
       return;
     }
+
+    // Duplicate Check using exact filename match against verified server data
+    const isDuplicate = existingImages.some(img => img.originalFilename === file.name);
+    if (isDuplicate) {
+      showToast('This image already exists in the gallery. Please choose a different image.', 'error');
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      return;
+    }
+
+    // Store original filename for later saving
+    setCurrentOriginalFilename(file.name);
+
     setUploading(true);
     try {
       const key = `gallery-${Date.now()}`;
@@ -71,8 +91,8 @@ export default function NewGalleryImagePage() {
         errorMsg = 'Please check your connection and try again.';
       }
       showToast(errorMsg, 'error');
-    } finally { 
-      setUploading(false); 
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -80,7 +100,11 @@ export default function NewGalleryImagePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const id = await createGalleryImage({ imageUrl, type });
+      const id = await createGalleryImage({
+        imageUrl,
+        type,
+        originalFilename: currentOriginalFilename,
+      });
       if (id) {
         showToast('Gallery image created successfully!', 'success');
         router.push('/admin/gallery');
@@ -100,25 +124,25 @@ export default function NewGalleryImagePage() {
       <form onSubmit={handleSubmit} className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700">Type</label>
-          <select value={type} onChange={(e)=>setType(e.target.value as GalleryType)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:outline-none">
+          <select value={type} onChange={(e) => setType(e.target.value as GalleryType)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:outline-none">
             {TYPES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
           </select>
         </div>
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700"><LinkIcon className="h-4 w-4 text-gray-500" /> Image URL (paste a direct link)</label>
-          <input type="url" value={imageUrl} onChange={(e)=>setImageUrl(e.target.value)} required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="https://..." />
+          <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} required className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="https://..." />
           <div className="mt-3 flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold">
               <PhotoIcon className="h-4 w-4" /> Upload from device
             </div>
-            <input type="file" accept="image/*" onChange={(e)=>{const f=e.target.files?.[0]; if(f) handleUpload(f);}} className="text-sm" />
-            <button type="button" disabled={uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"><CloudArrowUpIcon className="h-4 w-4" /> {uploading?'Uploading...':'Upload & Use'}</button>
+            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} className="text-sm" />
+            <button type="button" disabled={uploading} className="px-3 py-2 rounded-md bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50 inline-flex items-center gap-2"><CloudArrowUpIcon className="h-4 w-4" /> {uploading ? 'Uploading...' : 'Upload & Use'}</button>
           </div>
           {imageUrl && (
             <div className="mt-3 relative inline-block w-full max-w-xl h-64">
-              <Image 
-                src={imageUrl} 
-                alt="preview" 
+              <Image
+                src={imageUrl}
+                alt="preview"
                 fill
                 className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                 sizes="(max-width: 768px) 100vw, 640px"
@@ -147,8 +171,8 @@ export default function NewGalleryImagePage() {
           )}
         </div>
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={()=>router.push('/admin/gallery')} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50">{saving?'Saving...':'Create'}</button>
+          <button type="button" onClick={() => router.push('/admin/gallery')} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50">{saving ? 'Saving...' : 'Create'}</button>
         </div>
       </form>
     </div>

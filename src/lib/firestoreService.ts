@@ -363,8 +363,10 @@ export interface GalleryImage {
   id: string;
   imageUrl: string;
   type: GalleryType;
+  originalFilename?: string; // New field for duplicate checking
   createdAt: Date;
   updatedAt: Date;
+
 }
 
 
@@ -2928,6 +2930,7 @@ export const getGalleryImages = async (type?: GalleryType): Promise<GalleryImage
         id: d.id,
         imageUrl: data.imageUrl,
         type: data.type as GalleryType,
+        originalFilename: data.originalFilename,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as GalleryImage;

@@ -84,7 +84,7 @@ function HotelContent() {
   const [isGuestOpen, setIsGuestOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout' | 'both'>('both');
 
-  const getInitialDates = () => {
+  const getInitialDates = (): { checkIn: Date; checkOut: Date } => {
     if (bookingData) {
       return {
         checkIn: new Date(bookingData.checkIn),
