@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Globe, ChevronDown } from "lucide-react";
 
-// Extend Window interface for Google Translate
 declare global {
   interface Window {
     google: {
@@ -18,9 +17,7 @@ declare global {
             },
             elementId: string,
           ): unknown;
-          InlineLayout: {
-            SIMPLE: unknown;
-          };
+          InlineLayout: { SIMPLE: unknown };
         };
       };
     };
@@ -28,7 +25,15 @@ declare global {
   }
 }
 
-const languages = [
+interface Language {
+  code: string;
+  name: string;
+  countryCode: string;
+  flag: string;
+  googleCode: string;
+}
+
+const SUPPORTED_LANGUAGES: Language[] = [
   {
     code: "en",
     name: "English",
@@ -83,8 +88,8 @@ const languages = [
     name: "עברית",
     countryCode: "IL",
     flag: "🇮🇱",
-    googleCode: "he",
-  },
+    googleCode: "iw",
+  }, // Google uses legacy 'iw' code for Hebrew
   {
     code: "ar",
     name: "العربية",
@@ -150,29 +155,63 @@ const languages = [
   },
 ];
 
+const GOOGLE_TRANSLATE_SCRIPT_ID = "google-translate-script";
+const GOOGLE_TRANSLATE_ELEMENT_ID = "google_translate_element";
+const COOKIE_MAX_AGE = 31536000;
+
+const getRootDomain = (hostname: string): string => {
+  const parts = hostname.split(".");
+  return parts.length <= 2 ? hostname : parts.slice(-2).join(".");
+};
+
+const parseGoogTransHash = (hash: string): string | null => {
+  const match = hash.match(/googtrans\([^|]+\|([^)]+)\)/);
+  return match?.[1] || null;
+};
+
+const clearAllGoogTransCookies = (): void => {
+  const hostname = window.location.hostname;
+  const rootDomain = getRootDomain(hostname);
+  const expiry = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  const domains = ["", hostname, `.${hostname}`, rootDomain, `.${rootDomain}`];
+
+  domains.forEach((domain) => {
+    const domainPart = domain ? `; domain=${domain}` : "";
+    document.cookie = `googtrans=${domainPart}; path=/; ${expiry}`;
+  });
+};
+
+const setGoogTransCookie = (googleCode: string): void => {
+  const hostname = window.location.hostname;
+  const rootDomain = getRootDomain(hostname);
+  const cookieValue = `googtrans=/en/${googleCode}`;
+
+  document.cookie = `${cookieValue}; path=/; max-age=${COOKIE_MAX_AGE}`;
+  document.cookie = `${cookieValue}; path=/; domain=${hostname}; max-age=${COOKIE_MAX_AGE}`;
+  document.cookie = `${cookieValue}; path=/; domain=.${rootDomain}; max-age=${COOKIE_MAX_AGE}`;
+};
+
 export default function SimpleGoogleTranslateMobile() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState("en");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Detect current language from URL hash
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     let lastDetectedLang = "en";
 
     const detectLang = () => {
-      const hash = window.location.hash;
+      const googleCode = parseGoogTransHash(window.location.hash);
 
-      if (hash.includes("googtrans")) {
-        const match = hash.match(/googtrans\([^|]+\|([^)]+)\)/);
-
-        if (match && match[1]) {
-          const lang = languages.find((l) => l.googleCode === match[1]);
-
-          if (lang && lang.code !== lastDetectedLang) {
-            lastDetectedLang = lang.code;
-            setCurrentLang(lang.code);
-          }
+      if (googleCode) {
+        const lang = SUPPORTED_LANGUAGES.find(
+          (l) => l.googleCode === googleCode,
+        );
+        if (lang && lang.code !== lastDetectedLang) {
+          lastDetectedLang = lang.code;
+          setCurrentLang(lang.code);
         }
       } else if (lastDetectedLang !== "en") {
         lastDetectedLang = "en";
@@ -190,57 +229,55 @@ export default function SimpleGoogleTranslateMobile() {
     };
   }, []);
 
-  // Load Google Translate
+  // Initialize Google Translate widget
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (document.getElementById(GOOGLE_TRANSLATE_SCRIPT_ID)) return;
 
-    if (!document.getElementById("google-translate-script")) {
-      const script = document.createElement("script");
-      script.id = "google-translate-script";
-      script.src =
-        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
+    const script = document.createElement("script");
+    script.id = GOOGLE_TRANSLATE_SCRIPT_ID;
+    script.src =
+      "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+    script.async = true;
 
-      window.googleTranslateElementInit = () => {
-        const widgetContainer = document.createElement("div");
-        widgetContainer.id = "google_translate_element";
-        widgetContainer.style.position = "absolute";
-        widgetContainer.style.left = "-9999px";
-        widgetContainer.style.opacity = "0";
-        widgetContainer.style.pointerEvents = "none";
-        document.body.appendChild(widgetContainer);
+    window.googleTranslateElementInit = () => {
+      const widgetContainer = document.createElement("div");
+      widgetContainer.id = GOOGLE_TRANSLATE_ELEMENT_ID;
+      Object.assign(widgetContainer.style, {
+        position: "absolute",
+        left: "-9999px",
+        opacity: "0",
+        pointerEvents: "none",
+      });
+      document.body.appendChild(widgetContainer);
 
-        try {
-          // Check if hash exists and set cookie accordingly
-          const hash = window.location.hash;
-          if (hash.includes("googtrans")) {
-            const match = hash.match(/googtrans\([^|]+\|([^)]+)\)/);
-            if (match && match[1]) {
-              const cookieValue = `googtrans=/en/${match[1]}`;
-              document.cookie = `${cookieValue}; path=/; max-age=31536000`;
-            }
-          }
-
-          new window.google.translate.TranslateElement(
-            {
-              pageLanguage: "en",
-              includedLanguages: languages.map((l) => l.googleCode).join(","),
-              layout:
-                window.google.translate.TranslateElement.InlineLayout.SIMPLE,
-              autoDisplay: false,
-            },
-            "google_translate_element",
-          );
-        } catch {
-          // Silently handle errors
+      try {
+        const googleCode = parseGoogTransHash(window.location.hash);
+        if (googleCode) {
+          document.cookie = `googtrans=/en/${googleCode}; path=/; max-age=${COOKIE_MAX_AGE}`;
         }
-      };
 
-      document.head.appendChild(script);
-    }
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: SUPPORTED_LANGUAGES.map(
+              (l) => l.googleCode,
+            ).join(","),
+            layout:
+              window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false,
+          },
+          GOOGLE_TRANSLATE_ELEMENT_ID,
+        );
+      } catch {
+        // Google Translate initialization failed silently
+      }
+    };
+
+    document.head.appendChild(script);
   }, []);
 
-  // Hide Google Translate banner
+  // Hide Google Translate banner elements
   useEffect(() => {
     const interval = setInterval(() => {
       const banner = document.querySelector(
@@ -255,8 +292,10 @@ export default function SimpleGoogleTranslateMobile() {
     return () => clearInterval(interval);
   }, []);
 
-  // Click outside to close
+  // Close dropdown on outside click
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -266,78 +305,34 @@ export default function SimpleGoogleTranslateMobile() {
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Helper function to get root domain (e.g., "example.com" from "www.example.com")
-  const getRootDomain = (hostname: string): string => {
-    const parts = hostname.split(".");
-    // Handle cases like localhost or IP addresses
-    if (parts.length <= 2) return hostname;
-    // Return last two parts (e.g., "example.com")
-    return parts.slice(-2).join(".");
-  };
-
-  // Helper function to clear all googtrans cookies on all domain variations
-  const clearAllGoogTransCookies = () => {
-    const hostname = window.location.hostname;
-    const rootDomain = getRootDomain(hostname);
-    const expiry = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    // Clear on all possible domain variations
-    const domains = [
-      "", // No domain (current)
-      hostname, // Current hostname (e.g., www.example.com)
-      "." + hostname, // With leading dot
-      rootDomain, // Root domain (e.g., example.com)
-      "." + rootDomain, // Root domain with leading dot
-    ];
-
-    domains.forEach((domain) => {
-      const domainPart = domain ? `; domain=${domain}` : "";
-      document.cookie = `googtrans=${domainPart}; path=/; ${expiry}`;
-    });
-  };
-
-  // Handle language change
   const handleLanguageChange = (langCode: string) => {
-    const lang = languages.find((l) => l.code === langCode);
+    const lang = SUPPORTED_LANGUAGES.find((l) => l.code === langCode);
     if (!lang) return;
 
-    const hostname = window.location.hostname;
-    const rootDomain = getRootDomain(hostname);
-
-    // Set or clear cookie
     if (langCode === "en") {
-      // Clear all googtrans cookies on all domain variations
       clearAllGoogTransCookies();
+      window.location.hash = "";
     } else {
-      const cookieValue = `googtrans=/en/${lang.googleCode}`;
-      // Set cookie on multiple domains to ensure it works
-      document.cookie = `${cookieValue}; path=/; max-age=31536000`;
-      document.cookie = `${cookieValue}; path=/; domain=${hostname}; max-age=31536000`;
-      document.cookie = `${cookieValue}; path=/; domain=.${rootDomain}; max-age=31536000`;
+      setGoogTransCookie(lang.googleCode);
+      window.location.hash = `#googtrans(en|${lang.googleCode})`;
     }
 
     setCurrentLang(langCode);
     setIsOpen(false);
-
-    // Reload page with hash
-    if (langCode === "en") {
-      window.location.hash = "";
-      window.location.reload();
-    } else {
-      window.location.hash = "#googtrans(en|" + lang.googleCode + ")";
-      window.location.reload();
-    }
+    window.location.reload();
   };
 
   const currentLanguage =
-    languages.find((l) => l.code === currentLang) || languages[0];
+    SUPPORTED_LANGUAGES.find((l) => l.code === currentLang) ||
+    SUPPORTED_LANGUAGES[0];
+  const displayName =
+    currentLanguage.code === "en"
+      ? currentLanguage.name
+      : `${currentLanguage.countryCode} ${currentLanguage.name}`;
 
   return (
     <div className="relative notranslate z-[10001]" ref={dropdownRef}>
@@ -352,15 +347,11 @@ export default function SimpleGoogleTranslateMobile() {
       >
         <Globe size={16} className="text-white" />
         <span className="text-white font-medium text-lg notranslate">
-          {currentLanguage.code === "en"
-            ? currentLanguage.name
-            : `${currentLanguage.countryCode} ${currentLanguage.name}`}
+          {displayName}
         </span>
         <ChevronDown
           size={16}
-          className={`text-white transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`text-white transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -370,11 +361,16 @@ export default function SimpleGoogleTranslateMobile() {
           style={{ zIndex: 10002 }}
         >
           <div className="py-2 max-h-[400px] overflow-y-auto">
-            {languages.map((lang) => {
+            {SUPPORTED_LANGUAGES.map((lang) => {
               const isSelected = lang.code === currentLang;
+              const label =
+                lang.code === "en"
+                  ? lang.name
+                  : `${lang.countryCode} ${lang.name}`;
+
               return (
                 <button
-                  key={lang.code + lang.countryCode}
+                  key={`${lang.code}-${lang.countryCode}`}
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#333333] transition-colors notranslate ${
                     isSelected ? "bg-[#333333] text-orange-300" : "text-white"
@@ -382,9 +378,7 @@ export default function SimpleGoogleTranslateMobile() {
                 >
                   <span className="text-xl notranslate">{lang.flag}</span>
                   <span className="text-base font-medium notranslate">
-                    {lang.code === "en"
-                      ? lang.name
-                      : `${lang.countryCode} ${lang.name}`}
+                    {label}
                   </span>
                   {isSelected && (
                     <span className="ml-auto text-orange-300 notranslate">
