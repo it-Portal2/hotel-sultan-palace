@@ -187,6 +187,8 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
                 fill
                 className="object-cover"
                 priority
+                unoptimized
+                sizes="(max-width: 768px) 100vw, 50vw"
                 onError={(e) => {
                   console.error('Image failed to load:', galleryImages[selectedImageIndex]);
                   e.currentTarget.style.display = 'none';
@@ -218,6 +220,7 @@ export default function RoomDetailsModal({ room, isOpen, onClose }: RoomDetailsM
                       alt={`${room.name} view ${index + 2}`}
                       fill
                       className="object-cover"
+                      unoptimized
                       sizes="(max-width: 768px) 12.5vw, 6.25vw"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';

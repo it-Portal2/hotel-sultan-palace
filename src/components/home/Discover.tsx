@@ -28,18 +28,18 @@ export default function Discover() {
   return (
     <section ref={sectionRef} className="w-full bg-[#F5D9A5] font-inter discover-section">
       <div className="flex flex-col md:grid md:grid-cols-12">
-        
-      
+
+
         <div className={`group w-full relative overflow-hidden flex-shrink-0 h-[400px] md:h-[709px] md:col-span-5 discover-image order-1 ${isVisible ? 'discover-image-visible' : ''}`}>
           <Image
-            layout="fill"
+            fill
             src="/image1.png"
             alt="A few things to note at Sultan Palace"
             className="w-full h-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-110 active:scale-110"
           />
         </div>
 
-       
+
         <div className="w-full md:col-span-7 flex items-center px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-[82px] py-8 md:py-12 lg:py-[148px] order-2">
           <div className="flex flex-col gap-4 md:gap-[20px] max-w-full lg:max-w-[600px] xl:max-w-[682px]">
             <p className={`font-[Shadows_Into_Light_Two] text-[28px] md:text-[34px] leading-[1.451] text-[#783A0C] discover-label ${isVisible ? 'discover-label-visible' : ''}`}>

@@ -7,16 +7,16 @@ import { getOffers } from "@/lib/firestoreService";
 
 
 export default function OffersCarousel() {
-  const [offers, setOffers] = useState<{id:number|string,imageUrl:string}[]>([])  ;
+  const [offers, setOffers] = useState<{ id: number | string, imageUrl: string }[]>([]);
   const [index, setIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
-  
+
 
   useEffect(() => {
     (async () => {
       const data = await getOffers();
       if (data.length > 0) {
-        setOffers(data.map((o)=>({ id: o.id, imageUrl: o.imageUrl })));
+        setOffers(data.map((o) => ({ id: o.id, imageUrl: o.imageUrl })));
       }
     })();
   }, []);
@@ -40,7 +40,7 @@ export default function OffersCarousel() {
   return (
     <section className="w-full overflow-hidden" style={{ padding: 0, margin: 0 }}>
       <div className="w-full max-w-full mx-auto" style={{ padding: 0 }}>
-        
+
         <div className="text-center mt-0 mb-2 md:mb-4 lg:mb-6 xl:mb-8 2xl:mb-10 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-20">
           <h2 className="text-[26px] md:text-[30px] lg:text-[36px] xl:text-[40px] font-normal text-[#323232] font-['Oooh_Baby'] leading-[1.225] tracking-[8%] mb-2 md:mb-3 lg:mb-4 xl:mb-6">
             Best Offers for you
@@ -53,13 +53,13 @@ export default function OffersCarousel() {
         {/* Full Width Carousel - No gaps, extends to edges */}
         <div className="relative w-full" style={{ padding: 0, margin: 0 }}>
           <div className="relative w-full overflow-hidden">
-            <div 
+            <div
               className="flex transition-transform duration-700 ease-in-out"
               style={{ transform: `translateX(-${index * 100}%)` }}
             >
               {offers.map((offer, i) => (
-                <Link 
-                  key={offer.id} 
+                <Link
+                  key={offer.id}
                   href="/rooms"
                   className="flex-shrink-0 w-full block"
                   style={{ padding: 0, margin: 0 }}
@@ -69,9 +69,10 @@ export default function OffersCarousel() {
                       src={offer.imageUrl}
                       alt={`Offer ${i + 1}`}
                       fill
-                      className="object-contain w-full h-full transition-opacity duration-300 hover:opacity-90" 
+                      className="object-contain w-full h-full transition-opacity duration-300 hover:opacity-90"
                       priority={i === 0}
                       sizes="100vw"
+                      unoptimized
                       style={{ position: 'absolute', zIndex: 1, top: 0, left: 0, width: '100%', height: '100%' }}
                       onError={(e) => {
                         console.log('Carousel image load error:', e);
@@ -91,9 +92,8 @@ export default function OffersCarousel() {
               key={i}
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => setIndex(i)}
-              className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
-                index === i ? "bg-[#A38D75] w-8" : "bg-[#CFC7BC]"
-              }`}
+              className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${index === i ? "bg-[#A38D75] w-8" : "bg-[#CFC7BC]"
+                }`}
             />
           ))}
         </div>

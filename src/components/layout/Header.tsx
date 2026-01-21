@@ -348,15 +348,14 @@ export default function Header() {
                       {item.caret && (
                         <ChevronDown
                           size={14}
-                          className={`transition-transform duration-300 ${
-                            (item.label === "Activities" &&
+                          className={`transition-transform duration-300 ${(item.label === "Activities" &&
                               isActivitiesMenuOpen) ||
-                            (item.label === "Wellness & Relaxation" &&
-                              isWellnessMenuOpen) ||
-                            (item.label === "About Us" && isAboutUsMenuOpen)
+                              (item.label === "Wellness & Relaxation" &&
+                                isWellnessMenuOpen) ||
+                              (item.label === "About Us" && isAboutUsMenuOpen)
                               ? "rotate-180"
                               : "rotate-0"
-                          }`}
+                            }`}
                         />
                       )}
                     </button>

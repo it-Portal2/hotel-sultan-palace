@@ -276,8 +276,8 @@ export default function GalleryPage() {
                   key={f.value}
                   onClick={() => setActive(f.value)}
                   className={`px-4 py-2 rounded-lg text-lg font-semibold font-quicksand gallery-filter-btn relative overflow-hidden ${active === f.value
-                      ? "bg-[#FF6A00] text-white"
-                      : "border border-[#655D4E] text-[#655D4E] hover:bg-[#655D4E] hover:text-white transition-colors"
+                    ? "bg-[#FF6A00] text-white"
+                    : "border border-[#655D4E] text-[#655D4E] hover:bg-[#655D4E] hover:text-white transition-colors"
                     }`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -313,7 +313,14 @@ export default function GalleryPage() {
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                           {gridChunk.map((src, idx) => (
                             <button onClick={() => { setLightboxSrc(src); setLightboxOpen(true); setZoom(1); setPosition({ x: 0, y: 0 }); }} key={`${src}-${i + idx}`} className="relative w-full h-[200px] md:h-[250px] lg:h-[300px] overflow-hidden group gallery-image-card text-left rounded">
-                              <Image src={src} alt="Gallery" fill className="object-cover transition-transform duration-300 ease-out" />
+                              <Image
+                                src={src}
+                                alt="Gallery"
+                                fill
+                                unoptimized
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
+                                className="object-cover transition-transform duration-300 ease-out"
+                              />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
                               <div className="absolute inset-0 flex items-end justify-center pb-4">
                                 <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300">View →</span>
@@ -328,7 +335,14 @@ export default function GalleryPage() {
                     sections.push(
                       <div key={`hero-${i}`} className="mb-8 gallery-full-image">
                         <button onClick={() => { setLightboxSrc(hero); setLightboxOpen(true); setZoom(1); setPosition({ x: 0, y: 0 }); }} className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden group text-left rounded">
-                          <Image src={hero} alt="Gallery Feature" fill className="object-cover transition-transform duration-300 ease-out" />
+                          <Image
+                            src={hero}
+                            alt="Gallery Feature"
+                            fill
+                            unoptimized
+                            sizes="100vw"
+                            className="object-cover transition-transform duration-300 ease-out"
+                          />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300"></div>
                           <div className="absolute inset-0 flex items-end justify-center pb-4">
                             <span className="gallery-view-label text-white text-base md:text-lg font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-300">View →</span>

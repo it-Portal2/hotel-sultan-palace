@@ -6,7 +6,7 @@ export default function CuratedExcursions() {
   const [showMap, setShowMap] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Location coordinates for multiple markers
   // Sultan Palace Hotel location from the provided Google Maps link
   const locations = {
@@ -41,12 +41,12 @@ export default function CuratedExcursions() {
       address: "Xanadu Luxury Villas & Retreat Zanzibar"
     }
   };
-  
+
   // Create Google Maps embed URL with multiple markers
   const getMapUrl = () => {
     // Center the map on Sultan Palace Hotel (main location)
     const center = `${locations.sultanPalace.lat},${locations.sultanPalace.lng}`;
-    
+
     // Create markers string for all locations
     const allMarkers = [
       `${locations.sultanPalace.lat},${locations.sultanPalace.lng}`,
@@ -55,14 +55,14 @@ export default function CuratedExcursions() {
       `${locations.sandsBeach.lat},${locations.sandsBeach.lng}`,
       `${locations.xanadu.lat},${locations.xanadu.lng}`
     ];
-    
+
     // Use Google Maps with multiple markers
     // Format: markers=lat1,lng1|lat2,lng2|...
     const markersParam = allMarkers.join('|');
-    
+
     return `https://www.google.com/maps?q=${encodeURIComponent(locations.sultanPalace.address)}&output=embed&zoom=13&center=${center}&markers=${markersParam}`;
   };
-  
+
   // Google Maps directions URL to Sultan Palace Hotel
   const getDirectionsUrl = () => {
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locations.sultanPalace.address)}`;
@@ -89,7 +89,7 @@ export default function CuratedExcursions() {
   return (
     <section ref={sectionRef} className="w-full bg-[linear-gradient(-2deg,_#F4F4F5_70%,_#FFFCF6_100%)] curated-section">
       <div className="mx-auto w-full max-w-[1512px] px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-[30px] py-8 md:py-10 lg:py-20">
-        
+
         <div className="flex flex-col lg:flex-row items-start lg:items-end gap-6 md:gap-8 lg:gap-8 xl:gap-12 2xl:gap-[241px] mb-8 md:mb-12 lg:mb-[113px]">
           <div className="flex flex-col flex-shrink-0">
             <p className={`text-[#BE8C53] font-quicksand font-medium text-[20px] md:text-[24px] leading-[1.25] mb-4 md:mb-[26px] curated-label ${isVisible ? 'curated-label-visible' : ''}`}>
@@ -107,7 +107,7 @@ export default function CuratedExcursions() {
         </div>
 
         <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-0">
-          
+
           <div className={`w-full lg:w-[45%] xl:w-[500px] 2xl:w-[650px] overflow-hidden flex-shrink-0 curated-image-left ${isVisible ? 'curated-image-left-visible' : ''}`}>
             <div className="relative w-full h-[300px] md:h-[400px] lg:h-[595px] 2xl:h-[700px]">
               <Image
@@ -117,13 +117,12 @@ export default function CuratedExcursions() {
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 45vw, 500px"
                 className="object-cover transition-transform duration-500 ease-in-out hover:scale-140 active:scale-140"
                 priority
-                quality={85}
               />
             </div>
           </div>
 
           <div className={`w-full lg:flex-1 bg-[#202C3B] text-white p-6 md:p-8 lg:p-8 xl:p-12 2xl:p-[81px] flex flex-col justify-start items-start relative min-h-[400px] lg:h-[595px] 2xl:h-[700px] curated-dark-panel ${isVisible ? 'curated-dark-panel-visible' : ''}`}>
-            
+
             <div className="flex flex-col items-start w-full mb-6 md:mb-[40px]">
               <div className="flex items-center gap-[8px] justify-center mb-6 md:mb-[49px]">
                 <Image src="/figma/icon-location-mini.svg" alt="Location" width={19} height={19} />
@@ -149,7 +148,6 @@ export default function CuratedExcursions() {
                     sizes="(max-width: 768px) 90vw, (max-width: 1024px) 90vw, 467px"
                     className="w-full h-full object-cover"
                     priority
-                    quality={85}
                   />
                 ) : (
                   <iframe
@@ -162,7 +160,7 @@ export default function CuratedExcursions() {
                 )}
               </div>
             </div>
-            
+
             {/* Location markers info when map is shown */}
             {showMap && (
               <div className="w-full mb-4 space-y-2">
