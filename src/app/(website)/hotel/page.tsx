@@ -520,7 +520,7 @@ function HotelContent() {
       {/* Dedicated Header Background for Overlap */}
       <div className="w-full h-[450px] bg-[#0a1a2b] absolute top-0 left-0 z-0" />
 
-      <section className="w-full relative pt-[100px] md:pt-[230px]" style={{ zIndex: 10 }}>
+      <section className="w-full relative pt-[120px] md:pt-[340px]" style={{ zIndex: 10 }}>
         <div className="max-w-[1512px] mx-auto px-4 md:px-[168px]">
           <div className="w-full max-w-[1177px] mx-auto">
             <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_140px] items-center gap-0 mb-2 relative -mt-[30px]" style={{ zIndex: 10001, pointerEvents: 'none' }}>
