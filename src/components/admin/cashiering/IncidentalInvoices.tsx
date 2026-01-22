@@ -752,7 +752,7 @@ export default function IncidentalInvoices() {
     const filteredInvoices = invoices.filter(inv => {
         if (!showVoid && inv.status === 'void') return false;
         const q = search.toLowerCase();
-        return inv.voucherNo.toLowerCase().includes(q) || inv.guestName.toLowerCase().includes(q);
+        return (inv.voucherNo || '').toLowerCase().includes(q) || (inv.guestName || '').toLowerCase().includes(q);
     });
 
     return (
@@ -837,10 +837,10 @@ export default function IncidentalInvoices() {
                                     )}
                                     <div className="flex justify-between items-start mb-2 pl-2">
                                         <div>
-                                            <span className="font-bold text-sm text-gray-900 block font-mono tracking-tight">{inv.voucherNo}</span>
+                                            <span className="font-bold text-sm text-gray-900 block font-mono tracking-tight">{inv.voucherNo || 'N/A'}</span>
                                             <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                                 <CalendarIcon className="h-3 w-3" />
-                                                {new Date(inv.date).toLocaleDateString()}
+                                                {inv.date ? new Date(inv.date).toLocaleDateString() : 'No Date'}
                                             </span>
                                         </div>
                                         <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full ${inv.balance === 0
@@ -853,14 +853,14 @@ export default function IncidentalInvoices() {
 
                                     <div className="flex items-center gap-3 mb-3 pl-2">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${selectedInvoice?.id === inv.id ? 'bg-[#FF6A00]' : 'bg-gray-400'}`}>
-                                            {inv.guestName.charAt(0).toUpperCase()}
+                                            {(inv.guestName || 'G').charAt(0).toUpperCase()}
                                         </div>
-                                        <span className="text-sm text-gray-700 font-medium truncate">{inv.guestName}</span>
+                                        <span className="text-sm text-gray-700 font-medium truncate">{inv.guestName || 'Unknown Guest'}</span>
                                     </div>
 
                                     <div className="flex justify-between items-end border-t border-gray-100/50 pt-2.5 mt-2 pl-2">
                                         <span className="text-xs text-gray-400 font-medium">{inv.charges?.length || 0} items</span>
-                                        <span className="font-bold text-base text-gray-900 tracking-tight">${inv.totalAmount.toFixed(2)}</span>
+                                        <span className="font-bold text-base text-gray-900 tracking-tight">${(inv.totalAmount || 0).toFixed(2)}</span>
                                     </div>
                                 </div>
                             ))
@@ -885,7 +885,7 @@ export default function IncidentalInvoices() {
                                         </span>
                                     </div>
                                     <p className="text-sm text-gray-500 flex items-center gap-2">
-                                        Created on <span className="font-medium text-gray-700">{new Date(selectedInvoice.createdAt || selectedInvoice.date).toLocaleDateString()}</span>
+                                        Created on <span className="font-medium text-gray-700">{selectedInvoice.date ? new Date(selectedInvoice.createdAt || selectedInvoice.date).toLocaleDateString() : 'N/A'}</span>
                                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                                         by <span className="font-medium text-gray-700">{selectedInvoice.preparedBy || 'System'}</span>
                                     </p>
@@ -920,17 +920,17 @@ export default function IncidentalInvoices() {
                                     </div>
                                     <div className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                                         <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2 block">Date</label>
-                                        <div className="font-bold text-gray-900 text-lg">{new Date(selectedInvoice.date).toLocaleDateString()}</div>
+                                        <div className="font-bold text-gray-900 text-lg">{selectedInvoice.date ? new Date(selectedInvoice.date).toLocaleDateString() : 'N/A'}</div>
                                         <div className="text-xs text-gray-400 mt-1">Date of Issue</div>
                                     </div>
                                     <div className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                                         <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2 block">Payment</label>
-                                        <div className="font-bold text-gray-900 text-lg line-clamp-1">{selectedInvoice.paymentMethod}</div>
-                                        <div className="text-xs text-gray-500 mt-1">{selectedInvoice.paymentType}</div>
+                                        <div className="font-bold text-gray-900 text-lg line-clamp-1">{selectedInvoice.paymentMethod || 'N/A'}</div>
+                                        <div className="text-xs text-gray-500 mt-1">{selectedInvoice.paymentType || 'N/A'}</div>
                                     </div>
                                     <div className="p-5 bg-gradient-to-br from-[#FF6A00] to-[#FF4500] rounded-xl shadow-lg shadow-orange-200 text-white transform hover:scale-105 transition-transform duration-200">
                                         <label className="text-[10px] uppercase tracking-wider font-bold text-white/70 mb-2 block">Total Amount</label>
-                                        <div className="font-bold text-2xl tracking-tight">${selectedInvoice.totalAmount.toFixed(2)}</div>
+                                        <div className="font-bold text-2xl tracking-tight">${(selectedInvoice.totalAmount || 0).toFixed(2)}</div>
                                     </div>
                                 </div>
 
@@ -952,16 +952,16 @@ export default function IncidentalInvoices() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50">
-                                                    {selectedInvoice.charges.map(c => (
+                                                    {(selectedInvoice.charges || []).map(c => (
                                                         <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
                                                             <td className="px-5 py-4 text-gray-700">
                                                                 <div className="font-semibold text-gray-900">{c.particular}</div>
                                                                 {c.comments && <div className="text-xs text-gray-500 mt-1">{c.comments}</div>}
                                                             </td>
-                                                            <td className="px-5 py-4 text-right font-bold text-gray-900 font-mono">${c.amount.toFixed(2)}</td>
+                                                            <td className="px-5 py-4 text-right font-bold text-gray-900 font-mono">${(c.amount || 0).toFixed(2)}</td>
                                                         </tr>
                                                     ))}
-                                                    {selectedInvoice.charges.length === 0 && (
+                                                    {(selectedInvoice.charges || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={2} className="px-5 py-8 text-center text-gray-400 text-xs italic">No charges added yet</td>
                                                         </tr>
@@ -988,16 +988,16 @@ export default function IncidentalInvoices() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50">
-                                                    {selectedInvoice.payments.map(p => (
+                                                    {(selectedInvoice.payments || []).map(p => (
                                                         <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                                                             <td className="px-5 py-4 text-gray-700">
                                                                 <div className="font-semibold text-gray-900">{p.type}</div>
                                                                 {p.comments && <div className="text-xs text-gray-500 mt-1">{p.comments}</div>}
                                                             </td>
-                                                            <td className="px-5 py-4 text-right font-bold text-green-600 font-mono">${p.amount.toFixed(2)}</td>
+                                                            <td className="px-5 py-4 text-right font-bold text-green-600 font-mono">${(p.amount || 0).toFixed(2)}</td>
                                                         </tr>
                                                     ))}
-                                                    {selectedInvoice.payments.length === 0 && (
+                                                    {(selectedInvoice.payments || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={2} className="px-5 py-8 text-center text-gray-400 text-xs italic">No payments received</td>
                                                         </tr>

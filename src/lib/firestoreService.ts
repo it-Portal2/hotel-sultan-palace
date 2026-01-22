@@ -173,9 +173,10 @@ export interface Booking {
   paymentMethod?: string; // e.g., 'card', 'cash', 'online'
   paymentDate?: Date; // When payment was made
 
-  // Master Data References (Optional for now)
+  // Master Data References
   travelAgentId?: string;
   companyId?: string;
+  salesPersonId?: string;
   marketSegmentId?: string;
   businessSourceId?: string;
   rateTypeId?: string;
@@ -5488,27 +5489,18 @@ export const updateMaintenanceTicket = async (id: string, data: Partial<Maintena
 };
 // ==================== Generic Master Data Operations ====================
 
-// Generic function to get all documents from a collection
+// Generic function to get master data settings list
 export const getMasterData = async <T>(collectionName: string): Promise<T[]> => {
   if (!db) return [];
   try {
     const colRef = collection(db, collectionName);
-    const q = query(colRef, orderBy('createdAt', 'desc'));
+    // Use simple query to avoid index issues with new collections
+    const q = query(colRef);
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        roomName: data.roomName || '',
-        suiteType: data.suiteType || 'Garden Suite', // Default fallback
-        price: data.price || 0,
-        description: data.description || '',
-        amenities: data.amenities || [],
-        maxOccupancy: data.maxOccupancy || 2,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
-      } as T; // Changed from RoomTypeData to T to maintain generic signature
-    });
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as T));
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
     return [];
@@ -5693,10 +5685,12 @@ export const getIncidentalInvoices = async (): Promise<IncidentalInvoice[]> => {
   if (!db) return [];
   try {
     const invoicesRef = collection(db, 'incidentalInvoices');
-    const q = query(invoicesRef, orderBy('createdAt', 'desc'));
+    // Removing orderBy to avoid index issues.
+    // const q = query(invoicesRef, orderBy('createdAt', 'desc'));
+    const q = query(invoicesRef);
 
     // Note: If you need precise date filtering, use 'date' field or 'createdAt'
-    // For simplicity, fetching all sorted by new first.
+    // For simplicity, fetching all.
 
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({

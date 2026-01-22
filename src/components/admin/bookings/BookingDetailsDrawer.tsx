@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { Booking, updateBooking as updateBookingFirestore, getFoodOrder, getGuestService } from '@/lib/firestoreService';
+import { Booking, updateBooking as updateBookingFirestore, getFoodOrder, getGuestService, getMasterData } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import SettlementModal from '../front-desk/SettlementModal';
@@ -25,7 +25,11 @@ import {
     TagIcon,
     CheckCircleIcon,
     PencilSquareIcon,
-    TrashIcon
+    TrashIcon,
+    BriefcaseIcon,
+    GlobeAltIcon,
+    UserGroupIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 interface BookingDetailsDrawerProps {
@@ -52,6 +56,36 @@ export default function BookingDetailsDrawer({
     const [booking, setBooking] = useState<Booking>(initialBooking);
     const [isEditing, setIsEditing] = useState(initialIsEditing);
     const [saving, setSaving] = useState(false);
+
+    // Cashiering Data State
+    const [companies, setCompanies] = useState<any[]>([]);
+    const [travelAgents, setTravelAgents] = useState<any[]>([]);
+    const [salesPersons, setSalesPersons] = useState<any[]>([]);
+    const [loadingCashiering, setLoadingCashiering] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadCashieringData();
+        }
+    }, [isOpen]);
+
+    const loadCashieringData = async () => {
+        setLoadingCashiering(true);
+        try {
+            const [comps, agents, sales] = await Promise.all([
+                getMasterData('companies'),
+                getMasterData('travelAgents'),
+                getMasterData('salesPersons')
+            ]);
+            setCompanies(comps.filter((c: any) => c.isActive));
+            setTravelAgents(agents.filter((a: any) => a.isActive));
+            setSalesPersons(sales.filter((s: any) => s.isActive));
+        } catch (error) {
+            console.error("Failed to load cashiering data", error);
+        } finally {
+            setLoadingCashiering(false);
+        }
+    };
 
     // Update local state when prop changes
     useEffect(() => {
@@ -175,7 +209,10 @@ export default function BookingDetailsDrawer({
             await updateBookingFirestore(booking.id, {
                 guestDetails: booking.guestDetails,
                 address: booking.address,
-                notes: booking.notes
+                notes: booking.notes,
+                companyId: booking.companyId,
+                travelAgentId: booking.travelAgentId,
+                salesPersonId: booking.salesPersonId
             });
             showToast("Booking updated successfully", "success");
             setIsEditing(false);
@@ -425,6 +462,101 @@ export default function BookingDetailsDrawer({
                                                                         {booking.notes || "No notes available."}
                                                                     </p>
                                                                 )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Cashiering Info Card */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                                            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                                                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                                    <BriefcaseIcon className="h-4 w-4 text-gray-500" /> Source & Billing
+                                                                </h3>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={loadCashieringData}
+                                                                    disabled={loadingCashiering}
+                                                                    className={`p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ${loadingCashiering ? 'animate-spin' : ''}`}
+                                                                    title="Refresh Companies & Agents"
+                                                                >
+                                                                    <ArrowPathIcon className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                            <div className="p-5 space-y-4">
+                                                                {/* Company / Bill to Company */}
+                                                                <div>
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1">
+                                                                            <BuildingOfficeIcon className="h-3 w-3" /> Company
+                                                                        </label>
+                                                                        {booking.companyId && !isEditing && (
+                                                                            <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-bold uppercase">
+                                                                                Bill to Company
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {isEditing ? (
+                                                                        <select
+                                                                            value={booking.companyId || ''}
+                                                                            onChange={(e) => setBooking({ ...booking, companyId: e.target.value || undefined })}
+                                                                            className="w-full px-2 py-1.5 border border-indigo-200 rounded text-sm focus:ring-2 focus:ring-indigo-100 outline-none bg-indigo-50/30"
+                                                                        >
+                                                                            <option value="">-- None --</option>
+                                                                            {companies.map(c => (
+                                                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : (
+                                                                        <p className="text-sm font-medium text-gray-900">
+                                                                            {companies.find(c => c.id === booking.companyId)?.name || '-'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Travel Agent */}
+                                                                <div>
+                                                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
+                                                                        <GlobeAltIcon className="h-3 w-3" /> Travel Agent
+                                                                    </label>
+                                                                    {isEditing ? (
+                                                                        <select
+                                                                            value={booking.travelAgentId || ''}
+                                                                            onChange={(e) => setBooking({ ...booking, travelAgentId: e.target.value || undefined })}
+                                                                            className="w-full px-2 py-1.5 border border-indigo-200 rounded text-sm focus:ring-2 focus:ring-indigo-100 outline-none bg-indigo-50/30"
+                                                                        >
+                                                                            <option value="">-- None --</option>
+                                                                            {travelAgents.map(a => (
+                                                                                <option key={a.id} value={a.id}>{a.name} ({a.commissionRate}%)</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : (
+                                                                        <p className="text-sm font-medium text-gray-900">
+                                                                            {travelAgents.find(a => a.id === booking.travelAgentId)?.name || '-'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Sales Person */}
+                                                                <div>
+                                                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
+                                                                        <UserGroupIcon className="h-3 w-3" /> Sales Person
+                                                                    </label>
+                                                                    {isEditing ? (
+                                                                        <select
+                                                                            value={booking.salesPersonId || ''}
+                                                                            onChange={(e) => setBooking({ ...booking, salesPersonId: e.target.value || undefined })}
+                                                                            className="w-full px-2 py-1.5 border border-indigo-200 rounded text-sm focus:ring-2 focus:ring-indigo-100 outline-none bg-indigo-50/30"
+                                                                        >
+                                                                            <option value="">-- None --</option>
+                                                                            {salesPersons.map(s => (
+                                                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : (
+                                                                        <p className="text-sm font-medium text-gray-900">
+                                                                            {salesPersons.find(s => s.id === booking.salesPersonId)?.name || '-'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
 

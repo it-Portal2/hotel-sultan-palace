@@ -3,7 +3,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PrinterIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { Booking, getFoodOrder, getFolioTransactions, getGuestService, FoodOrder, GuestService } from '@/lib/firestoreService';
+import { Booking, getFoodOrder, getFolioTransactions, getGuestService, getIncidentalInvoices, FoodOrder, GuestService, IncidentalInvoice } from '@/lib/firestoreService';
 
 interface FolioDetailsDrawerProps {
     booking: Booking | null;
@@ -15,6 +15,7 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
     const [transactions, setTransactions] = useState<any[]>([]);
     const [foodOrders, setFoodOrders] = useState<FoodOrder[]>([]);
     const [guestServices, setGuestServices] = useState<GuestService[]>([]);
+    const [posInvoices, setPosInvoices] = useState<IncidentalInvoice[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -60,6 +61,14 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
                 setGuestServices([]);
             }
 
+            // Fetch POS / Incidental Invoices
+            const allInvoices = await getIncidentalInvoices();
+            const validPosInvoices = allInvoices.filter(inv =>
+                inv.bookingId === booking.id &&
+                inv.status !== 'void'
+            );
+            setPosInvoices(validPosInvoices);
+
         } catch (error) {
             console.error("Error fetching folio details", error);
         } finally {
@@ -85,6 +94,11 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
 
     // 3. Service Charges
     const serviceTotal = guestServices.reduce((acc, s) => acc + (s.totalAmount || s.amount || 0), 0);
+
+    // 3b. POS Charges
+    const posTotal = posInvoices.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
+    // Note: If POS was paid by cash, we need to credit it below.
+    const posPayments = posInvoices.reduce((acc, inv) => acc + (inv.totalPaid || 0), 0);
 
     // 4. Transactions (Charges & Payments)
     // Deduplication: Filter out transactions that are already accounted for in Food Orders or Guest Services
@@ -120,9 +134,10 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
     const totalPayments = uniqueTransactions.filter(t => t.type === 'payment').reduce((acc, t) => acc + (t.amount || 0), 0);
 
     const unaccountedPaidAmount = Math.max(0, (booking.paidAmount || 0) - totalPayments);
-    const allPayments = totalPayments + unaccountedPaidAmount;
+    // Include POS payments in total payments to offset the debit if paid
+    const allPayments = totalPayments + unaccountedPaidAmount + posPayments;
 
-    const grossTotal = roomTotal + mealPlanTotal + foodTotal + serviceTotal + otherCharges;
+    const grossTotal = roomTotal + mealPlanTotal + foodTotal + serviceTotal + posTotal + otherCharges;
     const storedTotal = booking.totalAmount || grossTotal;
 
     let discountAmount = booking.discount?.amount || 0;
@@ -249,6 +264,34 @@ export default function FolioDetailsDrawer({ booking, open, onClose }: FolioDeta
                                                                 <td className="px-6 py-4 text-right text-gray-900 font-mono">{(service.totalAmount || service.amount || 0).toLocaleString()}</td>
                                                                 <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
                                                             </tr>
+                                                        ))}
+
+                                                        {/* POS Invoices (Purple tint) */}
+                                                        {posInvoices.map(inv => (
+                                                            <React.Fragment key={inv.id}>
+                                                                {/* Charge Line */}
+                                                                <tr className="bg-purple-50/20">
+                                                                    <td className="px-6 py-4 text-gray-900">
+                                                                        <span className="block font-medium">POS Invoice: {inv.voucherNo}</span>
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {new Date(inv.date).toLocaleDateString()}
+                                                                            {inv.totalPaid >= inv.totalAmount ? ' (Paid)' : inv.totalPaid > 0 ? ' (Partial)' : ''}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-right text-gray-900 font-mono">{inv.totalAmount.toLocaleString()}</td>
+                                                                    <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
+                                                                </tr>
+                                                                {/* Payment Line (if any) */}
+                                                                {inv.totalPaid > 0 && (
+                                                                    <tr className="bg-purple-50/20">
+                                                                        <td className="px-6 py-4 text-gray-500 text-xs italic pl-10">
+                                                                            Payment for {inv.voucherNo}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 text-right text-gray-400 font-mono">-</td>
+                                                                        <td className="px-6 py-4 text-right text-purple-700 font-mono">{inv.totalPaid.toLocaleString()}</td>
+                                                                    </tr>
+                                                                )}
+                                                            </React.Fragment>
                                                         ))}
 
                                                         {/* Other Transactions */}
