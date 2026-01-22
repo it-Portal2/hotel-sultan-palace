@@ -36,7 +36,9 @@ import {
     EnvelopeIcon,
     PhoneIcon,
     KeyIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    DocumentTextIcon,
+    QueueListIcon
 } from '@heroicons/react/24/outline';
 import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
 import { CleaningIcon } from '../components/icons/CleaningIcon';
@@ -253,12 +255,40 @@ export const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
     ],
     finance: [
         {
-            name: 'Finance',
-            icon: CurrencyDollarIcon,
+            name: 'Overview',
+            icon: Squares2X2Icon,
             items: [
-                { name: 'Accounts Overview', href: '/admin/accounts', icon: CurrencyDollarIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'finance_ops' },
+                { name: 'Overview', href: '/admin/accounts?tab=overview', icon: Squares2X2Icon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'finance_ops' },
             ],
-            defaultOpen: true
+            defaultOpen: true,
+            isSingleItem: true
+        },
+        {
+            name: 'Invoices',
+            icon: DocumentTextIcon,
+            items: [
+                { name: 'Invoices', href: '/admin/accounts?tab=invoices', icon: DocumentTextIcon, color: 'text-blue-600', bgColor: 'bg-blue-50', section: 'finance_invoices' },
+            ],
+            defaultOpen: true,
+            isSingleItem: true
+        },
+        {
+            name: 'Bills',
+            icon: ShoppingBagIcon,
+            items: [
+                { name: 'Bills', href: '/admin/accounts?tab=bills', icon: ShoppingBagIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'finance_bills' },
+            ],
+            defaultOpen: true,
+            isSingleItem: true
+        },
+        {
+            name: 'Transactions',
+            icon: QueueListIcon,
+            items: [
+                { name: 'Transactions', href: '/admin/accounts?tab=transactions', icon: QueueListIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'finance_transactions' },
+            ],
+            defaultOpen: true,
+            isSingleItem: true
         },
     ],
     staff: [

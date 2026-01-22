@@ -9,13 +9,14 @@ import { useSearchParams } from 'next/navigation';
 import { updatePurchaseOrder } from '@/lib/inventoryService';
 import { useToast } from '@/context/ToastContext';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import BookingDetailsDrawer from '@/components/admin/bookings/BookingDetailsDrawer';
+import InvoiceViewModal from '@/components/admin/finance/InvoiceViewModal';
 import PurchaseOrderDrawer from '@/components/admin/inventory/PurchaseOrderDrawer';
 import { getSuppliers, getInventoryItems } from '@/lib/inventoryService';
 import type { Supplier, InventoryItem } from '@/lib/firestoreService';
 
 export default function AccountsPage() {
     const { showToast } = useToast();
+    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'bills' | 'transactions'>('overview');
     const [entries, setEntries] = useState<LedgerEntry[]>([]);
     const [invoices, setInvoices] = useState<Booking[]>([]);
@@ -24,8 +25,11 @@ export default function AccountsPage() {
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-    const [showBookingDrawer, setShowBookingDrawer] = useState(false);
+
+    // Invoices State
+    const [selectedInvoice, setSelectedInvoice] = useState<Booking | null>(null);
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+
     const [selectedBill, setSelectedBill] = useState<PurchaseOrder | null>(null);
     const [showBillDrawer, setShowBillDrawer] = useState(false);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -34,6 +38,14 @@ export default function AccountsPage() {
 
     // Filters
     const [dateFilter, setDateFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+
+    // Sync Tab with URL
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && ['overview', 'invoices', 'bills', 'transactions'].includes(tab)) {
+            setActiveTab(tab as any);
+        }
+    }, [searchParams]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -130,8 +142,16 @@ export default function AccountsPage() {
             {/* Header */}
             <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Finance & Accounts</h1>
-                    <p className="text-sm text-gray-500">Manage income, expenses, and financial overview</p>
+                    <h1 className="text-2xl font-bold text-gray-900 capitalize">
+                        {activeTab === 'overview' ? 'Finance Overview' :
+                            activeTab === 'invoices' ? 'Guest Invoices' :
+                                activeTab === 'bills' ? 'Vendor Bills' : 'Transactions'}
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                        {activeTab === 'overview' ? 'Financial performance summary' :
+                            activeTab === 'invoices' ? 'Manage guest checkout invoices' :
+                                activeTab === 'bills' ? 'Manage vendor purchase orders and bills' : 'View all financial transactions'}
+                    </p>
                 </div>
                 <button
                     onClick={() => setIsDrawerOpen(true)}
@@ -142,47 +162,7 @@ export default function AccountsPage() {
                 </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 bg-white p-1 rounded-lg border border-gray-200 w-fit">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'overview'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                >
-                    Overview
-                </button>
-                <button
-                    onClick={() => setActiveTab('invoices')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${activeTab === 'invoices'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                >
-                    <DocumentTextIcon className="w-4 h-4 mr-2" />
-                    Guest Invoices
-                </button>
-                <button
-                    onClick={() => setActiveTab('bills')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${activeTab === 'bills'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                >
-                    <ShoppingBagIcon className="w-4 h-4 mr-2" />
-                    Vendor Bills
-                </button>
-                <button
-                    onClick={() => setActiveTab('transactions')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'transactions'
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                >
-                    Transactions
-                </button>
-            </div>
+
 
             {/* Filter (Only shown in Overview for now, but affects both fetches) */}
             <div className="flex justify-end">
@@ -342,8 +322,8 @@ export default function AccountsPage() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <button
                                                             onClick={() => {
-                                                                setSelectedBooking(inv);
-                                                                setShowBookingDrawer(true);
+                                                                setSelectedInvoice(inv);
+                                                                setShowInvoiceModal(true);
                                                             }}
                                                             className="text-orange-600 hover:text-orange-900"
                                                         >
@@ -519,21 +499,16 @@ export default function AccountsPage() {
             )
             }
 
-            {/* Booking Details Drawer */}
-            {
-                selectedBooking && (
-                    <BookingDetailsDrawer
-                        isOpen={showBookingDrawer}
-                        onClose={() => {
-                            setShowBookingDrawer(false);
-                            setTimeout(() => setSelectedBooking(null), 300);
-                        }}
-                        booking={selectedBooking}
-                        onUpdate={fetchData}
-                        onCancelBooking={() => { }}
-                    />
-                )
-            }
+            {/* Invoice View Modal */}
+            {selectedInvoice && showInvoiceModal && (
+                <InvoiceViewModal
+                    booking={selectedInvoice}
+                    onClose={() => {
+                        setShowInvoiceModal(false);
+                        setTimeout(() => setSelectedInvoice(null), 300);
+                    }}
+                />
+            )}
 
             {/* Vendor Bill Drawer */}
             <PurchaseOrderDrawer
