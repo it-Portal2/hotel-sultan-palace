@@ -4,13 +4,41 @@ import React, { useState, useEffect } from 'react';
 import ReportFilters, { ReportFilterState } from '@/components/admin/reports/ReportFilters';
 import { getAllBookings, Booking } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
-import { PrinterIcon, CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { PrinterIcon, CalendarDaysIcon, ClockIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
 export default function ArrivalListPage() {
+    // State for data and filters
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(false);
+    const [filters, setFilters] = useState<ReportFilterState>({
+        // Default State matching ReportFilters generic defaults
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        dateType: 'arrival', // Default for Arrival List
+        companyId: '',
+        travelAgentId: '',
+        rateTypeId: '',
+        reservationTypeId: '',
+        showAmount: 'Rent Per Night',
+        remarks: ['Check In', 'Check Out'],
+        propertyId: '1',
+        source: '',
+        orderBy: 'arrival_date',
+        cancellationReason: '',
+        roomType: '',
+        market: '',
+        rateFrom: '',
+        rateTo: '',
+        user: '',
+        businessSource: '',
+        taxInclusive: true,
+        columns: [], // Will be set by ReportFilters update or defaults
+        cancelledBy: '',
+        reportTemplate: 'Default'
+    });
+
     const { showToast } = useToast();
     const { adminUser } = useAdminRole();
 
@@ -19,12 +47,16 @@ export default function ArrivalListPage() {
         loadData();
     }, []);
 
+    // Effect to apply filters whenever bookings or filter state changes
+    useEffect(() => {
+        applyFilters();
+    }, [bookings, filters]);
+
     const loadData = async () => {
         setLoading(true);
         try {
             const data = await getAllBookings();
             setBookings(data);
-            // Don't auto-filter immediately, wait for user or initial filter effect
         } catch (error) {
             console.error(error);
             showToast('Failed to load data', 'error');
@@ -33,7 +65,11 @@ export default function ArrivalListPage() {
         }
     };
 
-    const handleFilterChange = (filters: ReportFilterState) => {
+    const handleFilterChange = (newFilters: ReportFilterState) => {
+        setFilters(newFilters);
+    };
+
+    const applyFilters = () => {
         const start = new Date(filters.startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(filters.endDate);
@@ -41,19 +77,43 @@ export default function ArrivalListPage() {
 
         let result = bookings.filter(b => {
             // Filter Logic
-            // ... (keep existing filters)
+            // 1. Date Filter (Arrival Date)
+            const checkInDate = new Date(b.checkIn);
+            checkInDate.setHours(0, 0, 0, 0);
+            if (checkInDate < start || checkInDate > end) return false;
+
+            // 2. Status Filter
+            const s = b.status?.toLowerCase() || '';
+            if (s.includes('cancel') || (s.includes('no') && s.includes('show'))) return false;
+
+            // 3. Company Filter
+            if (filters.companyId && b.companyId !== filters.companyId) return false;
+
+            // 4. Travel Agent Filter
+            if (filters.travelAgentId && filters.travelAgentId !== 'ALL' && b.travelAgentId !== filters.travelAgentId) return false;
+
+            // 5. Source Filter
+            if (filters.source) {
+                const bSource = b.source?.toLowerCase().replace('_', '') || 'direct';
+                const fSource = filters.source.toLowerCase().replace('_', '');
+                if (!bSource.includes(fSource)) return false;
+            }
             // 6. Filter by Market (Mock)
             if (filters.market && (b as any).market !== filters.market) return false;
 
             // 7. Room Type
             if (filters.roomType) {
-                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                const hasType = b.rooms.some(r => r.allocatedRoomType?.toLowerCase() === filters.roomType.toLowerCase());
                 if (!hasType) return false;
             }
 
             // 8. Meal Plan
             if (filters.rateTypeId) {
-                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                const search = filters.rateTypeId.toLowerCase();
+                const hasMealPlan = b.rooms.some(r =>
+                    r.mealPlan?.toLowerCase() === search ||
+                    r.ratePlan?.toLowerCase() === search
+                );
                 if (!hasMealPlan) return false;
             }
 
@@ -93,27 +153,64 @@ export default function ArrivalListPage() {
         }).format(amount);
     };
 
-    // Helper to check if column is selected
-    // Default columns if filter state is empty (initial load)
+    // Use filters state for column visibility
     const isColVisible = (id: string) => {
-        // If no filter selected yet (initial), show defaults
-        // But ReportFilters initializes with defaults, so we rely on passed filters if we had access to them in render.
-        // Issue: 'filters' state is inside ReportFilters component, we only get updates via onFilterChange. 
-        // Strategy: We need to store the current filter state in this page (which we do implicitly via setFilteredBookings, but not the filter config itself).
-        // We need to keep track of 'currentFilters'
-        return currentFilters?.columns ? currentFilters.columns.includes(id) : true;
+        // ... (as before)
+        if (!filters.columns || filters.columns.length === 0) return true; // Fallback
+        return filters.columns.includes(id);
     };
 
-    const [currentFilters, setCurrentFilters] = useState<ReportFilterState | null>(null);
+    const handleExportCSV = () => {
+        // ... (start of existing handleExportCSV)
+        if (filteredBookings.length === 0) {
+            showToast('No data to export', 'error');
+            return;
+        }
 
-    const handleFilterUpdate = (filters: ReportFilterState) => {
-        setCurrentFilters(filters);
-        handleFilterChange(filters);
+        const headers = [
+            'Res. No', 'Guest Name', 'Meal Plan', 'Room', 'Rate', 'Arrival Date', 'Departure Date', 'Adults', 'Children', 'Pick-Up', 'Market', 'Source'
+        ];
+
+        // ... (rest of csv logic is fine, we just need to ensure we don't break boundaries)
+        const csvContent = [
+            headers.join(','),
+            ...filteredBookings.map(b => {
+                const allocated = b.rooms[0]?.allocatedRoomType || 'Unassigned';
+                const mealPlan = b.rooms[0]?.mealPlan || '-';
+                const pickUp = (b as any).pickUpLocation || 'No Pickup';
+                const market = (b as any).market || '-';
+                const source = b.source || '-';
+
+                return [
+                    `"${b.bookingId || b.id.substring(0, 8)}"`,
+                    `"${b.guestDetails.lastName}, ${b.guestDetails.firstName}"`,
+                    `"${mealPlan}"`,
+                    `"${allocated}"`,
+                    `"${b.totalAmount}"`,
+                    `"${new Date(b.checkIn).toLocaleDateString()}"`,
+                    `"${new Date(b.checkOut).toLocaleDateString()}"`,
+                    `"${b.guests?.adults || 0}"`,
+                    `"${b.guests?.children || 0}"`,
+                    `"${pickUp}"`,
+                    `"${market}"`,
+                    `"${source}"`
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `arrival_list_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
         <div className="min-h-screen bg-gray-50/50 font-sans print:bg-white print:p-0">
-            {/* === PRINT ONLY HEADER === */}
+            {/* ... Header ... */}
             <div className="hidden print:block mb-8">
                 <div className="flex items-start justify-between border-b-2 border-gray-900 pb-4 mb-4">
                     <div className="flex items-center gap-4">
@@ -141,12 +238,21 @@ export default function ArrivalListPage() {
                     </div>
                 </div>
 
-                <div className="print:hidden">
-                    <ReportFilters
-                        title="Arrival List"
-                        reportType="arrival"
-                        onFilterChange={handleFilterUpdate}
-                    />
+                <div className="print:hidden flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex-1">
+                        <ReportFilters
+                            title="Arrival List"
+                            reportType="arrival"
+                            onFilterChange={handleFilterChange}
+                        />
+                    </div>
+                    <button
+                        onClick={handleExportCSV}
+                        className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        Export CSV
+                    </button>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden print:shadow-none print:border-gray-200 print:rounded-none">
@@ -220,7 +326,9 @@ export default function ArrivalListPage() {
                                                 </td>
                                                 {isColVisible('pickup') && (
                                                     <td className="px-6 py-4">
-                                                        <span className="text-xs text-gray-400 italic">No Pickup</span>
+                                                        <span className={`text-xs ${(b as any).pickUpLocation ? 'font-medium text-blue-600' : 'text-gray-400 italic'}`}>
+                                                            {(b as any).pickUpLocation || 'No Pickup'}
+                                                        </span>
                                                     </td>
                                                 )}
                                             </tr>

@@ -4,16 +4,45 @@ import React, { useState, useEffect } from 'react';
 import ReportFilters, { ReportFilterState } from '@/components/admin/reports/ReportFilters';
 import { getAllBookings, Booking } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
-import { XCircleIcon, CalendarDaysIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, CalendarDaysIcon, ExclamationTriangleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function CancelledReportPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+    const [filters, setFilters] = useState<ReportFilterState>({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        dateType: 'cancellation',
+        roomType: '',
+        rateTypeId: '',
+        companyId: '',
+        travelAgentId: '',
+        reservationTypeId: '',
+        showAmount: 'Rent Per Night',
+        remarks: [],
+        propertyId: '1',
+        source: '',
+        orderBy: 'arrival_date',
+        cancellationReason: '',
+        market: '',
+        rateFrom: '',
+        rateTo: '',
+        user: '',
+        businessSource: '',
+        taxInclusive: true,
+        columns: [],
+        cancelledBy: '',
+        reportTemplate: 'Default'
+    });
     const { showToast } = useToast();
 
     useEffect(() => {
-        loadData();
-    }, []);
+        applyFilters();
+    }, [bookings, filters]);
+
+    useEffect(() => {
+        applyFilters();
+    }, [bookings, filters]);
 
     const loadData = async () => {
         try {
@@ -25,7 +54,15 @@ export default function CancelledReportPage() {
         }
     };
 
-    const handleFilterChange = (filters: ReportFilterState) => {
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const handleFilterChange = (newFilters: ReportFilterState) => {
+        setFilters(newFilters);
+    };
+
+    const applyFilters = () => {
         const start = new Date(filters.startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(filters.endDate);
@@ -33,7 +70,13 @@ export default function CancelledReportPage() {
 
         let result = bookings.filter(b => {
             // 1. Must be cancelled
-            if (b.status !== 'cancelled') return false;
+            const status = b.status?.toLowerCase() || '';
+            const isCancelled = status.includes('cancel');
+
+            // Console log for debugging
+
+
+            if (!isCancelled) return false;
 
             // 2. Filter by Date Type (Cancellation Date vs Arrival Date)
             let targetDate: Date;
@@ -66,13 +109,17 @@ export default function CancelledReportPage() {
 
             // 6. Room Type
             if (filters.roomType) {
-                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                const hasType = b.rooms.some(r => r.allocatedRoomType?.toLowerCase() === filters.roomType.toLowerCase());
                 if (!hasType) return false;
             }
 
             // 7. Meal Plan
             if (filters.rateTypeId) {
-                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                const search = filters.rateTypeId.toLowerCase();
+                const hasMealPlan = b.rooms.some(r =>
+                    r.mealPlan?.toLowerCase() === search ||
+                    r.ratePlan?.toLowerCase() === search
+                );
                 if (!hasMealPlan) return false;
             }
 
@@ -87,6 +134,49 @@ export default function CancelledReportPage() {
         });
 
         setFilteredBookings(result);
+    };
+
+    const handleExportCSV = () => {
+        if (filteredBookings.length === 0) {
+            showToast('No data to export', 'error');
+            return;
+        }
+
+        const headers = [
+            'Res. No', 'Guest Name', 'Company', 'Source', 'Agent', 'Meal Plan', 'Arrival Date', 'Cancelled On', 'Reason', 'Lost Value', 'Status'
+        ];
+
+        const csvContent = [
+            headers.join(','),
+            ...filteredBookings.map(b => {
+                const source = b.source ? b.source.replace('_', ' ').toUpperCase() : 'DIRECT';
+                const agent = b.travelAgentId || 'None';
+                const mealPlan = b.rooms[0]?.mealPlan || '-';
+
+                return [
+                    `"${b.bookingId || b.id.substring(0, 8)}"`,
+                    `"${b.guestDetails.lastName}, ${b.guestDetails.firstName}"`,
+                    `"${b.companyId || ''}"`,
+                    `"${source}"`,
+                    `"${agent}"`,
+                    `"${mealPlan}"`,
+                    `"${new Date(b.checkIn).toLocaleDateString()}"`,
+                    `"${new Date(b.updatedAt).toLocaleDateString()} ${new Date(b.updatedAt).toLocaleTimeString()}"`,
+                    `"${b.notes || ''}"`,
+                    `"${b.totalAmount}"`,
+                    `"Cancelled"`
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `cancelled_reservations_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const formatCurrency = (amount: number) => {
@@ -128,12 +218,21 @@ export default function CancelledReportPage() {
                     </div>
                 </div>
 
-                <div className="print:hidden">
-                    <ReportFilters
-                        title="Cancelled Reservation"
-                        reportType="cancellation"
-                        onFilterChange={handleFilterChange}
-                    />
+                <div className="print:hidden flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex-1">
+                        <ReportFilters
+                            title="Cancelled Reservation"
+                            reportType="cancellation"
+                            onFilterChange={handleFilterChange}
+                        />
+                    </div>
+                    <button
+                        onClick={handleExportCSV}
+                        className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        Export CSV
+                    </button>
                 </div>
 
                 {/* KPI Card for Lost Revenue */}

@@ -1937,19 +1937,23 @@ export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
 
 
       // 4. Sanitize Dates (Handle Timestamp, String, or Date)
-      const safeDateToISO = (val: any): string => {
+      const safeDate = (val: any): Date => {
         try {
-          if (!val) return new Date().toISOString();
+          if (!val) return new Date();
           // Handle Firestore Timestamp
           if (val && typeof val.toDate === 'function') {
-            return val.toDate().toISOString();
+            return val.toDate();
           }
           // Handle String or Date
           const d = new Date(val);
-          return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+          return isNaN(d.getTime()) ? new Date() : d;
         } catch (error) {
-          return new Date().toISOString();
+          return new Date();
         }
+      };
+
+      const safeDateToISO = (val: any): string => {
+        return safeDate(val).toISOString();
       };
 
       let finalCheckIn = safeDateToISO(data.checkIn);
@@ -1964,8 +1968,8 @@ export const getAllBookings = async (startDate?: Date): Promise<Booking[]> => {
         guestDetails: finalGuestDetails || { firstName: 'Unknown', lastName: 'Guest', email: '', phone: '' },
         status: finalStatus,
         rooms: finalRooms,
-        createdAt: data.createdAt?.toDate() ? data.createdAt.toDate() : (data.updatedAt?.toDate() ? data.updatedAt.toDate() : new Date()),
-        updatedAt: data.updatedAt?.toDate() ? data.updatedAt.toDate() : new Date(),
+        createdAt: safeDate(data.createdAt || data.created_at),
+        updatedAt: safeDate(data.updatedAt || data.updated_at),
       } as Booking;
     });
   } catch (error) {

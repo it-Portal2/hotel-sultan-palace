@@ -4,17 +4,47 @@ import React, { useState, useEffect } from 'react';
 import ReportFilters, { ReportFilterState } from '@/components/admin/reports/ReportFilters';
 import { getAllBookings, Booking, getMasterData, RateType } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
-import { UserMinusIcon, CalendarDaysIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { UserMinusIcon, CalendarDaysIcon, CurrencyDollarIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function NoShowReportPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
     const [rateTypes, setRateTypes] = useState<RateType[]>([]);
+    const [filters, setFilters] = useState<ReportFilterState>({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        dateType: 'arrival', // No Show usually checks arrival/stay date
+        companyId: '',
+        travelAgentId: '',
+        rateTypeId: '',
+        reservationTypeId: '',
+        showAmount: 'Rent Per Night',
+        remarks: [],
+        propertyId: '1',
+        source: '',
+        orderBy: 'arrival_date',
+        cancellationReason: '',
+        roomType: '',
+        market: '',
+        rateFrom: '',
+        rateTo: '',
+        user: '',
+        businessSource: '',
+        taxInclusive: true,
+        columns: [],
+        cancelledBy: '',
+        reportTemplate: 'Default'
+    });
+
     const { showToast } = useToast();
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        applyFilters();
+    }, [bookings, filters]);
 
     const loadData = async () => {
         try {
@@ -30,7 +60,11 @@ export default function NoShowReportPage() {
         }
     };
 
-    const handleFilterChange = (filters: ReportFilterState) => {
+    const handleFilterChange = (newFilters: ReportFilterState) => {
+        setFilters(newFilters);
+    };
+
+    const applyFilters = () => {
         const start = new Date(filters.startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(filters.endDate);
@@ -38,9 +72,11 @@ export default function NoShowReportPage() {
 
         let result = bookings.filter(b => {
             // 1. Must be No Show
-            if (b.status !== 'no_show') return false;
+            const status = b.status?.toLowerCase() || '';
+            if (!status.includes('no') || !status.includes('show')) return false;
 
             // 2. Filter by Date (based on dateType)
+            // ...
             // Default to checkIn (Arrival Date) if not specified or 'arrival'/'stay'
             let dateField: keyof Booking = 'checkIn';
             if (filters.dateType === 'booking') {
@@ -67,13 +103,17 @@ export default function NoShowReportPage() {
 
             // 5. Room Type
             if (filters.roomType) {
-                const hasType = b.rooms.some(r => r.allocatedRoomType === filters.roomType);
+                const hasType = b.rooms.some(r => r.allocatedRoomType?.toLowerCase() === filters.roomType.toLowerCase());
                 if (!hasType) return false;
             }
 
             // 6. Meal Plan
             if (filters.rateTypeId) {
-                const hasMealPlan = b.rooms.some(r => r.mealPlan === filters.rateTypeId);
+                const search = filters.rateTypeId.toLowerCase();
+                const hasMealPlan = b.rooms.some(r =>
+                    r.mealPlan?.toLowerCase() === search ||
+                    r.ratePlan?.toLowerCase() === search
+                );
                 if (!hasMealPlan) return false;
             }
 
@@ -88,6 +128,49 @@ export default function NoShowReportPage() {
         });
 
         setFilteredBookings(result);
+    };
+
+    const handleExportCSV = () => {
+        if (filteredBookings.length === 0) {
+            showToast('No data to export', 'error');
+            return;
+        }
+
+        const headers = [
+            'Res. No', 'Booking Date', 'Guest Name', 'Meal Plan', 'Arrival Date', 'Departure Date', 'Charges', 'No Show Revenue', 'Source', 'No Show Date', 'Remarks'
+        ];
+
+        const csvContent = [
+            headers.join(','),
+            ...filteredBookings.map(b => {
+                const source = b.source ? b.source.replace('_', ' ').toUpperCase() : 'DIRECT';
+                const charges = b.totalAmount || 0;
+                const noShowRevenue = b.paidAmount || 0;
+
+                return [
+                    `"${b.bookingId || b.id.substring(0, 8)}"`,
+                    `"${new Date(b.createdAt).toLocaleDateString()}"`,
+                    `"${b.guestDetails.lastName}, ${b.guestDetails.firstName}"`,
+                    `"${b.rooms[0]?.mealPlan || '-'}"`,
+                    `"${new Date(b.checkIn).toLocaleDateString()}"`,
+                    `"${new Date(b.checkOut).toLocaleDateString()}"`,
+                    `"${charges}"`,
+                    `"${noShowRevenue}"`,
+                    `"${source}"`,
+                    `"${new Date(b.updatedAt).toLocaleDateString()}"`,
+                    `"${b.notes || ''}"`
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `no_show_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const formatCurrency = (amount: number) => {
@@ -129,12 +212,21 @@ export default function NoShowReportPage() {
                     </div>
                 </div>
 
-                <div className="print:hidden">
-                    <ReportFilters
-                        title="No Show Reservation"
-                        reportType="no_show"
-                        onFilterChange={handleFilterChange}
-                    />
+                <div className="print:hidden flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex-1">
+                        <ReportFilters
+                            title="No Show Reservation"
+                            reportType="no_show"
+                            onFilterChange={handleFilterChange}
+                        />
+                    </div>
+                    <button
+                        onClick={handleExportCSV}
+                        className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        Export CSV
+                    </button>
                 </div>
 
                 {/* KPI Card */}

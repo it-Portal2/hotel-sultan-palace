@@ -57,6 +57,7 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
     const [travelAgents, setTravelAgents] = useState<TravelAgent[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [reservationTypes, setReservationTypes] = useState<ReservationType[]>([]);
+    const [rateTypes, setRateTypes] = useState<RateType[]>([]); // New State
     const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
     // UI State for Collapsible Filters (More Options)
     const [isExpanded, setIsExpanded] = useState(false);
@@ -88,16 +89,17 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
     // Config for "Remarks" (Arrival List)
     const remarksOptions = ['Check In', 'Check Out', 'Guest Folio', 'House Keeping', 'Important Info', 'Internal Note'];
 
-    // Filter State
+
+
     const [filters, setFilters] = useState<ReportFilterState>({
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         companyId: '',
         travelAgentId: '',
-        rateTypeId: '', // Using this field for Meal Plan ID now
+        rateTypeId: '',
         reservationTypeId: '',
         showAmount: 'Rent Per Night',
-        remarks: ['Check In', 'Check Out'], // Default checked
+        remarks: ['Check In', 'Check Out'],
         propertyId: '1',
         source: '',
         orderBy: 'arrival_date',
@@ -117,7 +119,6 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
 
     useEffect(() => {
         const init = async () => {
-            // ensureDefaultRateTypes(); // Removed as rate types are not used in filters anymore
             loadMasterData();
         };
         init();
@@ -125,28 +126,36 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
 
     const loadMasterData = async () => {
         try {
-            const [ta, co, rst, rooms] = await Promise.all([
+            const [
+                tAgents,
+                comps,
+                resTypes,
+                rTypes,
+                rmTypes
+            ] = await Promise.all([
                 getMasterData<TravelAgent>('travelAgents'),
                 getMasterData<Company>('companies'),
                 getMasterData<ReservationType>('reservationTypes'),
+                getMasterData<RateType>('rateTypes'),
                 getRoomTypes()
             ]);
-            setTravelAgents(ta);
-            setCompanies(co);
-            setReservationTypes(rst);
 
-            // Deduplicate Room Types by Name
-            const uniqueRooms = Array.from(new Map(rooms.map(r => [r.roomName, r])).values());
-            setRoomTypes(uniqueRooms);
-
+            setTravelAgents(tAgents);
+            setCompanies(comps);
+            setReservationTypes(resTypes);
+            setRateTypes(rTypes);
+            setRoomTypes(rmTypes);
         } catch (error) {
-            console.error("Error loading filter master data:", error);
+            console.error("Error loading master data for filters:", error);
         }
     };
+
+
 
     const handleChange = (key: keyof ReportFilterState, value: any) => {
         const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
+        // Remove auto-apply if it existed. 
     };
 
     const handleCheckboxGroupChange = (group: 'remarks' | 'columns', id: string, checked: boolean) => {
@@ -159,19 +168,39 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
         handleChange(group, current);
     };
 
-    const handleApply = () => {
+    const handleApplyFilters = () => {
         onFilterChange(filters);
     };
 
     const handleReset = () => {
-        // Reset logic here (simplified for brevity)
-        setFilters({
-            ...filters,
+        const resetState = {
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0],
             companyId: '',
             travelAgentId: '',
             rateTypeId: '',
-            // ... reset others
-        });
+            reservationTypeId: '',
+            showAmount: 'Rent Per Night',
+            remarks: ['Check In', 'Check Out'],
+            propertyId: '1',
+            source: '',
+            orderBy: 'arrival_date',
+            dateType: reportType === 'cancellation' ? 'cancellation' : 'arrival',
+            cancellationReason: '',
+            roomType: '',
+            market: '',
+            rateFrom: '',
+            rateTo: '',
+            user: '',
+            businessSource: '',
+            taxInclusive: true,
+            columns: arrivalColumns.filter(c => c.default).map(c => c.id),
+            cancelledBy: '',
+            reportTemplate: 'Default'
+        };
+        setFilters(resetState);
+        // Optional: Auto-apply reset? Or let user click apply? Let's auto-apply on reset for convenience.
+        onFilterChange(resetState);
     };
 
     return (
@@ -184,6 +213,19 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleApplyFilters}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 transition-colors"
+                    >
+                        Apply Filters
+                    </button>
+                    <button
+                        onClick={handleReset}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded hover:bg-gray-200 transition-colors"
+                    >
+                        Reset
+                    </button>
+
                     {/* Expand / Collapse Filters Button */}
                     {(reportType === 'no_show' || reportType === 'cancellation' || reportType === 'arrival') && (
                         <button
@@ -248,11 +290,13 @@ export default function ReportFilters({ onFilterChange, title, reportType }: Rep
                         <label className={LABEL_STYLE}>Meal Plan</label>
                         <select className={INPUT_STYLE} value={filters.rateTypeId} onChange={(e) => handleChange('rateTypeId', e.target.value)}>
                             <option value="">--Select--</option>
-                            <option value="BB">Bed & Breakfast</option>
-                            <option value="HB">Half Board</option>
-                            <option value="FB">Full Board</option>
-                            <option value="AI">All Inclusive</option>
-                            <option value="RO">Room Only</option>
+                            {/* Dynamic Rate Types (Meal Plans) - Deduped by Name */}
+                            {Array.from(new Set(rateTypes.map(rt => rt.name)))
+                                .map(name => {
+                                    const rt = rateTypes.find(r => r.name === name);
+                                    return <option key={rt?.id} value={name}>{name}</option>;
+                                })
+                            }
                         </select>
                     </div>
 
