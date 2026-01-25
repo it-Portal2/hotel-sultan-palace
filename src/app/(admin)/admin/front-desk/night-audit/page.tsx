@@ -6,9 +6,9 @@ import { useToast } from '@/context/ToastContext';
 import {
     getCurrentBusinessDate,
     getAuditBlockers,
-    performNightAudit,
     getAuditHistory
 } from '@/lib/nightAuditService';
+import { performNightAudit } from '@/app/actions/nightAuditActions';
 import { getAuditLogs, AuditLogEntry, NightAuditLog } from '@/lib/firestoreService';
 import {
     CalendarDaysIcon,

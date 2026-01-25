@@ -11,8 +11,8 @@ import {
     Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { BusinessDay, NightAuditLog, Booking, RoomStatus, LedgerEntry } from './firestoreService';
-import { createLedgerEntry } from './accountsService';
+import type { BusinessDay, NightAuditLog, Booking, RoomStatus, LedgerEntry, FoodOrder } from './firestoreService';
+import { createLedgerEntry, getLedgerEntries } from './accountsService';
 
 export const BUSINESS_DAY_DOC_ID = 'current';
 
@@ -122,114 +122,7 @@ export const getAuditBlockers = async (businessDate: Date): Promise<AuditBlocker
     }
 };
 
-// Execute Night Audit
-export const performNightAudit = async (staffId: string, staffName: string): Promise<string | null> => {
-    if (!db) return null;
-
-    try {
-        const businessDate = await getCurrentBusinessDate();
-
-        // 1. Create Audit Log
-        const auditLogRef = collection(db, 'nightAuditLogs');
-        const newLogRef = doc(auditLogRef);
-
-        const auditLogData: NightAuditLog = {
-            id: newLogRef.id,
-            date: businessDate,
-            startedAt: new Date(),
-            auditedBy: staffId,
-            status: 'in_progress',
-            steps: {
-                roomChargesPosted: false,
-                roomStatusUpdated: false,
-                reportsGenerated: false,
-                businessDateRolled: false
-            },
-            summary: {
-                totalRevenue: 0,
-                totalOccupiedRooms: 0,
-                totalArrivals: 0,
-                totalDepartures: 0
-            },
-            createdAt: new Date()
-        };
-
-        await setDoc(newLogRef, auditLogData);
-
-        // 2. Post Room Charges
-        const bookingsRef = collection(db, 'bookings');
-        const occupiedQuery = query(bookingsRef, where('status', '==', 'checked_in'));
-        const occupiedSnap = await getDocs(occupiedQuery);
-
-        let totalRevenue = 0;
-        let occupiedCount = 0;
-
-        const chargePromises = occupiedSnap.docs.map(async (bDoc) => {
-            const booking = bDoc.data() as Booking;
-            occupiedCount++;
-
-            // Calculate daily rate (simplified: average rate)
-            // Real logic: check seasonality or specific day rate
-            const dailyRate = booking.rooms.reduce((sum, r) => sum + (r.price || 0), 0) / 1; // Assuming price is per night or fixed total? 
-            // Better: use rate from booking details. For now, assume booking.totalAmount / nights? 
-            // Let's assume price in room array is per night for simplicity or use a standard rate
-
-            if (dailyRate > 0) {
-                totalRevenue += dailyRate;
-                await createLedgerEntry({
-                    date: businessDate,
-                    entryType: 'income',
-                    category: 'room_booking',
-                    description: `Night Audit: Room Charge for ${booking.guestDetails.lastName} (Room ${booking.rooms[0].allocatedRoomType || 'Unassigned'})`,
-                    amount: dailyRate,
-                    paymentMethod: 'online', // Actually 'account_charge' but using valid type
-                    referenceId: booking.id,
-                    notes: `Posted during audit ${newLogRef.id}`,
-                    createdBy: 'Night Audit System',
-                    accountsReceivable: true // Charge to folio, not cash
-                });
-            }
-        });
-
-        await Promise.all(chargePromises);
-
-        // Update Log Step 1
-        await updateDoc(newLogRef, {
-            'steps.roomChargesPosted': true,
-            'summary.totalRevenue': totalRevenue,
-            'summary.totalOccupiedRooms': occupiedCount
-        });
-
-        // 3. Roll Business Date
-        const nextDate = new Date(businessDate);
-        nextDate.setDate(nextDate.getDate() + 1);
-
-        const businessDayRef = doc(db, 'businessDays', BUSINESS_DAY_DOC_ID);
-        await updateDoc(businessDayRef, {
-            date: nextDate,
-            lastAuditDate: businessDate,
-            status: 'open', // Should technically go close -> sleep -> open, but immediate rollover is common in simple PMS
-            updatedAt: serverTimestamp()
-        });
-
-        // 4. Finalize Log
-        await updateDoc(newLogRef, {
-            status: 'completed',
-            completedAt: serverTimestamp(),
-            'steps.businessDateRolled': true,
-            'steps.roomStatusUpdated': true, // Skipped generic update for now
-            'steps.reportsGenerated': true
-        });
-
-        return newLogRef.id;
-
-    } catch (error) {
-        console.error('Night Audit Failed:', error);
-        // Try to update log to failed
-        // Note: In real app, we need transaction/rollback
-        return null;
-    }
-};
+// performNightAudit moved to src/app/actions/nightAuditActions.ts
 
 export const getAuditHistory = async (): Promise<NightAuditLog[]> => {
     if (!db) return [];

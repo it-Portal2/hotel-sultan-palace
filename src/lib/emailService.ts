@@ -498,3 +498,33 @@ export const generateBookingEnquiryEmail = (enquiryDetails: any): string => {
    `;
   return generateEmailLayout('New Booking Enquiry', content);
 }
+
+export const sendNightAuditReport = async (pdfBuffer: Buffer, recipientEmail: string, date: Date): Promise<boolean> => {
+  const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const content = `
+        <h2 style="color: ${BRAND_COLORS.primary};">Night Audit Report</h2>
+        <p style="color: ${BRAND_COLORS.text};">
+            Please find attached the Night Audit Report for <strong>${dateStr}</strong>.
+        </p>
+        <p style="color: ${BRAND_COLORS.lightText}; font-size: 14px;">
+            This report was automatically generated.
+        </p>
+    `;
+
+  const html = generateEmailLayout(`Night Audit Report - ${dateStr}`, content);
+
+  const result = await sendEmail({
+    to: recipientEmail,
+    subject: `Night Audit Report - ${dateStr}`,
+    html,
+    attachments: [
+      {
+        filename: `Night_Audit_Report_${date.toISOString().split('T')[0]}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }
+    ]
+  });
+
+  return result.success;
+};

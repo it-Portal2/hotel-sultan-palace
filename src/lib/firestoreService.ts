@@ -2001,22 +2001,28 @@ export const syncGuestProfile = async (guestDetails: Booking['guestDetails'], ad
       const guestDoc = snapshot.docs[0];
       const guestData = guestDoc.data();
 
+
+      // Helper to ensure string
+      const safe = (val: any) => (val !== undefined && val !== null) ? String(val) : '';
+
       const updatePayload: any = {
         updatedAt: serverTimestamp(),
-        // Always update latest contact info if provided
-        firstName: guestDetails.firstName,
-        lastName: guestDetails.lastName,
-        phone: guestDetails.phone,
-        email: guestDetails.email,
-        nationality: guestDetails.nationality || guestData.nationality,
+        // Always update latest contact info
+        firstName: safe(guestDetails.firstName),
+        lastName: safe(guestDetails.lastName),
+        phone: safe(guestDetails.phone),
+        email: safe(guestDetails.email),
+        nationality: guestDetails.nationality || guestData.nationality || '',
+
         address: guestDetails.address ? {
-          street: guestDetails.address,
-          city: guestDetails.city,
-          country: guestDetails.country,
-          zipCode: guestDetails.zipCode
-        } : guestData.address,
-        idDocumentType: guestDetails.idType || guestData.idDocumentType,
-        idDocumentNumber: guestDetails.idNumber || guestData.idDocumentNumber,
+          street: safe(guestDetails.address),
+          city: safe(guestDetails.city),
+          country: safe(guestDetails.country),
+          zipCode: safe(guestDetails.zipCode)
+        } : (guestData.address || {}), // Fallback to existing or empty obj (avoids undefined)
+
+        idDocumentType: guestDetails.idType || guestData.idDocumentType || '',
+        idDocumentNumber: guestDetails.idNumber || guestData.idDocumentNumber || '',
       };
 
       if (additionalData.isCheckIn) {
