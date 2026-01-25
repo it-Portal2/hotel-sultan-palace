@@ -2,10 +2,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Booking, LedgerEntry, FoodOrder, RoomStatus } from './firestoreService';
 
-// Ensure autoTable is correctly added to jsPDF prototype
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(jsPDF as any).autoTable = autoTable;
-
 interface AuditReportData {
     businessDate: Date;
     stayingOver: Booking[];
@@ -80,7 +76,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
     ];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (doc as any).autoTable({
+    autoTable(doc, {
         startY: finalY,
         head: [['Metric', 'Value']],
         body: summaryData,
@@ -112,7 +108,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
 
     if (ledgerData.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: finalY,
             head: [['Time', 'Description', 'Category', 'Method', 'Amount']],
             body: ledgerData,
@@ -147,7 +143,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
 
     if (fbOrders.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: finalY,
             head: [['Order #', 'Location', 'Status', 'Total']],
             body: fbOrders,
@@ -195,7 +191,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
     ];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (doc as any).autoTable({
+    autoTable(doc, {
         startY: finalY,
         head: [['Status', 'Count']],
         body: hkData,
@@ -229,7 +225,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
         doc.text(`${title} (${bookings.length})`, 14, finalY);
         finalY += 5;
 
-        let headerColor = [22, 163, 74];
+        let headerColor: [number, number, number] = [22, 163, 74];
         if (themeColor === 'orange') headerColor = [234, 88, 12];
         if (themeColor === 'red') headerColor = [220, 38, 38];
         if (themeColor === 'blue') headerColor = [37, 99, 235];
@@ -247,7 +243,7 @@ export const generateNightAuditPDF = (data: AuditReportData): Buffer => {
         ]);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: finalY,
             head: [['Res No', 'Guest', 'Room', 'Pax', 'Meal', 'In', 'Out', 'Bal']],
             body: tableData,

@@ -201,11 +201,16 @@ export async function performNightAudit(staffId: string, staffName: string): Pro
 
         } catch (reportError) {
             console.error("Error generating/sending report:", reportError);
+            await updateDoc(newLogRef, {
+                error: reportError instanceof Error ? reportError.message : 'Unknown report error'
+            });
         }
 
         // 5. Finalize Log
+        const finalStatus = (await getDoc(newLogRef)).data()?.error ? 'completed_with_warnings' : 'completed';
+
         await updateDoc(newLogRef, {
-            status: 'completed',
+            status: finalStatus,
             completedAt: serverTimestamp(),
             'steps.businessDateRolled': true,
             'steps.roomStatusUpdated': true

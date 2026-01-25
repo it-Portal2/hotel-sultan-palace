@@ -1253,7 +1253,7 @@ export interface NightAuditLog {
   startedAt: Date;
   completedAt?: Date;
   auditedBy: string;
-  status: 'in_progress' | 'completed' | 'failed';
+  status: 'in_progress' | 'completed' | 'failed' | 'completed_with_warnings'; // added warnings status
   steps: {
     roomChargesPosted: boolean;
     roomStatusUpdated: boolean;
@@ -1266,7 +1266,7 @@ export interface NightAuditLog {
     totalArrivals: number;
     totalDepartures: number;
   };
-  notes?: string;
+  error?: string; // Added error field
   createdAt: Date;
 }
 
