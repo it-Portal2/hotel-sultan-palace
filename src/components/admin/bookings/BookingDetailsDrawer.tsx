@@ -88,9 +88,12 @@ export default function BookingDetailsDrawer({
     };
 
     // Update local state when prop changes
+    // Update local state when prop changes, but NOT if editing the same booking
     useEffect(() => {
-        setBooking(initialBooking);
-    }, [initialBooking]);
+        if (!isEditing || initialBooking.id !== booking.id) {
+            setBooking(initialBooking);
+        }
+    }, [initialBooking, isEditing]);
 
     // Initial edit mode from prop
     useEffect(() => {

@@ -32,6 +32,8 @@ interface POSCartProps {
     setDeliveryMode: (mode: 'asap' | 'scheduled') => void;
     notes: string;
     setNotes: (val: string) => void;
+    paymentMethod: string;
+    setPaymentMethod: (val: string) => void;
 }
 
 export function POSCart({
@@ -40,7 +42,7 @@ export function POSCart({
     guestName, setGuestName, roomNumber, setRoomNumber,
     activeGuests, deliveryLocation, setDeliveryLocation,
     scheduledTime, setScheduledTime, deliveryMode, setDeliveryMode,
-    notes, setNotes
+    notes, setNotes, paymentMethod, setPaymentMethod
 }: POSCartProps) {
     const [showGuestResults, setShowGuestResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
@@ -208,6 +210,21 @@ export function POSCart({
                             placeholder="Allergies, extra napkins, etc."
                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] min-h-[60px]"
                         />
+                    </div>
+
+                    {/* Payment Method */}
+                    <div className="mt-4">
+                        <label className="text-xs text-gray-500 font-semibold mb-1 block">Payment Method</label>
+                        <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white"
+                        >
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="Room Charge" disabled={!roomNumber}>Room Charge {(!roomNumber) ? '(Select Guest First)' : ''}</option>
+                            <option value="Complimentary">Complimentary</option>
+                        </select>
                     </div>
                 </div>
 

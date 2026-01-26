@@ -170,6 +170,26 @@ export const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateP
                             </tr>
                         ))}
 
+                        {/* POS / Incidental Invoices */}
+                        {bill.posInvoices && bill.posInvoices.map((inv, i) => (
+                            <tr key={`pos-${i}`} className="border-b border-gray-200">
+                                <td className="py-3 text-gray-500"></td>
+                                <td className="py-3">
+                                    <span className="font-bold block text-gray-900">POS Invoice - {inv.voucherNo}</span>
+                                    <span className="text-xs text-gray-600">
+                                        {inv.items && inv.items.length > 0 ? inv.items.join(', ') : 'Incidental Charges'}
+                                    </span>
+                                    {inv.totalPaid > 0 && (
+                                        <span className="block text-xs text-green-600 italic">
+                                            Paid: {inv.totalPaid.toLocaleString()}
+                                        </span>
+                                    )}
+                                </td>
+                                <td className="py-3 text-center text-gray-600">{formatDate(inv.date)}</td>
+                                <td className="py-3 text-right">{inv.totalAmount.toLocaleString()}</td>
+                            </tr>
+                        ))}
+
                         {/* Custom Transactions (Charges Only) */}
                         {bill.transactions && bill.transactions.filter(t => t.type === 'charge').map((txn, i) => (
                             <tr key={`txn-${i}`} className="border-b border-gray-200">
@@ -205,6 +225,10 @@ export const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateP
                     <div className="flex justify-between py-2 text-sm">
                         <span className="font-medium text-gray-600">Amount Paid</span>
                         <span className="font-medium">{bill.paidAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between py-2 text-sm">
+                        <span className="font-medium text-gray-600">Payment Method</span>
+                        <span className="font-medium capitalize">{bill.paymentMethod || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between py-3 border-t border-black mt-2">
                         <span className="font-bold uppercase">Balance Due</span>

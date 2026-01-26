@@ -38,6 +38,7 @@ export default function NewServiceDrawer({ open, onClose, onSuccess }: NewServic
 
     // Manual pricing override if needed, otherwise calculated
     const [manualAmount, setManualAmount] = useState<number | ''>('');
+    const [paymentMethod, setPaymentMethod] = useState('Room Charge');
 
     useEffect(() => {
         if (open) {
@@ -74,7 +75,9 @@ export default function NewServiceDrawer({ open, onClose, onSuccess }: NewServic
         setGuestCount(1);
         setAppointmentDate('');
         setAppointmentTime('');
+        setAppointmentTime('');
         setManualAmount('');
+        setPaymentMethod('Room Charge');
     };
 
     const handleBookingSelect = (id: string) => {
@@ -140,6 +143,7 @@ export default function NewServiceDrawer({ open, onClose, onSuccess }: NewServic
                 description: description || `${serviceCategory} Request`,
                 amount: totalAmount, // Legacy
                 totalAmount: totalAmount,
+                paymentMethod: paymentMethod, // Add this
                 status: 'requested',
                 requestedAt: new Date(),
                 requestSource: 'admin',
@@ -394,6 +398,20 @@ export default function NewServiceDrawer({ open, onClose, onSuccess }: NewServic
                                                             />
                                                         </div>
                                                         <p className="mt-1 text-xs text-gray-500">Auto-calculated based on inputs. You can override this manually.</p>
+                                                    </div>
+
+                                                    <div className="pt-4 border-t border-gray-100">
+                                                        <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                                                        <select
+                                                            value={paymentMethod}
+                                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm px-3 py-2"
+                                                        >
+                                                            <option value="Room Charge">Room Charge (Bill to Room)</option>
+                                                            <option value="Cash">Cash</option>
+                                                            <option value="Card">Card</option>
+                                                            <option value="Complimentary">Complimentary</option>
+                                                        </select>
                                                     </div>
 
                                                 </div>

@@ -39,6 +39,16 @@ export default function POSCreatePage() {
     const [deliveryMode, setDeliveryMode] = useState<'asap' | 'scheduled'>('asap');
     const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
     const [notes, setNotes] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("Cash");
+
+    // Auto-update payment method when room is linked
+    useEffect(() => {
+        if (roomNumber) {
+            setPaymentMethod('Room Charge');
+        } else {
+            setPaymentMethod('Cash');
+        }
+    }, [roomNumber]);
 
     // Cart State
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -123,7 +133,7 @@ export default function POSCreatePage() {
                 roomNumber: roomNumber || null,
                 deliveryLocation: deliveryLocation,
                 status: 'pending' as const,
-                paymentStatus: 'pending' as const,
+
                 orderType: roomNumber ? 'room_service' : 'dine_in',
                 kitchenStatus: 'received' as const,
                 items: cart.map(i => ({
@@ -138,6 +148,8 @@ export default function POSCreatePage() {
                 estimatedPreparationTime: 20,
                 scheduledDeliveryTime: finalDeliveryTime, // Persist Schedule
                 notes: notes, // Persist Notes
+                paymentMethod: paymentMethod, // Add Payment Method
+                paymentStatus: (paymentMethod === 'Room Charge' || paymentMethod === 'Complimentary') ? 'pending' : 'paid',
             };
 
             // @ts-ignore
@@ -205,6 +217,8 @@ export default function POSCreatePage() {
                 setDeliveryMode={setDeliveryMode}
                 notes={notes}
                 setNotes={setNotes}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
             />
         </div>
     );

@@ -168,6 +168,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
             taxExempt: false,
             paymentMode: false,
             paidAmount: 0,
+            paymentMethod: 'Cash',
             totalAmount: initialPrice
         };
     };
@@ -756,9 +757,8 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-3">
                         <div className="hidden md:grid grid-cols-12 gap-4 pb-2 border-b border-gray-100 px-1">
                             <div className="col-span-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Room Type</div>
-                            <div className="col-span-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Room</div>
+                            <div className="col-span-4 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Room</div>
                             <div className="col-span-1 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-center">Adl</div>
-                            <div className="col-span-1 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-center">Chd</div>
                             <div className="col-span-2 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Meal Plan</div>
                             <div className="col-span-2 text-[10px] uppercase font-bold text-gray-400 tracking-wider text-right">Rate ($)</div>
                         </div>
@@ -778,7 +778,7 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                     </select>
                                 </div>
 
-                                <div className="md:col-span-3">
+                                <div className="md:col-span-4">
                                     <select value={room.roomName} onChange={e => handleRoomChange(room.id, 'roomName', e.target.value)} className="w-full pl-2 pr-6 py-2 bg-white border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 appearance-none text-gray-700 shadow-sm">
                                         <option value="">-- Assign --</option>
                                         {dynamicAvailableRooms.filter(r => r.suiteType === room.roomType).map(r => {
@@ -790,7 +790,6 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                 </div>
 
                                 <div className="md:col-span-1"><input type="number" min="1" value={room.adults} onChange={e => handleRoomChange(room.id, 'adults', parseInt(e.target.value))} className="w-full px-2 py-2 bg-white border border-gray-300 rounded-md text-xs text-center shadow-sm" /></div>
-                                <div className="md:col-span-1"><input type="number" min="0" value={room.children} onChange={e => handleRoomChange(room.id, 'children', parseInt(e.target.value))} className="w-full px-2 py-2 bg-white border border-gray-300 rounded-md text-xs text-center shadow-sm" /></div>
                                 <div className="md:col-span-2">
                                     <select value={room.mealPlan || 'BB'} onChange={e => handleRoomChange(room.id, 'mealPlan', e.target.value)} className="w-full pl-2 pr-6 py-2 bg-white border border-gray-300 rounded-md text-xs shadow-sm">
                                         <option value="BB">BB</option>
@@ -933,8 +932,8 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex flex-col justify-between gap-4">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Paid Amount ($)</label>
-                                <div>
+                                <div className="flex flex-col">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1">Paid Amount ($)</label>
                                     <input type="number" min="0" value={formData.paidAmount} onChange={e => {
                                         const val = parseFloat(e.target.value) || 0;
                                         setFormData({ ...formData, paidAmount: val });
@@ -945,7 +944,21 @@ const QuickReservationModal: React.FC<QuickReservationModalProps> = ({
                                             setErrors(prev => ({ ...prev, paidAmount: '' }));
                                         }
                                     }} className={`w-32 pl-3 pr-3 py-2 bg-white border ${errors.paidAmount ? 'border-red-500' : 'border-gray-300'} rounded-md text-sm font-bold shadow-sm`} />
-                                    {errors.paidAmount && <p className="text-xs text-red-500 mt-1 absolute">{errors.paidAmount}</p>}
+                                    {errors.paidAmount && <p className="text-xs text-red-500 mt-1 absolute translate-y-8">{errors.paidAmount}</p>}
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1">Payment Method</label>
+                                    <select
+                                        value={formData.paymentMethod || 'Cash'}
+                                        onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })}
+                                        className="w-32 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none"
+                                    >
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                    </select>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-md border border-gray-200 shadow-sm">

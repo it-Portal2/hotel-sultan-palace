@@ -618,6 +618,15 @@ export interface CheckoutBill {
     type: 'charge' | 'payment' | 'allowance' | 'adjustment';
     category: string;
   }>;
+  posInvoices?: Array<{
+    id: string;
+    voucherNo: string;
+    date: Date;
+    totalAmount: number;
+    totalPaid: number;
+    status: 'pending' | 'cleared' | 'void';
+    items: string[];
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3637,6 +3646,21 @@ export const createFoodOrder = async (data: Omit<FoodOrder, 'id' | 'orderNumber'
             totalAmount: currentTotal + orderTotal,
             updatedAt: new Date()
           });
+
+          // AUTO-PAYMENT TRANSACTION
+          if (data.paymentStatus === 'paid' && data.paymentMethod && data.paymentMethod !== 'Room Charge') {
+            await addTransaction({
+              bookingId: data.bookingId,
+              amount: orderTotal,
+              type: 'payment',
+              category: 'F&B',
+              description: `F&B Payment: ${orderNumber} (${data.paymentMethod})`,
+              code: data.paymentMethod.toUpperCase(),
+              userId: data.userId || 'POS',
+              reference: orderNumber,
+              date: new Date()
+            });
+          }
         }
       }
     }
@@ -3851,6 +3875,22 @@ export const updateGuestService = async (id: string, data: Partial<GuestService>
       // 4. Link transaction back to service
       if (transactionId) {
         await updateDoc(docRef, { transactionId });
+
+        // AUTO-PAYMENT for Cash/Card
+        const pMethod = (service as any).paymentMethod;
+        if (pMethod && pMethod !== 'Room Charge' && pMethod !== 'Complimentary') {
+          await addTransaction({
+            bookingId: service.bookingId,
+            amount: chargeAmount,
+            type: 'payment',
+            category: service.serviceCategory || 'misc',
+            description: `Service Payment: ${pMethod}`,
+            code: pMethod.toUpperCase(),
+            userId: 'System',
+            reference: `SVC-${serviceSnap.id.slice(-6).toUpperCase()}`,
+            date: new Date()
+          });
+        }
       }
     }
 
@@ -3938,6 +3978,7 @@ export const getPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
   }
 };
 
+
 export const getInventoryItem = async (id: string): Promise<InventoryItem | null> => {
   if (!db) return null;
   try {
@@ -3986,6 +4027,10 @@ export const getCheckoutBills = async (): Promise<CheckoutBill[]> => {
         })),
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
+        posInvoices: (data.posInvoices || []).map((inv: any) => ({
+          ...inv,
+          date: inv.date?.toDate() || new Date(),
+        })),
       } as CheckoutBill;
     });
   } catch (e) {
@@ -4020,6 +4065,10 @@ export const getCheckoutBill = async (id: string): Promise<CheckoutBill | null> 
       })),
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
+      posInvoices: (data.posInvoices || []).map((inv: any) => ({
+        ...inv,
+        date: inv.date?.toDate() || new Date(),
+      })),
     } as CheckoutBill;
   } catch (e) {
     console.error('Error getting checkout bill:', e);
@@ -4060,8 +4109,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
 
     const validFoodOrders = foodOrders.filter(o =>
       o.status !== 'cancelled' &&
-      o.status !== 'voided' &&
-      o.paymentStatus !== 'paid'
+      o.status !== 'voided'
     );
 
     const foodCharges = validFoodOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
@@ -4075,6 +4123,17 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     );
 
     const serviceCharges = validServices.reduce((sum, service) => sum + (service.totalAmount || service.amount || 0), 0);
+
+    // Process POS / Incidental Invoices
+    const incidentalInvoicesSnap = await getDocs(query(collection(db, 'incidentalInvoices'), where('bookingId', '==', bookingId)));
+
+    const posInvoices = incidentalInvoicesSnap.docs.map(d => ({ id: d.id, ...d.data() } as IncidentalInvoice));
+
+    // Filter valid POS invoices
+    const validPosInvoices = posInvoices.filter(inv => inv.status !== 'void');
+
+    const posCharges = validPosInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const posPayments = validPosInvoices.reduce((sum, inv) => sum + (inv.totalPaid || 0), 0);
 
 
     // Add-ons charges
@@ -4109,7 +4168,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       .reduce((sum, t) => sum + t.amount, 0);
 
     // Calculate taxes (Removed hardcoded 10% as per user request)
-    const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges + transactionCharges;
+    const subtotal = roomCharges + foodCharges + serviceCharges + addOnsCharges + transactionCharges + posCharges;
     const taxes = 0; // No hardcoded tax
     const totalAmount = subtotal + taxes;
 
@@ -4120,7 +4179,7 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
     // Best approach: Use transactionPayments if > 0 (implying system is used), else fallback or add.
     // Let's being additive but careful. If transactionPayments > 0, we assume it captures flow. 
     // Actually, simple addition is safest unless we migrate old payments.
-    const alreadyPaid = (booking.paidAmount || 0) + transactionPayments;
+    const alreadyPaid = (booking.paidAmount || 0) + transactionPayments + posPayments;
 
     const balance = totalAmount - alreadyPaid;
     const paymentStatus: CheckoutBill['paymentStatus'] =
@@ -4147,14 +4206,14 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
       paidAmount: alreadyPaid,
       balance: balance,
       paymentStatus: paymentStatus,
-      transactions: transactionCharges > 0 ? transactions.filter(t => t.type === 'charge').map(t => ({
+      transactions: uniqueTransactions.map(t => ({
         id: t.id,
         date: t.date || new Date(),
         description: t.description || '',
         amount: t.amount || 0,
         type: t.type,
         category: t.category || 'General'
-      })) : [], // Store manual transactions for display
+      })),
       roomDetails: (booking.rooms || []).map(room => ({
         roomType: room.type || '',
         nights: nights || 0,
@@ -4180,6 +4239,15 @@ export const generateCheckoutBill = async (bookingId: string): Promise<string | 
         quantity: addon.quantity || 0,
         price: addon.price || 0,
         total: (addon.price || 0) * (addon.quantity || 0),
+      })),
+      posInvoices: validPosInvoices.map(inv => ({
+        id: inv.id,
+        voucherNo: inv.voucherNo,
+        date: new Date(inv.date), // Convert ISO string to Date
+        totalAmount: inv.totalAmount,
+        totalPaid: inv.totalPaid,
+        status: inv.status === 'void' ? 'void' : (inv.totalPaid >= inv.totalAmount ? 'cleared' : 'pending'),
+        items: (inv.charges || []).map(c => c.particular || 'Item')
       })),
 
     };
