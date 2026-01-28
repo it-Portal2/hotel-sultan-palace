@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getSuppliers, createPurchaseOrder } from '@/lib/inventoryService';
 import { getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Supplier, InventoryItem } from '@/lib/firestoreService';
+import type { Supplier, InventoryItem, PurchaseOrder } from '@/lib/firestoreService';
 import { XMarkIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
@@ -10,17 +10,19 @@ interface CreatePurchaseOrderModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    initialData?: Partial<PurchaseOrder>; // Allow passing existing PO data
 }
 
 interface POItemRow {
     itemId: string;
     itemName: string;
+    unit: string;
     quantity: number;
     unitCost: number;
     totalCost: number;
 }
 
-export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }: CreatePurchaseOrderModalProps) {
+export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, initialData }: CreatePurchaseOrderModalProps) {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -36,9 +38,26 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
     useEffect(() => {
         if (isOpen) {
             loadData();
-            setItems([]);// Reset items on open
-            setSelectedSupplierId('');
-            setNotes('');
+            if (initialData) {
+                // Pre-fill for editing
+                setSelectedSupplierId(initialData.supplierId || '');
+                setNotes(initialData.notes || '');
+                if (initialData.items) {
+                    setItems(initialData.items.map(i => ({
+                        itemId: i.itemId,
+                        itemName: i.name,
+                        unit: i.unit || '',
+                        quantity: i.quantity,
+                        unitCost: i.unitCost,
+                        totalCost: i.totalCost
+                    })));
+                }
+            } else {
+                // Reset for new
+                setItems([]);
+                setSelectedSupplierId('');
+                setNotes('');
+            }
         }
     }, [isOpen]);
 
@@ -61,7 +80,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
     };
 
     const addItem = () => {
-        setItems([...items, { itemId: '', itemName: '', quantity: 1, unitCost: 0, totalCost: 0 }]);
+        setItems([...items, { itemId: '', itemName: '', unit: '', quantity: 1, unitCost: 0, totalCost: 0 }]);
     };
 
     const removeItem = (index: number) => {
@@ -79,6 +98,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
             const invItem = inventoryItems.find(i => i.id === value);
             if (invItem) {
                 item.itemName = invItem.name;
+                item.unit = invItem.unit; // Auto-fill unit
                 item.unitCost = invItem.unitCost || 0;
             }
         }
@@ -133,6 +153,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                 items: items.map(i => ({
                     itemId: i.itemId,
                     name: i.itemName,
+                    unit: i.unit, // Save unit
                     quantity: Number(i.quantity),
                     unitCost: Number(i.unitCost),
                     totalCost: Number(i.totalCost)
@@ -166,8 +187,8 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 backdrop-blur-xl z-10">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900">New Purchase Order</h2>
-                        <p className="text-sm text-gray-500 mt-1">Create a new replenishment order.</p>
+                        <h2 className="text-2xl font-bold text-gray-900">{initialData ? 'Edit Purchase Order' : 'New Purchase Order'}</h2>
+                        <p className="text-sm text-gray-500 mt-1">{initialData ? 'Review and modify the order.' : 'Create a new replenishment order.'}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 transition-colors">
                         <XMarkIcon className="w-6 h-6 text-gray-500" />
@@ -221,7 +242,8 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
 
                                 <div className="space-y-2">
                                     <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 px-2 uppercase tracking-wider">
-                                        <div className="col-span-5">Item</div>
+                                        <div className="col-span-4">Item</div>
+                                        <div className="col-span-1">Unit</div>
                                         <div className="col-span-2">Quantity</div>
                                         <div className="col-span-2">Unit Cost</div>
                                         <div className="col-span-2">Total</div>
@@ -230,7 +252,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
 
                                     {items.map((row, index) => (
                                         <div key={index} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 border border-gray-100 hover:border-gray-200 transition-colors">
-                                            <div className="col-span-5">
+                                            <div className="col-span-4">
                                                 <select
                                                     value={row.itemId}
                                                     onChange={e => updateItem(index, 'itemId', e.target.value)}
@@ -243,6 +265,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                 </select>
                                                 {errors[`items.${index}.itemId`] && <p className="text-[10px] text-red-500">Required</p>}
                                             </div>
+                                            <span className="font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded text-xs">{row.unit || '-'}</span>
                                             <div className="col-span-2">
                                                 <input
                                                     type="number"
@@ -314,7 +337,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                         disabled={saving}
                                         className="flex-1 sm:flex-none bg-[#FF6A00] text-white px-8 py-3 font-bold hover:bg-[#FF6A00]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                     >
-                                        {saving ? 'Creating...' : 'Create Purchase Order'}
+                                        {saving ? 'Saving...' : (initialData ? 'Update Order' : 'Create Purchase Order')}
                                     </button>
                                 </div>
                             </div>

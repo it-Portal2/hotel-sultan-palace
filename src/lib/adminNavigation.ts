@@ -38,7 +38,8 @@ import {
     KeyIcon,
     ShieldCheckIcon,
     DocumentTextIcon,
-    QueueListIcon
+    QueueListIcon,
+    BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
 import { CleaningIcon } from '../components/icons/CleaningIcon';
@@ -277,6 +278,15 @@ export const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
             icon: ShoppingBagIcon,
             items: [
                 { name: 'Bills', href: '/admin/accounts?tab=bills', icon: ShoppingBagIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'finance_bills' },
+            ],
+            defaultOpen: true,
+            isSingleItem: true
+        },
+        {
+            name: 'Daily Expenses',
+            icon: BanknotesIcon,
+            items: [
+                { name: 'Daily Expenses', href: '/admin/accounts?tab=expenses', icon: BanknotesIcon, color: 'text-rose-600', bgColor: 'bg-rose-50', section: 'finance_expenses' },
             ],
             defaultOpen: true,
             isSingleItem: true

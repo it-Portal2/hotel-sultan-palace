@@ -14,17 +14,20 @@ interface PurchaseOrderDrawerProps {
     onSave: () => void;
     suppliers: Supplier[];
     inventoryItems: InventoryItem[];
+    readonly?: boolean;
+    onMarkPaid?: (id: string) => void;
 }
 
 interface POLineItem {
     itemId: string;
     description: string;
+    unit: string;
     quantity: number;
     unitCost: number;
     totalCost: number;
 }
 
-export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppliers, inventoryItems }: PurchaseOrderDrawerProps) {
+export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppliers, inventoryItems, readonly = false, onMarkPaid }: PurchaseOrderDrawerProps) {
     const { showToast } = useToast();
     const [supplierId, setSupplierId] = useState('');
     const [expectedDate, setExpectedDate] = useState('');
@@ -36,13 +39,31 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
     useEffect(() => {
         if (po) {
             setSupplierId(po.supplierId);
-            setExpectedDate(po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toISOString().split('T')[0] : '');
+            // Safely convert expectedDeliveryDate (could be Firestore Timestamp, Date, or null)
+            let formattedDate = '';
+            if (po.expectedDeliveryDate) {
+                try {
+                    // Handle Firestore Timestamp
+                    const dateValue = po.expectedDeliveryDate instanceof Timestamp
+                        ? po.expectedDeliveryDate.toDate()
+                        : new Date(po.expectedDeliveryDate);
+
+                    // Check if date is valid before calling toISOString
+                    if (!isNaN(dateValue.getTime())) {
+                        formattedDate = dateValue.toISOString().split('T')[0];
+                    }
+                } catch (error) {
+                    console.error('Error parsing expectedDeliveryDate:', error);
+                }
+            }
+            setExpectedDate(formattedDate);
             setNotes(po.notes || '');
             // Map existing items if structure matches, otherwise start empty or need migration logic
             // Assuming simple structure for now or manual add
             setLineItems(po.items?.map(i => ({
                 itemId: i.itemId,
                 description: i.name,
+                unit: i.unit || 'units',
                 quantity: i.quantity,
                 unitCost: i.unitCost,
                 totalCost: i.totalCost
@@ -60,10 +81,11 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
     };
 
     const handleAddItem = () => {
-        setLineItems([...lineItems, { itemId: '', description: '', quantity: 1, unitCost: 0, totalCost: 0 }]);
+        setLineItems([...lineItems, { itemId: '', description: '', unit: '', quantity: 1, unitCost: 0, totalCost: 0 }]);
     };
 
     const handleUpdateItem = (index: number, field: keyof POLineItem, value: any) => {
+        if (readonly) return;
         const newItems = [...lineItems];
         const item = newItems[index];
 
@@ -71,6 +93,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
             const selectedInvItem = inventoryItems.find(i => i.id === value);
             item.itemId = value;
             item.description = selectedInvItem ? selectedInvItem.name : '';
+            item.unit = selectedInvItem ? selectedInvItem.unit : 'units';
             item.unitCost = selectedInvItem ? selectedInvItem.unitCost : 0;
         } else {
             (item as any)[field] = value;
@@ -82,6 +105,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
     };
 
     const handleRemoveItem = (index: number) => {
+        if (readonly) return;
         setLineItems(lineItems.filter((_, i) => i !== index));
     };
 
@@ -127,9 +151,8 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const handleSave = async (status: string) => {
+        if (readonly) return;
         if (!validateForm()) {
             showToast("Please fix the validation errors", "error");
             return;
@@ -141,25 +164,27 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
             const poData: Partial<PurchaseOrder> = {
                 supplierId,
                 supplierName: supplier?.name || 'Unknown',
-                status: po ? po.status : 'draft',
+                // If it's already ordered or received, keep it. If we are placing it, set to ordered. Else draft.
+                status: (po && (po.status === 'ordered' || po.status === 'received')) ? po.status : status as any,
                 items: lineItems.map(i => ({
                     itemId: i.itemId,
                     name: i.description,
+                    unit: i.unit || 'units',
                     quantity: i.quantity,
                     unitCost: i.unitCost,
                     totalCost: i.totalCost
                 })),
                 totalAmount: calculateGrandTotal(),
-                expectedDeliveryDate: expectedDate ? new Date(expectedDate) as any : null, // Cast for Firestore compat
+                expectedDeliveryDate: expectedDate ? new Date(expectedDate) as any : null,
                 notes
             };
 
             if (po) {
                 await updatePurchaseOrder(po.id, poData);
-                showToast("Purchase Order updated", "success");
+                showToast(status === 'ordered' ? "Order Placed Successfully" : "Purchase Order updated", "success");
             } else {
                 await createPurchaseOrder(poData);
-                showToast("Purchase Order created", "success");
+                showToast(status === 'ordered' ? "Order Placed Successfully" : "Purchase Order created", "success");
             }
             onSave();
             onClose();
@@ -175,7 +200,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
         <Drawer
             isOpen={isOpen}
             onClose={onClose}
-            title={po ? `Edit PO: ${po.poNumber}` : 'New Purchase Order'}
+            title={po ? (readonly ? `View Bill: ${po.poNumber}` : `Edit PO: ${po.poNumber}`) : 'New Purchase Order'}
             size="2xl"
             footer={
                 <div className="flex justify-between items-center w-full">
@@ -188,7 +213,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                             type="button"
                             className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                         >
-                            Cancel
+                            Close
                         </button>
                         {po && (
                             <button
@@ -200,13 +225,41 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                 <span className="hidden sm:inline">Print</span>
                             </button>
                         )}
-                        <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg font-bold hover:bg-[#FF6A00]/90 transition-colors shadow-sm disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'Saving...' : (po ? 'Update Order' : 'Create Order')}
-                        </button>
+
+                        {/* Mark Paid Button (Only in Readonly mode if not paid) */}
+                        {readonly && po && !po.paymentMethod && onMarkPaid && (
+                            <button
+                                onClick={() => onMarkPaid(po.id)}
+                                className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-sm"
+                            >
+                                Mark as Paid
+                            </button>
+                        )}
+
+                        {/* Save Buttons (Hidden in Readonly) */}
+                        {!readonly && (
+                            <>
+                                {(!po || po.status === 'draft') && (
+                                    <button
+                                        onClick={() => handleSave('draft')}
+                                        disabled={isSubmitting}
+                                        className="px-5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg font-bold hover:bg-gray-200 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? 'Saving...' : 'Save Draft'}
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => handleSave(po && po.status !== 'draft' ? po.status : 'ordered')}
+                                    disabled={isSubmitting}
+                                    className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-lg font-bold hover:bg-[#FF6A00]/90 transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Processing...' : (
+                                        po && po.status !== 'draft' ? 'Update Order' : 'Place Order'
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             }
@@ -217,6 +270,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                     <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-1.5">Supplier</label>
                         <select
+                            disabled={readonly}
                             value={supplierId}
                             onChange={(e) => {
                                 setSupplierId(e.target.value);
@@ -226,7 +280,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                     setErrors(newErrors);
                                 }
                             }}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm ${errors.supplierId ? 'border-red-500' : 'border-gray-200'}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm ${errors.supplierId ? 'border-red-500' : 'border-gray-200'} ${readonly ? 'bg-gray-100 text-gray-500' : ''}`}
                         >
                             <option value="">Select Supplier...</option>
                             {suppliers.map(s => (
@@ -238,20 +292,22 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                     <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-1.5">Expected Delivery</label>
                         <input
+                            disabled={readonly}
                             type="date"
                             value={expectedDate}
                             onChange={(e) => setExpectedDate(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm"
+                            className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm ${readonly ? 'bg-gray-100 text-gray-500' : ''}`}
                         />
                     </div>
                     <div className="col-span-1 md:col-span-2">
                         <label className="block text-sm font-semibold text-gray-900 mb-1.5">Notes</label>
                         <textarea
+                            disabled={readonly}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={2}
                             placeholder="Delivery instructions, reference numbers, etc."
-                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all shadow-sm resize-none"
+                            className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all shadow-sm resize-none ${readonly ? 'bg-gray-100 text-gray-500' : ''}`}
                         />
                     </div>
                 </div>
@@ -260,14 +316,16 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                 <div>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Order Items</h3>
-                        <button
-                            type="button"
-                            onClick={handleAddItem}
-                            className="text-xs flex items-center gap-1 bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
-                        >
-                            <PlusIcon className="w-4 h-4" />
-                            Add Item
-                        </button>
+                        {!readonly && (
+                            <button
+                                type="button"
+                                onClick={handleAddItem}
+                                className="text-xs flex items-center gap-1 bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+                            >
+                                <PlusIcon className="w-4 h-4" />
+                                Add Item
+                            </button>
+                        )}
                     </div>
                     {errors.lineItems && <p className="text-xs text-red-500 mb-2">{errors.lineItems}</p>}
 
@@ -276,16 +334,19 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                             <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-gray-400">
                                 <CalculatorIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
                                 <p>No items added yet.</p>
-                                <button type="button" onClick={handleAddItem} className="text-[#FF6A00] font-bold text-sm hover:underline mt-2">Add your first item</button>
+                                {!readonly && (
+                                    <button type="button" onClick={handleAddItem} className="text-[#FF6A00] font-bold text-sm hover:underline mt-2">Add your first item</button>
+                                )}
                             </div>
                         ) : (
                             lineItems.map((item, index) => (
                                 <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-gray-300">
                                     <div className="flex-1 w-full">
                                         <select
+                                            disabled={readonly}
                                             value={item.itemId}
                                             onChange={(e) => handleUpdateItem(index, 'itemId', e.target.value)}
-                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.itemId`] ? 'border-red-500' : 'border-gray-200'}`}
+                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.itemId`] ? 'border-red-500' : 'border-gray-200'} ${readonly ? 'bg-gray-100' : ''}`}
                                         >
                                             <option value="">Select Item...</option>
                                             {inventoryItems.map(inv => (
@@ -295,36 +356,40 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
                                     </div>
                                     <div className="w-24">
                                         <input
+                                            disabled={readonly}
                                             type="number"
                                             min="1"
                                             placeholder="Qty"
                                             value={item.quantity}
                                             onChange={(e) => handleUpdateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] text-center font-semibold ${errors[`items.${index}.quantity`] ? 'border-red-500' : 'border-gray-200'}`}
+                                            className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] text-center font-semibold ${errors[`items.${index}.quantity`] ? 'border-red-500' : 'border-gray-200'} ${readonly ? 'bg-gray-100' : ''}`}
                                         />
                                     </div>
                                     <div className="w-28 relative">
                                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
                                         <input
+                                            disabled={readonly}
                                             type="number"
                                             min="0"
                                             step="0.01"
                                             placeholder="Cost"
                                             value={item.unitCost}
                                             onChange={(e) => handleUpdateItem(index, 'unitCost', parseFloat(e.target.value) || 0)}
-                                            className={`w-full text-sm pl-5 pr-2 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.unitCost`] ? 'border-red-500' : 'border-gray-200'}`}
+                                            className={`w-full text-sm pl-5 pr-2 py-2 border rounded-lg focus:ring-1 focus:ring-[#FF6A00] focus:border-[#FF6A00] ${errors[`items.${index}.unitCost`] ? 'border-red-500' : 'border-gray-200'} ${readonly ? 'bg-gray-100' : ''}`}
                                         />
                                     </div>
                                     <div className="w-24 text-right font-bold text-gray-700 text-sm">
                                         ${item.totalCost.toFixed(2)}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveItem(index)}
-                                        className="text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
+                                    {!readonly && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveItem(index)}
+                                            className="text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             ))
                         )}

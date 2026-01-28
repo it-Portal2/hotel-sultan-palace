@@ -832,6 +832,7 @@ export interface InventoryItem {
   minStockLevel: number; // Low stock alert
   maxStockLevel: number; // Overstock alert
   reorderPoint: number; // Automatic reorder trigger
+  reorderQuantity?: number; // Automatic reorder quantity
 
   // Costing & Valuation
   unitCost: number; // Moving Average Cost or Last Purchase Price
@@ -856,12 +857,13 @@ export interface PurchaseOrder {
   poNumber: string; // Auto-generated e.g., PO-2024-001
   supplierId: string;
   supplierName: string;
-  status: 'draft' | 'ordered' | 'received' | 'cancelled';
-  type?: 'standard' | 'market_expense'; // Added to distinguish regular POs from direct market purchases
+  status: 'draft' | 'ordered' | 'received' | 'partially_received' | 'cancelled';
+  type?: 'standard' | 'market_expense';
 
   items: Array<{
     itemId: string;
     name: string;
+    unit: string; // e.g. "kg", "pcs"
     quantity: number;
     unitCost: number;
     totalCost: number;
@@ -870,7 +872,30 @@ export interface PurchaseOrder {
   subtotal?: number;
   totalAmount: number;
   paymentMethod?: 'cash' | 'card' | 'bank_transfer';
+  paidDate?: Date;
   targetLocationId?: string;
+
+  // Receiving & Financial Reconciliation
+  invoiceUrl?: string; // Uploaded invoice image
+  receivedDetails?: {
+    receivedAt: Date;
+    receivedBy: string;
+    items: Array<{
+      itemId: string;
+      orderedQty: number;
+      receivedQty: number; // Good stock
+      rejectedQty: number; // Broken/Expired
+      missingQty: number; // Ordered - (Received + Rejected)
+      expiryDate?: string; // For perishable items
+      actualUnitCost?: number; // If price changed
+      rejectionReason?: string;
+    }>;
+    totalReceivedValue: number;
+    totalRejectedValue: number;
+    finalPayableAmount: number; // The actual amount to pay after deductions
+    creditNoteRequested?: boolean; // If true, we need a refund/credit for rejected items
+    notes?: string;
+  };
 
   expectedDeliveryDate?: Date;
   actualDeliveryDate?: Date;
@@ -1117,6 +1142,7 @@ export interface LedgerEntry {
   // New Hotel Specific Fields
   referenceNumber?: string; // Invoice #, Receipt #
   payerOrPayee?: string; // Guest Name, Vendor Name, Staff Name
+  vendor?: string;
   department?: 'front_office' | 'housekeeping' | 'kitchen' | 'maintenance' | 'hr' | 'accounts' | 'other';
   status?: 'pending' | 'cleared' | 'void';
   attachmentUrl?: string;

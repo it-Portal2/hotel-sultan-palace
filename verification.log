@@ -1,0 +1,12 @@
+[dotenv@17.2.3] injecting env (26) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Environment loaded.
+Starting Verification for 'masala maggi'...
+Found Item: masala maggi (ID: h7LVp4qbCShYKj7BLTDd)
+- Current Stock: 0
+- Min Stock Level: 2
+- Preferred Supplier ID: rahul
+- WARNING: Supplier ID exists in item, but Supplier Doc not found!
+Simulating Auto-Reorder Check...
+[AutoReorder] Item masala maggi is low (0 <= 2). Checking for active POs...
+[AutoReorder] Item already in Draft PO PO-2026-4869.
+Check completed. Inspect console logs above for '[AutoReorder]' messages.

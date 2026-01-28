@@ -273,19 +273,29 @@ function AdminLayoutContent({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
 
   // Effect to reset open groups when navigationGroups change
+  // BUT we only want to set initial state ONCE or when the *Active Portal* changes. 
+  // We do NOT want to reset it on every pathname change if the sidebar is just toggling.
+  // Actually, if we navigate, we WANT the new active group to be open next time we check.
   useEffect(() => {
+    const initial: Record<string, boolean> = {};
+    let foundActive = false;
 
+    navigationGroups.forEach(group => {
+      const hasActiveItem = group.items.some(item =>
+        item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
+      );
 
-    const newInitial = getInitialOpenGroups();
-
-    setOpenGroups(prev => {
-      const nextState = { ...prev };
-
-
-      return newInitial;
+      if (hasActiveItem && !foundActive) {
+        initial[group.name] = true;
+        foundActive = true;
+      }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigationGroups, pathname]);
+
+    setOpenGroups(prev => ({
+      ...prev,
+      ...initial
+    }));
+  }, [pathname, navigationGroups]);
 
   const roleLabels: Record<string, string> = {
     super_admin: 'System Administrator',
@@ -460,6 +470,7 @@ function AdminLayoutContent({
 
   // Close sidebar when navigation item is clicked
   const handleNavClick = () => {
+    // User requested auto-close on ALL clicks (even desktop), but keep sub-menus expanded when re-opened.
     setSidebarOpen(false);
   };
 

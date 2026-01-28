@@ -232,7 +232,24 @@ export const deletePurchaseOrder = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'purchaseOrders', id));
 };
 
-export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId: string, quantity: number }[], receivedBy: string) => {
+
+export const receivePurchaseOrder = async (
+    poId: string,
+    data: {
+        invoiceUrl?: string;
+        items: Array<{
+            itemId: string;
+            orderedQty: number;
+            receivedQty: number; // Good stock
+            rejectedQty: number; // Bad stock
+            actualUnitCost?: number; // New price
+            expiryDate?: string;
+        }>;
+        creditNoteRequested?: boolean;
+        notes?: string;
+    },
+    receivedBy: string
+) => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;
 
@@ -243,49 +260,105 @@ export const receivePurchaseOrder = async (poId: string, receivedItems: { itemId
 
         const po = poSnap.data() as PurchaseOrder;
 
-        // Idempotency Check: Don't process if already received
         if (po.status === 'received') {
             console.warn(`PO ${po.poNumber} already received. Skipping.`);
             return;
         }
 
-        // Update Inventory and Create Transactions
-        for (const item of receivedItems) {
-            const itemRef = doc(firestore, 'inventory', item.itemId);
+        let totalReceivedValue = 0;
+        let totalRejectedValue = 0;
+
+        // Process Items
+        for (const receivedItem of data.items) {
+            const itemRef = doc(firestore, 'inventory', receivedItem.itemId);
             const itemSnap = await transaction.get(itemRef);
-            if (!itemSnap.exists()) continue;
 
-            const invItem = itemSnap.data() as InventoryItem;
-            const newStock = (invItem.currentStock || 0) + item.quantity;
+            // Calculate Values
+            // Use the NEW cost if provided, otherwise the PO cost, otherwise 0
+            const unitCost = receivedItem.actualUnitCost ?? (po.items.find(i => i.itemId === receivedItem.itemId)?.unitCost || 0);
 
-            // Update Inventory
-            transaction.update(itemRef, {
-                currentStock: newStock,
-                lastRestocked: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            });
+            totalReceivedValue += (receivedItem.receivedQty * unitCost);
+            totalRejectedValue += (receivedItem.rejectedQty * unitCost);
 
-            // Create Transaction Record
-            const transRef = doc(collection(firestore, 'inventoryTransactions'));
-            transaction.set(transRef, {
-                inventoryItemId: item.itemId,
-                itemName: invItem.name,
-                transactionType: 'purchase',
-                quantity: item.quantity,
-                unitCost: invItem.unitCost || 0, // Should come from PO ideally
-                totalCost: (invItem.unitCost || 0) * item.quantity,
-                previousStock: invItem.currentStock || 0,
-                newStock: newStock,
-                reason: `Received PO ${po.poNumber}`,
-                referenceId: poId,
-                performedBy: receivedBy,
-                createdAt: serverTimestamp()
-            });
+            if (itemSnap.exists()) {
+                const invItem = itemSnap.data() as InventoryItem;
+                const newStock = (invItem.currentStock || 0) + receivedItem.receivedQty;
+
+                // Update Inventory Item
+                const updateData: any = {
+                    currentStock: newStock,
+                    lastRestocked: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+
+                // Update Price if changed
+                if (receivedItem.actualUnitCost !== undefined && receivedItem.actualUnitCost !== invItem.unitCost) {
+                    updateData.unitCost = receivedItem.actualUnitCost;
+                    updateData.totalValue = newStock * receivedItem.actualUnitCost; // Recalculate total value
+                } else {
+                    updateData.totalValue = newStock * (invItem.unitCost || 0);
+                }
+
+                if (receivedItem.expiryDate) {
+                    updateData.expiryDate = new Date(receivedItem.expiryDate);
+                }
+
+                transaction.update(itemRef, updateData);
+
+                // Create "Purchase" Transaction (Good Stock)
+                if (receivedItem.receivedQty > 0) {
+                    const transRef = doc(collection(firestore, 'inventoryTransactions'));
+                    transaction.set(transRef, {
+                        inventoryItemId: receivedItem.itemId,
+                        itemName: invItem.name,
+                        transactionType: 'purchase',
+                        quantity: receivedItem.receivedQty,
+                        unitCost: unitCost,
+                        totalCost: receivedItem.receivedQty * unitCost,
+                        previousStock: invItem.currentStock || 0,
+                        newStock: newStock,
+                        reason: `Received PO ${po.poNumber}`,
+                        referenceId: poId,
+                        performedBy: receivedBy,
+                        createdAt: serverTimestamp()
+                    });
+                }
+
+                // Create "Rejection/Loss" Transaction Log (Optional, but good for tracking)
+                if (receivedItem.rejectedQty > 0) {
+                    // We don't add stock then remove it, we just log the event.
+                    // Or maybe we don't need a transaction if it never touched stock?
+                    // Let's log it as 'waste' but with 0 quantity change just for record? 
+                    // No, better to stick to the PO record for Rejections. 
+                    // Inventory Transactions are strictly for stock movement.
+                }
+            }
         }
 
-        // Update PO Status
+        const missingQtyTotal = data.items.reduce((acc, i) => acc + (i.orderedQty - i.receivedQty - i.rejectedQty), 0);
+
+        // Final Financials
+        const finalPayableAmount = totalReceivedValue; // We pay for what we accepted. 
+        // NOTE: In some cases you pay for all and claim credit. 
+        // But for this simple system, "Payable" = "Accepted Value".
+
+        // Update PO
         transaction.update(poRef, {
             status: 'received',
+            invoiceUrl: data.invoiceUrl || null,
+            receivedDetails: {
+                receivedAt: new Date(),
+                receivedBy,
+                items: data.items.map(i => ({
+                    ...i,
+                    missingQty: i.orderedQty - i.receivedQty - i.rejectedQty
+                })),
+                totalReceivedValue,
+                totalRejectedValue,
+                finalPayableAmount,
+                creditNoteRequested: data.creditNoteRequested || false,
+                notes: data.notes || ''
+            },
             updatedAt: serverTimestamp()
         });
     });
@@ -383,6 +456,41 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
             updatedAt: serverTimestamp()
         });
     });
+
+    // 3. Check Auto-Reorder (Side Effect - run after transaction)
+    try {
+        // We need to check stock for all items involved.
+        // Re-fetching order logic is expensive, so maybe we optimize later.
+        // For now, let's just do it.
+        const orderSnap = await getDoc(orderRef); // Re-fetch to be sure? No, just use cached data from logic if possible?
+        // Actually, we can't easily pass state out of runTransaction. 
+        // We will just query the order items again or pass them.
+        // To be safe and simple:
+        // We know which items were in the order.
+        const freshOrderSnap = await getDoc(orderRef);
+        if (freshOrderSnap.exists()) {
+            const orderData = freshOrderSnap.data() as FoodOrder;
+            // We need to resolve recipes again to know which inventory items were touched.
+            // This is double work but safe. 
+            for (const item of orderData.items) {
+                const recipesQuery = query(collection(db, 'recipes'), where('menuItemId', '==', item.menuItemId), limit(1));
+                const recipeSnap = await getDocs(recipesQuery);
+                if (!recipeSnap.empty) {
+                    const recipe = recipeSnap.docs[0].data() as Recipe;
+                    for (const ingredient of recipe.ingredients) {
+                        // Check this item
+                        const invRef = doc(db, 'inventory', ingredient.inventoryItemId);
+                        const invSnap = await getDoc(invRef);
+                        if (invSnap.exists()) {
+                            await checkAndCreateAutoReorder(ingredient.inventoryItemId, invSnap.data().currentStock);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Auto-reorder check failed", e);
+    }
 };
 
 // ==================== BASIC INVENTORY CRUD ====================
@@ -413,6 +521,13 @@ export const updateInventoryItem = async (id: string, data: Partial<InventoryIte
     if (!db) throw new Error("Firestore not initialized");
     const docRef = doc(db, 'inventory', id);
     await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+
+    // Check for auto-reorder if stock changed
+    if (data.currentStock !== undefined) {
+        checkAndCreateAutoReorder(id, data.currentStock).catch(err =>
+            console.error("Auto-reorder check failed", err)
+        );
+    }
 };
 
 export const deleteInventoryItem = async (id: string): Promise<void> => {
@@ -465,6 +580,16 @@ export const createStockAdjustment = async (
             createdAt: serverTimestamp()
         });
     });
+
+    // Check for auto-reorder after adjustment (if stock went down)
+    if (quantity < 0) {
+        // We need to know the NEW stock.
+        // We can fetch it.
+        const itemSnap = await getDoc(doc(db, 'inventory', itemId));
+        if (itemSnap.exists()) {
+            await checkAndCreateAutoReorder(itemId, itemSnap.data().currentStock);
+        }
+    }
 };
 
 export const getInventoryTransactions = async (): Promise<InventoryTransaction[]> => {
@@ -496,4 +621,101 @@ export const getLowStockAlerts = async (): Promise<LowStockAlert[]> => {
             status: 'active',
             createdAt: new Date()
         }));
+};
+// ==================== AUTO-REORDER LOGIC ====================
+
+export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStock: number) => {
+    if (!db) return;
+    try {
+        const itemRef = doc(db, 'inventory', inventoryItemId);
+        const itemSnap = await getDoc(itemRef);
+
+        if (!itemSnap.exists()) return;
+        const item = itemSnap.data() as InventoryItem;
+
+        // Check if reorder is needed
+        const minStock = item.minStockLevel || 0;
+        if (newStock > minStock) return; // Not low enough
+
+        console.log(`[AutoReorder] Item ${item.name} is low (${newStock} <= ${minStock}). Checking for active POs...`);
+
+        // Check if there's already a DRAFT PO for this supplier
+        // We assume preferredSupplierId is on the item. If not, we can't auto-order.
+        if (!item.preferredSupplierId) {
+            console.warn(`[AutoReorder] No preferred supplier for ${item.name}. Skipping.`);
+            return;
+        }
+
+        const suppliersRef = collection(db, 'purchaseOrders');
+        const q = query(
+            suppliersRef,
+            where('supplierId', '==', item.preferredSupplierId),
+            where('status', '==', 'draft'),
+            limit(1)
+        );
+        const poSnap = await getDocs(q);
+
+        const orderQty = (item.reorderQuantity && item.reorderQuantity > 0)
+            ? item.reorderQuantity
+            : (item.maxStockLevel ? (item.maxStockLevel - newStock) : 10); // Default fallback
+
+        if (!poSnap.empty) {
+            // Update existing Draft PO
+            const poDoc = poSnap.docs[0];
+            const po = poDoc.data() as PurchaseOrder;
+            const existingItemIndex = po.items.findIndex(i => i.itemId === inventoryItemId);
+
+            const newItems = [...po.items];
+            if (existingItemIndex >= 0) {
+                // Already in PO, log it.
+                console.log(`[AutoReorder] Item already in Draft PO ${po.poNumber}.`);
+            } else {
+                // Add to PO
+                newItems.push({
+                    itemId: inventoryItemId,
+                    name: item.name,
+                    unit: item.unit || 'units', // Include unit
+                    quantity: orderQty,
+                    unitCost: item.unitCost || 0,
+                    totalCost: orderQty * (item.unitCost || 0)
+                });
+
+                const newTotal = newItems.reduce((sum, i) => sum + i.totalCost, 0);
+
+                await updateDoc(poDoc.ref, {
+                    items: newItems,
+                    totalAmount: newTotal,
+                    updatedAt: serverTimestamp()
+                });
+                console.log(`[AutoReorder] Added ${item.name} to Draft PO ${po.poNumber}.`);
+            }
+
+        } else {
+            // Create NEW Draft PO
+            // Fetch supplier name for the PO record
+            const supplierRef = doc(db, 'suppliers', item.preferredSupplierId);
+            const supplierSnap = await getDoc(supplierRef);
+            const supplierName = supplierSnap.exists() ? supplierSnap.data().name : "Unknown Supplier";
+
+            await createPurchaseOrder({
+                supplierId: item.preferredSupplierId,
+                supplierName: supplierName,
+                status: 'draft',
+                items: [{
+                    itemId: inventoryItemId,
+                    name: item.name,
+                    unit: item.unit || 'units', // Include unit
+                    quantity: orderQty,
+                    unitCost: item.unitCost || 0,
+                    totalCost: orderQty * (item.unitCost || 0)
+                }],
+                totalAmount: orderQty * (item.unitCost || 0),
+                notes: "Auto-generated by Low Stock Alert"
+            });
+            console.log(`[AutoReorder] Created new Draft PO for ${item.name}.`);
+        }
+
+    } catch (error) {
+        console.error("[AutoReorder] Failed:", error);
+    }
 };

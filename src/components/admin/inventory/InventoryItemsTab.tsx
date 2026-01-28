@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import type { InventoryItem, InventoryCategory, InventoryDepartment, Department } from '@/lib/firestoreService';
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem, getInventoryCategories, getInventoryDepartments } from '@/lib/inventoryService';
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, getInventoryCategories, getInventoryDepartments, checkAndCreateAutoReorder } from '@/lib/inventoryService';
 import InventoryModal from './InventoryModal';
 import CategoryManager from './CategoryManager';
 import DepartmentManager from './DepartmentManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon, BoltIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
@@ -293,13 +293,31 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                             </button>
                                                         )}
                                                         {hasSectionAccess('inventory', 'items', 'full_control') && (
-                                                            <button
-                                                                onClick={() => handleDelete(item.id)}
-                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Delete Item"
-                                                            >
-                                                                <TrashIcon className="w-5 h-5" />
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        showToast(`Testing Auto-Order for ${item.name}...`, "info");
+                                                                        console.log("Testing Auto-Order for:", item);
+                                                                        if (!item.preferredSupplierId) {
+                                                                            showToast("FAILED: No Preferred Supplier set!", "error");
+                                                                            return;
+                                                                        }
+                                                                        await checkAndCreateAutoReorder(item.id, item.currentStock);
+                                                                        showToast("Auto-order check complete. Check Console/POs.", "success");
+                                                                    }}
+                                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                    title="Trigger Auto-Order (Debug)"
+                                                                >
+                                                                    <BoltIcon className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(item.id)}
+                                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    title="Delete Item"
+                                                                >
+                                                                    <TrashIcon className="w-5 h-5" />
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </td>

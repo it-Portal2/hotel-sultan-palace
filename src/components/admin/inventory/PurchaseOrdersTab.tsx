@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import type { PurchaseOrder, Supplier, InventoryItem } from '@/lib/firestoreService';
-import { getAllPurchaseOrders, getSuppliers, deletePurchaseOrder, receivePurchaseOrder, getInventoryItems } from '@/lib/inventoryService';
+import { getAllPurchaseOrders, getSuppliers, deletePurchaseOrder, getInventoryItems } from '@/lib/inventoryService';
 import PurchaseOrderDrawer from './PurchaseOrderDrawer';
+import ReceivePurchaseOrderModal from './ReceivePurchaseOrderModal';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
 interface PurchaseOrdersTabProps {
@@ -26,7 +27,6 @@ export default function PurchaseOrdersTab() {
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [confirmReceiveId, setConfirmReceiveId] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -62,28 +62,6 @@ export default function PurchaseOrdersTab() {
             showToast("Failed to delete order", "error");
         } finally {
             setConfirmDeleteId(null);
-        }
-    };
-
-    const handleReceive = async () => {
-        if (!confirmReceiveId) return;
-        const order = orders.find(o => o.id === confirmReceiveId);
-        if (!order) return;
-
-        setIsProcessing(true);
-        try {
-            // For now, auto-receive all items fully. 
-            // In a more advanced version, we'd show a "Receive Modal" to confirm quantities.
-            const receivedItems = order.items.map(i => ({ itemId: i.itemId, quantity: i.quantity }));
-            await receivePurchaseOrder(order.id, receivedItems, "Admin User"); // Replace with real user name if auth available
-            showToast(`Order ${order.poNumber} received and stock updated`, "success");
-            loadData();
-        } catch (error) {
-            console.error(error);
-            showToast("Failed to receive order", "error");
-        } finally {
-            setIsProcessing(false);
-            setConfirmReceiveId(null);
         }
     };
 
@@ -226,7 +204,18 @@ export default function PurchaseOrdersTab() {
                                                     </>
                                                 )}
                                                 {po.status === 'received' && (
-                                                    <span className="text-xs text-gray-400 italic pr-2">Received</span>
+                                                    <div className="flex items-center gap-2">
+                                                        {po.invoiceUrl && (
+                                                            <button
+                                                                onClick={() => window.open(po.invoiceUrl, '_blank')}
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="View Invoice"
+                                                            >
+                                                                <DocumentTextIcon className="w-5 h-5" />
+                                                            </button>
+                                                        )}
+                                                        <span className="text-xs text-gray-400 italic pr-2">Received</span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -247,6 +236,16 @@ export default function PurchaseOrdersTab() {
                 inventoryItems={inventoryItems}
             />
 
+            <ReceivePurchaseOrderModal
+                isOpen={!!confirmReceiveId}
+                onClose={() => setConfirmReceiveId(null)}
+                po={orders.find(o => o.id === confirmReceiveId) || null}
+                onSuccess={() => {
+                    loadData();
+                    setConfirmReceiveId(null);
+                }}
+            />
+
             <ConfirmationModal
                 isOpen={!!confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}
@@ -255,17 +254,6 @@ export default function PurchaseOrdersTab() {
                 message="Are you sure you want to delete this order? This cannot be undone."
                 confirmText="Delete Order"
                 cancelText="Keep Order"
-            />
-
-            <ConfirmationModal
-                isOpen={!!confirmReceiveId}
-                onClose={() => setConfirmReceiveId(null)}
-                onConfirm={handleReceive}
-                title="Confirm Receipt"
-                message="Are you sure you want to mark this order as received? This will automatically update the stock levels for all items in this order."
-                confirmText={isProcessing ? "Processing..." : "Receive Items"}
-                cancelText="Cancel"
-                disabled={isProcessing}
             />
         </div>
     );

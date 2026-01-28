@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, BanknotesIcon, CalendarIcon, UserIcon, DocumentTextIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import { LedgerEntry } from '@/lib/firestoreService';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface AccountEntryDrawerProps {
     open: boolean;
@@ -24,6 +26,10 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
     const [department, setDepartment] = useState<LedgerEntry['department']>('accounts');
     const [status, setStatus] = useState<LedgerEntry['status']>('cleared');
 
+    // File Upload State
+    const [file, setFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+
     // Reset form when opening
     useEffect(() => {
         if (open) {
@@ -37,11 +43,37 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
             setPayerOrPayee('');
             setDepartment('accounts');
             setStatus('cleared');
+            setFile(null);
+            setUploading(false);
         }
     }, [open]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (uploading) return; // Prevent double submit
+
+        let attachmentUrl: string | undefined = undefined;
+
+        if (file) {
+            if (!storage) {
+                console.error("Storage not initialized");
+                alert("Storage service unavailable. Cannot upload receipt.");
+                return;
+            }
+            setUploading(true);
+            try {
+                // Upload file
+                const storageRef = ref(storage, `receipts/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                attachmentUrl = await getDownloadURL(snapshot.ref);
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                alert("Failed to upload receipt. Please try again.");
+                setUploading(false);
+                return;
+            }
+        }
+
         onSave({
             date: new Date(date),
             entryType,
@@ -53,8 +85,10 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
             payerOrPayee,
             department: entryType === 'expense' ? department : undefined,
             status,
+            attachmentUrl,
             createdBy: 'admin', // In real app, get from auth context
         });
+        setUploading(false);
     };
 
     return (
@@ -113,8 +147,8 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                                                         type="button"
                                                         onClick={() => setEntryType('income')}
                                                         className={`flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium ${entryType === 'income'
-                                                                ? 'bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500'
-                                                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                            ? 'bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500'
+                                                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         Income
@@ -123,8 +157,8 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                                                         type="button"
                                                         onClick={() => setEntryType('expense')}
                                                         className={`flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium ${entryType === 'expense'
-                                                                ? 'bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500'
-                                                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                            ? 'bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500'
+                                                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         Expense
@@ -184,10 +218,12 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                                                         <>
                                                             <option value="salary">Salary</option>
                                                             <option value="utilities">Utilities</option>
-                                                            <option value="maintenance">Maintenance</option>
-                                                            <option value="supplies">Supplies</option>
+                                                            <option value="maintenance">Maintenance / Repair</option>
+                                                            <option value="supplies">Supplies / Inventory</option>
                                                             <option value="marketing">Marketing</option>
                                                             <option value="food_beverage">F&B Cost</option>
+                                                            <option value="transport">Transport / Petrol</option>
+                                                            <option value="breakage">Breakage / Damage</option>
                                                             <option value="other">Other Expense</option>
                                                         </>
                                                     )}
@@ -272,6 +308,35 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                                                 </div>
                                             </div>
 
+                                            {/* File Upload (Receipt) */}
+                                            <div className="mt-4">
+                                                <label className="block text-sm font-medium text-gray-700">Receipt / Attachment</label>
+                                                <div className="mt-1 flex items-center gap-2">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                                        className="block w-full text-sm text-gray-500
+                                                            file:mr-4 file:py-2 file:px-4
+                                                            file:rounded-md file:border-0
+                                                            file:text-sm file:font-semibold
+                                                            file:bg-orange-50 file:text-orange-700
+                                                            hover:file:bg-orange-100"
+                                                    />
+                                                    {file && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFile(null)}
+                                                            className="text-red-500 hover:text-red-700"
+                                                        >
+                                                            <XMarkIcon className="h-5 w-5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="mt-1 text-xs text-gray-500">Upload receipt for owner verification (Image or PDF).</p>
+                                            </div>
+
+
                                             {/* Payment Details */}
                                             <div className="border-t border-gray-200 pt-4">
                                                 <h4 className="text-sm font-medium text-gray-900 mb-3">Payment Info</h4>
@@ -321,7 +386,7 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                                                     type="submit"
                                                     className="inline-flex justify-center rounded-md bg-[#FF6A00] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#FF6A00]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6A00]"
                                                 >
-                                                    Save Entry
+                                                    {uploading ? 'Uploading...' : 'Save Entry'}
                                                 </button>
                                             </div>
                                         </div>
@@ -331,7 +396,7 @@ export default function AccountEntryDrawer({ open, onClose, onSave }: AccountEnt
                         </div>
                     </div>
                 </div>
-            </Dialog>
-        </Transition.Root>
+            </Dialog >
+        </Transition.Root >
     );
 }
