@@ -39,7 +39,8 @@ import {
     ShieldCheckIcon,
     DocumentTextIcon,
     QueueListIcon,
-    BanknotesIcon
+    BanknotesIcon,
+    ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 import { FaUserSlash as userSlashIcon } from 'react-icons/fa';
 import { CleaningIcon } from '../components/icons/CleaningIcon';
@@ -183,6 +184,7 @@ export const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
                 { name: 'Purchase Orders', href: '/admin/inventory?tab=purchase_orders', icon: ShoppingCartIcon, color: 'text-green-600', bgColor: 'bg-green-50', section: 'inventory_orders' },
                 { name: 'Suppliers', href: '/admin/inventory?tab=suppliers', icon: TruckIcon, color: 'text-orange-600', bgColor: 'bg-orange-50', section: 'inventory_suppliers' },
                 { name: 'Adjustments', href: '/admin/inventory?tab=adjustments', icon: ClipboardDocumentListIcon, color: 'text-red-600', bgColor: 'bg-red-50', section: 'inventory_adjustments' },
+                { name: 'Transfer Stock', href: '/admin/inventory/transfer', icon: ArrowsRightLeftIcon, color: 'text-amber-600', bgColor: 'bg-amber-50', section: 'inventory_transfer' },
                 { name: 'Reports', href: '/admin/inventory?tab=reports', icon: ChartBarIcon, color: 'text-purple-600', bgColor: 'bg-purple-50', section: 'inventory_reports' },
             ],
             defaultOpen: true,

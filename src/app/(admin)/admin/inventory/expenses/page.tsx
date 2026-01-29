@@ -146,7 +146,8 @@ export default function DirectExpensePage() {
                     name: i.name,
                     quantity: Number(i.quantity),
                     unitCost: Number(i.unitCost),
-                    totalCost: Number(i.totalCost)
+                    totalCost: Number(i.totalCost),
+                    unit: i.unit || 'units'
                 })),
                 createdAt: new Date(date)
             };
@@ -158,10 +159,15 @@ export default function DirectExpensePage() {
             // We need to upgrade receivePurchaseOrder to handle locations in Phase 2B. 
             // For now, it updates GLOBAL stock which is step 1).
 
-            await receivePurchaseOrder(poId, items.map(i => ({
-                itemId: i.inventoryItemId,
-                quantity: Number(i.quantity)
-            })), "Admin User"); // TODO: Get actual user
+            await receivePurchaseOrder(poId, {
+                items: items.map(i => ({
+                    itemId: i.inventoryItemId,
+                    orderedQty: Number(i.quantity),
+                    receivedQty: Number(i.quantity),
+                    rejectedQty: 0,
+                    actualUnitCost: Number(i.unitCost)
+                }))
+            }, "Admin User"); // TODO: Get actual user
 
             showToast("Market Expense Recorded & Stock Updated", "success");
             router.push('/admin/inventory');

@@ -16,6 +16,7 @@ interface POItemRow {
     quantity: number;
     unitCost: number;
     totalCost: number;
+    unit: string;
 }
 
 export default function CreatePOPage() {
@@ -54,7 +55,7 @@ export default function CreatePOPage() {
     };
 
     const addItem = () => {
-        setItems([...items, { itemId: '', itemName: '', quantity: 1, unitCost: 0, totalCost: 0 }]);
+        setItems([...items, { itemId: '', itemName: '', quantity: 1, unitCost: 0, totalCost: 0, unit: 'units' }]);
     };
 
     const removeItem = (index: number) => {
@@ -73,6 +74,7 @@ export default function CreatePOPage() {
             if (invItem) {
                 item.itemName = invItem.name;
                 item.unitCost = invItem.unitCost || 0;
+                item.unit = invItem.unit || 'units';
             }
         }
 
@@ -111,7 +113,8 @@ export default function CreatePOPage() {
                     name: i.itemName,
                     quantity: Number(i.quantity),
                     unitCost: Number(i.unitCost),
-                    totalCost: Number(i.totalCost)
+                    totalCost: Number(i.totalCost),
+                    unit: i.unit || 'units'
                 })),
                 totalAmount: calculateTotal(), // + Tax if needed
                 notes,

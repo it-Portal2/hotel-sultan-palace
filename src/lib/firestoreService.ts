@@ -451,6 +451,8 @@ export interface FoodOrder {
     // New: Selected Variant & Modifiers
     variant?: { name: string; price: number };
     selectedModifiers?: Array<{ name: string; price: number }>;
+    category?: string;
+    station?: string;
   }>;
   subtotal: number;
   tax?: number;
@@ -471,6 +473,7 @@ export interface FoodOrder {
   updatedAt: Date;
   orderTime?: Date; // Time when order was placed
   revenueRecorded?: boolean; // Track if revenue was added to daily stats
+  inventoryDeducted?: boolean; // Track if stock was deducted
 }
 
 // ... (Rest of interfaces)
@@ -844,7 +847,10 @@ export interface InventoryItem {
   lastPurchasedPrice?: number;
 
   // Storage
-  location?: string; // e.g., "Main Store", "Kitchen Freezer"
+  location?: string; // Legacy: Main location name
+  // New: Stock by Location ID
+  stockByLocation?: Record<string, number>; // e.g. { 'main_store': 100, 'bar_1': 20 }
+
   expiryDate?: Date; // For perishable items
 
   isActive: boolean;

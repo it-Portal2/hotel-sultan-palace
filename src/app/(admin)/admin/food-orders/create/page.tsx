@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getMenuItems, getMenuCategories, createFoodOrder, MenuItem, getAllBookings, Booking } from '@/lib/firestoreService';
+import { processOrderInventoryDeduction } from '@/lib/inventoryService';
 import { useToast } from '@/context/ToastContext';
 import { ArrowLeftIcon, MapIcon, ListBulletIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -140,7 +141,9 @@ export default function POSCreatePage() {
                     menuItemId: i.id,
                     name: i.name,
                     quantity: i.quantity,
-                    price: i.price
+                    price: i.price,
+                    category: i.category,
+                    station: i.station
                 })),
                 subtotal,
                 tax,
@@ -156,6 +159,18 @@ export default function POSCreatePage() {
             const orderId = await createFoodOrder(orderData);
 
             if (orderId) {
+                // Trigger Inventory Deduction
+                try {
+                    // We interpret "Restaurant" or "Bar" from the delivery location or items
+                    // The logic is handled inside processOrderInventoryDeduction based on Menu Item attributes
+                    await processOrderInventoryDeduction(orderId, "POS System");
+                    console.log("Inventory deduction triggered for Order", orderId);
+                } catch (invError) {
+                    console.error("Inventory deduction failed", invError);
+                    // Don't block the UI, just log it. 
+                    // Ideally show a warning or retry later.
+                }
+
                 showToast("Order sent to Kitchen!", "success");
                 router.push(returnUrl);
             }

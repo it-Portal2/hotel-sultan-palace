@@ -28,6 +28,19 @@ import type {
     InventoryLocation
 } from './firestoreService';
 
+export type {
+    Supplier,
+    PurchaseOrder,
+    InventoryItem,
+    InventoryTransaction,
+    Recipe,
+    FoodOrder,
+    LowStockAlert,
+    InventoryCategory,
+    Department,
+    InventoryLocation
+};
+
 // ==================== CATEGORIES ====================
 
 export const getInventoryCategories = async (): Promise<InventoryCategory[]> => {
@@ -421,11 +434,39 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                     const invSnap = await transaction.get(invRef);
                     if (invSnap.exists()) {
                         const currentInv = invSnap.data() as InventoryItem;
+
+                        // Determine DEDUCTION LOCATION based on Menu Item Station
+                        // Default to 'kitchen' or 'bar' based on item category or station
+                        // This is a simple heuristic mapping
+                        let targetLocation = 'main_store'; // Fallback
+                        const station = item.station || 'kitchen'; // You might need to fetch item station if not in order
+
+                        if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
+                            targetLocation = 'bar';
+                        } else {
+                            targetLocation = 'kitchen';
+                        }
+
+                        // Check stock in specific location
+                        const currentLocationStock = (currentInv.stockByLocation && currentInv.stockByLocation[targetLocation])
+                            ? currentInv.stockByLocation[targetLocation]
+                            : 0;
+
                         const deductionAmount = ingredient.quantity * item.quantity;
-                        const newStock = (currentInv.currentStock || 0) - deductionAmount;
+
+                        // Calculate New Location Stock
+                        const newLocationStock = currentLocationStock - deductionAmount;
+
+                        // Update stockByLocation map
+                        const updatedStockByLocation = { ...(currentInv.stockByLocation || {}) };
+                        updatedStockByLocation[targetLocation] = newLocationStock;
+
+                        // Also update global count for backward compatibility / total asset value
+                        const newGlobalStock = (currentInv.currentStock || 0) - deductionAmount;
 
                         transaction.update(invRef, {
-                            currentStock: newStock,
+                            currentStock: newGlobalStock,
+                            stockByLocation: updatedStockByLocation,
                             updatedAt: serverTimestamp()
                         });
 
@@ -438,9 +479,10 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                             quantity: -deductionAmount,
                             unitCost: currentInv.unitCost || 0,
                             totalCost: (currentInv.unitCost || 0) * deductionAmount,
-                            previousStock: currentInv.currentStock,
-                            newStock: newStock,
-                            reason: `Order ${order.orderNumber} - ${item.name}`,
+                            previousStock: currentLocationStock, // Log location stock
+                            newStock: newLocationStock,
+                            locationId: targetLocation, // Track location
+                            reason: `Order ${order.orderNumber} - ${item.name} (${targetLocation})`,
                             referenceId: orderId,
                             performedBy: performedBy,
                             createdAt: serverTimestamp()
@@ -590,6 +632,85 @@ export const createStockAdjustment = async (
             await checkAndCreateAutoReorder(itemId, itemSnap.data().currentStock);
         }
     }
+};
+
+// ==================== TRANSFER STOCK ====================
+
+export const transferStock = async (
+    itemId: string,
+    fromLocationId: string,
+    toLocationId: string,
+    quantity: number,
+    performedBy: string,
+    notes?: string
+): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const firestore = db;
+
+    await runTransaction(firestore, async (transaction) => {
+        const itemRef = doc(firestore, 'inventory', itemId);
+        const itemSnap = await transaction.get(itemRef);
+
+        if (!itemSnap.exists()) throw new Error("Item not found");
+        const item = itemSnap.data() as InventoryItem;
+
+        const stockMap = item.stockByLocation || {};
+
+        // Check Source Stock
+        // If undefined, assume 0 (or assume 'Main Store' has all stock if strictly migrating?)
+        // For safety, assume 0.
+        const currentSourceStock = stockMap[fromLocationId] || 0;
+
+        if (currentSourceStock < quantity) {
+            throw new Error(`Insufficient stock in ${fromLocationId}. Available: ${currentSourceStock}`);
+        }
+
+        const currentDestStock = stockMap[toLocationId] || 0;
+
+        // Update Map
+        stockMap[fromLocationId] = currentSourceStock - quantity;
+        stockMap[toLocationId] = currentDestStock + quantity;
+
+        // Update Inventory Doc
+        transaction.update(itemRef, {
+            stockByLocation: stockMap,
+            updatedAt: serverTimestamp()
+        });
+
+        // Log Transaction (Source - Out)
+        const transRefOut = doc(collection(firestore, 'inventoryTransactions'));
+        transaction.set(transRefOut, {
+            inventoryItemId: itemId,
+            itemName: item.name,
+            transactionType: 'transfer_out',
+            quantity: -quantity,
+            unitCost: item.unitCost || 0,
+            totalCost: (item.unitCost || 0) * quantity,
+            previousStock: currentSourceStock,
+            newStock: stockMap[fromLocationId],
+            locationId: fromLocationId,
+            reason: `Transfer to ${toLocationId}`,
+            performedBy: performedBy,
+            createdAt: serverTimestamp()
+        });
+
+        // Log Transaction (Dest - In)
+        const transRefIn = doc(collection(firestore, 'inventoryTransactions'));
+        transaction.set(transRefIn, {
+            inventoryItemId: itemId,
+            itemName: item.name,
+            transactionType: 'transfer_in',
+            quantity: quantity, // Positive
+            unitCost: item.unitCost || 0,
+            totalCost: (item.unitCost || 0) * quantity,
+            previousStock: currentDestStock,
+            newStock: stockMap[toLocationId],
+            locationId: toLocationId,
+            reason: `Transfer from ${fromLocationId}`,
+            performedBy: performedBy,
+            createdAt: serverTimestamp()
+        });
+    });
 };
 
 export const getInventoryTransactions = async (): Promise<InventoryTransaction[]> => {
