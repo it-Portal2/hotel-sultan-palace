@@ -250,6 +250,7 @@ export const receivePurchaseOrder = async (
     poId: string,
     data: {
         invoiceUrl?: string;
+        targetLocationId?: string; // New: Where the stock is going
         items: Array<{
             itemId: string;
             orderedQty: number;
@@ -297,9 +298,26 @@ export const receivePurchaseOrder = async (
                 const invItem = itemSnap.data() as InventoryItem;
                 const newStock = (invItem.currentStock || 0) + receivedItem.receivedQty;
 
+                // Update Stock By Location
+                // Default to 'main_store' key if no target provided (though UI should provide it)
+                // We also need to ensuring the key exists or find the 'Main Store' ID dynamically?
+                // For simplicity, we trust the ID or fallback to 'main_store' string if system uses that convention.
+                // Based on `seedDefaultLocations`, one has name "Main Store" and type "store".
+                // Ideally we use that ID. But let's rely on valid input.
+                const targetLoc = data.targetLocationId || 'main_store';
+
+                const currentLocStock = (invItem.stockByLocation && invItem.stockByLocation[targetLoc]) || 0;
+                const newLocStock = currentLocStock + receivedItem.receivedQty;
+
+                const updatedStockByLocation = { ...(invItem.stockByLocation || {}) };
+                if (receivedItem.receivedQty > 0) {
+                    updatedStockByLocation[targetLoc] = newLocStock;
+                }
+
                 // Update Inventory Item
                 const updateData: any = {
                     currentStock: newStock,
+                    stockByLocation: updatedStockByLocation,
                     lastRestocked: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 };
@@ -330,6 +348,7 @@ export const receivePurchaseOrder = async (
                         totalCost: receivedItem.receivedQty * unitCost,
                         previousStock: invItem.currentStock || 0,
                         newStock: newStock,
+                        locationId: targetLoc, // Log the location
                         reason: `Received PO ${po.poNumber}`,
                         referenceId: poId,
                         performedBy: receivedBy,
@@ -359,11 +378,17 @@ export const receivePurchaseOrder = async (
         transaction.update(poRef, {
             status: 'received',
             invoiceUrl: data.invoiceUrl || null,
+            targetLocationId: data.targetLocationId || null, // Save where it went
             receivedDetails: {
                 receivedAt: new Date(),
                 receivedBy,
                 items: data.items.map(i => ({
-                    ...i,
+                    itemId: i.itemId,
+                    orderedQty: i.orderedQty,
+                    receivedQty: i.receivedQty,
+                    rejectedQty: i.rejectedQty,
+                    actualUnitCost: i.actualUnitCost ?? null, // Ensure not undefined
+                    expiryDate: i.expiryDate ?? null, // Ensure not undefined
                     missingQty: i.orderedQty - i.receivedQty - i.rejectedQty
                 })),
                 totalReceivedValue,
@@ -553,6 +578,7 @@ export const createInventoryItem = async (data: Omit<InventoryItem, 'id' | 'crea
     if (!db) throw new Error("Firestore not initialized");
     const docRef = await addDoc(collection(db, 'inventory'), {
         ...data,
+        stockByLocation: {}, // Initialize empty map
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     });
@@ -584,7 +610,8 @@ export const createStockAdjustment = async (
     quantity: number, // positive (add) or negative (deduct)
     type: 'adjustment' | 'waste' | 'usage' | 'transfer_in' | 'transfer_out',
     reason: string,
-    performedBy: string
+    performedBy: string,
+    locationId?: string // New: Specific location
 ): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;
@@ -596,13 +623,30 @@ export const createStockAdjustment = async (
 
         const item = itemSnap.data() as InventoryItem;
         const currentStock = item.currentStock || 0;
+
+        // Handle Location Logic
+        let updatedStockByLocation = { ...(item.stockByLocation || {}) };
+
+        // If location is provided, we must check/update that specific location
+        if (locationId) {
+            const currentLocStock = updatedStockByLocation[locationId] || 0;
+            const newLocStock = currentLocStock + quantity;
+
+            if (newLocStock < 0) {
+                // Block if specific location goes negative
+                throw new Error(`Insufficient stock in selected location. Available: ${currentLocStock}`);
+            }
+            updatedStockByLocation[locationId] = newLocStock;
+        }
+
         const newStock = currentStock + quantity;
 
-        if (newStock < 0) throw new Error("Insufficient stock");
+        if (newStock < 0) throw new Error("Insufficient global stock");
 
         // Update Inventory
         transaction.update(itemRef, {
             currentStock: newStock,
+            stockByLocation: updatedStockByLocation,
             updatedAt: serverTimestamp()
         });
 
@@ -617,6 +661,7 @@ export const createStockAdjustment = async (
             totalCost: (item.unitCost || 0) * Math.abs(quantity),
             previousStock: currentStock,
             newStock: newStock,
+            locationId: locationId || null, // Ensure no undefined
             reason: reason,
             performedBy: performedBy,
             createdAt: serverTimestamp()
@@ -745,32 +790,38 @@ export const getLowStockAlerts = async (): Promise<LowStockAlert[]> => {
 };
 // ==================== AUTO-REORDER LOGIC ====================
 
-export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStock: number) => {
-    if (!db) return;
+export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStock: number): Promise<any> => {
+    if (!db) return { status: 'error', message: 'No DB' };
     try {
         const itemRef = doc(db, 'inventory', inventoryItemId);
         const itemSnap = await getDoc(itemRef);
 
-        if (!itemSnap.exists()) return;
+        if (!itemSnap.exists()) return { status: 'error', message: 'Item not found' };
         const item = itemSnap.data() as InventoryItem;
 
         // Check if reorder is needed
         const minStock = item.minStockLevel || 0;
-        if (newStock > minStock) return; // Not low enough
+        // console.log(`[AutoReorder] Checking ${item.name}: Stock=${newStock}, Min=${minStock}`);
 
-        console.log(`[AutoReorder] Item ${item.name} is low (${newStock} <= ${minStock}). Checking for active POs...`);
+        if (newStock > minStock) {
+            return { status: 'skipped', message: `Stock ${newStock} > Min ${minStock}`, item: item.name };
+        }
 
         // Check if there's already a DRAFT PO for this supplier
         // We assume preferredSupplierId is on the item. If not, we can't auto-order.
-        if (!item.preferredSupplierId) {
-            console.warn(`[AutoReorder] No preferred supplier for ${item.name}. Skipping.`);
-            return;
+        // UPDATE: User wants draft created anyway. We will use a placeholder if missing.
+        let targetSupplierId = item.preferredSupplierId;
+
+        if (!targetSupplierId) {
+            console.warn(`[AutoReorder] No preferred supplier for ${item.name}. Using 'pending' placeholder.`);
+            targetSupplierId = 'pending';
         }
 
         const suppliersRef = collection(db, 'purchaseOrders');
+        // If pending, we look for a draft with 'pending' supplier
         const q = query(
             suppliersRef,
-            where('supplierId', '==', item.preferredSupplierId),
+            where('supplierId', '==', targetSupplierId),
             where('status', '==', 'draft'),
             limit(1)
         );
@@ -788,8 +839,7 @@ export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStoc
 
             const newItems = [...po.items];
             if (existingItemIndex >= 0) {
-                // Already in PO, log it.
-                console.log(`[AutoReorder] Item already in Draft PO ${po.poNumber}.`);
+                return { status: 'skipped', message: `Item already in PO ${po.poNumber}`, poId: po.id };
             } else {
                 // Add to PO
                 newItems.push({
@@ -808,18 +858,27 @@ export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStoc
                     totalAmount: newTotal,
                     updatedAt: serverTimestamp()
                 });
-                console.log(`[AutoReorder] Added ${item.name} to Draft PO ${po.poNumber}.`);
+                return { status: 'success', message: `Added to existing PO ${po.poNumber}`, poId: po.id };
             }
 
         } else {
             // Create NEW Draft PO
-            // Fetch supplier name for the PO record
-            const supplierRef = doc(db, 'suppliers', item.preferredSupplierId);
-            const supplierSnap = await getDoc(supplierRef);
-            const supplierName = supplierSnap.exists() ? supplierSnap.data().name : "Unknown Supplier";
+            let supplierName = "Unknown Supplier";
+
+            if (targetSupplierId !== 'pending') {
+                try {
+                    const supplierRef = doc(db, 'suppliers', targetSupplierId);
+                    const supplierSnap = await getDoc(supplierRef);
+                    if (supplierSnap.exists()) {
+                        supplierName = supplierSnap.data().name;
+                    }
+                } catch (e) { console.error("Error fetching supplier name", e); }
+            } else {
+                supplierName = "Pending Assignment";
+            }
 
             await createPurchaseOrder({
-                supplierId: item.preferredSupplierId,
+                supplierId: targetSupplierId,
                 supplierName: supplierName,
                 status: 'draft',
                 items: [{
@@ -831,9 +890,9 @@ export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStoc
                     totalCost: orderQty * (item.unitCost || 0)
                 }],
                 totalAmount: orderQty * (item.unitCost || 0),
-                notes: "Auto-generated by Low Stock Alert"
+                notes: "Auto-generated by Low Stock Alert (Needs Supplier)"
             });
-            console.log(`[AutoReorder] Created new Draft PO for ${item.name}.`);
+            return { status: 'success', message: `Created NEW PO for ${item.name}` };
         }
 
     } catch (error) {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { PurchaseOrder } from '@/lib/firestoreService';
-import { receivePurchaseOrder } from '@/lib/inventoryService';
+import { receivePurchaseOrder, getInventoryLocations, InventoryLocation } from '@/lib/inventoryService';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { XMarkIcon, ExclamationTriangleIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ExclamationTriangleIcon, PhotoIcon, BuildingStorefrontIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
 interface ReceivePurchaseOrderModalProps {
@@ -38,11 +38,23 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
     const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
     const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
 
+    const [locations, setLocations] = useState<InventoryLocation[]>([]);
+    const [targetLocation, setTargetLocation] = useState<string>('');
+
     const [items, setItems] = useState<ItemReceiveRow[]>([]);
     const [notes, setNotes] = useState('');
     const [creditNoteRequested, setCreditNoteRequested] = useState(false);
 
     useEffect(() => {
+        if (isOpen) {
+            getInventoryLocations().then(locs => {
+                setLocations(locs);
+                // Default to first 'store'
+                const store = locs.find(l => l.type === 'store');
+                if (store) setTargetLocation(store.id);
+                else if (locs.length > 0) setTargetLocation(locs[0].id);
+            });
+        }
         if (isOpen && po) {
             // Initialize form with PO items
             setItems(po.items.map(i => ({
@@ -97,6 +109,14 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
 
     const handleSubmit = async () => {
         if (!po) return;
+
+        // Validation: Check for logical errors (Received + Rejected > Ordered)
+        const invalidItems = items.filter(i => i.receivedQty + i.rejectedQty > i.orderedQty);
+        if (invalidItems.length > 0) {
+            showToast(`Error: ${invalidItems[0].name} - Total (Good + Bad) exceeds Ordered quantity.`, "error");
+            return;
+        }
+
         setSubmitting(true);
         try {
             // 1. Upload Invoice if exists
@@ -110,6 +130,7 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
             // 2. Submit Data
             await receivePurchaseOrder(po.id, {
                 invoiceUrl,
+                targetLocationId: targetLocation,
                 items: items.map(i => ({
                     itemId: i.itemId,
                     orderedQty: i.orderedQty,
@@ -191,7 +212,46 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                         )}
                     </div>
 
-                    {/* 2. Items Table */}
+                    {/* 2. Location Selector */}
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <label className="block text-sm font-bold text-gray-900 mb-2">Received At (Location)</label>
+                        <div className="relative flex gap-2">
+                            <div className="relative flex-1">
+                                <BuildingStorefrontIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                <select
+                                    value={targetLocation}
+                                    onChange={(e) => setTargetLocation(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] outline-none transition-all"
+                                >
+                                    <option value="" disabled>Select Location</option>
+                                    {locations.map(loc => (
+                                        <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {locations.length === 0 && (
+                                <button
+                                    onClick={async () => {
+                                        setSubmitting(true);
+                                        const { seedDefaultLocations } = await import('@/lib/inventoryService');
+                                        await seedDefaultLocations();
+                                        const locs = await getInventoryLocations();
+                                        setLocations(locs);
+                                        if (locs.length > 0) setTargetLocation(locs[0].id);
+                                        setSubmitting(false);
+                                        showToast("Default locations created", "success");
+                                    }}
+                                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold whitespace-nowrap hover:bg-blue-200"
+                                    type="button"
+                                >
+                                    Initialize Defaults
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Stock will be added to this location.</p>
+                    </div>
+
+                    {/* 3. Items Table */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Received Items</h3>
                         <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
@@ -219,7 +279,10 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                                             <td className="px-4 py-3 bg-green-50/30">
                                                 <input
                                                     type="number" min="0"
-                                                    className="w-20 text-center border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-md shadow-sm"
+                                                    className={`w-20 text-center border-gray-300 rounded-md shadow-sm ${item.receivedQty + item.rejectedQty > item.orderedQty
+                                                            ? 'border-red-500 ring-1 ring-red-500 bg-red-50'
+                                                            : 'focus:border-green-500 focus:ring-green-500'
+                                                        }`}
                                                     value={item.receivedQty}
                                                     onChange={e => updateItem(idx, 'receivedQty', Number(e.target.value))}
                                                 />

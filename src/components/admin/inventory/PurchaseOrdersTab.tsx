@@ -3,8 +3,9 @@ import type { PurchaseOrder, Supplier, InventoryItem } from '@/lib/firestoreServ
 import { getAllPurchaseOrders, getSuppliers, deletePurchaseOrder, getInventoryItems } from '@/lib/inventoryService';
 import PurchaseOrderDrawer from './PurchaseOrderDrawer';
 import ReceivePurchaseOrderModal from './ReceivePurchaseOrderModal';
+import PurchaseOrderDetailsModal from './PurchaseOrderDetailsModal';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon, DocumentTextIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
 interface PurchaseOrdersTabProps {
@@ -25,6 +26,7 @@ export default function PurchaseOrdersTab() {
     // Modal States
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+    const [selectedDetailsOrder, setSelectedDetailsOrder] = useState<PurchaseOrder | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [confirmReceiveId, setConfirmReceiveId] = useState<string | null>(null);
 
@@ -136,7 +138,8 @@ export default function PurchaseOrdersTab() {
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Items / Total</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Details</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-[200px]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
@@ -176,46 +179,76 @@ export default function PurchaseOrdersTab() {
                                                 {po.status}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {po.status === 'received' ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {/* Details Button */}
+                                                    <button
+                                                        onClick={() => setSelectedDetailsOrder(po)}
+                                                        className="inline-flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-[#FF6A00] transition-colors"
+                                                        title="View Full Details"
+                                                    >
+                                                        <EyeIcon className="w-4 h-4" />
+                                                        View
+                                                    </button>
+
+                                                    {/* Direct Invoice Link (if exists) */}
+                                                    {po.invoiceUrl && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                window.open(po.invoiceUrl, '_blank');
+                                                            }}
+                                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded transition-colors"
+                                                            title="View Original Receipt"
+                                                        >
+                                                            <DocumentTextIcon className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">-</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end gap-2">
-                                                {po.status !== 'received' && (
+                                                {/* Draft / Ordered Actions */}
+                                                {po.status === 'draft' && (
                                                     <>
                                                         <button
-                                                            onClick={() => setConfirmReceiveId(po.id)}
-                                                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                            title="Receive Order"
-                                                        >
-                                                            <CheckCircleIcon className="w-5 h-5" />
-                                                        </button>
-                                                        <button
                                                             onClick={() => { setSelectedOrder(po); setIsDrawerOpen(true); }}
-                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Edit Order"
+                                                            className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-semibold transition-colors"
                                                         >
-                                                            <PencilIcon className="w-5 h-5" />
+                                                            Edit
                                                         </button>
                                                         <button
                                                             onClick={() => setConfirmDeleteId(po.id)}
-                                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Delete Order"
+                                                            className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                                                            title="Delete"
                                                         >
                                                             <TrashIcon className="w-5 h-5" />
                                                         </button>
                                                     </>
                                                 )}
+
+                                                {po.status === 'ordered' && (
+                                                    <button
+                                                        onClick={() => setConfirmReceiveId(po.id)}
+                                                        className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors"
+                                                    >
+                                                        <CheckCircleIcon className="w-4 h-4" />
+                                                        Receive Stock
+                                                    </button>
+                                                )}
+
+                                                {/* Received View */}
                                                 {po.status === 'received' && (
-                                                    <div className="flex items-center gap-2">
-                                                        {po.invoiceUrl && (
-                                                            <button
-                                                                onClick={() => window.open(po.invoiceUrl, '_blank')}
-                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="View Invoice"
-                                                            >
-                                                                <DocumentTextIcon className="w-5 h-5" />
-                                                            </button>
-                                                        )}
-                                                        <span className="text-xs text-gray-400 italic pr-2">Received</span>
-                                                    </div>
+                                                    <span className="text-xs text-gray-400 italic font-medium pr-2">Done</span>
+                                                )}
+
+                                                {/* Cancelled State */}
+                                                {po.status === 'cancelled' && (
+                                                    <span className="text-gray-400 italic text-xs">Cancelled</span>
                                                 )}
                                             </div>
                                         </td>
@@ -244,6 +277,12 @@ export default function PurchaseOrdersTab() {
                     loadData();
                     setConfirmReceiveId(null);
                 }}
+            />
+
+            <PurchaseOrderDetailsModal
+                isOpen={!!selectedDetailsOrder}
+                onClose={() => setSelectedDetailsOrder(null)}
+                po={selectedDetailsOrder}
             />
 
             <ConfirmationModal

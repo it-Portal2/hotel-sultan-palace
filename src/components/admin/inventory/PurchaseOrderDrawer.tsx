@@ -111,10 +111,20 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const validateForm = () => {
+    const validateForm = (targetStatus?: string) => {
         const newErrors: Record<string, string> = {};
 
-        if (!supplierId) newErrors.supplierId = "Supplier is required";
+        // Valid supplier check
+        const isValidSupplier = suppliers.some(s => s.id === supplierId);
+
+        // If status is ordered, STRICTLY require valid supplier.
+        // If draft, we allow 'pending' or empty (if we decide to allow empty, but currently state inits to '').
+        if (targetStatus === 'ordered' && !isValidSupplier) {
+            newErrors.supplierId = "A valid supplier is required to place order";
+        } else if (!supplierId && targetStatus !== 'draft') {
+            // Basic check for other cases
+            newErrors.supplierId = "Supplier is required";
+        }
 
         if (lineItems.length === 0) {
             newErrors.lineItems = "At least one item is required";
@@ -153,7 +163,7 @@ export default function PurchaseOrderDrawer({ po, isOpen, onClose, onSave, suppl
 
     const handleSave = async (status: string) => {
         if (readonly) return;
-        if (!validateForm()) {
+        if (!validateForm(status)) {
             showToast("Please fix the validation errors", "error");
             return;
         }
