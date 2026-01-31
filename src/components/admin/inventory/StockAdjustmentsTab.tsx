@@ -117,15 +117,17 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
     const [formData, setFormData] = useState({
         itemId: '',
         quantity: 0,
-        type: 'usage' as 'usage' | 'waste' | 'adjustment' | 'transfer_in' | 'transfer_out',
+        type: 'usage' as 'usage' | 'waste' | 'adjustment',
         reason: '',
         department: '',
         locationId: '' // New: Target location
     });
 
     useEffect(() => {
+        // Only default if not set
         if (departments.length > 0 && !formData.department) {
-            setFormData(prev => ({ ...prev, department: departments[0].name }));
+            // Optional: Don't auto-select department to allow seeing "All Items" initially
+            // setFormData(prev => ({ ...prev, department: departments[0].name }));
         }
         // Default location to Main Store or first available
         if (locations.length > 0 && !formData.locationId) {
@@ -139,16 +141,16 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
         setLoading(true);
         try {
             let finalQuantity = Math.abs(formData.quantity);
-            if (['usage', 'waste', 'transfer_out'].includes(formData.type)) {
+            if (['usage', 'waste'].includes(formData.type)) {
                 finalQuantity = -finalQuantity;
             }
 
-            const reasonWithDept = `[${formData.department}] ${formData.reason} `;
+            const reasonWithDept = `[${formData.department || 'General'}] ${formData.reason} `;
 
             await createStockAdjustment(
                 formData.itemId,
                 finalQuantity,
-                formData.type,
+                formData.type as any,
                 reasonWithDept,
                 'Admin User',
                 formData.locationId
@@ -160,7 +162,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                 quantity: 0,
                 type: 'usage',
                 reason: '',
-                department: departments.length > 0 ? departments[0].name : '',
+                department: '', // Reset to empty to show all items
                 locationId: locations.length > 0 ? (locations.find(l => l.type === 'store')?.id || locations[0].id) : ''
             });
             onRefresh();
@@ -182,8 +184,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
     const adjustmentTypes = [
         { id: 'usage', label: 'Usage / Consumption', icon: ArchiveBoxIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
         { id: 'waste', label: 'Waste / Spoilage', icon: TrashIcon, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-        { id: 'transfer_in', label: 'Transfer In (+)', icon: ArrowDownTrayIcon, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-        { id: 'transfer_out', label: 'Transfer Out (-)', icon: ArrowUpTrayIcon, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+        // Transfer options removed - use Transfer Tab
         { id: 'adjustment', label: 'Correction (+/-)', icon: WrenchScrewdriverIcon, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' },
     ];
 
@@ -203,7 +204,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                 {/* 1. Select Type (Visual Cards) */}
                 <div className="space-y-3">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">1. Select Movement Type</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {adjustmentTypes.map((type) => (
                             <button
                                 key={type.id}
@@ -236,13 +237,11 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                             <div>
                                 <label className="block text-sm font-semibold text-gray-900 mb-1.5">Department</label>
                                 <select
-                                    required
                                     value={formData.department}
                                     onChange={e => setFormData({ ...formData, department: e.target.value })}
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm"
                                 >
-                                    <option value="">-- Choose Department --</option>
-                                    {departments.length === 0 && <option value="Kitchen">Kitchen</option>}
+                                    <option value="">-- All Departments --</option>
                                     {departments.map(dept => (
                                         <option key={dept.id} value={dept.name}>{dept.name}</option>
                                     ))}
@@ -280,7 +279,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                                     <option value="">-- Choose Item --</option>
                                     {items
                                         .filter((i: InventoryItem) => {
-                                            if (!formData.department) return false;
+                                            if (!formData.department) return true; // Show all if no dept selected
                                             const itemDept = (i.department || '').toLowerCase().trim();
                                             const selectedDept = formData.department.toLowerCase().trim();
                                             return itemDept === selectedDept;
@@ -292,7 +291,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                                         ))}
                                 </select>
                                 <p className="text-xs text-gray-400 mt-1.5">
-                                    Showing items for {formData.department} department only.
+                                    {formData.department ? `Showing items for ${formData.department} department only.` : 'Showing all items.'}
                                 </p>
                             </div>
                         </div>

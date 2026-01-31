@@ -193,7 +193,7 @@ export async function performNightAudit(staffId: string, staffName: string): Pro
                 }
             });
 
-            await sendNightAuditReport(pdfBuffer, 'kaminipal2001@gmail.com', businessDate);
+            await sendNightAuditReport(pdfBuffer, 'reservations@sultanpalacehotelznz.com', businessDate);
 
             await updateDoc(newLogRef, {
                 'steps.reportsGenerated': true

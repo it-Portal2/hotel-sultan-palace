@@ -12,7 +12,8 @@ import {
     runTransaction,
     Timestamp,
     limit,
-    deleteDoc
+    deleteDoc,
+    setDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type {
@@ -111,7 +112,6 @@ export const seedDefaultDepartments = async (): Promise<void> => {
     if (toCreate.length === 0) return;
 
     await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
-    await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
 };
 
 // ==================== LOCATIONS ====================
@@ -149,23 +149,91 @@ export const deleteInventoryLocation = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'inventoryLocations', id));
 };
 
+// Cleanup function to remove duplicates - RUN ONCE
+export const cleanupDuplicates = async () => {
+    if (!db) return;
+    const firestore = db;
+
+    // 1. Cleanup Locations
+    const locs = await getInventoryLocations();
+    const locMap = new Map<string, InventoryLocation[]>();
+    locs.forEach(l => {
+        const key = l.name.toLowerCase().trim();
+        if (!locMap.has(key)) locMap.set(key, []);
+        locMap.get(key)?.push(l);
+    });
+
+    for (const [name, duplicates] of locMap.entries()) {
+        if (duplicates.length > 1) {
+            console.log(`Cleaning up duplicate locations for: ${name}`);
+            // Keep the one with a "loc_" ID if exists, otherwise the first one
+            // Sort: prioritize "loc_" id, then oldest created
+            duplicates.sort((a, b) => {
+                const aHasId = a.id.startsWith('loc_');
+                const bHasId = b.id.startsWith('loc_');
+                if (aHasId && !bHasId) return -1;
+                if (!aHasId && bHasId) return 1;
+                // If both or neither have ID, keep oldest (if timestamp exists)
+                return 0;
+            });
+
+            // Keep index 0, delete the rest
+            const toDelete = duplicates.slice(1);
+            for (const item of toDelete) {
+                console.log(`Deleting duplicate location: ${item.name} (${item.id})`);
+                await deleteDoc(doc(firestore, 'inventoryLocations', item.id));
+            }
+        }
+    }
+
+    // 2. Cleanup Departments
+    const depts = await getInventoryDepartments();
+    const deptMap = new Map<string, Department[]>();
+    depts.forEach(d => {
+        const key = d.name.toLowerCase().trim();
+        if (!deptMap.has(key)) deptMap.set(key, []);
+        deptMap.get(key)?.push(d);
+    });
+
+    for (const [name, duplicates] of deptMap.entries()) {
+        if (duplicates.length > 1) {
+            console.log(`Cleaning up duplicate departments for: ${name}`);
+            const toDelete = duplicates.slice(1);
+            for (const item of toDelete) {
+                console.log(`Deleting duplicate department: ${item.name} (${item.id})`);
+                await deleteDoc(doc(firestore, 'inventoryDepartments', item.id));
+            }
+        }
+    }
+};
+
 export const seedDefaultLocations = async (): Promise<void> => {
     const defaults = [
-        { name: "Main Store", type: "store" },
-        { name: "Main Kitchen", type: "kitchen" },
-        { name: "Beach Bar", type: "outlet" },
-        { name: "Pool Bar", type: "outlet" },
-        { name: "Housekeeping Store", type: "store" }
+        { id: "loc_main_store", name: "Main Store", type: "store" },
+        { id: "loc_main_kitchen", name: "Main Kitchen", type: "kitchen" },
+        { id: "loc_beach_bar", name: "Beach Bar", type: "outlet" },
+        { id: "loc_pool_bar", name: "Pool Bar", type: "outlet" },
+        { id: "loc_housekeeping", name: "Housekeeping Store", type: "store" }
     ];
-    const existing = await getInventoryLocations();
-    if (existing.length > 0) return;
 
-    await Promise.all(defaults.map(loc => createInventoryLocation({
-        name: loc.name,
-        type: loc.type as any,
-        isActive: true,
-        description: "Default location"
-    })));
+    if (!db) return;
+    const firestore = db;
+
+    await Promise.all(defaults.map(async (loc) => {
+        const docRef = doc(firestore, 'inventoryLocations', loc.id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            await setDoc(docRef, {
+                name: loc.name,
+                type: loc.type as any,
+                isActive: true,
+                description: "Default location",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+        }
+    }));
 };
 
 // ==================== SUPPLIERS ====================
