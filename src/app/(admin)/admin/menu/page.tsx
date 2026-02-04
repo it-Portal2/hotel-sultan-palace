@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -10,62 +8,71 @@ import {
   TrashIcon,
   ChevronRightIcon,
   XMarkIcon,
-  TagIcon
-} from '@heroicons/react/24/outline';
+  TagIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/outline";
 import {
-  getMenuItems,
-  deleteMenuItem,
-  MenuItem,
-  getMenuCategories,
-  MenuCategory,
-  createMenuCategory,
-  deleteMenuCategory
-} from '@/lib/firestoreService';
-import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import Drawer from '@/components/ui/Drawer';
-import MenuForm from '@/components/admin/menu/MenuForm';
-import { useAdminRole } from '@/context/AdminRoleContext';
-import { useToast } from '@/context/ToastContext';
+  getFoodCategories,
+  getFoodMenuItems,
+  createFoodCategory,
+  updateFoodCategory,
+  deleteFoodCategory,
+  deleteFoodMenuItem,
+  FoodCategory,
+  FoodMenuItem,
+} from "@/lib/firestoreService";
+// import {
+//   getDefaultFoodCategory,
+//   AVAILABILITY_TYPE_OPTIONS,
+//   AvailabilityType,
+//   CategoryType,
+// } from "@/lib/types/foodMenu";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
+import Drawer from "@/components/ui/Drawer";
+import FoodMenuForm from "@/components/admin/menu/FoodMenuForm";
+import FoodCategoryForm from "@/components/admin/menu/FoodCategoryForm";
+import { useAdminRole } from "@/context/AdminRoleContext";
+import { useToast } from "@/context/ToastContext";
 
 export default function AdminMenuPage() {
-  const router = useRouter();
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
 
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [items, setItems] = useState<FoodMenuItem[]>([]);
+  const [categories, setCategories] = useState<FoodCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("All");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [deleteCatConfirm, setDeleteCatConfirm] = useState<{ id: string, name: string } | null>(null);
+  const [deleteCatConfirm, setDeleteCatConfirm] = useState<FoodCategory | null>(
+    null,
+  );
 
-  // Drawer State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingItem, setEditingItem] = useState<FoodMenuItem | null>(null);
 
-  // New Category State
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatLabel, setNewCatLabel] = useState("");
-  const [newCatParent, setNewCatParent] = useState<string | null>(null);
+  const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<FoodCategory | null>(
+    null,
+  );
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
     try {
       const [menuData, catData] = await Promise.all([
-        getMenuItems(),
-        getMenuCategories()
+        getFoodMenuItems(),
+        getFoodCategories(),
       ]);
       setItems(menuData);
       setCategories(catData);
     } catch (error) {
-      console.error('Error fetching menu data:', error);
-      showToast('Failed to load menu data', 'error');
+      console.error("Error fetching menu data:", error);
+      showToast("Failed to load menu data", "error");
     } finally {
       setLoading(false);
     }
@@ -74,13 +81,13 @@ export default function AdminMenuPage() {
   const handleDelete = async () => {
     if (!deleteConfirm) return;
     try {
-      await deleteMenuItem(deleteConfirm);
-      setItems(items.filter(item => item.id !== deleteConfirm));
+      await deleteFoodMenuItem(deleteConfirm);
+      setItems(items.filter((item) => item.id !== deleteConfirm));
       setDeleteConfirm(null);
-      showToast('Item deleted successfully', 'success');
+      showToast("Item deleted successfully", "success");
     } catch (error) {
-      console.error('Error deleting menu item:', error);
-      showToast('Failed to delete item', 'error');
+      console.error("Error deleting menu item:", error);
+      showToast("Failed to delete item", "error");
     }
   };
 
@@ -89,163 +96,299 @@ export default function AdminMenuPage() {
     setIsDrawerOpen(true);
   };
 
-  const handleEditClick = (item: MenuItem) => {
+  const handleEditClick = (item: FoodMenuItem) => {
     setEditingItem(item);
     setIsDrawerOpen(true);
   };
 
-  const handleAddCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatName || !newCatLabel) return;
-    try {
-      // Optimistic / Immediate Update
-      const newId = await createMenuCategory({ name: newCatName, label: newCatLabel, parentId: newCatParent });
-
-      if (newId) {
-        setCategories(prev => [
-          ...prev,
-          {
-            id: newId,
-            name: newCatName,
-            label: newCatLabel,
-            parentId: newCatParent,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]);
-      }
-
-      setIsCategoryModalOpen(false);
-      setNewCatName("");
-      setNewCatLabel("");
-      setNewCatParent(null);
-      // fetchData(); // Optional: still fetch to ensure consistency, but we already updated UI
-      showToast('Category created', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to create category', 'error');
-    }
+  const handleAddCategoryClick = () => {
+    setEditingCategory(null);
+    setIsCategoryDrawerOpen(true);
   };
 
-  const handleDeleteCategory = async (id: string, name: string) => {
-    setDeleteCatConfirm({ id, name });
+  const handleEditCategoryClick = (cat: FoodCategory) => {
+    setEditingCategory(cat);
+    setIsCategoryDrawerOpen(true);
+  };
+
+  const handleCategorySubmit = async (data: Partial<FoodCategory>) => {
+    setIsCategorySubmitting(true);
+    try {
+      if (editingCategory) {
+        await updateFoodCategory(editingCategory.id, data);
+        showToast("Category updated successfully", "success");
+      } else {
+        await createFoodCategory(data);
+        showToast("Category created successfully", "success");
+      }
+      // Refetch data FIRST, then close the drawer
+      await fetchData();
+      setEditingCategory(null);
+      setIsCategoryDrawerOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save category";
+      showToast(message, "error");
+    } finally {
+      setIsCategorySubmitting(false);
+    }
   };
 
   const executeDeleteCategory = async () => {
     if (!deleteCatConfirm) return;
     try {
-      await deleteMenuCategory(deleteCatConfirm.id);
+      await deleteFoodCategory(deleteCatConfirm.id);
       fetchData();
-      showToast('Category deleted', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to delete category', 'error');
+      showToast("Category deleted", "success");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete category";
+      showToast(message, "error");
     } finally {
       setDeleteCatConfirm(null);
     }
   };
 
-  // --- Filter Logic ---
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredItems = useMemo(() => {
+    // Get child category IDs for the selected category
+    const getChildIds = (parentId: string): string[] => {
+      return categories
+        .filter((c) => c.parentCategoryId === parentId)
+        .map((c) => c.id);
+    };
 
-  // --- Group Logic ---
+    const childIds =
+      selectedCategoryId !== "All" ? getChildIds(selectedCategoryId) : [];
+    const allCategoryIds =
+      selectedCategoryId !== "All" ? [selectedCategoryId, ...childIds] : [];
+
+    return items.filter((item) => {
+      const matchesSearch =
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategoryId === "All" ||
+        allCategoryIds.includes(item.categoryId);
+      return matchesSearch && matchesCategory;
+    });
+  }, [items, searchTerm, selectedCategoryId, categories]);
+
   const groupedItems = useMemo(() => {
-    const groups: Record<string, MenuItem[]> = {};
+    const groups: Record<string, FoodMenuItem[]> = {};
 
-    // Sort items: Items with subcategory first, then others
-    const sortedFiltered = [...filteredItems].sort((a, b) => {
-      if (a.subcategory && !b.subcategory) return -1;
-      if (!a.subcategory && b.subcategory) return 1;
-      return 0;
+    filteredItems.forEach((item) => {
+      const cat = categories.find((c) => c.id === item.categoryId);
+      const catName = cat?.name || "Uncategorized";
+      if (!groups[catName]) groups[catName] = [];
+      groups[catName].push(item);
     });
 
-    sortedFiltered.forEach(item => {
-      const sub = item.subcategory || 'Other';
-      if (!groups[sub]) groups[sub] = [];
-      groups[sub].push(item);
-    });
-
-    // Sort keys so 'Other' is last
     const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (a === 'Other') return 1;
-      if (b === 'Other') return -1;
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
       return a.localeCompare(b);
     });
 
-    return sortedKeys.reduce((acc, key) => {
-      acc[key] = groups[key];
-      return acc;
-    }, {} as Record<string, MenuItem[]>);
-  }, [filteredItems]);
+    return sortedKeys.reduce(
+      (acc, key) => {
+        acc[key] = groups[key];
+        return acc;
+      },
+      {} as Record<string, FoodMenuItem[]>,
+    );
+  }, [filteredItems, categories]);
 
+  const getCategoryName = (categoryId: string) => {
+    return categories.find((c) => c.id === categoryId)?.name || "Unknown";
+  };
+
+  const getItemPrice = (item: FoodMenuItem): string => {
+    if (item.itemType === "variant_based" && item.variants?.length) {
+      const prices = item.variants.map((v) => v.price).filter((p) => p > 0);
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        return min === max
+          ? min.toFixed(2)
+          : `${min.toFixed(2)} - ${max.toFixed(2)}`;
+      }
+    }
+    return item.basePrice?.toFixed(2) || "-";
+  };
+
+  // Get all child category IDs for a parent category
+  const getChildCategoryIds = (parentId: string): string[] => {
+    return categories
+      .filter((c) => c.parentCategoryId === parentId)
+      .map((c) => c.id);
+  };
+
+  // Count items in a category INCLUDING child categories
+  const getItemCountForCategory = (categoryId: string): number => {
+    const childIds = getChildCategoryIds(categoryId);
+    const allCategoryIds = [categoryId, ...childIds];
+    return items.filter((item) => allCategoryIds.includes(item.categoryId))
+      .length;
+  };
+
+  // Get items for a category INCLUDING child categories
+  const getItemsForCategory = (categoryId: string): FoodMenuItem[] => {
+    const childIds = getChildCategoryIds(categoryId);
+    const allCategoryIds = [categoryId, ...childIds];
+    return items.filter((item) => allCategoryIds.includes(item.categoryId));
+  };
+
+  const parentCategories = categories.filter(
+    (c) => c.isParentCategory || !c.parentCategoryId,
+  );
 
   if (loading) {
-    return <div className="p-8 text-center flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6A00]"></div></div>;
+    return (
+      <div className="flex items-center justify-center h-screen w-full bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]"></div>
+          <p className="text-gray-500 text-sm font-medium">Loading menu...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar for Categories */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-shrink-0 flex-col h-full overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed md:relative inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 md:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:flex h-full shadow-xl md:shadow-none flex-shrink-0`}
+      >
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Categories</h2>
-          <button onClick={() => setIsCategoryModalOpen(true)} className="text-[#FF6A00] hover:bg-[#FF6A00]/10 p-1.5 rounded-md transition-colors" title="Add Category">
-            <PlusIcon className="h-5 w-5" />
-          </button>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">
+            Categories
+          </h2>
+          <div className="flex items-center gap-1">
+            {!isReadOnly && (
+              <button
+                onClick={handleAddCategoryClick}
+                className="text-[#FF6A00] hover:bg-[#FF6A00]/10 p-1.5 rounded-md transition-colors"
+                title="Add Category"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-100 rounded-md"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           <button
-            onClick={() => setSelectedCategory('All')}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${selectedCategory === 'All'
-              ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
-              : 'text-gray-600 hover:bg-gray-50'
-              }`}
+            onClick={() => setSelectedCategoryId("All")}
+            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${
+              selectedCategoryId === "All"
+                ? "bg-[#FF6A00]/10 text-[#FF6A00]"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
           >
             All Items
-            <span className={`text-xs px-2 py-0.5 rounded-full ${selectedCategory === 'All' ? 'bg-[#FF6A00]/20 text-[#FF6A00]' : 'bg-gray-100 text-gray-500'}`}>{items.length}</span>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${selectedCategoryId === "All" ? "bg-[#FF6A00]/20 text-[#FF6A00]" : "bg-gray-100 text-gray-500"}`}
+            >
+              {items.length}
+            </span>
           </button>
 
-          {categories.filter(c => !c.parentId).map(cat => (
-            <div key={cat.id} className="group relative">
-              <button
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${selectedCategory === cat.name
-                  ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
-                  : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-              >
-                {cat.label}
-                {selectedCategory === cat.name && <ChevronRightIcon className="h-4 w-4" />}
-              </button>
-              {!isReadOnly && (
+          {parentCategories.map((cat) => {
+            const itemCount = getItemCountForCategory(cat.id);
+            const isSelected = selectedCategoryId === cat.id;
+
+            return (
+              <div key={cat.id} className="group relative">
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id, cat.label); }}
-                  className="absolute right-1 top-2 p-1 text-gray-300 hover:text-red-500 hidden group-hover:block bg-white shadow-sm rounded border border-gray-100"
-                  title="Delete Category"
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${
+                    isSelected
+                      ? "bg-[#FF6A00]/10 text-[#FF6A00]"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
                 >
-                  <TrashIcon className="h-3.5 w-3.5" />
+                  <span className="flex items-center gap-2">
+                    {cat.name}
+                    {!cat.isActive && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded">
+                        Hidden
+                      </span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${isSelected ? "bg-[#FF6A00]/20 text-[#FF6A00]" : "bg-gray-100 text-gray-500"}`}
+                    >
+                      {itemCount}
+                    </span>
+                    {isSelected && <ChevronRightIcon className="h-4 w-4" />}
+                  </div>
                 </button>
-              )}
-            </div>
-          ))}
+                {!isReadOnly && (
+                  <div className="absolute right-1 top-1.5 hidden group-hover:flex gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditCategoryClick(cat);
+                      }}
+                      className="p-1 text-gray-300 hover:text-[#FF6A00] bg-white shadow-sm rounded border border-gray-100"
+                      title="Edit Category"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteCatConfirm(cat);
+                      }}
+                      className="p-1 text-gray-300 hover:text-red-500 bg-white shadow-sm rounded border border-gray-100"
+                      title="Delete Category"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
-        {/* CLEAN HEADER */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between flex-shrink-0 z-10 w-full">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-3">
-              Menu Items
-            </h1>
-            <p className="text-gray-500 text-sm font-medium mt-1">Manage your food and beverage offerings</p>
+        <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between flex-shrink-0 z-10 w-full">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg -ml-2"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-3">
+                Menu Items
+              </h1>
+              <p className="text-gray-500 text-xs md:text-sm font-medium mt-1">
+                Manage your food and beverage offerings
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -253,7 +396,7 @@ export default function AdminMenuPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search name, description..."
+                placeholder="Search name, description, SKU..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
@@ -273,182 +416,173 @@ export default function AdminMenuPage() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 pb-20 md:pb-6">
-
           {filteredItems.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <TagIcon className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">No items found</h3>
-              <p className="text-gray-500 max-w-sm mx-auto mt-2">Try adjusting your search or category filter, or create a new item.</p>
-              <button onClick={handleAddClick} className="mt-6 text-[#FF6A00] font-medium hover:underline">Create new item</button>
+              <h3 className="text-lg font-medium text-gray-900">
+                No items found
+              </h3>
+              <p className="text-gray-500 max-w-sm mx-auto mt-2">
+                Try adjusting your search or category filter, or create a new
+                item.
+              </p>
+              <button
+                onClick={handleAddClick}
+                className="mt-6 text-[#FF6A00] font-medium hover:underline"
+              >
+                Create new item
+              </button>
             </div>
           ) : (
-            <>
-              {/* Desktop List View */}
-              <div className="hidden md:block bg-white shadow-lg border border-gray-200 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-white shadow-lg border border-gray-200 overflow-hidden rounded-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px] md:min-w-0">
                   <thead className="bg-slate-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Item Name</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">SKU</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Tax</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Discount</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Open Price</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Cost</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">Price</th>
-                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        Item Name
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        Category
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        SKU
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        Type
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        Kitchen
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                        Price
+                      </th>
+                      <th className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest text-right">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {Object.entries(groupedItems).map(([subcategory, items]) => (
-                      <React.Fragment key={subcategory}>
-                        {subcategory !== 'Other' && (
-                          <tr className="bg-gray-50/30">
-                            <td colSpan={9} className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                              <span className="w-1 h-3 bg-[#FF6A00] rounded-full"></span>
-                              {subcategory}
-                            </td>
-                          </tr>
-                        )}
-                        {items.map((item) => (
-                          <tr key={item.id} className="group hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              <div className="flex flex-col">
-                                <span className="font-medium">{item.name}</span>
-                                <div className="flex gap-1 mt-0.5">
-                                  {item.hasVariants && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                                      VARIANTS
-                                    </span>
-                                  )}
-                                  {item.modifiers && item.modifiers.length > 0 && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                                      MODS
-                                    </span>
+                    {Object.entries(groupedItems).map(
+                      ([categoryName, categoryItems]) => (
+                        <React.Fragment key={categoryName}>
+                          {categoryName !== "Uncategorized" && (
+                            <tr className="bg-gray-50/30">
+                              <td
+                                colSpan={7}
+                                className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"
+                              >
+                                <span className="w-1 h-3 bg-[#FF6A00] rounded-full"></span>
+                                {categoryName}
+                              </td>
+                            </tr>
+                          )}
+                          {categoryItems.map((item) => (
+                            <tr
+                              key={item.id}
+                              className="group hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {item.name}
+                                  </span>
+                                  <div className="flex gap-1 mt-0.5">
+                                    {item.hasVariants && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                                        VARIANTS
+                                      </span>
+                                    )}
+                                    {item.hasGroups && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                        COMBO
+                                      </span>
+                                    )}
+                                    {item.isPopular && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                        POPULAR
+                                      </span>
+                                    )}
+                                    {item.isVeg && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                        VEG
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-gray-600 uppercase text-xs font-medium tracking-wide">
+                                {getCategoryName(item.categoryId)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500 font-mono">
+                                {item.sku || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    item.itemType === "simple"
+                                      ? "bg-gray-100 text-gray-600"
+                                      : item.itemType === "variant_based"
+                                        ? "bg-purple-100 text-purple-700"
+                                        : "bg-blue-100 text-blue-700"
+                                  }`}
+                                >
+                                  {item.itemType === "simple"
+                                    ? "SIMPLE"
+                                    : item.itemType === "variant_based"
+                                      ? "VARIANT"
+                                      : "COMBO"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500 capitalize">
+                                {item.kitchenSection?.replace("_", " ")}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-bold text-gray-900 font-mono">
+                                ${getItemPrice(item)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <span
+                                    className={`inline-block w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${item.isAvailable ? "bg-green-500" : "bg-red-500"}`}
+                                    title={
+                                      item.isAvailable
+                                        ? "Available"
+                                        : "Unavailable"
+                                    }
+                                  ></span>
+                                  <button
+                                    onClick={() => handleEditClick(item)}
+                                    className="p-1.5 text-gray-500 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-all"
+                                    title="Edit"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                  {!isReadOnly && (
+                                    <button
+                                      onClick={() => setDeleteConfirm(item.id)}
+                                      className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                      title="Delete"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </button>
                                   )}
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 uppercase text-xs font-medium tracking-wide">{item.category?.replace('_', ' ')}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500">{item.sku || '-'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500">{item.taxGroup || 'VAT'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
-                              {item.hasDiscount || item.discountPercent ? <span className="text-green-600 font-bold">Yes</span> : 'No'}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
-                              {item.openPrice ? 'Yes' : 'No'}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                              {item.cost ? item.cost.toFixed(2) : '0.00'}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-bold text-gray-900 font-mono">
-                              {item.price.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <span className={`inline-block w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${item.isAvailable ? 'bg-green-500' : 'bg-red-500'}`} title={item.isAvailable ? "Available" : "Unavailable"}></span>
-                                <button
-                                  onClick={() => handleEditClick(item)}
-                                  className="p-1.5 text-gray-500 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-all"
-                                  title="Edit"
-                                >
-                                  <PencilIcon className="h-4 w-4" />
-                                </button>
-                                {!isReadOnly && (
-                                  <button
-                                    onClick={() => setDeleteConfirm(item.id)}
-                                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                    title="Delete"
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
+                              </td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile List View - Redesigned Grid */}
-              <div className="md:hidden overflow-auto flex-1 p-1 pb-24">
-                {Object.entries(groupedItems).map(([subcategory, items]) => (
-                  <React.Fragment key={subcategory}>
-                    {subcategory !== 'Other' && (
-                      <div className="px-1 py-2 text-xs font-black text-gray-400 uppercase tracking-widest mt-4 first:mt-0 flex items-center gap-2">
-                        <span className="w-1 h-3 bg-[#FF6A00] rounded-full"></span>
-                        {subcategory}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {items.map((item) => (
-                        <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full relative group active:scale-95 transition-transform duration-200">
-                          {/* Status Indicator */}
-                          <div className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full z-10 border-2 border-white shadow-sm ${item.isAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
-
-                          {/* Image Placeholder / Content */}
-                          <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center relative overflow-hidden">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <>
-                                <div className="text-gray-300 font-bold text-[10px] tracking-widest uppercase">No Image</div>
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                  <div className="text-white font-bold text-lg leading-none drop-shadow-sm">${item.price.toFixed(0)}</div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-
-                          <div className="p-3 flex flex-col flex-1">
-                            <h3 className="font-bold text-gray-800 text-sm leading-snug line-clamp-2 mb-1">{item.name}</h3>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {item.hasVariants && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                                  VARIANTS
-                                </span>
-                              )}
-                              {item.modifiers && item.modifiers.length > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                                  MODS
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[10px] text-gray-400 mb-2 truncate">{item.description}</p>
-
-                            <div className="mt-auto pt-2 border-t border-gray-50 flex items-center justify-between gap-2">
-                              <button
-                                onClick={() => handleEditClick(item)}
-                                className="flex-1 py-1.5 bg-orange-50 text-[#FF6A00] text-xs font-bold rounded text-center hover:bg-orange-100 transition-colors"
-                              >
-                                Edit
-                              </button>
-                              {!isReadOnly && (
-                                <button
-                                  onClick={() => setDeleteConfirm(item.id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                >
-                                  <TrashIcon className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* CONFIRMATION MODAL */}
+        {/* Delete Item Modal */}
         <ConfirmationModal
           isOpen={!!deleteConfirm}
           onClose={() => setDeleteConfirm(null)}
@@ -457,103 +591,46 @@ export default function AdminMenuPage() {
           message="Are you sure you want to delete this menu item? This action cannot be undone."
         />
 
+        {/* Delete Category Modal */}
         <ConfirmationModal
           isOpen={!!deleteCatConfirm}
           onClose={() => setDeleteCatConfirm(null)}
           onConfirm={executeDeleteCategory}
-          title="Delete Custom Category"
-          message={`Are you sure you want to delete the category "${deleteCatConfirm?.name}"? Items in it will need re-categorization.`}
+          title="Delete Category"
+          message={`Are you sure you want to delete "${deleteCatConfirm?.name}"? This will fail if there are items in this category.`}
         />
 
-        {/* CATEGORY MODAL */}
-        {isCategoryModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h3 className="font-bold text-gray-900">Add Category</h3>
-                <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
-              <form onSubmit={handleAddCategory} className="p-5 space-y-4">
-                {/* 1. Category Name */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category Name</label>
-                  <input
-                    required
-                    value={newCatLabel}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setNewCatLabel(val);
-                      // Auto-generate code if user hasn't typed one manually (heuristic: matches old auto-gen)
-                      // Or just always auto-gen for simplicity unless we desire complex logic. 
-                      // Let's simpler: Update name -> Update slug
-                      setNewCatName(val.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''));
-                    }}
-                    placeholder="e.g. Main Course"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm"
-                  />
-                </div>
-
-                {/* 2. Parent Category Selection */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Parent Category (Optional)</label>
-                  <div className="relative">
-                    <select
-                      value={newCatParent || ""}
-                      onChange={e => setNewCatParent(e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm appearance-none bg-white"
-                    >
-                      <option value="">None (Top Level)</option>
-                      {categories.filter(c => !c.parentId).map(c => (
-                        <option key={c.id} value={c.id}>{c.label}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">Select a parent if this is a sub-category (e.g. &quot;Steak&quot; under &quot;Main Course&quot;)</p>
-                </div>
-
-                {/* 3. Category Code (Slug) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category Code (Auto-generated)</label>
-                  <input
-                    required
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}
-                    placeholder="e.g. main_course"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] text-sm bg-gray-50 font-mono text-gray-600"
-                  />
-                </div>
-
-                <button type="submit" className="w-full py-2.5 bg-[#FF6A00] text-white rounded-lg font-bold hover:bg-[#FF6A00]/90 transition shadow-lg shadow-orange-500/20">
-                  Create Category
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* FORM DRAWER */}
+        {/* Menu Item Drawer */}
         <Drawer
           isOpen={isDrawerOpen}
           onClose={() => setIsDrawerOpen(false)}
           title={editingItem ? "Edit Menu Item" : "Add New Item"}
           size="lg"
         >
-          <MenuForm
+          <FoodMenuForm
             initialData={editingItem}
             onSuccess={() => {
               setIsDrawerOpen(false);
               fetchData();
-              showToast(editingItem ? 'Item updated' : 'Item created', 'success');
             }}
             onCancel={() => setIsDrawerOpen(false)}
           />
         </Drawer>
 
+        {/* Category Drawer */}
+        <Drawer
+          isOpen={isCategoryDrawerOpen}
+          onClose={() => setIsCategoryDrawerOpen(false)}
+          title={editingCategory ? "Edit Category" : "Add Category"}
+          size="lg"
+        >
+          <FoodCategoryForm
+            initialData={editingCategory}
+            onSubmit={handleCategorySubmit}
+            onCancel={() => setIsCategoryDrawerOpen(false)}
+            isSubmitting={isCategorySubmitting}
+          />
+        </Drawer>
       </main>
     </div>
   );

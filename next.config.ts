@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig & {
+  eslint?: { ignoreDuringBuilds?: boolean };
+} = {
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -72,6 +74,7 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: false,
   },
+  turbopack: {},
 };
 
 export default nextConfig;
