@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MagnifyingGlassIcon,
   CalendarIcon,
@@ -10,14 +10,20 @@ import {
   BoltIcon,
   UserIcon,
   ArrowDownTrayIcon,
-  CheckIcon
-} from '@heroicons/react/24/outline';
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 
-import { useAdminRole } from '@/context/AdminRoleContext';
-import { useToast } from '@/context/ToastContext';
-import { getFBOrdersSummary, voidFBOrder, changeOrderOwner, splitFBOrder, FoodOrder } from '@/lib/firestoreService';
+import { useAdminRole } from "@/context/AdminRoleContext";
+import { useToast } from "@/context/ToastContext";
+import {
+  getFBOrdersSummary,
+  voidFBOrder,
+  changeOrderOwner,
+  splitFBOrder,
+  FoodOrder,
+} from "@/lib/firestoreService";
 
-type OrderStatus = 'all' | 'running' | 'settled' | 'voided';
+type OrderStatus = "all" | "running" | "settled" | "voided";
 
 export default function OrderSummaryPage() {
   const { isReadOnly } = useAdminRole();
@@ -26,13 +32,13 @@ export default function OrderSummaryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return today.toISOString().split("T")[0];
   });
-  const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [showVoidModal, setShowVoidModal] = useState(false);
-  const [voidReason, setVoidReason] = useState('');
+  const [voidReason, setVoidReason] = useState("");
   const [orderToVoid, setOrderToVoid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,8 +53,8 @@ export default function OrderSummaryPage() {
       const data = await getFBOrdersSummary(date, statusFilter);
       setOrders(data);
     } catch (error) {
-      console.error('Error loading orders:', error);
-      showToast('Failed to load orders', 'error');
+      console.error("Error loading orders:", error);
+      showToast("Failed to load orders", "error");
     } finally {
       setLoading(false);
     }
@@ -57,25 +63,26 @@ export default function OrderSummaryPage() {
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return orders;
     const q = searchQuery.toLowerCase();
-    return orders.filter(order =>
-      order.orderNumber.toLowerCase().includes(q) ||
-      order.receiptNo?.toLowerCase().includes(q) ||
-      order.guestName.toLowerCase().includes(q) ||
-      order.roomNumber?.toLowerCase().includes(q)
+    return orders.filter(
+      (order) =>
+        order.orderNumber.toLowerCase().includes(q) ||
+        order.receiptNo?.toLowerCase().includes(q) ||
+        order.guestName.toLowerCase().includes(q) ||
+        order.roomName?.toLowerCase().includes(q),
     );
   }, [orders, searchQuery]);
 
   const stats = useMemo(() => {
     return {
       all: orders.length,
-      running: orders.filter(o => o.status === 'running').length,
-      settled: orders.filter(o => o.status === 'settled').length,
-      voided: orders.filter(o => o.status === 'voided').length,
+      running: orders.filter((o) => o.status === "running").length,
+      settled: orders.filter((o) => o.status === "settled").length,
+      voided: orders.filter((o) => o.status === "voided").length,
     };
   }, [orders]);
 
   const handleSelectOrder = (orderId: string) => {
-    setSelectedOrders(prev => {
+    setSelectedOrders((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(orderId)) {
         newSet.delete(orderId);
@@ -90,55 +97,62 @@ export default function OrderSummaryPage() {
     if (selectedOrders.size === filteredOrders.length) {
       setSelectedOrders(new Set());
     } else {
-      setSelectedOrders(new Set(filteredOrders.map(o => o.id)));
+      setSelectedOrders(new Set(filteredOrders.map((o) => o.id)));
     }
   };
 
   const handleVoid = async () => {
     if (!orderToVoid || !voidReason.trim()) {
-      showToast('Please provide a reason for voiding', 'error');
+      showToast("Please provide a reason for voiding", "error");
       return;
     }
     try {
       const success = await voidFBOrder(orderToVoid, voidReason);
       if (success) {
-        showToast('Order voided successfully', 'success');
+        showToast("Order voided successfully", "success");
         setShowVoidModal(false);
-        setVoidReason('');
+        setVoidReason("");
         setOrderToVoid(null);
         await loadOrders();
       } else {
-        showToast('Failed to void order', 'error');
+        showToast("Failed to void order", "error");
       }
     } catch (error) {
-      console.error('Error voiding order:', error);
-      showToast('Failed to void order', 'error');
+      console.error("Error voiding order:", error);
+      showToast("Failed to void order", "error");
     }
   };
 
   const handleReprintReceipt = (orderId: string) => {
     // TODO: Implement receipt printing
-    showToast('Receipt printing feature coming soon', 'info');
+    showToast("Receipt printing feature coming soon", "info");
   };
 
   const handleReprintKOT = (orderId: string) => {
     // TODO: Implement KOT printing
-    showToast('KOT printing feature coming soon', 'info');
+    showToast("KOT printing feature coming soon", "info");
   };
 
   const handleDownloadPDF = () => {
     // TODO: Implement PDF download
-    showToast('PDF download feature coming soon', 'info');
+    showToast("PDF download feature coming soon", "info");
   };
 
   const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   const formatTime = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   if (loading) {
@@ -151,13 +165,15 @@ export default function OrderSummaryPage() {
 
   return (
     <div className="space-y-8">
-
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Order Summary</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage and track all food & beverage orders</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Order Summary
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage and track all food & beverage orders
+          </p>
         </div>
       </div>
 
@@ -178,29 +194,32 @@ export default function OrderSummaryPage() {
           {/* Status Tabs */}
           <div className="flex items-center gap-1 border-b border-gray-200">
             <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${statusFilter === 'all'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              onClick={() => setStatusFilter("all")}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                statusFilter === "all"
+                  ? "text-[#FF6A00] border-b-2 border-[#FF6A00]"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               All {stats.all}
             </button>
             <button
-              onClick={() => setStatusFilter('running')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${statusFilter === 'running'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              onClick={() => setStatusFilter("running")}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                statusFilter === "running"
+                  ? "text-[#FF6A00] border-b-2 border-[#FF6A00]"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               Running {stats.running}
             </button>
             <button
-              onClick={() => setStatusFilter('settled')}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${statusFilter === 'settled'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              onClick={() => setStatusFilter("settled")}
+              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                statusFilter === "settled"
+                  ? "text-[#FF6A00] border-b-2 border-[#FF6A00]"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               Settled
               {stats.settled > 0 && (
@@ -210,11 +229,12 @@ export default function OrderSummaryPage() {
               )}
             </button>
             <button
-              onClick={() => setStatusFilter('voided')}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${statusFilter === 'voided'
-                  ? 'text-[#FF6A00] border-b-2 border-[#FF6A00]'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              onClick={() => setStatusFilter("voided")}
+              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                statusFilter === "voided"
+                  ? "text-[#FF6A00] border-b-2 border-[#FF6A00]"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
             >
               Voided
               {stats.voided > 0 && (
@@ -248,14 +268,17 @@ export default function OrderSummaryPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => showToast('Recall feature coming soon', 'info')}
+            onClick={() => showToast("Recall feature coming soon", "info")}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00] flex items-center gap-2"
           >
             <ArrowPathIcon className="h-4 w-4" />
             Recall
           </button>
           <button
-            onClick={() => selectedOrders.size > 0 && handleReprintReceipt(Array.from(selectedOrders)[0])}
+            onClick={() =>
+              selectedOrders.size > 0 &&
+              handleReprintReceipt(Array.from(selectedOrders)[0])
+            }
             disabled={selectedOrders.size === 0}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -263,7 +286,10 @@ export default function OrderSummaryPage() {
             Reprint Receipt
           </button>
           <button
-            onClick={() => selectedOrders.size > 0 && handleReprintKOT(Array.from(selectedOrders)[0])}
+            onClick={() =>
+              selectedOrders.size > 0 &&
+              handleReprintKOT(Array.from(selectedOrders)[0])
+            }
             disabled={selectedOrders.size === 0}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -286,7 +312,7 @@ export default function OrderSummaryPage() {
                 Void
               </button>
               <button
-                onClick={() => showToast('Split feature coming soon', 'info')}
+                onClick={() => showToast("Split feature coming soon", "info")}
                 disabled={selectedOrders.size === 0}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -294,7 +320,9 @@ export default function OrderSummaryPage() {
                 Split
               </button>
               <button
-                onClick={() => showToast('Change Owner feature coming soon', 'info')}
+                onClick={() =>
+                  showToast("Change Owner feature coming soon", "info")
+                }
                 disabled={selectedOrders.size === 0}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#FF6A00] transition-colors border-b-2 border-transparent hover:border-[#FF6A00] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -327,7 +355,10 @@ export default function OrderSummaryPage() {
                   <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+                      checked={
+                        selectedOrders.size === filteredOrders.length &&
+                        filteredOrders.length > 0
+                      }
                       onChange={handleSelectAll}
                       className="rounded border-gray-300 text-[#FF6A00] focus:ring-[#FF6A00]"
                     />
@@ -335,13 +366,27 @@ export default function OrderSummaryPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Order <span className="text-gray-400">▼</span>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt No</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">R/T No</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Receipt No
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    R/T No
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Guest Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -356,32 +401,40 @@ export default function OrderSummaryPage() {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.orderNumber}
+                      #{(order.orderNumber || "").replace(/^#/, "")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatTime(order.orderTime || order.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.receiptNo || '-'}
+                      {order.receiptNo
+                        ? `#${(order.receiptNo || "").replace(/^#/, "")}`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.rtNo || '-'}
+                      {order.rtNo || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                      {order.orderType?.replace('_', ' ') || 'Dine In'}
+                      {order.orderType?.replace("_", " ") || "Dine In"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.guestName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.userId || '-'}
+                      {order.userId || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${order.status === 'settled' ? 'bg-green-100 text-green-700' :
-                          order.status === 'running' ? 'bg-blue-100 text-blue-700' :
-                            order.status === 'voided' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                        }`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded ${
+                          order.status === "settled"
+                            ? "bg-green-100 text-green-700"
+                            : order.status === "running"
+                              ? "bg-blue-100 text-blue-700"
+                              : order.status === "voided"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {order.status}
                       </span>
                     </td>
@@ -397,7 +450,9 @@ export default function OrderSummaryPage() {
       {showVoidModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Void Order</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Void Order
+            </h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Reason for voiding
@@ -414,7 +469,7 @@ export default function OrderSummaryPage() {
               <button
                 onClick={() => {
                   setShowVoidModal(false);
-                  setVoidReason('');
+                  setVoidReason("");
                   setOrderToVoid(null);
                 }}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
@@ -434,4 +489,3 @@ export default function OrderSummaryPage() {
     </div>
   );
 }
-

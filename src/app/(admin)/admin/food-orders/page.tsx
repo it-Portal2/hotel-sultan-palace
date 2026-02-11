@@ -1,25 +1,80 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useAdminRole } from '@/context/AdminRoleContext';
-import { useToast } from '@/context/ToastContext';
-import { getFoodOrders, updateFoodOrder, FoodOrder } from '@/lib/firestoreService';
-import { processOrderInventoryDeduction } from '@/lib/inventoryService';
-import OrderStats from '@/components/admin/food-orders/OrderStats';
-import OrderFilters from '@/components/admin/food-orders/OrderFilters';
-import OrderList from '@/components/admin/food-orders/OrderList';
-import OrderDetailsModal from '@/components/admin/food-orders/OrderDetailsModal';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useMemo } from "react";
+import { useAdminRole } from "@/context/AdminRoleContext";
+import { useToast } from "@/context/ToastContext";
+import {
+  getFoodOrders,
+  updateFoodOrder,
+  FoodOrder,
+} from "@/lib/firestoreService";
+import { processOrderInventoryDeduction } from "@/lib/inventoryService";
+import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
+import {
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+
+const ITEMS_PER_PAGE = 10;
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Active" },
+  { value: "pending", label: "Pending" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "preparing", label: "Preparing" },
+  { value: "ready", label: "Ready" },
+  { value: "out_for_delivery", label: "Out for Delivery" },
+];
+
+const statusColors: Record<string, { bg: string; text: string; dot: string }> =
+  {
+    pending: {
+      bg: "bg-yellow-50 border-yellow-200",
+      text: "text-yellow-700",
+      dot: "bg-yellow-500",
+    },
+    confirmed: {
+      bg: "bg-blue-50 border-blue-200",
+      text: "text-blue-700",
+      dot: "bg-blue-500",
+    },
+    preparing: {
+      bg: "bg-orange-50 border-orange-200",
+      text: "text-orange-700",
+      dot: "bg-orange-500",
+    },
+    ready: {
+      bg: "bg-teal-50 border-teal-200",
+      text: "text-teal-700",
+      dot: "bg-teal-500",
+    },
+    out_for_delivery: {
+      bg: "bg-purple-50 border-purple-200",
+      text: "text-purple-700",
+      dot: "bg-purple-500",
+    },
+    delivered: {
+      bg: "bg-emerald-50 border-emerald-200",
+      text: "text-emerald-700",
+      dot: "bg-emerald-500",
+    },
+    cancelled: {
+      bg: "bg-red-50 border-red-200",
+      text: "text-red-700",
+      dot: "bg-red-500",
+    },
+  };
 
 export default function AdminFoodOrdersPage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
-  // State
+
   const [orders, setOrders] = useState<FoodOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<FoodOrder | null>(null);
 
   const loadOrders = async () => {
@@ -28,8 +83,8 @@ export default function AdminFoodOrdersPage() {
       const data = await getFoodOrders();
       setOrders(data);
     } catch (error) {
-      console.error('Error loading orders:', error);
-      showToast('Failed to load orders', 'error');
+      console.error("Error loading orders:", error);
+      showToast("Failed to load orders", "error");
     } finally {
       setLoading(false);
     }
@@ -40,92 +95,123 @@ export default function AdminFoodOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleStatusUpdate = async (orderId: string, status: FoodOrder['status']) => {
+  const handleStatusUpdate = async (
+    orderId: string,
+    status: FoodOrder["status"],
+  ) => {
     if (isReadOnly) return;
     try {
       await updateFoodOrder(orderId, { status });
-
-      // Optimistic update
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
+      );
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status });
       }
-
-
-      // TRIGGER INVENTORY DEDUCTION
-      if (status === 'delivered') {
+      if (status === "delivered") {
         try {
-          await processOrderInventoryDeduction(orderId, 'Admin User'); // In real app, pass current user name
-          showToast('Order delivered & Inventory deducted', 'success');
+          await processOrderInventoryDeduction(orderId, "Admin User");
+          showToast("Order delivered & Inventory deducted", "success");
         } catch (invError) {
           console.error("Inventory Deduction Failed:", invError);
-          showToast('Order delivered but Inventory update failed', 'warning');
+          showToast("Order delivered but Inventory update failed", "warning");
         }
       } else {
-        showToast(`Order status updated to ${status.replace('_', ' ')}`, 'success');
+        showToast(
+          `Order status updated to ${status.replace("_", " ")}`,
+          "success",
+        );
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
-      showToast('Failed to update order status', 'error');
-      // Revert if failed (optional, but good practice)
+      console.error("Error updating order status:", error);
+      showToast("Failed to update order status", "error");
       loadOrders();
     }
   };
 
-  const filteredOrders = useMemo(() => {
-    let filtered = orders;
+  const handleReprint = async (orderId: string) => {
+    try {
+      await updateFoodOrder(orderId, { reprintRequested: true } as any);
+      showToast("Print request sent to kitchen", "success");
+    } catch (error) {
+      console.error("Error requesting reprint:", error);
+      showToast("Failed to send print request", "error");
+    }
+  };
 
-    // 1. Filter: ONLY Active Orders
-    filtered = filtered.filter(o =>
-      ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
+  // Filter active orders only
+  const filteredOrders = useMemo(() => {
+    let filtered = orders.filter((o) =>
+      [
+        "pending",
+        "confirmed",
+        "preparing",
+        "ready",
+        "out_for_delivery",
+      ].includes(o.status),
     );
 
-    // 2. Filter by Status Dropdown
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => order.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((o) => o.status === statusFilter);
     }
 
-    // 3. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.orderNumber.toLowerCase().includes(q) ||
-        order.guestName.toLowerCase().includes(q) ||
-        order.guestPhone.includes(q) ||
-        (order.roomNumber && order.roomNumber.toLowerCase().includes(q))
+      filtered = filtered.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(q) ||
+          o.guestName.toLowerCase().includes(q) ||
+          o.guestEmail?.toLowerCase().includes(q) ||
+          (o.roomName && o.roomName.toLowerCase().includes(q)),
       );
     }
 
-    // Sort by Date Descending
-    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return filtered.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
   }, [orders, statusFilter, searchQuery]);
 
+  // Pagination
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / ITEMS_PER_PAGE),
+  );
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  // Stats
   const stats = useMemo(() => {
+    const active = orders.filter((o) =>
+      [
+        "pending",
+        "confirmed",
+        "preparing",
+        "ready",
+        "out_for_delivery",
+      ].includes(o.status),
+    );
     return {
-      activeOrders: orders.filter(o => ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)).length,
-      pendingOrders: orders.filter(o => o.status === 'pending').length,
-      readyOrders: orders.filter(o => o.status === 'ready').length,
+      total: active.length,
+      pending: active.filter((o) => o.status === "pending").length,
+      ready: active.filter((o) => o.status === "ready").length,
     };
   }, [orders]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-50 border-yellow-100';
-      case 'confirmed': return 'text-blue-600 bg-blue-50 border-blue-100';
-      case 'preparing': return 'text-orange-600 bg-orange-50 border-orange-100';
-      case 'ready': return 'text-teal-600 bg-teal-50 border-teal-100';
-      case 'out_for_delivery': return 'text-purple-600 bg-purple-50 border-purple-100';
-      case 'delivered': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-      case 'cancelled': return 'text-red-600 bg-red-50 border-red-100';
-      default: return 'text-gray-600 bg-gray-50 border-gray-100';
-    }
-  };
+  const sc = (status: string) => statusColors[status] || statusColors.pending;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50/50">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]" />
           <p className="text-sm text-gray-500 font-medium">Loading Orders...</p>
         </div>
       </div>
@@ -133,63 +219,263 @@ export default function AdminFoodOrdersPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-gray-50/30">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-20">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Service & Delivery Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Track ready orders and manage delivery/service to guests.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* New Order button moved to Kitchen Dashboard primarily */}
-        </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
+        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+          Service & Delivery Dashboard
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Track ready orders and manage delivery/service to guests.
+        </p>
       </div>
 
-      <div className="p-6 pb-2">
+      <div className="p-6 flex-1 flex flex-col min-h-0 space-y-4">
         {/* Stats */}
-        {/* Mapping to OrderStats props: total, pending, delivered (using ready as 3rd metric for active page?) */}
-        {/* Let's adjust simple metrics */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 shrink-0">
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Active</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeOrders}</p>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+              Total Active
+            </p>
+            <p className="text-2xl font-black text-gray-900 mt-1">
+              {stats.total}
+            </p>
           </div>
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pendingOrders}</p>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+              Pending
+            </p>
+            <p className="text-2xl font-black text-yellow-600 mt-1">
+              {stats.pending}
+            </p>
           </div>
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Kitchen Ready</p>
-            <p className="text-2xl font-bold text-teal-600 mt-1">{stats.readyOrders}</p>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+              Kitchen Ready
+            </p>
+            <p className="text-2xl font-black text-teal-600 mt-1">
+              {stats.ready}
+            </p>
           </div>
+        </div>
+
+        {/* Table Card */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Toolbar */}
+          <div className="px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 bg-gray-50/50">
+            <div className="relative flex-1 max-w-md">
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search orders..."
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] cursor-pointer"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap self-center">
+              {filteredOrders.length} orders
+            </span>
+          </div>
+
+          {/* Table */}
+          {paginatedOrders.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <p className="font-medium text-gray-500">No orders found</p>
+                <p className="text-xs mt-1">Try adjusting your filters</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50/80 sticky top-0 z-10 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      Order
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      Guest
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden md:table-cell">
+                      Location
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest hidden lg:table-cell">
+                      Items
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedOrders.map((order) => {
+                    const s = sc(order.status);
+                    return (
+                      <tr
+                        key={order.id}
+                        className="hover:bg-gray-50/80 transition-colors group"
+                      >
+                        <td className="px-4 py-3">
+                          <span className="font-bold text-gray-900 text-sm">
+                            #{(order.orderNumber || "").replace(/^#/, "")}
+                          </span>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {new Date(order.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                            {order.guestName}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <p className="text-sm text-gray-600 capitalize truncate max-w-[100px]">
+                            {order.roomName
+                              ? `Room ${order.roomName}`
+                              : (order.deliveryLocation || "N/A").replace(
+                                  "_",
+                                  " ",
+                                )}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 hidden lg:table-cell">
+                          <p className="text-sm text-gray-700 truncate max-w-[180px]">
+                            {order.items.length} item
+                            {order.items.length > 1 ? "s" : ""} —{" "}
+                            {order.items
+                              .slice(0, 2)
+                              .map((i) => i.name)
+                              .join(", ")}
+                            {order.items.length > 2 && "..."}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-bold text-gray-900">
+                            ${order.totalAmount?.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s.bg} ${s.text}`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${s.dot}`}
+                            />
+                            {(order.status || "pending").replace("_", " ")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="px-3 py-1.5 text-xs font-bold text-[#FF6A00] bg-[#FF6A00]/5 hover:bg-[#FF6A00]/10 rounded-lg transition-colors border border-[#FF6A00]/20"
+                          >
+                            Manage
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {filteredOrders.length > ITEMS_PER_PAGE && (
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/30">
+              <p className="text-xs text-gray-500">
+                Showing{" "}
+                <span className="font-bold">
+                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-bold">
+                  {Math.min(
+                    currentPage * ITEMS_PER_PAGE,
+                    filteredOrders.length,
+                  )}
+                </span>{" "}
+                of <span className="font-bold">{filteredOrders.length}</span>{" "}
+                results
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (p) =>
+                      p === 1 ||
+                      p === totalPages ||
+                      Math.abs(p - currentPage) <= 1,
+                  )
+                  .map((page, idx, arr) => (
+                    <React.Fragment key={page}>
+                      {idx > 0 && arr[idx - 1] !== page - 1 && (
+                        <span className="px-1 text-gray-300 text-xs">...</span>
+                      )}
+                      <button
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${
+                          currentPage === page
+                            ? "bg-[#FF6A00] text-white"
+                            : "text-gray-600 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <OrderFilters
-        query={searchQuery}
-        setQuery={setSearchQuery}
-        status={statusFilter}
-        setStatus={setStatusFilter}
-      />
-
-      {/* Table */}
-      <OrderList
-        orders={filteredOrders}
-        onSelect={setSelectedOrder} // Ensure this matches (val) => setSelectedOrder(val)
-        statusColors={getStatusColor}
-      />
-
-      {/* Modal / Drawer */}
+      {/* Modal */}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onUpdateStatus={handleStatusUpdate}
           isReadOnly={isReadOnly}
+          onReprint={handleReprint}
         />
       )}
     </div>
   );
 }
-

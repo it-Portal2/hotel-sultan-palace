@@ -17,6 +17,8 @@ import {
   arrayRemove,
   Timestamp,
   setDoc,
+  runTransaction,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -474,16 +476,20 @@ export interface FoodOrder {
   rtNo?: string; // R/T number
   bookingId?: string; // Link to booking if exists
   guestName: string;
-  guestPhone: string;
   guestEmail?: string;
-  roomNumber?: string; // Room number for delivery
+  roomName?: string; // Room name for delivery
+  tableNumber?: string; // Table number for dine-in
+  waiterName?: string;
+  preparedBy?: string;
+  printedBy?: string;
   deliveryLocation:
     | "in_room"
     | "restaurant"
     | "bar"
     | "beach_side"
     | "pool_side";
-  orderType: "dine_in" | "takeaway" | "room_service" | "delivery";
+  orderType: "walk_in" | "takeaway" | "room_service" | "delivery";
+  priority?: "urgent" | "normal";
   items: Array<{
     menuItemId: string;
     name: string;
@@ -497,9 +503,21 @@ export interface FoodOrder {
     station?: string;
   }>;
   subtotal: number;
-  tax?: number;
-  discount?: number;
+  // Calculated amounts (for easy access/querying)
+  tax: number;
+  discount: number;
   totalAmount: number;
+  // Detailed breakdown for editing/UI
+  taxDetails?: {
+    type: "percentage" | "fixed";
+    value: number; // e.g. 10 for 10%
+    amount: number; // The calculated tax amount
+  };
+  discountDetails?: {
+    type: "percentage" | "fixed";
+    value: number;
+    amount: number;
+  };
   status:
     | "pending"
     | "running"
@@ -526,9 +544,10 @@ export interface FoodOrder {
   orderTime?: Date; // Time when order was placed
   revenueRecorded?: boolean; // Track if revenue was added to daily stats
   inventoryDeducted?: boolean; // Track if stock was deducted
+  kotPrinted?: boolean; // true after first auto-print by kitchen listener
+  reprintRequested?: boolean; // true when staff clicks reprint button
+  receiptUrl?: string; // Firebase Storage URL of the receipt PDF
 }
-
-// ... (Rest of interfaces)
 
 // F&B Revenue and Sales Interfaces
 export interface FBRevenue {
@@ -4034,24 +4053,56 @@ export const getFoodOrder = async (id: string): Promise<FoodOrder | null> => {
   }
 };
 
+// ─── Atomic Counter Functions ───
+// Uses a Firestore counter document for guaranteed-unique sequential numbers.
+// Safe for concurrent use from web + mobile app.
+
+export const getNextOrderNumber = async (): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const counterRef = doc(db, "counters", "foodOrders");
+  const nextNum = await runTransaction(db, async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    let current = 0;
+    if (counterDoc.exists()) {
+      current = counterDoc.data().lastOrderNumber || 0;
+    }
+    const next = current + 1;
+    transaction.set(counterRef, { lastOrderNumber: next }, { merge: true });
+    return next;
+  });
+  return `ORD-${String(nextNum).padStart(4, "0")}`;
+};
+
+export const getNextReceiptNumber = async (): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const counterRef = doc(db, "counters", "foodOrders");
+  const nextNum = await runTransaction(db, async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+    let current = 0;
+    if (counterDoc.exists()) {
+      current = counterDoc.data().lastReceiptNumber || 0;
+    }
+    const next = current + 1;
+    transaction.set(counterRef, { lastReceiptNumber: next }, { merge: true });
+    return next;
+  });
+  return `REC-${String(nextNum).padStart(4, "0")}`;
+};
+
 export const createFoodOrder = async (
   data: Omit<FoodOrder, "id" | "orderNumber" | "createdAt" | "updatedAt">,
-): Promise<string | null> => {
+): Promise<{ id: string; orderNumber: string; receiptNo: string } | null> => {
   if (!db) return null;
   try {
-    // Generate order number
-    const ordersRef = collection(db, "foodOrders");
-    const ordersSnap = await getDocs(
-      query(ordersRef, orderBy("createdAt", "desc")),
-    );
-    const orderCount = ordersSnap.size;
-    const orderNumber = `ORD-${String(orderCount + 1).padStart(4, "0")}`;
+    // Generate guaranteed-unique sequential order & receipt numbers
+    const orderNumber = await getNextOrderNumber();
+    const receiptNo = await getNextReceiptNumber();
 
     // AUTOMATIC BOOKING LINKING
-    // If roomNumber is provided but no bookingId, try to find the active booking
-    if (data.roomNumber && !data.bookingId) {
+    // If roomName is provided but no bookingId, try to find the active booking
+    if (data.roomName && !data.bookingId) {
       try {
-        const roomStatus = await getRoomStatus(data.roomNumber);
+        const roomStatus = await getRoomStatus(data.roomName);
         if (
           roomStatus &&
           roomStatus.status === "occupied" &&
@@ -4059,7 +4110,7 @@ export const createFoodOrder = async (
         ) {
           data.bookingId = roomStatus.currentBookingId;
           console.log(
-            `Auto-linked Order to Booking: ${roomStatus.currentBookingId} for Room ${data.roomNumber}`,
+            `Auto-linked Order to Booking: ${roomStatus.currentBookingId} for Room ${data.roomName}`,
           );
         }
       } catch (err) {
@@ -4068,13 +4119,16 @@ export const createFoodOrder = async (
     }
 
     // Remove undefined values - Firestore doesn't accept undefined
-    const cleanData: any = { orderNumber };
+    const cleanData: any = {};
     Object.keys(data).forEach((key) => {
       const value = (data as any)[key];
       if (value !== undefined) {
         cleanData[key] = value;
       }
     });
+    // Server-generated values — set AFTER spread to prevent client overwrite
+    cleanData.orderNumber = orderNumber;
+    cleanData.receiptNo = receiptNo;
 
     const c = collection(db, "foodOrders");
     const dr = await addDoc(c, {
@@ -4130,7 +4184,7 @@ export const createFoodOrder = async (
       }
     }
 
-    return dr.id;
+    return { id: dr.id, orderNumber, receiptNo };
   } catch (e) {
     console.error("Error creating food order:", e);
     return null;
