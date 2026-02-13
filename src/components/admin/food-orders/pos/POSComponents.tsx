@@ -52,6 +52,7 @@ export interface POSItem {
   images?: string[]; // Multiple images for carousel
   category?: string;
   station?: string;
+  kitchenSection?: string;
   sku?: string; // Stock Keeping Unit from menu item
   // Variant support
   itemType?: "simple" | "variant_based" | "complex_combo";
@@ -618,6 +619,11 @@ interface POSCartProps {
   setOrderType: (
     val: "walk_in" | "takeaway" | "delivery" | "room_service",
   ) => void;
+  // Bar Specific
+  menuType: "food" | "bar";
+  barLocation?: string;
+  setBarLocation?: (val: string) => void;
+  submitLabel?: string;
 }
 
 export function POSCart({
@@ -674,6 +680,10 @@ export function POSCart({
   discountAmount,
   orderType,
   setOrderType,
+  menuType,
+  barLocation,
+  setBarLocation,
+  submitLabel = "Place Order",
 }: POSCartProps) {
   const [showGuestResults, setShowGuestResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -941,6 +951,24 @@ export function POSCart({
               <MapPinIcon className="h-3 w-3" />
               Order & Location
             </div>
+
+            {/* Bar Location (Only for Bar Menu) */}
+            {menuType === "bar" && setBarLocation && (
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-700">
+                  Bar Location <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={barLocation}
+                  onChange={(e) => setBarLocation(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="main_bar">Main Bar</option>
+                  <option value="beach_bar">Beach Bar</option>
+                </select>
+              </div>
+            )}
 
             {/* Delivery Location */}
             <div className="space-y-1">
@@ -1391,7 +1419,7 @@ export function POSCart({
                 Processing...
               </>
             ) : (
-              "Place Order"
+              submitLabel
             )}
           </button>
         </div>
@@ -1421,20 +1449,15 @@ export function MenuBrowser({
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [detailItem, setDetailItem] = useState<POSItem | null>(null);
-  const [activeTab, setActiveTab] = useState<"food" | "beverages">("food");
+
   const itemsPerPage = 14;
 
   const filteredItems = useMemo(
     () =>
-      items
-        .filter((item) => {
-          if (activeTab === "beverages") return item.station === "bar";
-          return item.station !== "bar";
-        })
-        .filter((item) =>
-          item.name.toLowerCase().includes(search.toLowerCase()),
-        ),
-    [items, search, activeTab],
+      items.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [items, search],
   );
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const paginatedItems = filteredItems.slice(
@@ -1444,77 +1467,17 @@ export function MenuBrowser({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeTab]);
-
-  // Count items per tab
-  const foodCount = useMemo(
-    () => items.filter((i) => i.station !== "bar").length,
-    [items],
-  );
-  const bevCount = useMemo(
-    () => items.filter((i) => i.station === "bar").length,
-    [items],
-  );
+  }, [search]);
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 shrink-0">
-        <div className="flex">
-          <button
-            onClick={() => setActiveTab("food")}
-            className={`flex-1 py-3 text-sm font-semibold text-center transition-colors relative flex items-center justify-center gap-2 ${
-              activeTab === "food"
-                ? "text-[#FF6A00]"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Food Items
-            <span
-              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                activeTab === "food"
-                  ? "bg-orange-100 text-[#FF6A00]"
-                  : "bg-gray-100 text-gray-500"
-              }`}
-            >
-              {foodCount}
-            </span>
-            {activeTab === "food" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6A00]" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("beverages")}
-            className={`flex-1 py-3 text-sm font-semibold text-center transition-colors relative flex items-center justify-center gap-2 ${
-              activeTab === "beverages"
-                ? "text-[#FF6A00]"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Beverages
-            <span
-              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                activeTab === "beverages"
-                  ? "bg-orange-100 text-[#FF6A00]"
-                  : "bg-gray-100 text-gray-500"
-              }`}
-            >
-              {bevCount}
-            </span>
-            {activeTab === "beverages" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6A00]" />
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Search */}
       <div className="p-4 bg-white border-b border-gray-200 shrink-0">
         <div className="relative max-w-md">
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder={`Search ${activeTab === "food" ? "food items" : "beverages"}...`}
+            placeholder="Search items..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:border-[#FF6A00] focus:ring-2 focus:ring-orange-100 transition-all"
@@ -1642,9 +1605,7 @@ export function MenuBrowser({
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
             <MagnifyingGlassIcon className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">
-              No {activeTab === "food" ? "food" : "beverage"} items found
-            </p>
+            <p className="text-gray-500 font-medium">No items found</p>
             <p className="text-xs text-gray-400 mt-1">
               Try adjusting your search
             </p>

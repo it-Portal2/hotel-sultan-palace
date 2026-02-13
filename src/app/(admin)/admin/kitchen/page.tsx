@@ -8,8 +8,8 @@ import Link from "next/link";
 import {
   getKitchenOrders,
   updateFoodOrder,
-  FoodOrder,
-} from "@/lib/firestoreService";
+} from "@/lib/services/fbOrderService";
+import type { FoodOrder } from "@/lib/firestoreService";
 import { ClockIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useToast } from "@/context/ToastContext";
 
@@ -65,10 +65,10 @@ export default function KitchenDashboardPage() {
           })
           .filter(
             (order) =>
-              order.status === "pending" ||
-              order.status === "confirmed" ||
-              order.status === "preparing" ||
-              order.status === "ready",
+              order.menuType !== "bar" && // Hide bar orders
+              (order.status === "confirmed" || // Hide pending
+                order.status === "preparing" ||
+                order.status === "ready"),
           );
 
         setOrders(ordersData);

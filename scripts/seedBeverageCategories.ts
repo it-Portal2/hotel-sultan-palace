@@ -45,8 +45,8 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
-// Collection name for food categories (beverages go in the same collection)
-const COLLECTION_NAME = "foodCategories";
+// Collection name for bar categories (separate from foodCategories)
+const COLLECTION_NAME = "barCategories";
 
 // Category interface
 interface Category {

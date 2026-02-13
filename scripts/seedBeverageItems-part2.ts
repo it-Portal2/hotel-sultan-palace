@@ -19,7 +19,7 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-const COLLECTION = "foodMenuItems";
+const COLLECTION = "barMenuItems";
 
 const beverageItems = [
   // ===========================================================================

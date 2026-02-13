@@ -325,7 +325,10 @@ export async function processReceipt(
   return uploadReceiptToStorage(data);
 }
 
-import { getNextOrderNumber, getNextReceiptNumber } from "./firestoreService";
+import {
+  getNextOrderNumber,
+  getNextReceiptNumber,
+} from "./services/fbOrderService";
 
 export async function generateReceiptNumber(): Promise<string> {
   return await getNextReceiptNumber();

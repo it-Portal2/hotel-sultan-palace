@@ -8,6 +8,9 @@ export type AvailabilityType =
 
 export type CategoryType = "food" | "bar";
 
+/** Distinguishes food vs bar orders. Shared across services & UI. */
+export type MenuType = "food" | "bar";
+
 export interface FoodCategory {
   id: string;
   name: string;
@@ -222,3 +225,117 @@ export const getDefaultGroupOption = (): MenuItemGroupOption => ({
   priceMod: 0,
   isAvailable: true,
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ORDER TYPES (moved from firestoreService.ts)
+// ═════════════════════════════════════════════════════════════════════════════
+
+export interface FoodOrder {
+  id: string;
+  orderNumber: string;
+  receiptNo?: string;
+  rtNo?: string;
+  bookingId?: string;
+  guestName: string;
+  guestEmail?: string;
+  roomName?: string;
+  tableNumber?: string;
+  waiterName?: string;
+  preparedBy?: string;
+  printedBy?: string;
+  deliveryLocation:
+    | "in_room"
+    | "restaurant"
+    | "bar"
+    | "beach_side"
+    | "pool_side";
+  orderType: "walk_in" | "takeaway" | "room_service" | "delivery";
+  menuType?: MenuType;
+  barLocation?: "main_bar" | "beach_bar";
+  priority?: "urgent" | "normal";
+  items: Array<{
+    menuItemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    specialInstructions?: string;
+    variant?: { name: string; price: number };
+    selectedModifiers?: Array<{ name: string; price: number }>;
+    category?: string;
+    station?: string;
+  }>;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  totalAmount: number;
+  taxDetails?: {
+    type: "percentage" | "fixed";
+    value: number;
+    amount: number;
+  };
+  discountDetails?: {
+    type: "percentage" | "fixed";
+    value: number;
+    amount: number;
+  };
+  status:
+    | "pending"
+    | "running"
+    | "settled"
+    | "voided"
+    | "confirmed"
+    | "preparing"
+    | "ready"
+    | "out_for_delivery"
+    | "delivered"
+    | "cancelled";
+  kitchenStatus: "received" | "cooking" | "ready" | "delivered";
+  scheduledDeliveryTime?: Date;
+  estimatedPreparationTime: number;
+  actualDeliveryTime?: Date;
+  paymentStatus: "pending" | "paid" | "refunded";
+  paymentMethod?: string;
+  paidAmount?: number;
+  dueAmount?: number;
+  userId?: string;
+  ownerId?: string;
+  notes?: string;
+  voidReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  orderTime?: Date;
+  revenueRecorded?: boolean;
+  inventoryDeducted?: boolean;
+  kotPrinted?: boolean;
+  reprintRequested?: boolean;
+  receiptUrl?: string;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// REVENUE TYPES (moved from firestoreService.ts)
+// ═════════════════════════════════════════════════════════════════════════════
+
+export interface FBRevenue {
+  id: string;
+  date: Date;
+  totalSales: number;
+  totalPayment: number;
+  totalOrders: number;
+  totalDiscount: number;
+  totalCustomers: number;
+  totalVoid: number;
+  orderTypeSummary: Record<string, number>;
+  paymentSummary: Record<string, number>;
+  categorySummary: Record<string, number>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FBWeeklyRevenue {
+  weekNumber: number;
+  startDate: Date;
+  endDate: Date;
+  totalRevenue: number;
+  orders: number;
+  averageOrderValue: number;
+}

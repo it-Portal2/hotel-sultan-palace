@@ -3,17 +3,17 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAdminRole } from "@/context/AdminRoleContext";
 import { useToast } from "@/context/ToastContext";
-import {
-  getFoodOrders,
-  updateFoodOrder,
-  FoodOrder,
-} from "@/lib/firestoreService";
+import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
+import type { FoodOrder } from "@/lib/firestoreService";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
+import Link from "next/link";
 import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PrinterIcon,
+  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 
 const ITEMS_PER_PAGE = 10;
@@ -386,12 +386,40 @@ export default function AdminFoodOrdersPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="px-3 py-1.5 text-xs font-bold text-[#FF6A00] bg-[#FF6A00]/5 hover:bg-[#FF6A00]/10 rounded-lg transition-colors border border-[#FF6A00]/20"
-                          >
-                            Manage
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Print */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReprint(order.id);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                              title="Print Request"
+                            >
+                              <PrinterIcon className="h-4 w-4" />
+                            </button>
+
+                            {/* Edit */}
+                            {!isReadOnly &&
+                              order.status !== "delivered" &&
+                              order.status !== "cancelled" && (
+                                <Link
+                                  href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Order"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Link>
+                              )}
+
+                            <button
+                              onClick={() => setSelectedOrder(order)}
+                              className="px-3 py-1.5 text-xs font-bold text-[#FF6A00] bg-[#FF6A00]/5 hover:bg-[#FF6A00]/10 rounded-lg transition-colors border border-[#FF6A00]/20"
+                            >
+                              Manage
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

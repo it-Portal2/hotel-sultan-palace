@@ -17,7 +17,8 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { FoodOrder, updateFoodOrder } from "@/lib/firestoreService";
+import type { FoodOrder } from "@/lib/types/foodMenu";
+import { updateFoodOrder } from "@/lib/services/fbOrderService";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import { useAdminRole } from "@/context/AdminRoleContext";
 

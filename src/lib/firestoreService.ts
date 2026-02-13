@@ -21,6 +21,7 @@ import {
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import type { FoodOrder, FBRevenue, FBWeeklyRevenue } from "./types/foodMenu";
 
 // Interfaces
 export type SuiteType = string;
@@ -468,112 +469,13 @@ export interface MenuCategory {
   updatedAt: Date;
 }
 
-// Food Order Interface
-export interface FoodOrder {
-  id: string;
-  orderNumber: string; // Unique order number like "ORD-001"
-  receiptNo?: string; // Receipt number
-  rtNo?: string; // R/T number
-  bookingId?: string; // Link to booking if exists
-  guestName: string;
-  guestEmail?: string;
-  roomName?: string; // Room name for delivery
-  tableNumber?: string; // Table number for dine-in
-  waiterName?: string;
-  preparedBy?: string;
-  printedBy?: string;
-  deliveryLocation:
-    | "in_room"
-    | "restaurant"
-    | "bar"
-    | "beach_side"
-    | "pool_side";
-  orderType: "walk_in" | "takeaway" | "room_service" | "delivery";
-  priority?: "urgent" | "normal";
-  items: Array<{
-    menuItemId: string;
-    name: string;
-    price: number;
-    quantity: number;
-    specialInstructions?: string;
-    // New: Selected Variant & Modifiers
-    variant?: { name: string; price: number };
-    selectedModifiers?: Array<{ name: string; price: number }>;
-    category?: string;
-    station?: string;
-  }>;
-  subtotal: number;
-  // Calculated amounts (for easy access/querying)
-  tax: number;
-  discount: number;
-  totalAmount: number;
-  // Detailed breakdown for editing/UI
-  taxDetails?: {
-    type: "percentage" | "fixed";
-    value: number; // e.g. 10 for 10%
-    amount: number; // The calculated tax amount
-  };
-  discountDetails?: {
-    type: "percentage" | "fixed";
-    value: number;
-    amount: number;
-  };
-  status:
-    | "pending"
-    | "running"
-    | "settled"
-    | "voided"
-    | "confirmed"
-    | "preparing"
-    | "ready"
-    | "out_for_delivery"
-    | "delivered"
-    | "cancelled";
-  kitchenStatus: "received" | "cooking" | "ready" | "delivered";
-  scheduledDeliveryTime?: Date; // When customer wants delivery
-  estimatedPreparationTime: number; // in minutes
-  actualDeliveryTime?: Date;
-  paymentStatus: "pending" | "paid" | "refunded";
-  paymentMethod?: string;
-  userId?: string; // User who created the order
-  ownerId?: string; // Order owner (for change owner feature)
-  notes?: string;
-  voidReason?: string; // Reason for voiding
-  createdAt: Date;
-  updatedAt: Date;
-  orderTime?: Date; // Time when order was placed
-  revenueRecorded?: boolean; // Track if revenue was added to daily stats
-  inventoryDeducted?: boolean; // Track if stock was deducted
-  kotPrinted?: boolean; // true after first auto-print by kitchen listener
-  reprintRequested?: boolean; // true when staff clicks reprint button
-  receiptUrl?: string; // Firebase Storage URL of the receipt PDF
-}
-
-// F&B Revenue and Sales Interfaces
-export interface FBRevenue {
-  id: string;
-  date: Date;
-  totalSales: number;
-  totalPayment: number;
-  totalOrders: number;
-  totalDiscount: number;
-  totalCustomers: number;
-  totalVoid: number;
-  orderTypeSummary: Record<string, number>; // e.g., { 'dine_in': 100, 'takeaway': 50 }
-  paymentSummary: Record<string, number>; // e.g., { 'cash': 200, 'card': 300 }
-  categorySummary: Record<string, number>; // Sales by category
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface FBWeeklyRevenue {
-  weekNumber: number;
-  startDate: Date;
-  endDate: Date;
-  totalRevenue: number;
-  orders: number;
-  averageOrderValue: number;
-}
+// F&B types — canonical source: types/foodMenu.ts
+export type {
+  FoodOrder,
+  FBRevenue,
+  FBWeeklyRevenue,
+  MenuType,
+} from "./types/foodMenu";
 
 // Guest Service Interface
 export interface GuestService {
@@ -4005,259 +3907,20 @@ export const updateMenuItemsStatus = async (
 };
 
 // Food Orders CRUD Operations
-export const getFoodOrders = async (
-  status?: FoodOrder["status"],
-): Promise<FoodOrder[]> => {
-  if (!db) return [];
-  try {
-    const c = collection(db, "foodOrders");
-    const qy = query(c, orderBy("createdAt", "desc"));
-    const snap = await getDocs(qy);
-    let orders = snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        ...data,
-        scheduledDeliveryTime: data.scheduledDeliveryTime?.toDate(),
-        actualDeliveryTime: data.actualDeliveryTime?.toDate(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as FoodOrder;
-    });
-    if (status) orders = orders.filter((o) => o.status === status);
-    return orders;
-  } catch (e) {
-    console.error("Error fetching food orders:", e);
-    return [];
-  }
-};
+// ═════════════════════════════════════════════════════════════════════════════
+// FOOD ORDER FUNCTIONS (delegated to fbOrderService)
+// ═════════════════════════════════════════════════════════════════════════════
 
-export const getFoodOrder = async (id: string): Promise<FoodOrder | null> => {
-  if (!db) return null;
-  try {
-    const r = doc(db, "foodOrders", id);
-    const s = await getDoc(r);
-    if (!s.exists()) return null;
-    const data = s.data();
-    return {
-      id: s.id,
-      ...data,
-      scheduledDeliveryTime: data.scheduledDeliveryTime?.toDate(),
-      actualDeliveryTime: data.actualDeliveryTime?.toDate(),
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
-    } as FoodOrder;
-  } catch (e) {
-    console.error("Error getting food order:", e);
-    return null;
-  }
-};
-
-// ─── Atomic Counter Functions ───
-// Uses a Firestore counter document for guaranteed-unique sequential numbers.
-// Safe for concurrent use from web + mobile app.
-
-export const getNextOrderNumber = async (): Promise<string> => {
-  if (!db) throw new Error("Firestore not initialized");
-  const counterRef = doc(db, "counters", "foodOrders");
-  const nextNum = await runTransaction(db, async (transaction) => {
-    const counterDoc = await transaction.get(counterRef);
-    let current = 0;
-    if (counterDoc.exists()) {
-      current = counterDoc.data().lastOrderNumber || 0;
-    }
-    const next = current + 1;
-    transaction.set(counterRef, { lastOrderNumber: next }, { merge: true });
-    return next;
-  });
-  return `ORD-${String(nextNum).padStart(4, "0")}`;
-};
-
-export const getNextReceiptNumber = async (): Promise<string> => {
-  if (!db) throw new Error("Firestore not initialized");
-  const counterRef = doc(db, "counters", "foodOrders");
-  const nextNum = await runTransaction(db, async (transaction) => {
-    const counterDoc = await transaction.get(counterRef);
-    let current = 0;
-    if (counterDoc.exists()) {
-      current = counterDoc.data().lastReceiptNumber || 0;
-    }
-    const next = current + 1;
-    transaction.set(counterRef, { lastReceiptNumber: next }, { merge: true });
-    return next;
-  });
-  return `REC-${String(nextNum).padStart(4, "0")}`;
-};
-
-export const createFoodOrder = async (
-  data: Omit<FoodOrder, "id" | "orderNumber" | "createdAt" | "updatedAt">,
-): Promise<{ id: string; orderNumber: string; receiptNo: string } | null> => {
-  if (!db) return null;
-  try {
-    // Generate guaranteed-unique sequential order & receipt numbers
-    const orderNumber = await getNextOrderNumber();
-    const receiptNo = await getNextReceiptNumber();
-
-    // AUTOMATIC BOOKING LINKING
-    // If roomName is provided but no bookingId, try to find the active booking
-    if (data.roomName && !data.bookingId) {
-      try {
-        const roomStatus = await getRoomStatus(data.roomName);
-        if (
-          roomStatus &&
-          roomStatus.status === "occupied" &&
-          roomStatus.currentBookingId
-        ) {
-          data.bookingId = roomStatus.currentBookingId;
-          console.log(
-            `Auto-linked Order to Booking: ${roomStatus.currentBookingId} for Room ${data.roomName}`,
-          );
-        }
-      } catch (err) {
-        console.warn("Failed to auto-link booking:", err);
-      }
-    }
-
-    // Remove undefined values - Firestore doesn't accept undefined
-    const cleanData: any = {};
-    Object.keys(data).forEach((key) => {
-      const value = (data as any)[key];
-      if (value !== undefined) {
-        cleanData[key] = value;
-      }
-    });
-    // Server-generated values — set AFTER spread to prevent client overwrite
-    cleanData.orderNumber = orderNumber;
-    cleanData.receiptNo = receiptNo;
-
-    const c = collection(db, "foodOrders");
-    const dr = await addDoc(c, {
-      ...cleanData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      revenueRecorded: false, // Default to false
-    });
-
-    // Update booking if bookingId exists
-    if (data.bookingId) {
-      const booking = await getBooking(data.bookingId);
-      if (booking) {
-        const foodOrderIds = booking.foodOrderIds || [];
-        // Only update if not already linked (though create should be unique)
-        if (!foodOrderIds.includes(dr.id)) {
-          const currentTotal = booking.totalAmount || 0;
-          // If the order is "charged" to room, we should add it.
-          // Usually creation implies a charge unless paid immediately by cash?
-          // The folio logic sums ALL valid orders.
-          // However, if it's "dine-in" and paid by cash, it might not go to room bill?
-          // But here we are just linking it. The folio viewer calculates the total based on linked items.
-          // The CRITICAL part is that `booking.totalAmount` is often used as a "source of truth" for the total bill value in some views.
-          // So we should increment it.
-          // Note: Ensure we don't double count if we update it later. But create is a safe place.
-          const orderTotal = data.totalAmount || 0;
-
-          await updateBooking(data.bookingId, {
-            foodOrderIds: [...foodOrderIds, dr.id],
-            totalAmount: currentTotal + orderTotal,
-            updatedAt: new Date(),
-          });
-
-          // AUTO-PAYMENT TRANSACTION
-          if (
-            data.paymentStatus === "paid" &&
-            data.paymentMethod &&
-            data.paymentMethod !== "Room Charge"
-          ) {
-            await addTransaction({
-              bookingId: data.bookingId,
-              amount: orderTotal,
-              type: "payment",
-              category: "F&B",
-              description: `F&B Payment: ${orderNumber} (${data.paymentMethod})`,
-              code: data.paymentMethod.toUpperCase(),
-              userId: data.userId || "POS",
-              reference: orderNumber,
-              date: new Date(),
-            });
-          }
-        }
-      }
-    }
-
-    return { id: dr.id, orderNumber, receiptNo };
-  } catch (e) {
-    console.error("Error creating food order:", e);
-    return null;
-  }
-};
-
-export const updateFoodOrder = async (
-  id: string,
-  data: Partial<FoodOrder>,
-): Promise<boolean> => {
-  if (!db) return false;
-  try {
-    // Check if we need to record revenue (Status changed to delivered/paid)
-    if (data.status === "delivered" || data.paymentStatus === "paid") {
-      const currentOrder = await getFoodOrder(id);
-      if (currentOrder && !currentOrder.revenueRecorded) {
-        // Record Revenue
-        await updateDailyFBRevenue(new Date(), {
-          ...currentOrder,
-          ...data,
-        } as FoodOrder);
-        data.revenueRecorded = true;
-        console.log("Revenue Recorded for Order:", id);
-      }
-    }
-
-    // Remove undefined values - Firestore doesn't accept undefined
-    const cleanData: any = {};
-    Object.keys(data).forEach((key) => {
-      const value = (data as any)[key];
-      if (value !== undefined) {
-        cleanData[key] = value;
-      }
-    });
-
-    const r = doc(db, "foodOrders", id);
-    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
-    return true;
-  } catch (e) {
-    console.error("Error updating food order:", e);
-    return false;
-  }
-};
-
-export const deleteFoodOrder = async (id: string): Promise<boolean> => {
-  if (!db) return false;
-  try {
-    const r = doc(db, "foodOrders", id);
-    await deleteDoc(r);
-    return true;
-  } catch (e) {
-    console.error("Error deleting food order:", e);
-    return false;
-  }
-};
-
-// Get active food orders for kitchen (pending, confirmed, preparing)
-export const getKitchenOrders = async (): Promise<FoodOrder[]> => {
-  if (!db) return [];
-  try {
-    const orders = await getFoodOrders();
-    return orders.filter(
-      (o) =>
-        o.status === "pending" ||
-        o.status === "confirmed" ||
-        o.status === "preparing" ||
-        o.status === "ready",
-    );
-  } catch (e) {
-    console.error("Error fetching kitchen orders:", e);
-    return [];
-  }
-};
+export {
+  getFoodOrders,
+  getFoodOrder,
+  getNextOrderNumber,
+  getNextReceiptNumber,
+  createFoodOrder,
+  updateFoodOrder,
+  deleteFoodOrder,
+  getKitchenOrders,
+} from "./services/fbOrderService";
 
 // Guest Services CRUD Operations
 export const getGuestServices = async (
@@ -7181,257 +6844,25 @@ export const getAllActiveCoupons = async (): Promise<ActiveCoupon[]> => {
 };
 
 // ==================== Food Menu Management ====================
+// Delegated to fbMenuService
 
-import type {
+export {
+  getFoodCategories,
+  getFoodCategory,
+  createFoodCategory,
+  updateFoodCategory,
+  deleteFoodCategory,
+  getFoodMenuItems,
+  getFoodMenuItem,
+  createFoodMenuItem,
+  updateFoodMenuItem,
+  deleteFoodMenuItem,
+} from "./services/fbMenuService";
+
+// Export types
+export type {
   FoodCategory,
   FoodMenuItem,
   MenuItemVariant,
   MenuItemGroup,
 } from "./types/foodMenu";
-
-export type { FoodCategory, FoodMenuItem, MenuItemVariant, MenuItemGroup };
-
-export const getFoodCategories = async (): Promise<FoodCategory[]> => {
-  if (!db) return [];
-  try {
-    const ref = collection(db, "foodCategories");
-    const q = query(ref, orderBy("sortOrder", "asc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-    })) as FoodCategory[];
-  } catch (error) {
-    console.error("Error fetching food categories:", error);
-    return [];
-  }
-};
-
-export const getFoodCategory = async (
-  id: string,
-): Promise<FoodCategory | null> => {
-  if (!db || !id) return null;
-  try {
-    const docRef = doc(db, "foodCategories", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      ...data,
-      createdAt: data.createdAt?.toDate?.() || new Date(),
-      updatedAt: data.updatedAt?.toDate?.() || new Date(),
-    } as FoodCategory;
-  } catch (error) {
-    console.error("Error fetching food category:", error);
-    return null;
-  }
-};
-
-export const createFoodCategory = async (
-  data: Partial<FoodCategory>,
-): Promise<string | null> => {
-  if (!db) return null;
-  try {
-    const slug =
-      data.name
-        ?.toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "";
-    const id = `cat_${slug}`;
-    const docRef = doc(db, "foodCategories", id);
-
-    const existing = await getDoc(docRef);
-    if (existing.exists()) {
-      throw new Error("Category with this name already exists");
-    }
-
-    const categoryData = {
-      ...data,
-      id,
-      isParentCategory: !data.parentCategoryId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(docRef, categoryData);
-    return id;
-  } catch (error) {
-    console.error("Error creating food category:", error);
-    throw error;
-  }
-};
-
-export const updateFoodCategory = async (
-  id: string,
-  data: Partial<FoodCategory>,
-): Promise<boolean> => {
-  if (!db || !id) return false;
-  try {
-    const docRef = doc(db, "foodCategories", id);
-    const updateData = {
-      ...data,
-      isParentCategory: !data.parentCategoryId,
-      updatedAt: serverTimestamp(),
-    };
-    delete (updateData as any).id;
-    delete (updateData as any).createdAt;
-
-    await updateDoc(docRef, updateData);
-    return true;
-  } catch (error) {
-    console.error("Error updating food category:", error);
-    throw error;
-  }
-};
-
-export const deleteFoodCategory = async (id: string): Promise<boolean> => {
-  if (!db || !id) return false;
-  try {
-    const childrenQuery = query(
-      collection(db, "foodCategories"),
-      where("parentCategoryId", "==", id),
-    );
-    const childrenSnapshot = await getDocs(childrenQuery);
-    if (!childrenSnapshot.empty) {
-      throw new Error(
-        "Cannot delete this category because it has sub-categories. Please delete the sub-categories first.",
-      );
-    }
-
-    const itemsQuery = query(
-      collection(db, "foodMenuItems"),
-      where("categoryId", "==", id),
-    );
-    const itemsSnapshot = await getDocs(itemsQuery);
-    if (!itemsSnapshot.empty) {
-      throw new Error(
-        "Cannot delete this category because it contains menu items. Please delete the menu items first.",
-      );
-    }
-
-    await deleteDoc(doc(db, "foodCategories", id));
-    return true;
-  } catch (error) {
-    console.error("Error deleting food category:", error);
-    throw error;
-  }
-};
-
-export const getFoodMenuItems = async (
-  categoryId?: string,
-): Promise<FoodMenuItem[]> => {
-  if (!db) return [];
-  try {
-    const ref = collection(db, "foodMenuItems");
-    let q;
-    if (categoryId) {
-      q = query(
-        ref,
-        where("categoryId", "==", categoryId),
-        orderBy("name", "asc"),
-      );
-    } else {
-      q = query(ref, orderBy("name", "asc"));
-    }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-    })) as FoodMenuItem[];
-  } catch (error) {
-    console.error("Error fetching food menu items:", error);
-    return [];
-  }
-};
-
-export const getFoodMenuItem = async (
-  id: string,
-): Promise<FoodMenuItem | null> => {
-  if (!db || !id) return null;
-  try {
-    const docRef = doc(db, "foodMenuItems", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      ...data,
-      createdAt: data.createdAt?.toDate?.() || new Date(),
-      updatedAt: data.updatedAt?.toDate?.() || new Date(),
-    } as FoodMenuItem;
-  } catch (error) {
-    console.error("Error fetching food menu item:", error);
-    return null;
-  }
-};
-
-export const createFoodMenuItem = async (
-  data: Partial<FoodMenuItem>,
-): Promise<string | null> => {
-  if (!db) return null;
-  try {
-    const slug =
-      data.name
-        ?.toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "";
-    const categorySlug = data.categoryId?.replace("cat_", "") || "item";
-    const id = `mi_${categorySlug}_${slug}`;
-    const docRef = doc(db, "foodMenuItems", id);
-
-    const itemData = {
-      ...data,
-      id,
-      hasVariants: (data.variants?.length || 0) > 0,
-      hasGroups: (data.groups?.length || 0) > 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(docRef, itemData);
-    return id;
-  } catch (error) {
-    console.error("Error creating food menu item:", error);
-    throw error;
-  }
-};
-
-export const updateFoodMenuItem = async (
-  id: string,
-  data: Partial<FoodMenuItem>,
-): Promise<boolean> => {
-  if (!db || !id) return false;
-  try {
-    const docRef = doc(db, "foodMenuItems", id);
-    const updateData = {
-      ...data,
-      hasVariants: (data.variants?.length || 0) > 0,
-      hasGroups: (data.groups?.length || 0) > 0,
-      updatedAt: serverTimestamp(),
-    };
-    delete (updateData as any).id;
-    delete (updateData as any).createdAt;
-
-    await updateDoc(docRef, updateData);
-    return true;
-  } catch (error) {
-    console.error("Error updating food menu item:", error);
-    throw error;
-  }
-};
-
-export const deleteFoodMenuItem = async (id: string): Promise<boolean> => {
-  if (!db || !id) return false;
-  try {
-    await deleteDoc(doc(db, "foodMenuItems", id));
-    return true;
-  } catch (error) {
-    console.error("Error deleting food menu item:", error);
-    throw error;
-  }
-};

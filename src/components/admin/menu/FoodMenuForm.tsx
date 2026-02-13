@@ -9,9 +9,15 @@ import {
   getFoodCategories,
   createFoodMenuItem,
   updateFoodMenuItem,
+  getBarCategories,
+  createBarMenuItem,
+  updateBarMenuItem,
+} from "@/lib/services/fbMenuService";
+import type {
   FoodCategory,
   FoodMenuItem,
-} from "@/lib/firestoreService";
+  MenuType,
+} from "@/lib/types/foodMenu";
 import {
   getDefaultFoodMenuItem,
   getDefaultVariant,
@@ -30,12 +36,14 @@ interface FoodMenuFormProps {
   initialData?: FoodMenuItem | null;
   onSuccess: () => void;
   onCancel: () => void;
+  menuType?: MenuType; // Default to 'food' if not provided
 }
 
 export default function FoodMenuForm({
   initialData,
   onSuccess,
   onCancel,
+  menuType = "food",
 }: FoodMenuFormProps) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -50,14 +58,18 @@ export default function FoodMenuForm({
   useEffect(() => {
     (async () => {
       try {
-        const cats = await getFoodCategories();
+        // Fetch appropriate categories based on menuType
+        const cats =
+          menuType === "bar"
+            ? await getBarCategories()
+            : await getFoodCategories();
         setCategories(cats);
       } catch (error) {
         console.error("Error fetching categories", error);
         showToast("Failed to load categories", "error");
       }
     })();
-  }, [showToast]);
+  }, [showToast, menuType]);
 
   useEffect(() => {
     if (initialData) {
@@ -247,10 +259,18 @@ export default function FoodMenuForm({
     setLoading(true);
     try {
       if (initialData?.id) {
-        await updateFoodMenuItem(initialData.id, formData);
+        if (menuType === "bar") {
+          await updateBarMenuItem(initialData.id, formData);
+        } else {
+          await updateFoodMenuItem(initialData.id, formData);
+        }
         showToast("Item updated successfully", "success");
       } else {
-        await createFoodMenuItem(formData);
+        if (menuType === "bar") {
+          await createBarMenuItem(formData);
+        } else {
+          await createFoodMenuItem(formData);
+        }
         showToast("Item created successfully", "success");
       }
       onSuccess();

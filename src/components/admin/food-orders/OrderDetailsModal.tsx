@@ -2,10 +2,12 @@
 
 import React, { useState } from "react";
 import { FoodOrder } from "@/lib/firestoreService";
+import Link from "next/link";
 import {
   XMarkIcon,
   PrinterIcon,
   DocumentTextIcon,
+  PencilSquareIcon,
   UserIcon,
   MapPinIcon,
   ClockIcon,
@@ -212,6 +214,16 @@ export default function OrderDetailsModal({
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {/* Edit */}
+              {!isReadOnly && !isFinalized && (
+                <Link
+                  href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
+                  className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  title="Edit Order"
+                >
+                  <PencilSquareIcon className="h-5 w-5" />
+                </Link>
+              )}
               {/* Print */}
               {onReprint && (
                 <button

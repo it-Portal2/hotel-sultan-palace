@@ -7,8 +7,12 @@ import {
   CategoryType,
   getDefaultFoodCategory,
   AVAILABILITY_TYPE_OPTIONS,
+  MenuType,
 } from "@/lib/types/foodMenu";
-import { getFoodCategories } from "@/lib/firestoreService";
+import {
+  getFoodCategories,
+  getBarCategories,
+} from "@/lib/services/fbMenuService";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { TrashIcon, PhotoIcon } from "@heroicons/react/24/outline";
@@ -18,6 +22,7 @@ interface FoodCategoryFormProps {
   onSubmit: (data: Partial<FoodCategory>) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
+  menuType?: MenuType; // If provided, locks the type
 }
 
 export default function FoodCategoryForm({
@@ -25,13 +30,21 @@ export default function FoodCategoryForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  menuType,
 }: FoodCategoryFormProps) {
   const [formData, setFormData] = useState<Partial<FoodCategory>>(
-    initialData || getDefaultFoodCategory(),
+    initialData || { ...getDefaultFoodCategory(), type: menuType || "food" },
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [parentCategories, setParentCategories] = useState<FoodCategory[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // Force type if menuType provided (e.g. when switching tabs while form is open)
+  useEffect(() => {
+    if (menuType && !initialData) {
+      setFormData((prev) => ({ ...prev, type: menuType }));
+    }
+  }, [menuType, initialData]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,14 +82,22 @@ export default function FoodCategoryForm({
 
   useEffect(() => {
     const loadParentCategories = async () => {
-      const cats = await getFoodCategories();
-      const parents = cats.filter(
-        (c) => c.isParentCategory || !c.parentCategoryId,
-      );
-      setParentCategories(parents.filter((c) => c.id !== initialData?.id));
+      try {
+        const cats =
+          menuType === "bar"
+            ? await getBarCategories()
+            : await getFoodCategories();
+
+        const parents = cats.filter(
+          (c) => c.isParentCategory || !c.parentCategoryId,
+        );
+        setParentCategories(parents.filter((c) => c.id !== initialData?.id));
+      } catch (error) {
+        console.error("Error loading parent categories:", error);
+      }
     };
     loadParentCategories();
-  }, [initialData?.id]);
+  }, [initialData?.id, menuType]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -245,23 +266,35 @@ export default function FoodCategoryForm({
               {(["food", "bar"] as CategoryType[]).map((type) => (
                 <label
                   key={type}
-                  className="flex items-center gap-2 cursor-pointer"
+                  className={`flex items-center gap-2 ${
+                    menuType
+                      ? "cursor-not-allowed opacity-75"
+                      : "cursor-pointer"
+                  }`}
                 >
                   <input
                     type="radio"
                     name="type"
                     value={type}
                     checked={formData.type === type}
-                    onChange={() => updateField("type", type)}
+                    onChange={() => !menuType && updateField("type", type)}
+                    disabled={!!menuType}
                     className="w-4 h-4 text-[#FF6A00]"
                   />
                   <span className="text-sm capitalize">{type}</span>
                 </label>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Food for meals, Bar for drinks
-            </p>
+            {menuType && (
+              <p className="text-xs text-blue-500 mt-1">
+                Locked to {menuType} based on current tab
+              </p>
+            )}
+            {!menuType && (
+              <p className="text-xs text-gray-500 mt-1">
+                Food for meals, Bar for drinks
+              </p>
+            )}
             {errors.type && (
               <p className="text-xs text-red-500 mt-1">{errors.type}</p>
             )}

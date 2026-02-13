@@ -5,14 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   getFoodMenuItems,
   getFoodCategories,
+  getBarMenuItems,
+  getBarCategories,
+} from "@/lib/services/fbMenuService";
+import {
   createFoodOrder,
   updateFoodOrder,
-  getAllBookings,
-  getAllRoomTypes,
-  Booking,
-  FoodCategory,
-  RoomTypeData,
-} from "@/lib/firestoreService";
+  getFoodOrder,
+} from "@/lib/services/fbOrderService";
+import { getAllBookings, getAllRoomTypes } from "@/lib/firestoreService";
+import type { Booking, RoomTypeData } from "@/lib/firestoreService";
+import type { FoodCategory } from "@/lib/types/foodMenu";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
 import {
   processReceipt,
@@ -35,6 +38,7 @@ export default function POSCreatePage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const returnUrl = searchParams.get("returnUrl") || "/admin/food-orders";
+  const menuType = (searchParams.get("menuType") as "food" | "bar") || "food";
 
   // Data State
   const [items, setItems] = useState<POSItem[]>([]);
@@ -60,13 +64,14 @@ export default function POSCreatePage() {
   const [orderType, setOrderType] = useState<
     "walk_in" | "takeaway" | "delivery" | "room_service"
   >("walk_in");
+  const [barLocation, setBarLocation] = useState("main_bar");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [paymentStatus, setPaymentStatus] = useState("paid");
   const [paidAmount, setPaidAmount] = useState(0);
   const [isUrgent, setIsUrgent] = useState(false);
   const [taxType, setTaxType] = useState<"percentage" | "fixed">("percentage");
-  const [taxValue, setTaxValue] = useState(0);
+  const [taxValue, setTaxValue] = useState(18);
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
     "percentage",
   );
@@ -79,6 +84,87 @@ export default function POSCreatePage() {
 
   // Sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const editOrderId = searchParams.get("editOrderId");
+  const [isEditing, setIsEditing] = useState(false);
+
+  // ... (existing state)
+
+  // Effect to load existing order for editing
+  useEffect(() => {
+    async function loadOrder() {
+      if (!editOrderId) return;
+      try {
+        setLoading(true);
+        const order = await getFoodOrder(editOrderId);
+        if (order) {
+          setIsEditing(true);
+          // Populate Form
+          setGuestName(order.guestName || "");
+          setGuestEmail(order.guestEmail || "");
+          setRoomName(order.roomName || "");
+          setTableNumber(order.tableNumber || "");
+          setDeliveryLocation(order.deliveryLocation || "restaurant");
+          setBarLocation(order.barLocation || "main_bar");
+          setOrderType(order.orderType as any);
+          setPaymentMethod(order.paymentMethod || "Cash");
+          setPaymentStatus(order.paymentStatus || "paid");
+          setPaidAmount(order.paidAmount || 0);
+          setNotes(order.notes || "");
+          setWaiterName(order.waiterName || "");
+          setPreparedBy(order.preparedBy || "");
+          setPrintedBy(order.printedBy || "");
+          setIsUrgent(order.priority === "urgent");
+
+          // Populate Cart
+          const mappedCart: CartItem[] = order.items.map((item) => ({
+            id: item.menuItemId || `item-${Math.random()}`,
+            name: item.name,
+            description: "", // Required by POSItem
+            price: item.price,
+            quantity: item.quantity,
+            // specialInstructions mapped to notes for cart
+            notes: item.specialInstructions,
+            customPrice: item.price, // Assuming price snapshot
+
+            // Reconstruct variant/modifiers strictly typed
+            selectedVariant: item.variant
+              ? {
+                  id: "v-loaded",
+                  name: item.variant.name,
+                  price: item.variant.price,
+                  isAvailable: true,
+                }
+              : undefined,
+            selectedModifiers: item.selectedModifiers || [],
+            category: item.category,
+            station: item.station,
+          }));
+          setCart(mappedCart);
+
+          // Update Selection State
+          setSelectedItems(
+            new Set(mappedCart.map((item) => item.id.split("::")[0])),
+          );
+
+          // Financials
+          setDiscountValue(order.discount || 0);
+          setTaxValue(order.tax || 0);
+          // Note context: discountType/taxType might need inferring if not saved explicitly
+          // For now assuming defaults or fixed values from order if mapped
+        }
+      } catch (error) {
+        console.error("Failed to load order", error);
+        showToast("Failed to load order details", "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (editOrderId) {
+      loadOrder();
+    }
+  }, [editOrderId]);
 
   // Effect to enforce Order Type rules based on Location
   useEffect(() => {
@@ -103,10 +189,11 @@ export default function POSCreatePage() {
   useEffect(() => {
     async function loadData() {
       try {
+        setLoading(true);
         const [itemsData, catsData, bookingsData, roomTypesData] =
           await Promise.all([
-            getFoodMenuItems(),
-            getFoodCategories(),
+            menuType === "bar" ? getBarMenuItems() : getFoodMenuItems(),
+            menuType === "bar" ? getBarCategories() : getFoodCategories(),
             getAllBookings(),
             getAllRoomTypes(),
           ]);
@@ -123,6 +210,7 @@ export default function POSCreatePage() {
             category:
               catsData.find((c) => c.id === item.categoryId)?.name || "",
             station: item.kitchenSection || "continental",
+            kitchenSection: item.kitchenSection, // Added for menu filtering
             sku: item.sku || "", // Pass actual SKU from menu item
             itemType: item.itemType || "simple",
             hasVariants: item.hasVariants || false,
@@ -162,7 +250,7 @@ export default function POSCreatePage() {
       }
     }
     loadData();
-  }, []);
+  }, [menuType]);
 
   // Toggle checkbox selection
   const toggleSelectItem = (itemId: string) => {
@@ -360,10 +448,15 @@ export default function POSCreatePage() {
         preparedBy: preparedBy || null,
         printedBy: printedBy || null,
         deliveryLocation,
-        status: "pending" as const,
+        status: isEditing ? undefined : ("pending" as const), // Don't reset status on edit unless needed
         orderType: orderType as any,
+        menuType,
+        barLocation:
+          menuType === "bar"
+            ? (barLocation as "main_bar" | "beach_bar")
+            : undefined,
         priority: isUrgent ? "urgent" : "normal",
-        kitchenStatus: "received" as const,
+        // kitchenStatus: "received" as const, // Don't reset kitchen status
         items: cart.map((i) => ({
           menuItemId: i.id.split("::")[0], // Get base item ID
           name: i.name,
@@ -403,89 +496,128 @@ export default function POSCreatePage() {
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
         kotPrinted: false,
-        reprintRequested: false,
+        reprintRequested: false, // Reset reprint if edited?
       };
 
-      // @ts-ignore
-      const result = await createFoodOrder(orderData);
+      if (isEditing && editOrderId) {
+        // UPDATE MODE
+        // @ts-ignore
+        const success = await updateFoodOrder(editOrderId, orderData);
 
-      if (result) {
-        try {
-          await processOrderInventoryDeduction(result.id, "POS System");
-        } catch (invError) {
-          console.error("Inventory deduction failed", invError);
-        }
+        if (success) {
+          showToast("Order updated successfully!", "success");
 
-        showToast("Order sent to Kitchen!", "success");
-
-        try {
-          // Use server-generated IDs from createFoodOrder result
-          const receiptUrl = await processReceipt({
-            order: {
-              id: result.id,
-              orderNumber: result.orderNumber, // Server-generated unique number
-              receiptNo: result.receiptNo, // Server-generated unique number
-              guestName: guestName || "Walk-in",
-              guestEmail: guestEmail || "N/A", // Add contact info
-              roomName: roomName || null,
-              waiterName: waiterName || null,
-              preparedBy: preparedBy || null,
-              printedBy: printedBy || null,
-              tableNumber: tableNumber || null,
-              deliveryLocation: deliveryLocation as any,
-              orderType: orderType as any,
-              items: cart.map((i) => ({
-                menuItemId: i.id,
-                name: i.name,
-                sku: i.sku || null, // Pass actual SKU from menu item
-                quantity: i.quantity,
-                price: i.customPrice ?? i.price,
-                specialInstructions: i.notes || null,
-                variant: i.selectedVariant
-                  ? {
-                      name: i.selectedVariant.name,
-                      price: i.selectedVariant.price,
-                    }
-                  : null,
-                selectedModifiers:
-                  i.selectedModifiers && i.selectedModifiers.length > 0
-                    ? i.selectedModifiers
-                    : null,
-              })),
-              subtotal,
-              tax: taxAmount,
-              discount: discountAmount,
-              totalAmount: total,
-              taxDetails: {
-                type: taxType,
-                value: taxValue,
-                amount: taxAmount,
-              },
-              discountDetails: {
-                type: discountType,
-                value: discountValue,
-                amount: discountAmount,
-              },
-              status: "pending" as const,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              paymentMethod,
-              paymentStatus:
-                paymentMethod === "Complimentary" ? "paid" : paymentStatus,
-              paidAmount: finalPaidAmount,
-              dueAmount: finalDueAmount,
-            } as any,
-          });
-
-          // Save receipt URL to order document
-          if (receiptUrl) {
-            await updateFoodOrder(result.id, { receiptUrl } as any);
+          // Regenerate Receipt (Optional but good for consistency)
+          try {
+            // Fetch fresh order to get numbers
+            const updatedOrder = await getFoodOrder(editOrderId);
+            if (updatedOrder) {
+              const receiptUrl = await processReceipt({
+                order: {
+                  ...updatedOrder,
+                  // Overlay current form data to ensure receipt matches what we just saved
+                  // (in case fetch is stale, though await update should ensure consistency)
+                } as any,
+              });
+              if (receiptUrl) {
+                await updateFoodOrder(editOrderId, { receiptUrl } as any);
+              }
+            }
+          } catch (e) {
+            console.error("Receipt regen failed", e);
           }
-        } catch (receiptError) {
-          console.error("Receipt failed:", receiptError);
-        }
 
-        router.push(returnUrl);
+          router.push(returnUrl);
+        } else {
+          showToast("Failed to update order", "error");
+        }
+      } else {
+        // CREATE MODE
+        // @ts-ignore
+        const result = await createFoodOrder({
+          ...orderData,
+          status: "pending",
+          kitchenStatus: "received",
+        });
+
+        if (result) {
+          try {
+            await processOrderInventoryDeduction(result.id, "POS System");
+          } catch (invError) {
+            console.error("Inventory deduction failed", invError);
+          }
+
+          showToast("Order sent to Kitchen!", "success");
+
+          try {
+            // Use server-generated IDs from createFoodOrder result
+            const receiptUrl = await processReceipt({
+              order: {
+                id: result.id,
+                orderNumber: result.orderNumber, // Server-generated unique number
+                receiptNo: result.receiptNo, // Server-generated unique number
+                guestName: guestName || "Walk-in",
+                guestEmail: guestEmail || "N/A", // Add contact info
+                roomName: roomName || null,
+                waiterName: waiterName || null,
+                preparedBy: preparedBy || null,
+                printedBy: printedBy || null,
+                tableNumber: tableNumber || null,
+                deliveryLocation: deliveryLocation as any,
+                orderType: orderType as any,
+                items: cart.map((i) => ({
+                  menuItemId: i.id,
+                  name: i.name,
+                  sku: i.sku || null, // Pass actual SKU from menu item
+                  quantity: i.quantity,
+                  price: i.customPrice ?? i.price,
+                  specialInstructions: i.notes || null,
+                  variant: i.selectedVariant
+                    ? {
+                        name: i.selectedVariant.name,
+                        price: i.selectedVariant.price,
+                      }
+                    : null,
+                  selectedModifiers:
+                    i.selectedModifiers && i.selectedModifiers.length > 0
+                      ? i.selectedModifiers
+                      : null,
+                })),
+                subtotal,
+                tax: taxAmount,
+                discount: discountAmount,
+                totalAmount: total,
+                taxDetails: {
+                  type: taxType,
+                  value: taxValue,
+                  amount: taxAmount,
+                },
+                discountDetails: {
+                  type: discountType,
+                  value: discountValue,
+                  amount: discountAmount,
+                },
+                status: "pending" as const,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                paymentMethod,
+                paymentStatus:
+                  paymentMethod === "Complimentary" ? "paid" : paymentStatus,
+                paidAmount: finalPaidAmount,
+                dueAmount: finalDueAmount,
+              } as any,
+            });
+
+            // Save receipt URL to order document
+            if (receiptUrl) {
+              await updateFoodOrder(result.id, { receiptUrl } as any);
+            }
+          } catch (receiptError) {
+            console.error("Receipt failed:", receiptError);
+          }
+
+          router.push(returnUrl);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -498,7 +630,7 @@ export default function POSCreatePage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center text-lg font-bold text-gray-400">
-        Loading Menu...
+        Loading {menuType === "bar" ? "Bar" : "Food"} Menu...
       </div>
     );
   }
@@ -506,24 +638,36 @@ export default function POSCreatePage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 shadow-sm md:mr-96">
         <div className="flex items-center gap-4 flex-1">
           <Link
             href={returnUrl}
-            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Create New Order
+            <h1 className="text-xl font-bold text-gray-900">
+              {isEditing ? "Edit" : "Create New"}{" "}
+              {menuType === "bar" ? "Bar" : "Food"} Order
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Browse items and customize, then confirm guest details
+            <p className="text-xs text-gray-500">
+              {isEditing
+                ? "Update details & items"
+                : "Select items & add guest details"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <Link
+            href={`/admin/food-orders/create?menuType=${
+              menuType === "food" ? "bar" : "food"
+            }&returnUrl=${returnUrl}`}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6A00] whitespace-nowrap"
+          >
+            Switch to {menuType === "food" ? "Bar" : "Food"}
+            <span className="hidden sm:inline">&nbsp;Order</span>
+          </Link>
           <div className="text-right hidden sm:block">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
               Cart Total
@@ -562,6 +706,7 @@ export default function POSCreatePage() {
         </div>
 
         <POSCart
+          submitLabel={isEditing ? "Update Order" : "Place Order"}
           cart={cart}
           onRemove={removeFromCart}
           onUpdateItem={updateCartItem}
@@ -615,6 +760,9 @@ export default function POSCreatePage() {
           setValidationErrors={setValidationErrors}
           orderType={orderType}
           setOrderType={setOrderType}
+          menuType={menuType}
+          barLocation={barLocation}
+          setBarLocation={setBarLocation}
         />
       </div>
     </div>
