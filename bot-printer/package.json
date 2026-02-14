@@ -1,0 +1,16 @@
+{
+  "name": "bot-printer",
+  "version": "1.0.0",
+  "description": "BOT (Bar Order Ticket) Printer Listener for Sultan Palace Hotel",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "NODE_ENV=development node index.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^16.3.1",
+    "firebase-admin": "^12.0.0",
+    "node-thermal-printer": "^4.4.2"
+  }
+}

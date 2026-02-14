@@ -2,39 +2,20 @@
  * listener.js
  * Production-grade Firestore real-time listeners for KOT printing.
  *
+ * THREE LISTENERS:
+ * ─────────────────
+ * 1. NEW ORDERS         → restaurantPrinted == false → print to Ramson (restaurant)
+ * 2. REPRINT REQUESTS   → reprintRequested == true   → print to Ramson (restaurant)
+ * 3. KITCHEN PRINTS     → kitchenPrintRequested == true → print to POSX (kitchen)
+ *
  * DESIGN PRINCIPLES (industry-standard):
  * ─────────────────────────────────────
  * 1. ATOMIC OPERATIONS  — Firestore transactions prevent double-prints.
- *    Even if 2 listener instances run, only one wins the transaction.
- *
- * 2. NO IN-MEMORY STATE — We never rely on a Set or Map to track what
- *    was printed. The Firestore document IS the source of truth.
- *    `kotPrinted: true` = printed. Period.
- *
- * 3. EVENT-TYPE FILTERING — Only process `added` events for new orders.
- *    `modified` and `removed` are ignored to prevent re-triggers.
- *    For reprints, we process `added` (initial load) and `modified`
- *    (when staff clicks reprint while listener is running).
- *
- * 4. SELF-HEALING QUERIES — When we set `kotPrinted: true`, the doc
- *    no longer matches `where("kotPrinted", "==", false)`, so it
- *    automatically drops out of the listener. No infinite loops.
- *
- * 5. CONCURRENCY LOCK — Per-document in-memory lock prevents the same
- *    doc from being processed in parallel (e.g. if a snapshot fires
- *    while a prior print is still in progress).
- *
- * 6. AUDIT TRAIL — We record `kotPrintedAt` timestamp and `reprintCount`
- *    for operational visibility and debugging.
- *
- * FLOW:
- *   New order created → kotPrinted: false → listener picks up →
- *   transaction: check kotPrinted == false → PRINT → set kotPrinted: true,
- *   kotPrintedAt: now → doc drops out of query → done.
- *
- *   Staff clicks "Print" → reprintRequested: true → listener picks up →
- *   transaction: check reprintRequested == true → PRINT → set
- *   reprintRequested: false, reprintCount++ → doc drops out → done.
+ * 2. NO IN-MEMORY STATE — Firestore document IS the source of truth.
+ * 3. EVENT-TYPE FILTERING — `added` for new, `added`+`modified` for requests.
+ * 4. SELF-HEALING QUERIES — Setting flag removes doc from query automatically.
+ * 5. CONCURRENCY LOCK — Per-document in-memory lock prevents parallel processing.
+ * 6. AUDIT TRAIL — Timestamps and counts for operational visibility.
  */
 
 const chalk = require("chalk");
@@ -43,8 +24,6 @@ const { db, admin } = require("./firebase");
 const { printReceipt } = require("./printer");
 
 // ─── Per-document processing lock ───
-// Prevents concurrent processing of the same document if snapshots
-// fire faster than the print job completes.
 const activeLocks = new Set();
 
 function acquireLock(key) {
@@ -58,49 +37,45 @@ function releaseLock(key) {
 }
 
 // ─── Helpers ───
-function logOrder(tag, color, order) {
+function logOrder(tag, color, order, printerName) {
   const items = order.items?.length || 0;
   console.log(
     chalk[color](`[${tag}]`),
     chalk.bold(order.orderNumber || order.id),
     chalk.dim(
-      `— ${order.guestName || "Unknown"} (${items} item${items !== 1 ? "s" : ""})`,
+      `— ${order.guestName || "Unknown"} (${items} item${items !== 1 ? "s" : ""}) → ${printerName}`,
     ),
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LISTENER 1: NEW ORDERS
-//  Query: kotPrinted == false
+//  LISTENER 1: NEW ORDERS → Restaurant Printer (Ramson)
+//  Query: restaurantPrinted == false
 //  Trigger: document enters the query (added event only)
-//  Action: print → transaction { kotPrinted: true, kotPrintedAt }
+//  Action: print to "restaurant" → set restaurantPrinted: true
 // ═══════════════════════════════════════════════════════════════
 function listenForNewOrders() {
-  const ref = db.collection("foodOrders").where("kotPrinted", "==", false);
+  const ref = db
+    .collection("foodOrders")
+    .where("restaurantPrinted", "==", false);
 
   ref.onSnapshot(
     async (snapshot) => {
       for (const change of snapshot.docChanges()) {
-        // ONLY process documents that ENTER the query
-        // `added` fires for: initial load + newly matching docs
-        // We skip `modified` to avoid re-triggering if someone edits
-        // the order while kotPrinted is still false (rare edge case)
         if (change.type !== "added") continue;
 
         const docId = change.doc.id;
         const order = { id: docId, ...change.doc.data() };
 
-        // Concurrency lock — skip if already being processed
         const lockKey = `new-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        logOrder("NEW ORDER", "green", order);
+        logOrder("NEW ORDER", "green", order, "restaurant");
 
         try {
-          // ── STEP 1: PRINT (production only) ──
           let printed = true;
           if (config.isProduction) {
-            printed = await printReceipt(order);
+            printed = await printReceipt(order, null, "restaurant");
           } else {
             console.log(
               chalk.dim(`  ⏭ Skipping print (NODE_ENV=${config.env})`),
@@ -112,23 +87,16 @@ function listenForNewOrders() {
               chalk.red(`  ✗ Print failed`),
               chalk.dim("— will retry on next snapshot"),
             );
-            // Don't update Firestore — doc stays in query, listener retries
             continue;
           }
 
-          // ── STEP 2: ATOMIC UPDATE ──
-          // Transaction ensures: if another instance already printed this
-          // order, we don't double-update or cause confusion.
           const docRef = db.collection("foodOrders").doc(docId);
-
           await db.runTransaction(async (tx) => {
             const freshDoc = await tx.get(docRef);
             if (!freshDoc.exists) return;
 
             const data = freshDoc.data();
-
-            // Double-check: if already printed by another instance, skip
-            if (data.kotPrinted === true) {
+            if (data.restaurantPrinted === true) {
               console.log(
                 chalk.yellow(`  ⚠ Already marked printed by another instance`),
               );
@@ -136,8 +104,8 @@ function listenForNewOrders() {
             }
 
             tx.update(docRef, {
-              kotPrinted: true,
-              kotPrintedAt: admin.firestore.FieldValue.serverTimestamp(),
+              restaurantPrinted: true,
+              restaurantPrintedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
           });
 
@@ -154,21 +122,20 @@ function listenForNewOrders() {
     },
     (err) => {
       console.error(chalk.red("[Listener] New orders error:"), err.message);
-      // Firestore will automatically retry the listener
     },
   );
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for new orders (kotPrinted == false)",
+    "Watching for new orders (restaurantPrinted == false) → Restaurant",
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LISTENER 2: REPRINT REQUESTS
+//  LISTENER 2: REPRINT REQUESTS → Restaurant Printer (Ramson)
 //  Query: reprintRequested == true
-//  Trigger: added (initial) + modified (staff clicks reprint)
-//  Action: print with "REPRINT" label → transaction { reprintRequested: false, reprintCount++ }
+//  Trigger: added + modified
+//  Action: print to "restaurant" with REPRINT label → reset flag
 // ═══════════════════════════════════════════════════════════════
 function listenForReprintRequests() {
   const ref = db.collection("foodOrders").where("reprintRequested", "==", true);
@@ -176,25 +143,20 @@ function listenForReprintRequests() {
   ref.onSnapshot(
     async (snapshot) => {
       for (const change of snapshot.docChanges()) {
-        // Process `added` (initial load of matching docs) and `modified`
-        // (when staff clicks Print while listener is running — the doc
-        // goes from reprintRequested: false → true, re-entering the query)
         if (change.type !== "added" && change.type !== "modified") continue;
 
         const docId = change.doc.id;
         const order = { id: docId, ...change.doc.data() };
 
-        // Concurrency lock
         const lockKey = `reprint-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        logOrder("REPRINT", "yellow", order);
+        logOrder("REPRINT", "yellow", order, "restaurant");
 
         try {
-          // ── STEP 1: PRINT WITH REPRINT LABEL (production only) ──
           let printed = true;
           if (config.isProduction) {
-            printed = await printReceipt(order, "REPRINT");
+            printed = await printReceipt(order, "REPRINT", "restaurant");
           } else {
             console.log(
               chalk.dim(`  ⏭ Skipping reprint (NODE_ENV=${config.env})`),
@@ -209,16 +171,12 @@ function listenForReprintRequests() {
             continue;
           }
 
-          // ── STEP 2: ATOMIC RESET ──
           const docRef = db.collection("foodOrders").doc(docId);
-
           await db.runTransaction(async (tx) => {
             const freshDoc = await tx.get(docRef);
             if (!freshDoc.exists) return;
 
             const data = freshDoc.data();
-
-            // Double-check: already handled by another instance
             if (data.reprintRequested !== true) {
               console.log(
                 chalk.yellow(`  ⚠ Already handled by another instance`),
@@ -251,8 +209,96 @@ function listenForReprintRequests() {
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for reprint requests (reprintRequested == true)",
+    "Watching for reprint requests (reprintRequested == true) → Restaurant",
   );
 }
 
-module.exports = { listenForNewOrders, listenForReprintRequests };
+// ═══════════════════════════════════════════════════════════════
+//  LISTENER 3: KITCHEN PRINT REQUESTS → Kitchen Printer (POSX)
+//  Query: kitchenPrintRequested == true
+//  Trigger: added + modified
+//  Action: print to "kitchen" → reset flag, set kitchenPrinted
+// ═══════════════════════════════════════════════════════════════
+function listenForKitchenPrintRequests() {
+  const ref = db
+    .collection("foodOrders")
+    .where("kitchenPrintRequested", "==", true);
+
+  ref.onSnapshot(
+    async (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type !== "added" && change.type !== "modified") continue;
+
+        const docId = change.doc.id;
+        const order = { id: docId, ...change.doc.data() };
+
+        const lockKey = `kitchen-${docId}`;
+        if (!acquireLock(lockKey)) continue;
+
+        logOrder("KITCHEN PRINT", "magenta", order, "kitchen");
+
+        try {
+          let printed = true;
+          if (config.isProduction) {
+            printed = await printReceipt(order, "KITCHEN", "kitchen");
+          } else {
+            console.log(
+              chalk.dim(`  ⏭ Skipping kitchen print (NODE_ENV=${config.env})`),
+            );
+          }
+
+          if (!printed) {
+            console.error(
+              chalk.red(`  ✗ Kitchen print failed`),
+              chalk.dim("— will retry on next snapshot"),
+            );
+            continue;
+          }
+
+          const docRef = db.collection("foodOrders").doc(docId);
+          await db.runTransaction(async (tx) => {
+            const freshDoc = await tx.get(docRef);
+            if (!freshDoc.exists) return;
+
+            const data = freshDoc.data();
+            if (data.kitchenPrintRequested !== true) {
+              console.log(
+                chalk.yellow(`  ⚠ Already handled by another instance`),
+              );
+              return;
+            }
+
+            tx.update(docRef, {
+              kitchenPrintRequested: false,
+              kitchenPrinted: true,
+              kitchenPrintedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+
+          console.log(
+            chalk.green(`  ✓ Kitchen printed & marked`),
+            chalk.dim(order.orderNumber),
+          );
+        } catch (err) {
+          console.error(chalk.red(`  ✗ Error:`), err.message);
+        } finally {
+          releaseLock(lockKey);
+        }
+      }
+    },
+    (err) => {
+      console.error(chalk.red("[Listener] Kitchen print error:"), err.message);
+    },
+  );
+
+  console.log(
+    chalk.cyan("[Listener]"),
+    "Watching for kitchen prints (kitchenPrintRequested == true) → Kitchen",
+  );
+}
+
+module.exports = {
+  listenForNewOrders,
+  listenForReprintRequests,
+  listenForKitchenPrintRequests,
+};

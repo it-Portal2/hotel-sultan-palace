@@ -495,7 +495,7 @@ export default function POSCreatePage() {
           paymentMethod === "Complimentary" ? "paid" : paymentStatus,
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
-        kotPrinted: false,
+        restaurantPrinted: false,
         reprintRequested: false, // Reset reprint if edited?
       };
 

@@ -108,6 +108,18 @@ export default function AdminFoodOrdersPage() {
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status });
       }
+
+      // Auto-trigger kitchen print when order is confirmed
+      if (status === "confirmed") {
+        try {
+          await updateFoodOrder(orderId, {
+            kitchenPrintRequested: true,
+          } as any);
+        } catch (kitchenErr) {
+          console.error("Kitchen print request failed:", kitchenErr);
+        }
+      }
+
       if (status === "delivered") {
         try {
           await processOrderInventoryDeduction(orderId, "Admin User");
@@ -132,10 +144,22 @@ export default function AdminFoodOrdersPage() {
   const handleReprint = async (orderId: string) => {
     try {
       await updateFoodOrder(orderId, { reprintRequested: true } as any);
-      showToast("Print request sent to kitchen", "success");
+      showToast("Print request sent to restaurant printer", "success");
     } catch (error) {
       console.error("Error requesting reprint:", error);
       showToast("Failed to send print request", "error");
+    }
+  };
+
+  const handleKitchenPrint = async (orderId: string) => {
+    try {
+      await updateFoodOrder(orderId, {
+        kitchenPrintRequested: true,
+      } as any);
+      showToast("Print request sent to kitchen printer", "success");
+    } catch (error) {
+      console.error("Error requesting kitchen print:", error);
+      showToast("Failed to send kitchen print request", "error");
     }
   };
 
@@ -502,6 +526,7 @@ export default function AdminFoodOrdersPage() {
           onUpdateStatus={handleStatusUpdate}
           isReadOnly={isReadOnly}
           onReprint={handleReprint}
+          onKitchenPrint={handleKitchenPrint}
         />
       )}
     </div>

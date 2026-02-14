@@ -306,8 +306,14 @@ export interface FoodOrder {
   orderTime?: Date;
   revenueRecorded?: boolean;
   inventoryDeducted?: boolean;
-  kotPrinted?: boolean;
+  restaurantPrinted?: boolean;
+  restaurantPrintedAt?: Date;
   reprintRequested?: boolean;
+  kitchenPrintRequested?: boolean;
+  kitchenPrinted?: boolean;
+  kitchenPrintedAt?: Date;
+  barPrinted?: boolean;
+  barPrintedAt?: Date;
   receiptUrl?: string;
 }
 

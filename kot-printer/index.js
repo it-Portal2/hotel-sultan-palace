@@ -4,8 +4,9 @@
  * KOT Printer Listener — Entry Point
  *
  * Connects to Firestore and starts real-time listeners for:
- *  1. New orders (kotPrinted == false) → print & mark
- *  2. Reprint requests (reprintRequested == true) → print & reset
+ *  1. New orders (restaurantPrinted == false) → print to Restaurant (Ramson)
+ *  2. Reprint requests (reprintRequested == true) → print to Restaurant (Ramson)
+ *  3. Kitchen print requests (kitchenPrintRequested == true) → print to Kitchen (POSX)
  *
  * Usage:
  *   1. Copy .env.example → .env and fill in values
@@ -16,8 +17,12 @@
 
 const chalk = require("chalk");
 const config = require("./config");
-const { isPrinterReady } = require("./printer");
-const { listenForNewOrders, listenForReprintRequests } = require("./listener");
+const { isPrinterReady, PRINTER_CONFIGS } = require("./printer");
+const {
+  listenForNewOrders,
+  listenForReprintRequests,
+  listenForKitchenPrintRequests,
+} = require("./listener");
 
 async function main() {
   console.log("");
@@ -25,7 +30,7 @@ async function main() {
     chalk.bold.hex("#FF6A00")("╔══════════════════════════════════════╗"),
   );
   console.log(
-    chalk.bold.hex("#FF6A00")("║   KOT PRINTER LISTENER — v1.0.0     ║"),
+    chalk.bold.hex("#FF6A00")("║   KOT PRINTER LISTENER — v2.0.0     ║"),
   );
   console.log(
     chalk.bold.hex("#FF6A00")("║   Sultan Palace Hotel               ║"),
@@ -35,10 +40,35 @@ async function main() {
   );
   console.log("");
 
-  // Show config
-  console.log(chalk.dim("  Printer Type:"), config.printer.type);
-  console.log(chalk.dim("  Printer Interface:"), config.printer.interface);
-  console.log(chalk.dim("  Paper Width:"), config.printer.width, "chars");
+  // Show config — Restaurant Printer
+  console.log(chalk.bold.cyan("  📠 Restaurant Printer (Ramson):"));
+  console.log(chalk.dim("     Type:"), config.printer.type);
+  console.log(chalk.dim("     Interface:"), config.printer.interface);
+  console.log(chalk.dim("     Width:"), config.printer.width, "chars");
+
+  const restaurantReady = await isPrinterReady("restaurant");
+  if (restaurantReady) {
+    console.log(chalk.green("     ✓ Connected and ready"));
+  } else {
+    console.log(chalk.yellow("     ⚠ Not detected — will retry when printing"));
+  }
+  console.log("");
+
+  // Show config — Kitchen Printer
+  console.log(chalk.bold.magenta("  🍳 Kitchen Printer (POSX):"));
+  console.log(chalk.dim("     Type:"), config.kitchenPrinter.type);
+  console.log(chalk.dim("     Interface:"), config.kitchenPrinter.interface);
+  console.log(chalk.dim("     Width:"), config.kitchenPrinter.width, "chars");
+
+  const kitchenReady = await isPrinterReady("kitchen");
+  if (kitchenReady) {
+    console.log(chalk.green("     ✓ Connected and ready"));
+  } else {
+    console.log(chalk.yellow("     ⚠ Not detected — will retry when printing"));
+  }
+  console.log("");
+
+  // Environment
   console.log(chalk.dim("  Environment:"), config.env);
   if (!config.isProduction) {
     console.log(
@@ -49,25 +79,10 @@ async function main() {
   }
   console.log("");
 
-  // Check printer
-  const ready = await isPrinterReady();
-  if (ready) {
-    console.log(chalk.green("  ✓ Printer connected and ready"));
-  } else {
-    console.log(
-      chalk.yellow("  ⚠ Printer not detected — will retry when printing"),
-    );
-    console.log(
-      chalk.dim(
-        "    Check that the printer is powered on and the interface is correct",
-      ),
-    );
-  }
-  console.log("");
-
-  // Start listeners
+  // Start all three listeners
   listenForNewOrders();
   listenForReprintRequests();
+  listenForKitchenPrintRequests();
 
   console.log("");
   console.log(chalk.green.bold("  ● System is live — waiting for orders..."));

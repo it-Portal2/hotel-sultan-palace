@@ -21,6 +21,7 @@ interface OrderDetailsModalProps {
   onUpdateStatus: (id: string, status: FoodOrder["status"]) => void;
   isReadOnly: boolean;
   onReprint?: (orderId: string) => void;
+  onKitchenPrint?: (orderId: string) => void;
 }
 
 export default function OrderDetailsModal({
@@ -29,9 +30,11 @@ export default function OrderDetailsModal({
   onUpdateStatus,
   isReadOnly,
   onReprint,
+  onKitchenPrint,
 }: OrderDetailsModalProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [reprintSent, setReprintSent] = useState(false);
+  const [kitchenPrintSent, setKitchenPrintSent] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const handleReprint = () => {
@@ -39,6 +42,14 @@ export default function OrderDetailsModal({
       onReprint(order.id);
       setReprintSent(true);
       setTimeout(() => setReprintSent(false), 2000);
+    }
+  };
+
+  const handleKitchenPrint = () => {
+    if (onKitchenPrint && !kitchenPrintSent) {
+      onKitchenPrint(order.id);
+      setKitchenPrintSent(true);
+      setTimeout(() => setKitchenPrintSent(false), 2000);
     }
   };
 
@@ -218,10 +229,10 @@ export default function OrderDetailsModal({
               {!isReadOnly && !isFinalized && (
                 <Link
                   href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                  title="Edit Order"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
                 >
-                  <PencilSquareIcon className="h-5 w-5" />
+                  <PencilSquareIcon className="h-4 w-4" />
+                  Edit
                 </Link>
               )}
               {/* Print */}
@@ -229,14 +240,14 @@ export default function OrderDetailsModal({
                 <button
                   onClick={handleReprint}
                   disabled={reprintSent}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors ${
                     reprintSent
                       ? "bg-green-100 text-green-600"
-                      : "bg-gray-100 text-gray-500 hover:bg-[#FF6A00]/10 hover:text-[#FF6A00]"
+                      : "bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20"
                   }`}
-                  title={reprintSent ? "Sent!" : "Print Receipt"}
                 >
-                  <PrinterIcon className="h-5 w-5" />
+                  <PrinterIcon className="h-4 w-4" />
+                  {reprintSent ? "Sent!" : "Print"}
                 </button>
               )}
               {/* View Receipt */}
@@ -245,10 +256,10 @@ export default function OrderDetailsModal({
                   href={(order as any).receiptUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                  title="View Receipt"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
                 >
-                  <DocumentTextIcon className="h-5 w-5" />
+                  <DocumentTextIcon className="h-4 w-4" />
+                  Receipt
                 </a>
               )}
               {/* Close */}
@@ -524,11 +535,29 @@ export default function OrderDetailsModal({
                     />
                   )}
                   {order.status === "confirmed" && (
-                    <ActionBtn
-                      label="Start Preparing"
-                      status="preparing"
-                      color="bg-orange-600 hover:bg-orange-700"
-                    />
+                    <>
+                      <ActionBtn
+                        label="Start Preparing"
+                        status="preparing"
+                        color="bg-orange-600 hover:bg-orange-700"
+                      />
+                      {onKitchenPrint && (
+                        <button
+                          onClick={handleKitchenPrint}
+                          disabled={kitchenPrintSent || !!loadingAction}
+                          className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
+                            kitchenPrintSent
+                              ? "bg-green-100 text-green-700 border border-green-200"
+                              : "bg-[#FF6A00] hover:bg-[#E55A00] text-white"
+                          }`}
+                        >
+                          <PrinterIcon className="h-4 w-4" />
+                          {kitchenPrintSent
+                            ? "Sent to Kitchen!"
+                            : "Print in Kitchen"}
+                        </button>
+                      )}
+                    </>
                   )}
                   {order.status === "preparing" && (
                     <ActionBtn

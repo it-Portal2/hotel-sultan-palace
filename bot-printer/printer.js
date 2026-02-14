@@ -1,10 +1,10 @@
 /**
  * printer.js
- * Named printer registry — manages multiple thermal printers.
+ * Named printer registry for BOT (Bar Order Ticket) printing.
  *
  * Printers:
- *   "restaurant" → Ramson (config.printer)
- *   "kitchen"    → POSX Thermal (config.kitchenPrinter)
+ *   "main_bar"  → Main Bar Printer (config.mainBarPrinter)
+ *   "beach_bar" → Beach Bar Printer (config.beachBarPrinter)
  */
 
 const {
@@ -23,15 +23,15 @@ const printerTypeMap = {
 // ─── Named printer instances ───
 const printerInstances = {};
 
-// Printer configs keyed by name
+// Printer configs keyed by barLocation value
 const PRINTER_CONFIGS = {
-  restaurant: config.printer,
-  kitchen: config.kitchenPrinter,
+  main_bar: config.mainBarPrinter,
+  beach_bar: config.beachBarPrinter,
 };
 
 /**
  * Get or create a printer instance by name.
- * @param {"restaurant"|"kitchen"} name
+ * @param {"main_bar"|"beach_bar"} name
  */
 function getPrinter(name) {
   const cfg = PRINTER_CONFIGS[name];
@@ -55,7 +55,7 @@ function getPrinter(name) {
 
 /**
  * Check if a named printer is connected and ready.
- * @param {"restaurant"|"kitchen"} name
+ * @param {"main_bar"|"beach_bar"} name
  */
 async function isPrinterReady(name) {
   try {
@@ -70,10 +70,10 @@ async function isPrinterReady(name) {
  * Print a receipt for the given order on the specified printer.
  * @param {object} order - Firestore order document data
  * @param {string} [label] - Optional label (e.g. "REPRINT")
- * @param {"restaurant"|"kitchen"} [printerName="restaurant"] - Target printer
+ * @param {"main_bar"|"beach_bar"} [printerName="main_bar"] - Target printer
  * @returns {Promise<boolean>} - true if printed successfully
  */
-async function printReceipt(order, label, printerName = "restaurant") {
+async function printReceipt(order, label, printerName = "main_bar") {
   const p = getPrinter(printerName);
 
   try {
@@ -102,7 +102,7 @@ async function printReceipt(order, label, printerName = "restaurant") {
       p.newLine();
     }
 
-    // Build the receipt content
+    // Build the receipt content (same layout as KOT)
     buildReceipt(p, order);
 
     // Execute print
