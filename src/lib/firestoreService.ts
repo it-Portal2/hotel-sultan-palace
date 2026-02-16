@@ -143,14 +143,14 @@ export interface Booking {
     allocatedRoomType?: string; // e.g., "DESERT ROSE", "EUCALYPTUS"
     suiteType?: SuiteType; // e.g., "Garden Suite", "Imperial Suite", "Ocean Suite"
     status?:
-      | "pending"
-      | "confirmed"
-      | "cancelled"
-      | "checked_in"
-      | "checked_out"
-      | "no_show"
-      | "maintenance"
-      | "stay_over";
+    | "pending"
+    | "confirmed"
+    | "cancelled"
+    | "checked_in"
+    | "checked_out"
+    | "no_show"
+    | "maintenance"
+    | "stay_over";
     ratePlan?: string;
     mealPlan?: "BB" | "HB" | "FB";
     mealPlanPrice?: number;
@@ -168,14 +168,14 @@ export interface Booking {
   totalAmount: number;
   bookingId: string;
   status:
-    | "pending"
-    | "confirmed"
-    | "cancelled"
-    | "checked_in"
-    | "checked_out"
-    | "no_show"
-    | "maintenance"
-    | "stay_over";
+  | "pending"
+  | "confirmed"
+  | "cancelled"
+  | "checked_in"
+  | "checked_out"
+  | "no_show"
+  | "maintenance"
+  | "stay_over";
 
   // EHMS Extended Fields
   roomNumber?: string; // Actual allocated room number (e.g., "ANANAS", "DESERT ROSE")
@@ -404,23 +404,23 @@ export interface MenuItem {
   description: string;
   price: number;
   category:
-    | "breakfast"
-    | "soups"
-    | "main_course"
-    | "seafood"
-    | "indian_dishes"
-    | "pizza"
-    | "desserts"
-    | "beverages"
-    | "snacks"
-    | "starter"
-    | "continental"
-    | "open_item"
-    | "liquors"
-    | "food"
-    | "full_board"
-    | "half_board"
-    | "management";
+  | "breakfast"
+  | "soups"
+  | "main_course"
+  | "seafood"
+  | "indian_dishes"
+  | "pizza"
+  | "desserts"
+  | "beverages"
+  | "snacks"
+  | "starter"
+  | "continental"
+  | "open_item"
+  | "liquors"
+  | "food"
+  | "full_board"
+  | "half_board"
+  | "management";
   subcategory?: string; // e.g., "Breakfast Fresh From The Kitchen", "Breakfast The Sides"
   sku?: string; // Stock Keeping Unit
   taxGroup?: string; // e.g., "VAT"
@@ -489,14 +489,14 @@ export interface GuestService {
   serviceCategory: "laundry" | "spa" | "game" | "other";
   // Detailed type within category
   serviceType:
-    | "laundry"
-    | "housekeeping"
-    | "spa"
-    | "transport"
-    | "concierge"
-    | "room_service"
-    | "game"
-    | "other";
+  | "laundry"
+  | "housekeeping"
+  | "spa"
+  | "transport"
+  | "concierge"
+  | "room_service"
+  | "game"
+  | "other";
   description: string;
   amount: number; // legacy single amount
   // Pricing breakdown
@@ -625,10 +625,10 @@ export interface RoomStatus {
   cleaningHistory?: Array<{
     date: Date;
     type:
-      | "checkout_cleaning"
-      | "stayover_cleaning"
-      | "deep_cleaning"
-      | "inspection";
+    | "checkout_cleaning"
+    | "stayover_cleaning"
+    | "deep_cleaning"
+    | "inspection";
     staffName?: string;
     notes?: string;
   }>;
@@ -651,11 +651,11 @@ export interface HousekeepingTask {
   roomName: string;
   suiteType: SuiteType;
   taskType:
-    | "checkout_cleaning"
-    | "stayover_cleaning"
-    | "deep_cleaning"
-    | "maintenance"
-    | "inspection";
+  | "checkout_cleaning"
+  | "stayover_cleaning"
+  | "deep_cleaning"
+  | "maintenance"
+  | "inspection";
   priority: "low" | "medium" | "high" | "urgent";
   status: "pending" | "in_progress" | "completed" | "cancelled";
   assignedTo?: string; // Staff member name/ID
@@ -809,16 +809,16 @@ export interface InventoryItem {
   subcategory?: string;
   sku: string;
   unit:
-    | "kg"
-    | "liter"
-    | "piece"
-    | "bottle"
-    | "box"
-    | "pack"
-    | "can"
-    | "gram"
-    | "ml"
-    | "other"; // Consumption Unit
+  | "kg"
+  | "liter"
+  | "piece"
+  | "bottle"
+  | "box"
+  | "pack"
+  | "can"
+  | "gram"
+  | "ml"
+  | "other"; // Consumption Unit
   purchaseUnit?: string; // e.g. "Case", "Box"
   conversionFactor?: number; // e.g. 24 (1 Case = 24 Pieces)
 
@@ -956,13 +956,13 @@ export interface InventoryTransaction {
   inventoryItemId: string;
   itemName: string;
   transactionType:
-    | "purchase"
-    | "usage"
-    | "waste"
-    | "adjustment"
-    | "transfer_in"
-    | "transfer_out"
-    | "sales_deduction";
+  | "purchase"
+  | "usage"
+  | "waste"
+  | "adjustment"
+  | "transfer_in"
+  | "transfer_out"
+  | "sales_deduction";
 
   quantity: number; // Positive for add, Negative for reduce
   unitCost: number;
@@ -1151,25 +1151,25 @@ export interface LedgerEntry {
   date: Date;
   entryType: "income" | "expense";
   category:
-    | "room_booking"
-    | "food_beverage"
-    | "services"
-    | "facilities"
-    | "salary"
-    | "utilities"
-    | "maintenance"
-    | "supplies"
-    | "marketing"
-    | "other"
-    | "Payment"
-    | "Room Charge"
-    | "room_charge"
-    | "Tax"
-    | "tax"
-    | "Food"
-    | "Beverage"
-    | "Restaurant"
-    | "Bar";
+  | "room_booking"
+  | "food_beverage"
+  | "services"
+  | "facilities"
+  | "salary"
+  | "utilities"
+  | "maintenance"
+  | "supplies"
+  | "marketing"
+  | "other"
+  | "Payment"
+  | "Room Charge"
+  | "room_charge"
+  | "Tax"
+  | "tax"
+  | "Food"
+  | "Beverage"
+  | "Restaurant"
+  | "Bar";
   subcategory?: string;
   amount: number;
   description: string;
@@ -1179,13 +1179,13 @@ export interface LedgerEntry {
   payerOrPayee?: string; // Guest Name, Vendor Name, Staff Name
   vendor?: string;
   department?:
-    | "front_office"
-    | "housekeeping"
-    | "kitchen"
-    | "maintenance"
-    | "hr"
-    | "accounts"
-    | "other";
+  | "front_office"
+  | "housekeeping"
+  | "kitchen"
+  | "maintenance"
+  | "hr"
+  | "accounts"
+  | "other";
   status?: "pending" | "cleared" | "void";
   attachmentUrl?: string;
 
@@ -1207,13 +1207,13 @@ export interface Expense {
   id: string;
   date: Date;
   category:
-    | "salary"
-    | "utilities"
-    | "maintenance"
-    | "supplies"
-    | "marketing"
-    | "inventory_purchase"
-    | "other";
+  | "salary"
+  | "utilities"
+  | "maintenance"
+  | "supplies"
+  | "marketing"
+  | "inventory_purchase"
+  | "other";
   vendor?: string;
   amount: number;
   description: string;
@@ -1305,13 +1305,13 @@ export interface AuditLog {
   userId: string;
   userEmail: string;
   action:
-    | "create"
-    | "update"
-    | "delete"
-    | "login"
-    | "logout"
-    | "export"
-    | "other";
+  | "create"
+  | "update"
+  | "delete"
+  | "login"
+  | "logout"
+  | "export"
+  | "other";
   resource: string; // e.g., 'booking', 'menu_item', 'inventory'
   resourceId?: string;
   changes?: {
@@ -2186,11 +2186,11 @@ export const syncGuestProfile = async (
 
         address: guestDetails.address
           ? {
-              street: safe(guestDetails.address),
-              city: safe(guestDetails.city),
-              country: safe(guestDetails.country),
-              zipCode: safe(guestDetails.zipCode),
-            }
+            street: safe(guestDetails.address),
+            city: safe(guestDetails.city),
+            country: safe(guestDetails.country),
+            zipCode: safe(guestDetails.zipCode),
+          }
           : guestData.address || {}, // Fallback to existing or empty obj (avoids undefined)
 
         idDocumentType: guestDetails.idType || guestData.idDocumentType || "",
@@ -3084,9 +3084,14 @@ export const createSpecialOffer = async (
 ): Promise<string | null> => {
   if (!db) return null;
   try {
+    // Sanitize data to remove undefined values
+    const sanitizedData = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v === undefined ? null : v])
+    );
+
     const specialOffersRef = collection(db, "specialOffers");
     const docRef = await addDoc(specialOffersRef, {
-      ...data,
+      ...sanitizedData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -5130,17 +5135,17 @@ export const checkInGuest = async (
 
     // Create check-in record - only include defined values
     const recordData: Omit<CheckInOutRecord, "id" | "createdAt" | "updatedAt"> =
-      {
-        bookingId,
-        guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
-        roomName,
-        suiteType: suiteType as SuiteType,
-        checkInTime: new Date(),
-        checkInStaff: staffName,
-        idVerified: !!idDocumentNumber,
-        roomKeyIssued: !!roomKeyNumber,
-        depositReturned: false,
-      };
+    {
+      bookingId,
+      guestName: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
+      roomName,
+      suiteType: suiteType as SuiteType,
+      checkInTime: new Date(),
+      checkInStaff: staffName,
+      idVerified: !!idDocumentNumber,
+      roomKeyIssued: !!roomKeyNumber,
+      depositReturned: false,
+    };
 
     // Add optional fields only if they have values
     if (idDocumentType) recordData.idDocumentType = idDocumentType;
