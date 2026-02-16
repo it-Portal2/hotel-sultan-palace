@@ -98,12 +98,13 @@ async function printReceipt(order, label, printerName = "main_bar") {
       p.setTextSize(1, 1);
       p.println(`*** ${label} ***`);
       p.bold(false);
-      p.setTextNormalSize();
+      p.setTextNormal();
       p.newLine();
     }
 
     // Build the receipt content (same layout as KOT)
-    buildReceipt(p, order);
+    const cfg = PRINTER_CONFIGS[printerName];
+    buildReceipt(p, order, cfg.width);
 
     // Execute print
     await p.execute();

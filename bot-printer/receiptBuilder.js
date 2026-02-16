@@ -86,10 +86,11 @@ function wrapText(text, maxWidth) {
  * Build a receipt onto the given printer instance.
  * @param {import('node-thermal-printer').printer} p — thermal printer
  * @param {object} order — Firestore order document data
+ * @param {number} [width] — Printer width in chars (default: config.printer.width)
  */
-function buildReceipt(p, order) {
+function buildReceipt(p, order, width) {
   const items = order.items || [];
-  const W = config.printer.width; // 32 for 58mm, 42 for 80mm
+  const W = width || config.printer?.width || 48; // Fallback to 48 if config invalid
 
   // ─── Left-right row (like jsPDF's row()) ───
   const row = (left, right) => {
@@ -101,7 +102,7 @@ function buildReceipt(p, order) {
 
   // ─── Fixed-column row (right column starts at fixed position) ───
   // Ensures labels like "Date:" and "Time:" always start at the same column.
-  const SPLIT_COL = 18; // right column starts here
+  const SPLIT_COL = Math.floor(W / 2); // Dynamic split based on width
   const rowAligned = (left, right) => {
     const l =
       left.length > SPLIT_COL
@@ -115,10 +116,16 @@ function buildReceipt(p, order) {
   // Exact proportional match to jsPDF positions:
   //   Item @ M(3), Sku @ M+21(24), Qty @ M+36(39), Amount @ W-M(55)
   //   Gaps = 21mm : 15mm : 16mm over 52mm usable → scaled to 32 chars
-  const COL_NAME = 13;
-  const COL_SKU = 9;
+  // Column widths for items table
+  // Fixed widths for auxiliary columns:
+  const COL_SKU = 8;
   const COL_QTY = 3;
-  const COL_AMT = W - COL_NAME - COL_SKU - COL_QTY; // 7
+  const COL_AMT = 9; // Enough for $1,234.56
+
+  // Item Name takes all remaining space:
+  // W=32 -> 12 chars (tight but usable)
+  // W=48 -> 28 chars (plenty!)
+  const COL_NAME = W - COL_SKU - COL_QTY - COL_AMT;
 
   // ═══════════════════════════════════════════
   //  SECTION 1: HOTEL HEADER
@@ -266,18 +273,22 @@ function buildReceipt(p, order) {
 
     // Variant (matches jsPDF lines 188-194)
     if (variant && variant.name) {
+      p.setTypeFontB(); // Smaller font
       let variantText = `  ( ${variant.name} )`;
-      if (variant.price > 0) variantText += ` +${money(variant.price)}`;
+      // Price removed as per request
       wrapText(variantText, W).forEach((line) => p.println(line));
+      p.setTypeFontA(); // Restore normal font
     }
 
     // Modifiers (matches jsPDF — selectedModifiers array)
     if (item.selectedModifiers && item.selectedModifiers.length > 0) {
+      p.setTypeFontB(); // Smaller font
       item.selectedModifiers.forEach((mod) => {
         let modText = `  + ${mod.name}`;
-        if (mod.price > 0) modText += ` +${money(mod.price)}`;
+        // Price removed as per request
         wrapText(modText, W).forEach((line) => p.println(line));
       });
+      p.setTypeFontA(); // Restore normal font
     }
 
     // Special instructions (matches jsPDF lines 196-203)
@@ -338,9 +349,11 @@ function buildReceipt(p, order) {
   // ═══════════════════════════════════════════
   p.alignCenter();
   p.println("Thank you for your order!");
-  p.alignLeft();
-  p.println(`Prepared By: ${safe(order.preparedBy)}`);
-  p.println(`Printed By:  ${safe(order.printedBy)}`);
+  // Align left and right
+  row(
+    `Prepared By: ${safe(order.preparedBy)}`,
+    `Printed By: ${safe(order.printedBy)}`,
+  );
   // ═══════════════════════════════════════════
   //  SECTION 11: FEED + AUTO-CUT
   //  1 empty line of feed before cut prevents text from being

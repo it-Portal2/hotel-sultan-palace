@@ -242,8 +242,34 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   normal();
   const paymentMethod = safe(order.paymentMethod);
   left(`Payment: ${paymentMethod}`, 5.5);
-  row("Paid:", money(total), 5.5);
-  row("Due:", money(0), 5.5);
+  const orderPaid = (order as any).paidAmount;
+  const orderDue = (order as any).dueAmount;
+  const isDueStatus =
+    order.paymentStatus === "due" ||
+    order.paymentStatus === "unpaid" ||
+    order.paymentStatus === "partial";
+
+  let paid = orderPaid;
+  let due = orderDue;
+
+  // Default logic if missing
+  if (paid === undefined || paid === null) {
+    if (isDueStatus) {
+      paid = 0;
+    } else {
+      paid = total; // Assume fully paid if status is not due/unpaid
+    }
+  }
+
+  if (due === undefined || due === null) {
+    due = total - paid;
+  }
+
+  // Ensure non-negative due
+  if (due < 0) due = 0;
+
+  row("Paid:", money(paid), 5.5);
+  row("Due:", money(due), 5.5);
 
   sep();
 

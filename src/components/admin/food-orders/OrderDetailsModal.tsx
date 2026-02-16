@@ -350,7 +350,7 @@ export default function OrderDetailsModal({
                   </div>
                 )}
                 {order.notes && (
-                  <div className="flex-1 min-w-[200px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                  <div className="flex-1 min-w-[200px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 break-words">
                     <span className="font-bold">Kitchen Notes:</span>{" "}
                     {order.notes}
                   </div>

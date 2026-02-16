@@ -293,7 +293,7 @@ export interface FoodOrder {
   scheduledDeliveryTime?: Date;
   estimatedPreparationTime: number;
   actualDeliveryTime?: Date;
-  paymentStatus: "pending" | "paid" | "refunded";
+  paymentStatus: "pending" | "paid" | "refunded" | "due" | "unpaid" | "partial";
   paymentMethod?: string;
   paidAmount?: number;
   dueAmount?: number;

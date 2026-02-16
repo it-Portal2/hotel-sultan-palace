@@ -98,12 +98,13 @@ async function printReceipt(order, label, printerName = "restaurant") {
       p.setTextSize(1, 1);
       p.println(`*** ${label} ***`);
       p.bold(false);
-      p.setTextNormalSize();
+      p.setTextNormal();
       p.newLine();
     }
 
     // Build the receipt content
-    buildReceipt(p, order);
+    const cfg = PRINTER_CONFIGS[printerName];
+    buildReceipt(p, order, cfg.width);
 
     // Execute print
     await p.execute();
