@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+
 import { PhotoIcon, CloudArrowUpIcon, LinkIcon, CalendarIcon, UserGroupIcon, HomeModernIcon, TicketIcon } from '@heroicons/react/24/outline';
 import { useRouter, useParams } from 'next/navigation';
 import { storage, auth } from '@/lib/firebase';
@@ -23,10 +23,12 @@ export default function EditSpecialOfferPage() {
   const offerId = params.id as string;
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = React.useRef(false); // Track if offer has been loaded
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageKey, setImageKey] = useState(Date.now()); // Force re-render when image changes
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -64,6 +66,8 @@ export default function EditSpecialOfferPage() {
     });
     return () => unsubscribe();
   }, []);
+
+
 
   useEffect(() => {
     const loadOffer = async () => {
@@ -131,8 +135,11 @@ export default function EditSpecialOfferPage() {
         setLoading(false);
       }
     };
+    // Only load offer once on mount, don't reload when router/showToast change
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
     loadOffer();
-  }, [offerId, router, showToast]);
+  }, [offerId]); // Only depend on offerId
 
   const handleUpload = async (file: File) => {
     if (!storage) {
@@ -153,6 +160,7 @@ export default function EditSpecialOfferPage() {
       await uploadBytes(obj, file, { contentType: file.type });
       const url = await getDownloadURL(obj);
       setImageUrl(url);
+      setImageKey(Date.now()); // Update key to force re-render
       showToast('Image uploaded successfully!', 'success');
     } catch (err: unknown) {
       console.error('Image upload failed:', err);
@@ -225,6 +233,8 @@ export default function EditSpecialOfferPage() {
         couponMode: (staticCouponCode ? 'static' : 'none') as 'static' | 'none',
         couponCode: staticCouponCode || null,
       };
+
+
 
       const success = await updateSpecialOffer(offerId, updateData);
 
@@ -313,8 +323,12 @@ export default function EditSpecialOfferPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Cover Image</label>
                 <div className="flex items-center gap-4">
                   {imageUrl ? (
-                    <div className="relative h-24 w-40 rounded-lg overflow-hidden border border-gray-200 group">
-                      <Image src={imageUrl} alt="preview" fill className="object-cover" unoptimized />
+                    <div className="relative h-24 w-40 rounded-lg overflow-hidden border border-gray-200 group" key={imageKey}>
+                      <img
+                        src={`${imageUrl}?t=${imageKey}`}
+                        alt="preview"
+                        className="h-full w-full object-cover"
+                      />
                       <button type="button" onClick={() => setImageUrl('')} className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white text-xs font-medium">Remove</button>
                     </div>
                   ) : (
