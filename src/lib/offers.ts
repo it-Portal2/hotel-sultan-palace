@@ -47,8 +47,8 @@ export const isSpecialOfferValid = (
     if (now > endOfDay) return false;
   }
 
-  if (!offer.applyToAllPersons) {
-    const guests = context.guestCount ?? 0;
+  if (!offer.applyToAllPersons && context.guestCount !== undefined) {
+    const guests = context.guestCount;
     if (offer.minPersons && guests < offer.minPersons) return false;
     if (offer.maxPersons && guests > offer.maxPersons) return false;
   }

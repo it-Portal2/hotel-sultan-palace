@@ -217,8 +217,8 @@ export default function EditSpecialOfferPage() {
 
         discountType,
         discountValue: discountType === 'pay_x_stay_y' ? 0 : discountValue,
-        stayNights: discountType === 'pay_x_stay_y' ? stayNights : undefined,
-        payNights: discountType === 'pay_x_stay_y' ? payNights : undefined,
+        stayNights: discountType === 'pay_x_stay_y' ? stayNights : null as any,
+        payNights: discountType === 'pay_x_stay_y' ? payNights : null as any,
 
         // Coupon Logic
         // Coupon Logic - Derived
