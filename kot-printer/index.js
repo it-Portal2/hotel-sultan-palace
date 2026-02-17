@@ -7,6 +7,8 @@
  *  1. New orders (restaurantPrinted == false) → print to Restaurant (Ramson)
  *  2. Reprint requests (reprintRequested == true) → print to Restaurant (Ramson)
  *  3. Kitchen print requests (kitchenPrintRequested == true) → print to Kitchen (POSX)
+ *  4. Main bar orders (barPrinted == false, barLocation == main_bar) → Ramson (Phase 9E)
+ *  5. Main bar reprints (reprintRequested == true, barLocation == main_bar) → Ramson (Phase 9E)
  *
  * Usage:
  *   1. Copy .env.example → .env and fill in values
@@ -22,6 +24,8 @@ const {
   listenForNewOrders,
   listenForReprintRequests,
   listenForKitchenPrintRequests,
+  listenForMainBarOrders,
+  listenForMainBarReprints,
 } = require("./listener");
 
 async function main() {
@@ -30,7 +34,7 @@ async function main() {
     chalk.bold.hex("#FF6A00")("╔══════════════════════════════════════╗"),
   );
   console.log(
-    chalk.bold.hex("#FF6A00")("║   KOT PRINTER LISTENER — v2.0.0     ║"),
+    chalk.bold.hex("#FF6A00")("║   KOT PRINTER LISTENER — v3.0.0     ║"),
   );
   console.log(
     chalk.bold.hex("#FF6A00")("║   Sultan Palace Hotel               ║"),
@@ -79,10 +83,12 @@ async function main() {
   }
   console.log("");
 
-  // Start all three listeners
+  // Start all five listeners
   listenForNewOrders();
   listenForReprintRequests();
   listenForKitchenPrintRequests();
+  listenForMainBarOrders();
+  listenForMainBarReprints();
 
   console.log("");
   console.log(chalk.green.bold("  ● System is live — waiting for orders..."));

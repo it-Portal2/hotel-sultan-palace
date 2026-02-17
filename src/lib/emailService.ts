@@ -1,7 +1,7 @@
-import nodemailer from 'nodemailer';
-import { Booking } from './firestoreService';
-import * as dns from 'dns';
-import { promisify } from 'util';
+import nodemailer from "nodemailer";
+import { Booking } from "./firestoreService";
+import * as dns from "dns";
+import { promisify } from "util";
 
 const dnsLookup = promisify(dns.lookup);
 
@@ -20,29 +20,29 @@ interface EmailConfig {
 
 // Get email configuration from environment variables
 const getEmailConfig = (): EmailConfig => {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
-  const user = (process.env.SMTP_USER || '').trim();
+  const host = process.env.SMTP_HOST || "smtppro.zoho.com";
+  const port = parseInt(process.env.SMTP_PORT || "465", 10);
+  const secure = process.env.SMTP_SECURE === "true" || port === 465;
+  const user = (process.env.SMTP_USER || "").trim();
 
-  const rawPassword = process.env.SMTP_PASSWORD || '';
-  const pass = rawPassword.replace(/\s+/g, '').trim();
+  const rawPassword = process.env.SMTP_PASSWORD || "";
+  const pass = rawPassword.replace(/\s+/g, "").trim();
 
   const from = (process.env.SMTP_FROM_EMAIL || user).trim();
-  const fromName = (process.env.SMTP_FROM_NAME || 'Hotel Sultan Palace').trim();
+  const fromName = (process.env.SMTP_FROM_NAME || "Sultan Palace Hotel").trim();
 
   if (!user || !pass) {
-    throw new Error('SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.');
+    throw new Error(
+      "SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.",
+    );
   }
 
-  console.log('SMTP Config:', {
+  console.log("[SMTP] Config loaded:", {
     host,
     port,
     secure,
-    user: user.substring(0, 3) + '***',
-    passwordLength: pass.length,
+    user: user.substring(0, 3) + "***",
     from,
-    fromName,
   });
 
   return {
@@ -55,79 +55,90 @@ const getEmailConfig = (): EmailConfig => {
   };
 };
 
-// Note: getTransporter function removed - using createSMTPTransport instead for better connection handling
+// ═══════════════════════════════════════════════════════════════════════════════
+// SINGLETON POOLED TRANSPORT (Phase 8B)
+// Reuses TCP connections — up to 5 concurrent, 100 messages per connection.
+// ═══════════════════════════════════════════════════════════════════════════════
+let _transporter: nodemailer.Transporter | null = null;
 
-const createSMTPTransport = (host: string, port: number, secure: boolean, auth: { user: string; pass: string }): nodemailer.Transporter => {
-  return nodemailer.createTransport({
-    host: host,
-    port: port,
-    secure: secure,
-    auth: auth,
+const getTransporter = (): nodemailer.Transporter => {
+  if (_transporter) return _transporter;
+
+  const config = getEmailConfig();
+
+  _transporter = nodemailer.createTransport({
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: config.auth,
     tls: {
       rejectUnauthorized: false,
-      minVersion: 'TLSv1.2',
-      maxVersion: 'TLSv1.3',
+      minVersion: "TLSv1.2",
     },
     connectionTimeout: 20000,
     socketTimeout: 20000,
     greetingTimeout: 10000,
-    pool: false,
-    debug: false,
-    logger: false,
   } as nodemailer.TransportOptions);
+
+  console.log(
+    "[SMTP] Pooled transporter created →",
+    config.host + ":" + config.port,
+  );
+  return _transporter;
 };
 
-export const verifySMTPConnection = async (retries: number = 3): Promise<{ success: boolean; error?: string }> => {
-  const config = getEmailConfig();
+export const verifySMTPConnection = async (
+  retries: number = 3,
+): Promise<{ success: boolean; error?: string }> => {
   let lastError: string | null = null;
   const errors: string[] = [];
 
   for (let attempt = 1; attempt <= retries + 1; attempt++) {
     try {
-      console.log(`Attempting SMTP connection to ${config.host}:${config.port} (Attempt ${attempt}/${retries + 1})...`);
-
-      const transport = createSMTPTransport(
-        config.host,
-        config.port,
-        config.secure,
-        config.auth
+      console.log(
+        `[SMTP] Verifying connection (Attempt ${attempt}/${retries + 1})...`,
       );
+
+      const transport = getTransporter();
 
       const verifyPromise = transport.verify();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Connection timeout after 20 seconds')), 20000)
+        setTimeout(
+          () => reject(new Error("Connection timeout after 20 seconds")),
+          20000,
+        ),
       );
 
       await Promise.race([verifyPromise, timeoutPromise]);
 
-      try {
-        transport.close();
-      } catch {
-        // Ignore transport close errors
-      }
-
-      console.log(`✅ SMTP connection verified successfully to ${config.host}!`);
+      console.log("[SMTP] Connection verified successfully");
       return { success: true };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       errors.push(errorMessage);
       lastError = errorMessage;
 
-      console.error(`❌ SMTP verification failed (Attempt ${attempt}/${retries + 1}):`, errorMessage);
+      console.error(
+        `❌ SMTP verification failed (Attempt ${attempt}/${retries + 1}):`,
+        errorMessage,
+      );
 
       if (attempt === retries + 1) {
         break;
       }
 
       const waitTime = Math.min(500 * Math.pow(2, attempt - 1), 3000);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
 
   return {
     success: false,
-    error: `SMTP connection failed. Last error: ${lastError}`
+    error: `SMTP connection failed. Last error: ${lastError}`,
   };
 };
 
@@ -146,88 +157,103 @@ interface SendEmailOptions {
   }>;
 }
 
-export const sendEmail = async (options: SendEmailOptions, retries: number = 3): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+export const sendEmail = async (
+  options: SendEmailOptions,
+  retries: number = 3,
+): Promise<{ success: boolean; messageId?: string; error?: string }> => {
   const config = getEmailConfig();
   let lastError: string | null = null;
   const errors: string[] = [];
 
   const mailOptions = {
     from: `"${config.fromName}" <${config.from}>`,
-    to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
+    to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
     subject: options.subject,
     html: options.html,
-    text: options.text || options.html.replace(/<[^>]*>/g, ''),
-    cc: options.cc ? (Array.isArray(options.cc) ? options.cc.join(', ') : options.cc) : undefined,
-    bcc: options.bcc ? (Array.isArray(options.bcc) ? options.bcc.join(', ') : options.bcc) : undefined,
+    text: options.text || options.html.replace(/<[^>]*>/g, ""),
+    cc: options.cc
+      ? Array.isArray(options.cc)
+        ? options.cc.join(", ")
+        : options.cc
+      : undefined,
+    bcc: options.bcc
+      ? Array.isArray(options.bcc)
+        ? options.bcc.join(", ")
+        : options.bcc
+      : undefined,
     attachments: options.attachments,
   };
 
   for (let attempt = 1; attempt <= retries + 1; attempt++) {
     try {
-      console.log(`Sending email to ${options.to} (Attempt ${attempt}/${retries + 1})...`);
-
-      const transport = createSMTPTransport(
-        config.host,
-        config.port,
-        config.secure,
-        config.auth
+      console.log(
+        `[SMTP] Sending email to ${options.to} (Attempt ${attempt}/${retries + 1})...`,
       );
+
+      const transport = getTransporter();
 
       const sendPromise = transport.sendMail(mailOptions);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Email send timeout after 20 seconds')), 20000)
+        setTimeout(
+          () => reject(new Error("Email send timeout after 20 seconds")),
+          20000,
+        ),
       );
 
-      const info = await Promise.race([sendPromise, timeoutPromise]) as nodemailer.SentMessageInfo;
+      const info = (await Promise.race([
+        sendPromise,
+        timeoutPromise,
+      ])) as nodemailer.SentMessageInfo;
 
-      try {
-        transport.close();
-      } catch {
-        // Ignore transport close errors
-      }
-
-      console.log(`✅ Email sent successfully:`, info.messageId);
+      console.log(`[EMAIL_SENT]`, {
+        to: options.to,
+        subject: options.subject,
+        messageId: info.messageId,
+      });
       return {
         success: true,
         messageId: info.messageId,
       };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       errors.push(errorMessage);
       lastError = errorMessage;
 
-      console.error(`❌ Error sending email (Attempt ${attempt}/${retries + 1}):`, errorMessage);
+      console.error(
+        `❌ Error sending email (Attempt ${attempt}/${retries + 1}):`,
+        errorMessage,
+      );
 
       if (attempt === retries + 1) {
         break;
       }
 
       const waitTime = Math.min(500 * Math.pow(2, attempt - 1), 3000);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
 
   return {
     success: false,
-    error: `Email sending failed. Last error: ${lastError}`
+    error: `Email sending failed. Last error: ${lastError}`,
   };
 };
 
-const formatCurrency = (amount: number, currency: string = 'USD'): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
+const formatCurrency = (amount: number, currency: string = "USD"): string => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
     currency: currency,
   }).format(amount);
 };
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 
@@ -241,28 +267,28 @@ const calculateNights = (checkIn: string, checkOut: string): number => {
 
 // Email Templates
 
-const BASE_URL = 'https://www.sultanpalacehotelznz.com'; // Always use production domain for emails
+const BASE_URL = "https://www.sultanpalacehotelznz.com"; // Always use production domain for emails
 
 // Social Links & Assets
 const SOCIAL_LINKS = {
-  facebook: 'https://www.facebook.com/sultanpalace.znz',
-  instagram: 'https://www.instagram.com/sultanpalace.zanzibar',
-  whatsapp: 'https://wa.me/255777085630',
+  facebook: "https://www.facebook.com/sultanpalace.znz",
+  instagram: "https://www.instagram.com/sultanpalace.zanzibar",
+  whatsapp: "https://wa.me/255777085630",
   website: BASE_URL,
-  email: 'reservations@sultanpalacehotelznz.com',
-  phone: '+255 684 888 111'
+  email: "reservations@sultanpalacehotelznz.com",
+  phone: "+255 684 888 111",
 };
 
 const BRAND_COLORS = {
-  primary: '#0a1a2b', // Dark Blue
-  accent: '#BE8C53',  // Gold
-  background: '#f4f4f4',
-  text: '#333333',
-  lightText: '#666666',
-  white: '#ffffff',
-  success: '#28a745',
-  warning: '#ffc107',
-  danger: '#dc3545'
+  primary: "#0a1a2b", // Dark Blue
+  accent: "#BE8C53", // Gold
+  background: "#f4f4f4",
+  text: "#333333",
+  lightText: "#666666",
+  white: "#ffffff",
+  success: "#28a745",
+  warning: "#ffc107",
+  danger: "#dc3545",
 };
 
 /**
@@ -325,7 +351,7 @@ const generateEmailLayout = (title: string, content: string): string => {
       </div>
       <p>Dongwe, East Coast, Zanzibar</p>
       <p>
-        <a href="tel:${SOCIAL_LINKS.phone.replace(/\s/g, '')}">${SOCIAL_LINKS.phone}</a> | 
+        <a href="tel:${SOCIAL_LINKS.phone.replace(/\s/g, "")}">${SOCIAL_LINKS.phone}</a> | 
         <a href="mailto:${SOCIAL_LINKS.email}">${SOCIAL_LINKS.email}</a>
       </p>
       <p style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
@@ -369,7 +395,7 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
           </td>
           <td style="padding-top: 10px;">
              <span style="font-size: 12px; color: ${BRAND_COLORS.lightText}; text-transform: uppercase;">Guests</span><br>
-             <strong style="color: ${BRAND_COLORS.primary};">${booking.guests.adults} Adults${booking.guests.children > 0 ? `, ${booking.guests.children} Children` : ''}</strong>
+             <strong style="color: ${BRAND_COLORS.primary};">${booking.guests.adults} Adults${booking.guests.children > 0 ? `, ${booking.guests.children} Children` : ""}</strong>
           </td>
         </tr>
       </table>
@@ -378,24 +404,32 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
     <!-- Room Details -->
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Reservation Details</h3>
     <table style="width: 100%; margin-bottom: 20px;">
-      ${booking.rooms.map(room => `
+      ${booking.rooms
+        .map(
+          (room) => `
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
             <strong style="color: ${BRAND_COLORS.text}; display: block;">${room.type}</strong>
-            ${room.allocatedRoomType ? `<span style="font-size: 13px; color: ${BRAND_COLORS.lightText};">Assigned: ${room.allocatedRoomType}</span>` : ''}
+            ${room.allocatedRoomType ? `<span style="font-size: 13px; color: ${BRAND_COLORS.lightText};">Assigned: ${room.allocatedRoomType}</span>` : ""}
           </td>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right; vertical-align: top;">
             ${formatCurrency(room.price)}
           </td>
         </tr>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </table>
 
-    ${booking.addOns.length > 0 ? `
+    ${
+      booking.addOns.length > 0
+        ? `
     <!-- Add-ons -->
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Enhancements</h3>
     <table style="width: 100%; margin-bottom: 20px;">
-      ${booking.addOns.map(addon => `
+      ${booking.addOns
+        .map(
+          (addon) => `
         <tr>
           <td style="padding: 8px 0; color: ${BRAND_COLORS.lightText};">
             ${addon.name} <span style="font-size: 12px; color: #999;">(x${addon.quantity})</span>
@@ -404,9 +438,13 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
             ${formatCurrency(addon.price * addon.quantity)}
           </td>
         </tr>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </table>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- Total Amount -->
     <div style="background-color: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.white}; padding: 20px; border-radius: 8px; text-align: center; margin-top: 30px;">
@@ -422,11 +460,14 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
     </div>
   `;
 
-  return generateEmailLayout('Booking Confirmation', content);
+  return generateEmailLayout("Booking Confirmation", content);
 };
 
 // Booking Cancellation Email Template
-export const generateBookingCancellationEmail = (booking: Booking, cancellationReason?: string): string => {
+export const generateBookingCancellationEmail = (
+  booking: Booking,
+  cancellationReason?: string,
+): string => {
   const guestName = `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`;
 
   const content = `
@@ -443,14 +484,18 @@ export const generateBookingCancellationEmail = (booking: Booking, cancellationR
         <tr>
            <td style="padding: 5px 0;"><strong style="color: ${BRAND_COLORS.text};">Dates:</strong> <span style="color: ${BRAND_COLORS.lightText};">${formatDate(booking.checkIn)} - ${formatDate(booking.checkOut)}</span></td>
         </tr>
-         ${cancellationReason ? `
+         ${
+           cancellationReason
+             ? `
         <tr>
            <td style="padding: 15px 0 5px; border-top: 1px dashed ${BRAND_COLORS.danger}30; margin-top: 10px;">
              <strong style="color: ${BRAND_COLORS.danger};">Cancellation Reason:</strong><br>
              <span style="color: ${BRAND_COLORS.text}; font-style: italic;">"${cancellationReason}"</span>
            </td>
         </tr>
-        ` : ''}
+        `
+             : ""
+         }
       </table>
     </div>
 
@@ -460,12 +505,15 @@ export const generateBookingCancellationEmail = (booking: Booking, cancellationR
     </div>
   `;
 
-  return generateEmailLayout('Booking Cancellation', content);
+  return generateEmailLayout("Booking Cancellation", content);
 };
 
 // General Reply Email Template
-export const generateGeneralReplyEmail = (message: string, recipientName: string = 'Guest'): string => {
-  const formattedMessage = message.replace(/\n/g, '<br>');
+export const generateGeneralReplyEmail = (
+  message: string,
+  recipientName: string = "Guest",
+): string => {
+  const formattedMessage = message.replace(/\n/g, "<br>");
 
   const content = `
     <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px;">Response from Sultan Palace</h2>
@@ -482,7 +530,7 @@ export const generateGeneralReplyEmail = (message: string, recipientName: string
     </p>
   `;
 
-  return generateEmailLayout('Response from Sultan Palace', content);
+  return generateEmailLayout("Response from Sultan Palace", content);
 };
 
 export const generateBookingEnquiryEmail = (enquiryDetails: any): string => {
@@ -496,11 +544,19 @@ export const generateBookingEnquiryEmail = (enquiryDetails: any): string => {
       <p><strong>Details:</strong><br>${JSON.stringify(enquiryDetails, null, 2)}</p>
     </div>
    `;
-  return generateEmailLayout('New Booking Enquiry', content);
-}
+  return generateEmailLayout("New Booking Enquiry", content);
+};
 
-export const sendNightAuditReport = async (pdfBuffer: Buffer, recipientEmail: string, date: Date): Promise<boolean> => {
-  const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+export const sendNightAuditReport = async (
+  pdfBuffer: Buffer,
+  recipientEmail: string,
+  date: Date,
+): Promise<boolean> => {
+  const dateStr = date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   const content = `
         <h2 style="color: ${BRAND_COLORS.primary};">Night Audit Report</h2>
         <p style="color: ${BRAND_COLORS.text};">
@@ -519,11 +575,11 @@ export const sendNightAuditReport = async (pdfBuffer: Buffer, recipientEmail: st
     html,
     attachments: [
       {
-        filename: `Night_Audit_Report_${date.toISOString().split('T')[0]}.pdf`,
+        filename: `Night_Audit_Report_${date.toISOString().split("T")[0]}.pdf`,
         content: pdfBuffer,
-        contentType: 'application/pdf'
-      }
-    ]
+        contentType: "application/pdf",
+      },
+    ],
   });
 
   return result.success;

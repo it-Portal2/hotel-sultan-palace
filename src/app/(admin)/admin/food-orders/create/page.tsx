@@ -18,7 +18,7 @@ import type { Booking, RoomTypeData } from "@/lib/firestoreService";
 import type { FoodCategory } from "@/lib/types/foodMenu";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
 import {
-  processReceipt,
+  uploadReceiptToStorage,
   generateReceiptNumber,
   generateOrderNumber,
 } from "@/lib/receiptGenerator";
@@ -495,8 +495,8 @@ export default function POSCreatePage() {
           paymentMethod === "Complimentary" ? "paid" : paymentStatus,
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
-        restaurantPrinted: false,
-        reprintRequested: false, // Reset reprint if edited?
+        // restaurantPrinted NOT set — print only triggers on confirmation (Phase 9)
+        reprintRequested: false, // Reset reprint if edited
       };
 
       if (isEditing && editOrderId) {
@@ -512,7 +512,7 @@ export default function POSCreatePage() {
             // Fetch fresh order to get numbers
             const updatedOrder = await getFoodOrder(editOrderId);
             if (updatedOrder) {
-              const receiptUrl = await processReceipt({
+              const receiptUrl = await uploadReceiptToStorage({
                 order: {
                   ...updatedOrder,
                   // Overlay current form data to ensure receipt matches what we just saved
@@ -551,7 +551,7 @@ export default function POSCreatePage() {
 
           try {
             // Use server-generated IDs from createFoodOrder result
-            const receiptUrl = await processReceipt({
+            const receiptUrl = await uploadReceiptToStorage({
               order: {
                 id: result.id,
                 orderNumber: result.orderNumber, // Server-generated unique number

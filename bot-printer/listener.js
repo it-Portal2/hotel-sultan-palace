@@ -2,14 +2,12 @@
  * listener.js
  * Production-grade Firestore real-time listeners for BOT (Bar Order Ticket) printing.
  *
- * TWO LISTENERS:
+ * TWO LISTENERS (BEACH BAR ONLY):
  * ─────────────────
- * 1. NEW BAR ORDERS     → barPrinted == false → route by barLocation → print
- * 2. REPRINT REQUESTS   → reprintRequested == true → route by barLocation → print
+ * 1. NEW BEACH BAR ORDERS   → barPrinted == false, barLocation == beach_bar → print
+ * 2. BEACH BAR REPRINTS     → reprintRequested == true, barLocation == beach_bar → print
  *
- * ROUTING:
- *   order.barLocation === "main_bar"  → Main Bar Printer
- *   order.barLocation === "beach_bar" → Beach Bar Printer
+ * Main Bar printing is handled by KOT service (Phase 9E — shares Ramson printer).
  *
  * Same design principles as KOT listener (atomic ops, no in-memory state,
  * self-healing queries, concurrency locks, audit trail).
@@ -45,25 +43,18 @@ function logOrder(tag, color, order, printerName) {
   );
 }
 
-/**
- * Resolve which printer to use based on barLocation.
- * Defaults to "main_bar" if barLocation is missing or unknown.
- */
-function resolvePrinter(order) {
-  const loc = order.barLocation;
-  if (loc === "beach_bar") return "beach_bar";
-  return "main_bar"; // default
-}
-
 // ═══════════════════════════════════════════════════════════════
-//  LISTENER 1: NEW BAR ORDERS
+//  LISTENER 1: NEW BEACH BAR ORDERS
 //  Collection: barOrders
-//  Query: barPrinted == false
+//  Query: barPrinted == false AND barLocation == "beach_bar"
 //  Trigger: added event only
-//  Action: route by barLocation → print → set barPrinted: true
+//  Action: print to beach_bar printer → set barPrinted: true
 // ═══════════════════════════════════════════════════════════════
 function listenForNewBarOrders() {
-  const ref = db.collection("barOrders").where("barPrinted", "==", false);
+  const ref = db
+    .collection("barOrders")
+    .where("barPrinted", "==", false)
+    .where("barLocation", "==", "beach_bar");
 
   ref.onSnapshot(
     async (snapshot) => {
@@ -76,8 +67,8 @@ function listenForNewBarOrders() {
         const lockKey = `new-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        const printerName = resolvePrinter(order);
-        logOrder("NEW BAR ORDER", "green", order, printerName);
+        const printerName = "beach_bar";
+        logOrder("BEACH BAR ORDER", "green", order, printerName);
 
         try {
           let printed = true;
@@ -134,19 +125,22 @@ function listenForNewBarOrders() {
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for new bar orders (barPrinted == false)",
+    "Watching for beach bar orders (barPrinted == false, barLocation == beach_bar)",
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LISTENER 2: BAR REPRINT REQUESTS
+//  LISTENER 2: BEACH BAR REPRINT REQUESTS
 //  Collection: barOrders
-//  Query: reprintRequested == true
+//  Query: reprintRequested == true AND barLocation == "beach_bar"
 //  Trigger: added + modified
-//  Action: route by barLocation → print with REPRINT label → reset
+//  Action: print with REPRINT label to beach_bar printer → reset flag
 // ═══════════════════════════════════════════════════════════════
 function listenForBarReprintRequests() {
-  const ref = db.collection("barOrders").where("reprintRequested", "==", true);
+  const ref = db
+    .collection("barOrders")
+    .where("reprintRequested", "==", true)
+    .where("barLocation", "==", "beach_bar");
 
   ref.onSnapshot(
     async (snapshot) => {
@@ -159,8 +153,8 @@ function listenForBarReprintRequests() {
         const lockKey = `reprint-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        const printerName = resolvePrinter(order);
-        logOrder("BAR REPRINT", "yellow", order, printerName);
+        const printerName = "beach_bar";
+        logOrder("BEACH BAR REPRINT", "yellow", order, printerName);
 
         try {
           let printed = true;
@@ -218,7 +212,7 @@ function listenForBarReprintRequests() {
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for bar reprint requests (reprintRequested == true)",
+    "Watching for beach bar reprints (reprintRequested == true, barLocation == beach_bar)",
   );
 }
 

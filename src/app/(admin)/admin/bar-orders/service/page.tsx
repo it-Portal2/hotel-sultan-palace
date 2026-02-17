@@ -5,7 +5,6 @@ import { useAdminRole } from "@/context/AdminRoleContext";
 import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
-import { processOrderInventoryDeduction } from "@/lib/inventoryService";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import Link from "next/link";
 import {
@@ -25,6 +24,12 @@ const STATUS_OPTIONS = [
   { value: "preparing", label: "Preparing" },
   { value: "ready", label: "Ready" },
   { value: "out_for_delivery", label: "Out for Delivery" },
+];
+
+const LOCATION_OPTIONS = [
+  { value: "all", label: "All Locations" },
+  { value: "main_bar", label: "Main Bar" },
+  { value: "beach_bar", label: "Beach Bar" },
 ];
 
 const statusColors: Record<string, { bg: string; text: string; dot: string }> =
@@ -66,7 +71,7 @@ const statusColors: Record<string, { bg: string; text: string; dot: string }> =
     },
   };
 
-export default function AdminFoodOrdersPage() {
+export default function BarOrdersServicePage() {
   const { isReadOnly } = useAdminRole();
   const { showToast } = useToast();
 
@@ -74,17 +79,18 @@ export default function AdminFoodOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<FoodOrder | null>(null);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const data = await getFoodOrders();
+      const data = await getFoodOrders(undefined, "bar");
       setOrders(data);
     } catch (error) {
-      console.error("Error loading orders:", error);
-      showToast("Failed to load orders", "error");
+      console.error("Error loading bar orders:", error);
+      showToast("Failed to load bar orders", "error");
     } finally {
       setLoading(false);
     }
@@ -95,6 +101,10 @@ export default function AdminFoodOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Confirm-to-Print for Bar Orders ──────────────────────────────
+  // On confirmation, set barPrinted: false to trigger restaurant printer
+  // (Main Bar → KOT Listener 4 → Ramson, Beach Bar → BOT Listener 1)
+  // Kitchen print is NOT auto-triggered — use manual button if needed
   const handleStatusUpdate = async (
     orderId: string,
     status: FoodOrder["status"],
@@ -109,12 +119,12 @@ export default function AdminFoodOrdersPage() {
         setSelectedOrder({ ...selectedOrder, status });
       }
 
-      // Auto-trigger BOTH printers when order is confirmed (Phase 9)
+      // Auto-trigger RESTAURANT print only when bar order is confirmed (Phase 9G)
+      // Kitchen print is NOT auto-triggered for bar orders
       if (status === "confirmed") {
         try {
           await updateFoodOrder(orderId, {
-            restaurantPrinted: false, // → KOT Listener 1 → Ramson (restaurant receipt)
-            kitchenPrintRequested: true, // → KOT Listener 3 → POSX (kitchen ticket)
+            barPrinted: false, // → KOT Listener 4 (main_bar) or BOT Listener 1 (beach_bar)
           } as any);
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
@@ -122,13 +132,7 @@ export default function AdminFoodOrdersPage() {
       }
 
       if (status === "delivered") {
-        try {
-          await processOrderInventoryDeduction(orderId, "Admin User");
-          showToast("Order delivered & Inventory deducted", "success");
-        } catch (invError) {
-          console.error("Inventory Deduction Failed:", invError);
-          showToast("Order delivered but Inventory update failed", "warning");
-        }
+        showToast("Bar order delivered", "success");
       } else {
         showToast(
           `Order status updated to ${status.replace("_", " ")}`,
@@ -136,7 +140,7 @@ export default function AdminFoodOrdersPage() {
         );
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
+      console.error("Error updating bar order status:", error);
       showToast("Failed to update order status", "error");
       loadOrders();
     }
@@ -145,13 +149,14 @@ export default function AdminFoodOrdersPage() {
   const handleReprint = async (orderId: string) => {
     try {
       await updateFoodOrder(orderId, { reprintRequested: true } as any);
-      showToast("Print request sent to restaurant printer", "success");
+      showToast("Reprint request sent to bar printer", "success");
     } catch (error) {
       console.error("Error requesting reprint:", error);
-      showToast("Failed to send print request", "error");
+      showToast("Failed to send reprint request", "error");
     }
   };
 
+  // Manual kitchen print — not auto-triggered for bar orders
   const handleKitchenPrint = async (orderId: string) => {
     try {
       await updateFoodOrder(orderId, {
@@ -164,7 +169,7 @@ export default function AdminFoodOrdersPage() {
     }
   };
 
-  // Filter active orders only
+  // Filter & search
   const filteredOrders = useMemo(() => {
     let filtered = orders.filter((o) =>
       [
@@ -178,6 +183,10 @@ export default function AdminFoodOrdersPage() {
 
     if (statusFilter !== "all") {
       filtered = filtered.filter((o) => o.status === statusFilter);
+    }
+
+    if (locationFilter !== "all") {
+      filtered = filtered.filter((o) => o.barLocation === locationFilter);
     }
 
     if (searchQuery.trim()) {
@@ -195,7 +204,7 @@ export default function AdminFoodOrdersPage() {
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [orders, statusFilter, searchQuery]);
+  }, [orders, statusFilter, locationFilter, searchQuery]);
 
   // Pagination
   const totalPages = Math.max(
@@ -210,7 +219,7 @@ export default function AdminFoodOrdersPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, locationFilter]);
 
   // Stats
   const stats = useMemo(() => {
@@ -236,8 +245,10 @@ export default function AdminFoodOrdersPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50/50">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF6A00]" />
-          <p className="text-sm text-gray-500 font-medium">Loading Orders...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#9333EA]" />
+          <p className="text-sm text-gray-500 font-medium">
+            Loading Bar Orders...
+          </p>
         </div>
       </div>
     );
@@ -248,10 +259,10 @@ export default function AdminFoodOrdersPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
         <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Service & Delivery Dashboard
+          Bar Service &amp; Delivery
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Track ready orders and manage delivery/service to guests.
+          Manage bar orders across Main Bar &amp; Beach Bar locations.
         </p>
       </div>
 
@@ -276,7 +287,7 @@ export default function AdminFoodOrdersPage() {
           </div>
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-              Kitchen Ready
+              Ready to Serve
             </p>
             <p className="text-2xl font-black text-teal-600 mt-1">
               {stats.ready}
@@ -292,8 +303,8 @@ export default function AdminFoodOrdersPage() {
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search orders..."
-                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all"
+                placeholder="Search bar orders..."
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#9333EA]/20 focus:border-[#9333EA] transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -301,9 +312,20 @@ export default function AdminFoodOrdersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] cursor-pointer"
+              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#9333EA]/20 focus:border-[#9333EA] cursor-pointer"
             >
               {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#9333EA]/20 focus:border-[#9333EA] cursor-pointer"
+            >
+              {LOCATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -318,7 +340,7 @@ export default function AdminFoodOrdersPage() {
           {paginatedOrders.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               <div className="text-center">
-                <p className="font-medium text-gray-500">No orders found</p>
+                <p className="font-medium text-gray-500">No bar orders found</p>
                 <p className="text-xs mt-1">Try adjusting your filters</p>
               </div>
             </div>
@@ -375,14 +397,17 @@ export default function AdminFoodOrdersPage() {
                           </p>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-sm text-gray-600 capitalize truncate max-w-[100px]">
-                            {order.roomName
-                              ? `Room ${order.roomName}`
-                              : (order.deliveryLocation || "N/A").replace(
-                                  "_",
-                                  " ",
-                                )}
-                          </p>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              order.barLocation === "main_bar"
+                                ? "bg-purple-50 border-purple-200 text-purple-700"
+                                : "bg-cyan-50 border-cyan-200 text-cyan-700"
+                            }`}
+                          >
+                            {order.barLocation === "main_bar"
+                              ? "Main Bar"
+                              : "Beach Bar"}
+                          </span>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <p className="text-sm text-gray-700 truncate max-w-[180px]">
@@ -412,25 +437,25 @@ export default function AdminFoodOrdersPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {/* Print */}
+                            {/* Reprint */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleReprint(order.id);
                               }}
                               className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Print Request"
+                              title="Reprint to Bar Printer"
                             >
                               <PrinterIcon className="h-4 w-4" />
                             </button>
 
-                            {/* Edit */}
+                            {/* Edit — hidden after confirmation */}
                             {!isReadOnly &&
                               order.status !== "delivered" &&
                               order.status !== "cancelled" &&
                               order.status !== "confirmed" && (
                                 <Link
-                                  href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
+                                  href={`/admin/food-orders/create?menuType=bar&editOrderId=${order.id}`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                   title="Edit Order"
@@ -441,7 +466,7 @@ export default function AdminFoodOrdersPage() {
 
                             <button
                               onClick={() => setSelectedOrder(order)}
-                              className="px-3 py-1.5 text-xs font-bold text-[#FF6A00] bg-[#FF6A00]/5 hover:bg-[#FF6A00]/10 rounded-lg transition-colors border border-[#FF6A00]/20"
+                              className="px-3 py-1.5 text-xs font-bold text-[#9333EA] bg-[#9333EA]/5 hover:bg-[#9333EA]/10 rounded-lg transition-colors border border-[#9333EA]/20"
                             >
                               Manage
                             </button>
@@ -497,7 +522,7 @@ export default function AdminFoodOrdersPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${
                           currentPage === page
-                            ? "bg-[#FF6A00] text-white"
+                            ? "bg-[#9333EA] text-white"
                             : "text-gray-600 hover:bg-gray-100 border border-gray-200"
                         }`}
                       >
@@ -520,7 +545,7 @@ export default function AdminFoodOrdersPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal — reuses food order detail modal */}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}

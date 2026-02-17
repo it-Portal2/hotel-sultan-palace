@@ -13,17 +13,9 @@ module.exports = {
     ),
   },
 
-  // ─── Main Bar Printer ───
-  // For: bar orders where barLocation === "main_bar"
-  mainBarPrinter: {
-    type: process.env.MAIN_BAR_PRINTER_TYPE || "epson",
-    interface:
-      process.env.MAIN_BAR_PRINTER_INTERFACE || "tcp://192.168.1.102:9100",
-    width: parseInt(process.env.MAIN_BAR_PRINTER_WIDTH || "48", 10),
-  },
-
   // ─── Beach Bar Printer ───
-  // For: bar orders where barLocation === "beach_bar"
+  // Main Bar printing moved to KOT service (Phase 9E — shares Ramson printer)
+  // This service now handles ONLY beach_bar orders
   beachBarPrinter: {
     type: process.env.BEACH_BAR_PRINTER_TYPE || "epson",
     interface:

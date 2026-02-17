@@ -296,9 +296,189 @@ function listenForKitchenPrintRequests() {
     "Watching for kitchen prints (kitchenPrintRequested == true) → Kitchen",
   );
 }
+// ═══════════════════════════════════════════════════════════════
+//  LISTENER 4: MAIN BAR NEW ORDERS → Restaurant Printer (Ramson)
+//  Collection: barOrders
+//  Query: barPrinted == false AND barLocation == "main_bar"
+//  Trigger: added event only
+//  Action: print to "restaurant" → set barPrinted: true
+//  (Phase 9E — Main Bar shares the Ramson printer)
+// ═══════════════════════════════════════════════════════════════
+function listenForMainBarOrders() {
+  const ref = db
+    .collection("barOrders")
+    .where("barPrinted", "==", false)
+    .where("barLocation", "==", "main_bar");
+
+  ref.onSnapshot(
+    async (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type !== "added") continue;
+
+        const docId = change.doc.id;
+        const order = { id: docId, ...change.doc.data() };
+
+        const lockKey = `mainbar-new-${docId}`;
+        if (!acquireLock(lockKey)) continue;
+
+        logOrder("MAIN BAR ORDER", "green", order, "restaurant");
+
+        try {
+          let printed = true;
+          if (config.isProduction) {
+            printed = await printReceipt(order, null, "restaurant");
+          } else {
+            console.log(
+              chalk.dim(`  ⏭ Skipping print (NODE_ENV=${config.env})`),
+            );
+          }
+
+          if (!printed) {
+            console.error(
+              chalk.red(`  ✗ Print failed`),
+              chalk.dim("— will retry on next snapshot"),
+            );
+            continue;
+          }
+
+          const docRef = db.collection("barOrders").doc(docId);
+          await db.runTransaction(async (tx) => {
+            const freshDoc = await tx.get(docRef);
+            if (!freshDoc.exists) return;
+
+            const data = freshDoc.data();
+            if (data.barPrinted === true) {
+              console.log(
+                chalk.yellow(`  ⚠ Already marked printed by another instance`),
+              );
+              return;
+            }
+
+            tx.update(docRef, {
+              barPrinted: true,
+              barPrintedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+
+          console.log(
+            chalk.green(`  ✓ Printed & marked`),
+            chalk.dim(order.orderNumber),
+          );
+        } catch (err) {
+          console.error(chalk.red(`  ✗ Error:`), err.message);
+        } finally {
+          releaseLock(lockKey);
+        }
+      }
+    },
+    (err) => {
+      console.error(
+        chalk.red("[Listener] Main bar orders error:"),
+        err.message,
+      );
+    },
+  );
+
+  console.log(
+    chalk.cyan("[Listener]"),
+    "Watching for main bar orders (barPrinted == false, barLocation == main_bar) → Restaurant",
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LISTENER 5: MAIN BAR REPRINT → Restaurant Printer (Ramson)
+//  Collection: barOrders
+//  Query: reprintRequested == true AND barLocation == "main_bar"
+//  Trigger: added + modified
+//  Action: print with REPRINT label to "restaurant" → reset flag
+//  (Phase 9E — Main Bar shares the Ramson printer)
+// ═══════════════════════════════════════════════════════════════
+function listenForMainBarReprints() {
+  const ref = db
+    .collection("barOrders")
+    .where("reprintRequested", "==", true)
+    .where("barLocation", "==", "main_bar");
+
+  ref.onSnapshot(
+    async (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type !== "added" && change.type !== "modified") continue;
+
+        const docId = change.doc.id;
+        const order = { id: docId, ...change.doc.data() };
+
+        const lockKey = `mainbar-reprint-${docId}`;
+        if (!acquireLock(lockKey)) continue;
+
+        logOrder("MAIN BAR REPRINT", "yellow", order, "restaurant");
+
+        try {
+          let printed = true;
+          if (config.isProduction) {
+            printed = await printReceipt(order, "REPRINT", "restaurant");
+          } else {
+            console.log(
+              chalk.dim(`  ⏭ Skipping reprint (NODE_ENV=${config.env})`),
+            );
+          }
+
+          if (!printed) {
+            console.error(
+              chalk.red(`  ✗ Reprint failed`),
+              chalk.dim("— will retry on next snapshot"),
+            );
+            continue;
+          }
+
+          const docRef = db.collection("barOrders").doc(docId);
+          await db.runTransaction(async (tx) => {
+            const freshDoc = await tx.get(docRef);
+            if (!freshDoc.exists) return;
+
+            const data = freshDoc.data();
+            if (data.reprintRequested !== true) {
+              console.log(
+                chalk.yellow(`  ⚠ Already handled by another instance`),
+              );
+              return;
+            }
+
+            tx.update(docRef, {
+              reprintRequested: false,
+              reprintCount: admin.firestore.FieldValue.increment(1),
+              lastReprintAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+
+          console.log(
+            chalk.green(`  ✓ Reprinted & reset`),
+            chalk.dim(order.orderNumber),
+          );
+        } catch (err) {
+          console.error(chalk.red(`  ✗ Error:`), err.message);
+        } finally {
+          releaseLock(lockKey);
+        }
+      }
+    },
+    (err) => {
+      console.error(
+        chalk.red("[Listener] Main bar reprint error:"),
+        err.message,
+      );
+    },
+  );
+
+  console.log(
+    chalk.cyan("[Listener]"),
+    "Watching for main bar reprints (reprintRequested == true, barLocation == main_bar) → Restaurant",
+  );
+}
 
 module.exports = {
   listenForNewOrders,
   listenForReprintRequests,
   listenForKitchenPrintRequests,
+  listenForMainBarOrders,
+  listenForMainBarReprints,
 };

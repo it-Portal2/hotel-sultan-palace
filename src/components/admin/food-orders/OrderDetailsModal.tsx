@@ -225,8 +225,8 @@ export default function OrderDetailsModal({
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {/* Edit */}
-              {!isReadOnly && !isFinalized && (
+              {/* Edit — hidden after confirmation (Phase 9C) */}
+              {!isReadOnly && !isFinalized && order.status !== "confirmed" && (
                 <Link
                   href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
@@ -250,18 +250,7 @@ export default function OrderDetailsModal({
                   {reprintSent ? "Sent!" : "Print"}
                 </button>
               )}
-              {/* View Receipt */}
-              {(order as any).receiptUrl && (
-                <a
-                  href={(order as any).receiptUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
-                >
-                  <DocumentTextIcon className="h-4 w-4" />
-                  Receipt
-                </a>
-              )}
+              {/* Receipt download removed — receipts handled via physical printers (Phase 9D) */}
               {/* Close */}
               <button
                 onClick={onClose}
