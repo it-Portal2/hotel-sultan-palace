@@ -123,7 +123,7 @@ export const verifySMTPConnection = async (
       lastError = errorMessage;
 
       console.error(
-        `❌ SMTP verification failed (Attempt ${attempt}/${retries + 1}):`,
+        ` SMTP verification failed (Attempt ${attempt}/${retries + 1}):`,
         errorMessage,
       );
 
@@ -221,7 +221,7 @@ export const sendEmail = async (
       lastError = errorMessage;
 
       console.error(
-        `❌ Error sending email (Attempt ${attempt}/${retries + 1}):`,
+        ` Error sending email (Attempt ${attempt}/${retries + 1}):`,
         errorMessage,
       );
 
