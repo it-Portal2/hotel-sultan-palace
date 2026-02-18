@@ -35,7 +35,7 @@ export async function sendBookingConfirmationEmailAction(booking: Booking): Prom
 export async function sendContactEmailAction(contactData: { name: string; email: string; phone: string; message: string; subject: string }): Promise<{ success: boolean; error?: string }> {
     try {
         // Send notification to ADMIN (or Hotel Reservations)
-        const adminEmail = process.env.SMTP_FROM_EMAIL || 'reservations@sultanpalacehotelznz.com'; // Default fallback
+        const adminEmail = process.env.SMTP_FROM_EMAIL || 'portalholdingsznz@gmail.com'; // Default fallback
         const htmlContent = generateBookingEnquiryEmail(contactData);
 
         const result = await sendEmail({

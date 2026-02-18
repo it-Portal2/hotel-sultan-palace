@@ -2,7 +2,7 @@ import { createBooking, getBooking, getAllBookings, Booking, getRoomTypes, Suite
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { checkDailyAvailability, reserveRoomInInventory, releaseRoomFromInventory } from './availabilityService';
-
+import { sendBookingConfirmationEmailAction, sendBookingCancellationEmailAction } from '@/app/actions/emailActions';
 // Using Booking interface from firestoreService
 
 // Wrapper for availability check using new service
@@ -225,6 +225,34 @@ export const createBookingService = async (bookingData: Omit<Booking, 'id' | 'cr
       }
     }
 
+    // 7. Send Confirmation Email (Async/Non-blocking)
+    try {
+      // Reconstruct the full Booking object for the email template
+      const bookingForEmail: Booking = {
+        ...bookingWithAllocatedRooms,
+        id: bookingId, // Firestore ID
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // Ensure status is compatible if it was missing 
+        status: (bookingWithAllocatedRooms.status || 'confirmed') as Booking['status'],
+        // Ensure guests structure matches
+        guests: bookingWithAllocatedRooms.guests,
+        // Ensure rooms map correctly if needed
+        rooms: bookingWithAllocatedRooms.rooms || [],
+        addOns: bookingWithAllocatedRooms.addOns || [],
+        totalAmount: bookingWithAllocatedRooms.totalAmount || 0,
+        guestDetails: bookingWithAllocatedRooms.guestDetails,
+        address: bookingWithAllocatedRooms.address,
+        reservationGuests: bookingWithAllocatedRooms.reservationGuests,
+      } as Booking; // Assert as Booking to satisfy the template type
+
+      await sendBookingConfirmationEmailAction(bookingForEmail);
+      console.log(`[Email Service] Confirmation email sent to ${bookingForEmail.guestDetails.email}`);
+    } catch (emailError) {
+      console.error('[Email Service] Failed to send confirmation email:', emailError);
+      // We do NOT throw here, so the booking remains successful
+    }
+
     return bookingId;
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -293,6 +321,18 @@ export const cancelBooking = async (id: string): Promise<void> => {
           } catch (e) { }
         }
       }
+    }
+
+    // Send Cancellation Email
+    try {
+      if (booking.guestDetails && booking.guestDetails.email) {
+        await sendBookingCancellationEmailAction(booking);
+        console.log(`[Email Service] Cancellation email sent to ${booking.guestDetails.email}`);
+      } else {
+        console.warn('[Email Service] No email found for cancelled booking, skipping email.');
+      }
+    } catch (emailError) {
+      console.error('[Email Service] Failed to send cancellation email:', emailError);
     }
 
   } catch (error) {

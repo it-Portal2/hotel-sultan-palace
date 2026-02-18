@@ -405,8 +405,8 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Reservation Details</h3>
     <table style="width: 100%; margin-bottom: 20px;">
       ${booking.rooms
-        .map(
-          (room) => `
+      .map(
+        (room) => `
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
             <strong style="color: ${BRAND_COLORS.text}; display: block;">${room.type}</strong>
@@ -417,13 +417,12 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
           </td>
         </tr>
       `,
-        )
-        .join("")}
+      )
+      .join("")}
     </table>
 
-    ${
-      booking.addOns.length > 0
-        ? `
+    ${booking.addOns.length > 0
+      ? `
     <!-- Add-ons -->
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Enhancements</h3>
     <table style="width: 100%; margin-bottom: 20px;">
@@ -443,7 +442,7 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
         .join("")}
     </table>
     `
-        : ""
+      : ""
     }
 
     <!-- Total Amount -->
@@ -484,9 +483,8 @@ export const generateBookingCancellationEmail = (
         <tr>
            <td style="padding: 5px 0;"><strong style="color: ${BRAND_COLORS.text};">Dates:</strong> <span style="color: ${BRAND_COLORS.lightText};">${formatDate(booking.checkIn)} - ${formatDate(booking.checkOut)}</span></td>
         </tr>
-         ${
-           cancellationReason
-             ? `
+         ${cancellationReason
+      ? `
         <tr>
            <td style="padding: 15px 0 5px; border-top: 1px dashed ${BRAND_COLORS.danger}30; margin-top: 10px;">
              <strong style="color: ${BRAND_COLORS.danger};">Cancellation Reason:</strong><br>
@@ -494,8 +492,8 @@ export const generateBookingCancellationEmail = (
            </td>
         </tr>
         `
-             : ""
-         }
+      : ""
+    }
       </table>
     </div>
 
