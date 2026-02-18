@@ -193,9 +193,7 @@ export async function performNightAudit(staffId: string, staffName: string): Pro
                 }
             });
 
-            console.log(`[NightAudit] Sending report to portalholdingsznz@gmail.com for date: ${businessDate}`);
             await sendNightAuditReport(pdfBuffer, 'portalholdingsznz@gmail.com', businessDate);
-            console.log(`[NightAudit] Report sent successfully.`);
 
             await updateDoc(newLogRef, {
                 'steps.reportsGenerated': true
