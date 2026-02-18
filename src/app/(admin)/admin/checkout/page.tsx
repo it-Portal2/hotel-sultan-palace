@@ -11,10 +11,9 @@ import {
   generateCheckoutBill,
   getCheckoutBill,
   checkOutGuest,
-  getSystemLocks, // New Import
+  getSystemLocks, 
   Booking,
   CheckoutBill,
-  HousekeepingTask,
 } from "@/lib/firestoreService";
 import CheckOutModal, {
   CheckOutData,
