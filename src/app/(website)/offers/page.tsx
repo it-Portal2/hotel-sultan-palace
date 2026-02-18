@@ -227,115 +227,7 @@ export default function OffersPage() {
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
                 </div>
-              ) : (offers.length > 0 ? offers : [
-                {
-                  id: 'offer-1',
-                  title: 'Advance Escape Offer',
-                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Save 10% when you confirm your stay at least 5 months in advance.</li><li>Plan early, pay less, and look forward to your tropical dream.</li><li>Not valid during July, August & festive season.</li></ul>',
-                  imageUrl: '/offers/advance-escape-bg.png',
-                  discountType: 'percentage',
-                  discountValue: 10,
-                  couponMode: 'none',
-                  couponCode: null,
-                  isActive: true,
-                  startDate: new Date().toISOString(),
-                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  targetAudience: 'all',
-                  sendNotification: false,
-                  minPersons: null,
-                  maxPersons: null,
-                  applyToAllPersons: true,
-                  roomTypes: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: 'offer-2',
-                  title: 'Stay More, Spend Less',
-                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Stay 5 nights and pay for only 4!</li><li>Enjoy an extra night of ocean breeze, relaxation, and island luxury — on us.</li><li class="text-red-500">Blackout dates: July, August & festive period.</li></ul>',
-                  imageUrl: '/offers/stay-more-bg.png',
-                  discountType: 'fixed', // Represents 1 night free
-                  discountValue: 0,
-                  couponMode: 'none',
-                  couponCode: null,
-                  isActive: true,
-                  startDate: new Date().toISOString(),
-                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  targetAudience: 'all',
-                  sendNotification: false,
-                  minPersons: null,
-                  maxPersons: null,
-                  applyToAllPersons: true,
-                  roomTypes: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: 'offer-3',
-                  title: 'Family Getaway Treat',
-                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Children under 12 years stay free when sharing with parents in Garden View Villas (up to 2 kids).</li><li>Perfect opportunity to make family memories that last forever.</li><li class="text-red-500">Not valid during July, August & festive period.</li></ul>',
-                  imageUrl: '/offers/family-getaway-bg.png',
-                  discountType: 'percentage',
-                  discountValue: 0, // Child free logic
-                  couponMode: 'none',
-                  couponCode: null,
-                  isActive: true,
-                  startDate: new Date().toISOString(),
-                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  targetAudience: 'all',
-                  sendNotification: false,
-                  minPersons: null,
-                  maxPersons: null,
-                  applyToAllPersons: true,
-                  roomTypes: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: 'offer-4',
-                  title: 'Romance by the Ocean',
-                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Celebrate your love with our Honeymoon Indulgence Offer 💍</li><li>Stay 5 nights or more and enjoy:<ul class="list-[lower-alpha] pl-5 space-y-1 pt-1"><li>Complimentary 30-minute couple’s massage</li><li>Welcome bottle of wine & sunset cocktail for two</li><li>10% off scuba diving experiences</li></ul></li><li>Valid within one year of your wedding (proof required).</li><li class="text-red-500">Not valid during July, August & festive season.</li></ul>',
-                  imageUrl: '/offers/seventh-night-bg.png',
-
-                  discountType: 'fixed',
-                  discountValue: 100, // Visual value
-                  couponMode: 'none',
-                  couponCode: null,
-                  isActive: true,
-                  startDate: new Date().toISOString(),
-                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  targetAudience: 'all',
-                  sendNotification: false,
-                  minPersons: null,
-                  maxPersons: null,
-                  applyToAllPersons: true,
-                  roomTypes: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                {
-                  id: 'offer-5',
-                  title: 'Seventh Night on Us',
-                  description: '<ul class="list-disc pl-5 space-y-2 text-[#2C271E]"><li>Stay 7 nights, pay for only 5 — and receive:</li><ul class="list-[lower-alpha] pl-5 space-y-1"><li>A bottle of sparkling wine upon arrival</li><li>Sunset drinks at our beach bar</li><li>10% off all water activities</li></ul><li class="text-red-500 pt-2">Offer not valid during July, August & festive period.</li></ul>',
-                  discountType: 'fixed',
-                  imageUrl: '/offers/family-getaway-bg.png',
-
-                  discountValue: 0,
-                  couponMode: 'none',
-                  couponCode: null,
-                  isActive: true,
-                  startDate: new Date().toISOString(),
-                  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  targetAudience: 'all',
-                  sendNotification: false,
-                  minPersons: null,
-                  maxPersons: null,
-                  applyToAllPersons: true,
-                  roomTypes: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                }
-              ] as SpecialOffer[]).map((offer, index) => {
+              ) : offers.map((offer, index) => {
                 const isReverse = index % 2 !== 0;
 
                 return (
@@ -345,7 +237,7 @@ export default function OffersPage() {
                   >
                     <div className="relative w-full md:w-[50%] lg:w-[540px] xl:w-[600px] h-[280px] md:h-[350px] lg:h-[400px] rounded-[15px] overflow-hidden flex-shrink-0 group cursor-pointer offer-card-image shadow-xl hover:shadow-2xl transition-shadow duration-500">
                       <Image
-                        src={offer.imageUrl}
+                        src={offer.imageUrl || '/offer-image.jpg'}
                         alt={offer.title}
                         fill
                         quality={95}
