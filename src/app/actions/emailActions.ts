@@ -1,7 +1,15 @@
 'use server';
 
-import { sendEmail, generateBookingConfirmationEmail, generateBookingEnquiryEmail, generateBookingCancellationEmail } from '@/lib/emailService';
-import { Booking } from '@/lib/firestoreService';
+import {
+    sendEmail,
+    generateBookingConfirmationEmail,
+    generateBookingEnquiryEmail,
+    generateBookingCancellationEmail,
+    sendInvoiceEmail,
+    generateAdminWelcomeEmail
+} from '@/lib/emailService';
+import { Booking, CheckoutBill } from '@/lib/firestoreService';
+import { generateInvoicePDF } from '@/lib/invoiceGenerator';
 
 export async function sendBookingConfirmationEmailAction(booking: Booking): Promise<{ success: boolean; error?: string }> {
     try {
@@ -86,6 +94,54 @@ export async function sendBookingCancellationEmailAction(booking: Booking, reaso
         }
     } catch (error: any) {
         console.error('Unexpected error in sendBookingCancellationEmailAction:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function sendInvoiceEmailAction(bill: CheckoutBill): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (!bill || !bill.id) {
+            return { success: false, error: 'Invalid bill data' };
+        }
+
+        console.log(`[Action] Generating PDF for bill ${bill.id}...`);
+        // Generate PDF
+        const pdfBuffer = generateInvoicePDF(bill);
+
+        console.log(`[Action] Sending email to ${bill.guestEmail}...`);
+        // Send Email
+        const success = await sendInvoiceEmail(bill, pdfBuffer);
+
+        if (success) {
+            return { success: true };
+        } else {
+            return { success: false, error: 'Failed to send email' };
+        }
+
+    } catch (error: any) {
+        console.error('Error in sendInvoiceEmailAction:', error);
+        return { success: false, error: error.message || 'Server error' };
+    }
+}
+
+export async function sendAdminWelcomeEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const htmlContent = generateAdminWelcomeEmail(email);
+        const result = await sendEmail({
+            to: email,
+            subject: 'Welcome to Sultan Palace Admin Team',
+            html: htmlContent
+        });
+
+        if (result.success) {
+            console.log(`[Admin] Welcome email sent to ${email}`);
+            return { success: true };
+        } else {
+            console.error(`[Admin] Failed to send welcome email to ${email}: ${result.error}`);
+            return { success: false, error: result.error };
+        }
+    } catch (error: any) {
+        console.error('Unexpected error in sendAdminWelcomeEmailAction:', error);
         return { success: false, error: error.message };
     }
 }

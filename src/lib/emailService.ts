@@ -545,6 +545,56 @@ export const generateBookingEnquiryEmail = (enquiryDetails: any): string => {
   return generateEmailLayout("New Booking Enquiry", content);
 };
 
+export const generatePasswordChangedEmail = (email: string): string => {
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px; text-align: center;">Security Alert: Password Changed</h2>
+    <p style="text-align: center; color: ${BRAND_COLORS.lightText}; font-size: 16px; margin-bottom: 30px;">
+      The password for your account associated with <strong>${email}</strong> has been changed by an administrator.
+    </p>
+
+    <div style="background-color: #FFF5F5; border: 1px solid ${BRAND_COLORS.danger}; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+       <p style="color: ${BRAND_COLORS.text}; margin: 0; text-align: center;">
+         If you did not authorize this change, please contact the hotel administration immediately.
+       </p>
+    </div>
+
+    <div style="text-align: center;">
+      <p style="color: ${BRAND_COLORS.lightText}; margin-bottom: 20px;">
+        If you are unable to access your account, please reach out to support.
+      </p>
+      <a href="mailto:${SOCIAL_LINKS.email}" class="button" style="background-color: ${BRAND_COLORS.primary}; color: white;">Contact Support</a>
+    </div>
+  `;
+
+  return generateEmailLayout("Password Changed Notification", content);
+};
+
+export const generateAdminWelcomeEmail = (email: string): string => {
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px; text-align: center;">Welcome to Admin Console</h2>
+    <p style="text-align: center; color: ${BRAND_COLORS.lightText}; font-size: 16px; margin-bottom: 30px;">
+      Hello <strong>${email}</strong>,
+    </p>
+    <p style="text-align: center; color: ${BRAND_COLORS.text}; font-size: 16px; margin-bottom: 30px;">
+      Welcome to the Sultan Palace Hotel Administration Team. Your admin account has been successfully created.
+    </p>
+
+    <div style="background-color: #FAFAFA; border: 1px solid #EEEEEE; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+       <p style="color: ${BRAND_COLORS.text}; margin: 0; text-align: center;">
+         You now have access to the dashboard to manage bookings, guests, and hotel operations.
+       </p>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${BASE_URL}/admin/login" class="button" style="background-color: ${BRAND_COLORS.accent}; color: ${BRAND_COLORS.primary};">Login to Dashboard</a>
+    </div>
+  `;
+
+  return generateEmailLayout("Welcome to Sultan Palace Admin", content);
+};
+
+
+
 export const sendNightAuditReport = async (
   pdfBuffer: Buffer,
   recipientEmail: string,
@@ -582,3 +632,54 @@ export const sendNightAuditReport = async (
 
   return result.success;
 };
+
+export const sendInvoiceEmail = async (
+  bill: Booking | any, // Using any for CheckoutBill to avoid circular dependency if possible, or Import it. 
+  pdfBuffer: Buffer
+): Promise<boolean> => {
+  const guestEmail = bill.guestEmail || bill.guestDetails?.email;
+  const guestName = bill.guestName || (bill.guestDetails ? `${bill.guestDetails.firstName} ${bill.guestDetails.lastName}` : "Guest");
+  const billId = bill.id || bill.bookingId; // CheckoutBill has id, Booking has bookingId
+
+  if (!guestEmail) {
+    console.warn("[Email] No guest email found for invoice:", billId);
+    return false;
+  }
+
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px;">Your Stay Invoice</h2>
+    <p style="color: ${BRAND_COLORS.text}; font-size: 16px;">
+      Dear ${guestName},
+    </p>
+    <p style="color: ${BRAND_COLORS.text}; margin-bottom: 20px;">
+      Thank you for staying at Sultan Palace Hotel. Please find attached your invoice for your recent stay.
+    </p>
+    <p style="color: ${BRAND_COLORS.lightText}; font-size: 14px;">
+      We hope to welcome you back soon!
+    </p>
+  `;
+
+  const html = generateEmailLayout(`Invoice - ${billId}`, content);
+
+  const result = await sendEmail({
+    to: guestEmail,
+    subject: `Invoice - ${billId} - Sultan Palace Hotel`,
+    html,
+    attachments: [
+      {
+        filename: `Invoice_${billId}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+
+  if (result.success) {
+    console.log(`[Email] Invoice sent to ${guestEmail}`);
+  } else {
+    console.error(`[Email] Failed to send invoice to ${guestEmail}: ${result.error}`);
+  }
+
+  return result.success;
+};
+

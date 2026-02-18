@@ -5,6 +5,7 @@ import { XCircleIcon, BanknotesIcon, CalculatorIcon, CreditCardIcon, PrinterIcon
 import { useReactToPrint } from 'react-to-print';
 import { InvoiceTemplate } from '@/components/admin/finance/InvoiceTemplate';
 import { sendEmail, generateBookingConfirmationEmail, generateGeneralReplyEmail } from '@/lib/emailService';
+import { sendInvoiceEmailAction } from '@/app/actions/emailActions';
 
 interface CheckOutModalProps {
     booking: Booking;
@@ -121,15 +122,18 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
 
         // Send Email Notification Check (Fire & Forget)
         if (bill && booking.guestDetails.email) {
-            // NOTE: Ideally we generate a server-side PDF or a nice HTML email.
-            // For now, we'll send a structured text/HTML email summarizing the stay.
-            try {
-                // Logic to trigger email would go here.
-                // Currently logging for demonstration as full server-side email implementation requires backend route.
-                console.log("TODO: Send Invoice Email to " + booking.guestDetails.email);
-            } catch (err) {
-                console.error("Failed to send checkout email", err);
-            }
+            // Trigger server action to generate PDF and send email
+            sendInvoiceEmailAction(bill)
+                .then((result) => {
+                    if (result.success) {
+                        console.log("Invoice email sent successfully to " + booking.guestDetails.email);
+                    } else {
+                        console.error("Failed to send invoice email:", result.error);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Error sending invoice email:", err);
+                });
         }
     };
 

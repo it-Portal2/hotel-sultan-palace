@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebaseAdmin';
+import { sendEmail, generatePasswordChangedEmail } from '@/lib/emailService';
 
 export async function POST(request: Request) {
     try {
@@ -18,6 +19,20 @@ export async function POST(request: Request) {
         await auth.updateUser(user.uid, {
             password: password
         });
+
+        // Send notification email (Non-blocking)
+        try {
+            const htmlContent = generatePasswordChangedEmail(email);
+            await sendEmail({
+                to: email,
+                subject: 'Security Alert: Your Password Has Been Changed',
+                html: htmlContent
+            });
+            console.log(`[PASSWORD_CHANGE] Notification sent to ${email}`);
+        } catch (emailError) {
+            console.error('[PASSWORD_CHANGE] Failed to send notification:', emailError);
+            // We do not fail the request if email fails, but we log it.
+        }
 
         return NextResponse.json({ success: true, message: 'Password updated successfully' });
     } catch (error: any) {
