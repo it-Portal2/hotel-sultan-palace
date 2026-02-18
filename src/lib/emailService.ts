@@ -56,7 +56,7 @@ const getEmailConfig = (): EmailConfig => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SINGLETON POOLED TRANSPORT (Phase 8B)
+// SINGLETON POOLED TRANSPORT
 // Reuses TCP connections — up to 5 concurrent, 100 messages per connection.
 // ═══════════════════════════════════════════════════════════════════════════════
 let _transporter: nodemailer.Transporter | null = null;

@@ -1,13 +1,19 @@
-"use client";
+"use server";
 
 import jsPDF from "jspdf";
-import { FoodOrder } from "./firestoreService";
-import { storage } from "./firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getAdminFirestore, getAdminStorage } from "@/lib/firebaseAdmin";
 
-interface ReceiptData {
-  order: FoodOrder;
-}
+// ═══════════════════════════════════════════════════════════════
+//
+// This action fetches an order from Firestore, generates a PDF
+// receipt using jsPDF (same layout as client-side receiptGenerator),
+// uploads it to Firebase Storage via Admin SDK, and writes the
+// receiptUrl back to the order document.
+//
+// Called from: handleStatusUpdate() when status === "confirmed"
+// ═══════════════════════════════════════════════════════════════
+
+// ── Helpers ────────────────────────────────────────────────────
 
 const safe = (v: unknown): string => {
   if (v === null || v === undefined || v === "") return "N/A";
@@ -17,13 +23,13 @@ const safe = (v: unknown): string => {
 
 const money = (n: number): string => `$${n.toFixed(2)}`;
 
-// ================= DRAW ALL RECEIPT CONTENT =================
+// ── Draw Receipt ─────────────
 
-function drawReceipt(doc: jsPDF, order: FoodOrder): number {
+function drawReceipt(doc: jsPDF, order: any): number {
   const items = order.items || [];
   const W = 58;
   const M = 3;
-  let y = 4; // top margin
+  let y = 4;
 
   const bold = () => doc.setFont("courier", "bold");
   const normal = () => doc.setFont("courier", "normal");
@@ -51,7 +57,6 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
     y += lineSpacing(size);
   };
 
-  // ================= SEPARATOR =================
   const sep = () => {
     y -= 1.0;
     doc.setLineWidth(0.1);
@@ -59,7 +64,6 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
     y += 2.3;
   };
 
-  // ================= DASH =================
   const dash = () => {
     y -= 0.8;
     doc.setLineDashPattern([0.5, 0.5], 0);
@@ -68,7 +72,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
     y += 2.0;
   };
 
-  // ================= HEADER =================
+  // ── Header ──
   center("SULTAN PALACE HOTEL", 7, true);
   center("Dongwe, East Coast, Zanzibar", 4.5);
   center("+255 684 888 111 | +255 777 085 630", 4.5);
@@ -76,7 +80,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   sep();
 
   let typeStr = "WALK IN";
-  const type = (order as any).orderType;
+  const type = order.orderType;
   if (type === "takeaway") typeStr = "TAKEAWAY";
   else if (type === "room_service") typeStr = "ROOM SERVICE";
   else if (type === "delivery") typeStr = "DELIVERY";
@@ -85,7 +89,12 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   y -= 1;
   sep();
 
-  const dt = order.createdAt instanceof Date ? order.createdAt : new Date();
+  const dt =
+    order.createdAt instanceof Date
+      ? order.createdAt
+      : order.createdAt?.toDate?.()
+        ? order.createdAt.toDate()
+        : new Date();
 
   const dateStr = dt.toLocaleDateString("en-GB").replace(/\//g, "-");
   const timeStr = dt.toLocaleTimeString("en-US", {
@@ -104,11 +113,10 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   y += lineSpacing(5.5);
 
   const isRoomService =
-    (order as any).orderType === "room_service" ||
-    (order as any).deliveryLocation === "in_room";
+    order.orderType === "room_service" || order.deliveryLocation === "in_room";
 
   if (isRoomService) left(`Room: ${safe(order.roomName)}`, 5.5);
-  else left(`Table: ${safe((order as any).tableNumber)}`, 5.5);
+  else left(`Table: ${safe(order.tableNumber)}`, 5.5);
 
   sep();
 
@@ -117,7 +125,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
 
   sep();
 
-  // ================= ITEMS HEADER =================
+  // ── Items Header ──
   doc.setFontSize(5.5);
   bold();
   doc.text("Item", M, y);
@@ -127,7 +135,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   y += lineSpacing(5.5);
   dash();
 
-  // ================= ITEMS =================
+  // ── Items ──
   const toTitleCase = (str: string): string =>
     str
       .toLowerCase()
@@ -160,8 +168,8 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
 
   normal();
 
-  items.forEach((item, index) => {
-    const variant = (item as any).variant;
+  items.forEach((item: any, index: number) => {
+    const variant = item.variant;
     let rawName = item.name || "Item";
 
     if (variant?.name) {
@@ -174,7 +182,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
     const price = item.price || 0;
     const amt = money(price * qty);
 
-    let sku = (item as any).sku || "";
+    let sku = item.sku || "";
     if (sku === "N/A") sku = "";
     if (sku.length > 10) sku = sku.substring(0, 10);
 
@@ -199,7 +207,7 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
       });
     }
 
-    const notes = item.specialInstructions || (item as any).notes;
+    const notes = item.specialInstructions || item.notes;
     if (notes?.trim()) {
       doc.setFontSize(4.5);
       wrapText(`  [${notes}]`, 16, 4.5).forEach((l) => {
@@ -213,13 +221,16 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
 
   sep();
 
-  // ================= TOTALS =================
+  // ── Totals ──
   const subtotal =
     order.subtotal ??
-    items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+    items.reduce(
+      (s: number, i: any) => s + (i.price || 0) * (i.quantity || 1),
+      0,
+    );
 
   const tax = order.tax ?? 0;
-  const discount = (order as any).discount ?? 0;
+  const discount = order.discount ?? 0;
   const total = order.totalAmount ?? subtotal + tax - discount;
 
   row("Subtotal:", money(subtotal), 5.5);
@@ -233,17 +244,16 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   bold();
   doc.text("TOTAL:", M, y);
   doc.text(money(total), W - M, y, { align: "right" });
-
   y += lineSpacing(6.5);
 
   sep();
 
-  // ================= PAYMENT =================
+  // ── Payment ──
   normal();
   const paymentMethod = safe(order.paymentMethod);
   left(`Payment: ${paymentMethod}`, 5.5);
-  const orderPaid = (order as any).paidAmount;
-  const orderDue = (order as any).dueAmount;
+  const orderPaid = order.paidAmount;
+  const orderDue = order.dueAmount;
   const isDueStatus =
     order.paymentStatus === "due" ||
     order.paymentStatus === "unpaid" ||
@@ -252,20 +262,14 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
   let paid = orderPaid;
   let due = orderDue;
 
-  // Default logic if missing
   if (paid === undefined || paid === null) {
-    if (isDueStatus) {
-      paid = 0;
-    } else {
-      paid = total; // Assume fully paid if status is not due/unpaid
-    }
+    paid = isDueStatus ? 0 : total;
   }
 
   if (due === undefined || due === null) {
     due = total - paid;
   }
 
-  // Ensure non-negative due
   if (due < 0) due = 0;
 
   row("Paid:", money(paid), 5.5);
@@ -273,32 +277,28 @@ function drawReceipt(doc: jsPDF, order: FoodOrder): number {
 
   sep();
 
-  // ================= FOOTER =================
+  // ── Footer ──
   center("Thank you for your order!", 5.5);
-
   y += 1.5;
-
   row(
     `Prepared By : ${safe(order.preparedBy)}`,
     `Printed By  : ${safe(order.printedBy)}`,
     5,
   );
 
-  return y; // return final y position = actual content height
+  return y;
 }
 
-// ================= TWO-PASS RENDERING =================
-// Pass 1: Draw on a tall canvas to measure actual content height.
-// Pass 2: Create final PDF at the exact measured height + bottom padding.
-export function generateReceiptPDF(data: ReceiptData): Blob {
-  const { order } = data;
-  const BOTTOM_PADDING = 4; // mm
+// ── Two-Pass PDF Generation ───────────────────────────────────
 
-  // Pass 1: measure
+function generateReceiptBuffer(order: any): Buffer {
+  const BOTTOM_PADDING = 4;
+
+  // Pass 1: measure content height
   const measureDoc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
-    format: [58, 1000], // very tall — content will never overflow
+    format: [58, 1000],
   });
   const actualHeight = drawReceipt(measureDoc, order);
 
@@ -310,56 +310,65 @@ export function generateReceiptPDF(data: ReceiptData): Blob {
   });
   drawReceipt(finalDoc, order);
 
-  return finalDoc.output("blob");
+  // Get ArrayBuffer and convert to Node.js Buffer
+  const arrayBuffer = finalDoc.output("arraybuffer");
+  return Buffer.from(arrayBuffer);
 }
 
-/* ===== Upload + Download functions ===== */
+// ═══════════════════════════════════════════════════════════════
+//  Main Export: generateAndStoreReceipt(orderId)
+// ═══════════════════════════════════════════════════════════════
 
-export async function uploadReceiptToStorage(
-  data: ReceiptData,
+export async function generateAndStoreReceipt(
+  orderId: string,
+  menuType: "food" | "bar" = "food",
 ): Promise<string | null> {
-  if (!storage) return null;
+  const collection = menuType === "bar" ? "barOrders" : "foodOrders";
   try {
-    const blob = generateReceiptPDF(data);
-    const id = data.order.id || data.order.orderNumber || String(Date.now());
-    const path = `receipts/${id}/receipt-${Date.now()}.pdf`;
-    const sRef = ref(storage, path);
-    await uploadBytes(sRef, blob, { contentType: "application/pdf" });
-    return await getDownloadURL(sRef);
-  } catch (e) {
-    console.error("[Receipt] Upload error:", e);
+    // 1. Fetch order from Firestore
+    const db = getAdminFirestore();
+    const orderDoc = await db.collection(collection).doc(orderId).get();
+
+    if (!orderDoc.exists) {
+      console.error(`[Receipt] Order ${orderId} not found`);
+      return null;
+    }
+
+    const order = { id: orderDoc.id, ...orderDoc.data() };
+
+    // 2. Generate PDF
+    const pdfBuffer = generateReceiptBuffer(order);
+
+    // 3. Upload to Firebase Storage via Admin SDK
+    const bucket = getAdminStorage();
+    const filePath = `receipts/${orderId}/receipt-${Date.now()}.pdf`;
+    const file = bucket.file(filePath);
+
+    await file.save(pdfBuffer, {
+      metadata: {
+        contentType: "application/pdf",
+        metadata: {
+          orderId,
+          generatedAt: new Date().toISOString(),
+          generatedBy: "server",
+        },
+      },
+    });
+
+    // Make the file publicly readable and get the download URL
+    await file.makePublic();
+    const receiptUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+
+    // 4. Write receiptUrl back to order document (use correct collection)
+    await db.collection(collection).doc(orderId).update({
+      receiptUrl,
+      receiptGeneratedAt: new Date(),
+    });
+
+    console.log(`[Receipt] Generated for order ${orderId}: ${receiptUrl}`);
+    return receiptUrl;
+  } catch (error) {
+    console.error("[Receipt] Server-side generation failed:", error);
     return null;
   }
-}
-
-export function downloadReceiptPDF(data: ReceiptData, filename?: string): void {
-  const blob = generateReceiptPDF(data);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename || `receipt-${data.order.orderNumber || "order"}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-export async function processReceipt(
-  data: ReceiptData,
-): Promise<string | null> {
-  downloadReceiptPDF(data);
-  return uploadReceiptToStorage(data);
-}
-
-import {
-  getNextOrderNumber,
-  getNextReceiptNumber,
-} from "./services/fbOrderService";
-
-export async function generateReceiptNumber(): Promise<string> {
-  return await getNextReceiptNumber();
-}
-
-export async function generateOrderNumber(): Promise<string> {
-  return await getNextOrderNumber();
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FoodOrder } from "@/lib/firestoreService";
 import Link from "next/link";
 import {
@@ -14,6 +14,8 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface OrderDetailsModalProps {
   order: FoodOrder;
@@ -32,14 +34,35 @@ export default function OrderDetailsModal({
   onReprint,
   onKitchenPrint,
 }: OrderDetailsModalProps) {
+  const [liveOrder, setLiveOrder] = useState<FoodOrder>(order);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [reprintSent, setReprintSent] = useState(false);
   const [kitchenPrintSent, setKitchenPrintSent] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
+  // Real-time listener for order updates (status, receiptUrl, etc.)
+  useEffect(() => {
+    setLiveOrder(order);
+
+    if (!db || !order.id) return;
+
+    // specific collection based on menuType if available, else default to 'foodOrders'
+    const menuType = (order as any).menuType || "food";
+    const collectionName = menuType === "bar" ? "barOrders" : "foodOrders";
+
+    const unsub = onSnapshot(doc(db, collectionName, order.id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setLiveOrder({ ...data, id: docSnap.id } as FoodOrder);
+      }
+    });
+
+    return () => unsub();
+  }, [order]);
+
   const handleReprint = () => {
     if (onReprint && !reprintSent) {
-      onReprint(order.id);
+      onReprint(liveOrder.id);
       setReprintSent(true);
       setTimeout(() => setReprintSent(false), 2000);
     }
@@ -47,7 +70,7 @@ export default function OrderDetailsModal({
 
   const handleKitchenPrint = () => {
     if (onKitchenPrint && !kitchenPrintSent) {
-      onKitchenPrint(order.id);
+      onKitchenPrint(liveOrder.id);
       setKitchenPrintSent(true);
       setTimeout(() => setKitchenPrintSent(false), 2000);
     }
@@ -56,7 +79,7 @@ export default function OrderDetailsModal({
   const handleAction = async (status: FoodOrder["status"]) => {
     setLoadingAction(status);
     try {
-      await onUpdateStatus(order.id, status);
+      await onUpdateStatus(liveOrder.id, status);
     } finally {
       setLoadingAction(null);
     }
@@ -125,7 +148,7 @@ export default function OrderDetailsModal({
     },
   };
 
-  const sc = statusConfig[order.status] || statusConfig.pending;
+  const sc = statusConfig[liveOrder.status] || statusConfig.pending;
 
   const formatDate = (d: any) => {
     if (!d) return "-";
@@ -140,7 +163,7 @@ export default function OrderDetailsModal({
   };
 
   const isFinalized =
-    order.status === "delivered" || order.status === "cancelled";
+    liveOrder.status === "delivered" || liveOrder.status === "cancelled";
 
   // Action button helper
   const ActionBtn = ({
@@ -205,38 +228,40 @@ export default function OrderDetailsModal({
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-xl font-bold text-gray-900 truncate">
-                    #{(order.orderNumber || "").replace(/^#/, "")}
+                    #{(liveOrder.orderNumber || "").replace(/^#/, "")}
                   </h3>
-                  {order.receiptNo && (
+                  {liveOrder.receiptNo && (
                     <span className="text-xs text-gray-400 font-medium">
-                      #{(order.receiptNo || "").replace(/^#/, "")}
+                      #{(liveOrder.receiptNo || "").replace(/^#/, "")}
                     </span>
                   )}
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${sc.bg} ${sc.text} border ${sc.border}`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                    {(order.status || "pending").replace("_", " ")}
+                    {(liveOrder.status || "pending").replace("_", " ")}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {formatDate(order.createdAt)}
+                  {formatDate(liveOrder.createdAt)}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {/* Edit — hidden after confirmation (Phase 9C) */}
-              {!isReadOnly && !isFinalized && order.status !== "confirmed" && (
-                <Link
-                  href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
-                >
-                  <PencilSquareIcon className="h-4 w-4" />
-                  Edit
-                </Link>
-              )}
-              {/* Print */}
-              {onReprint && (
+              {!isReadOnly &&
+                !isFinalized &&
+                liveOrder.status !== "confirmed" && (
+                  <Link
+                    href={`/admin/food-orders/create?menuType=food&editOrderId=${liveOrder.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
+                  >
+                    <PencilSquareIcon className="h-4 w-4" />
+                    Edit
+                  </Link>
+                )}
+              {/* Print — only show after order is confirmed */}
+              {onReprint && liveOrder.status !== "pending" && (
                 <button
                   onClick={handleReprint}
                   disabled={reprintSent}
@@ -250,7 +275,18 @@ export default function OrderDetailsModal({
                   {reprintSent ? "Sent!" : "Print"}
                 </button>
               )}
-              {/* Receipt download removed — receipts handled via physical printers (Phase 9D) */}
+              {/* View Receipt — show when receipt has been generated */}
+              {(liveOrder as any).receiptUrl && (
+                <a
+                  href={(liveOrder as any).receiptUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                >
+                  <DocumentTextIcon className="h-4 w-4" />
+                  View Receipt
+                </a>
+              )}
               {/* Close */}
               <button
                 onClick={onClose}
@@ -270,21 +306,21 @@ export default function OrderDetailsModal({
                   <UserIcon className="h-3.5 w-3.5" /> Guest Details
                 </h4>
                 <p className="text-sm font-semibold text-gray-900 break-words">
-                  {order.guestName}
+                  {liveOrder.guestName}
                 </p>
-                {order.guestEmail && order.guestEmail !== "N/A" && (
+                {liveOrder.guestEmail && liveOrder.guestEmail !== "N/A" && (
                   <p className="text-xs text-gray-500 mt-1 break-all">
-                    {order.guestEmail}
+                    {liveOrder.guestEmail}
                   </p>
                 )}
-                {order.roomName && (
+                {liveOrder.roomName && (
                   <p className="text-xs font-semibold text-indigo-600 mt-1.5">
-                    Room: {order.roomName}
+                    Room: {liveOrder.roomName}
                   </p>
                 )}
-                {order.tableNumber && (
+                {liveOrder.tableNumber && (
                   <p className="text-xs text-gray-600 mt-1">
-                    Table: {order.tableNumber}
+                    Table: {liveOrder.tableNumber}
                   </p>
                 )}
               </div>
@@ -296,33 +332,34 @@ export default function OrderDetailsModal({
                 <div className="space-y-1.5 text-xs text-gray-700">
                   <p>
                     <span className="font-medium text-gray-500">Location:</span>{" "}
-                    {deliveryLabels[order.deliveryLocation] ||
-                      order.deliveryLocation}
+                    {deliveryLabels[liveOrder.deliveryLocation] ||
+                      liveOrder.deliveryLocation}
                   </p>
                   <p>
                     <span className="font-medium text-gray-500">Type:</span>{" "}
-                    {orderTypeLabels[order.orderType] || order.orderType}
+                    {orderTypeLabels[liveOrder.orderType] ||
+                      liveOrder.orderType}
                   </p>
-                  {order.waiterName && (
+                  {liveOrder.waiterName && (
                     <p>
                       <span className="font-medium text-gray-500">Waiter:</span>{" "}
-                      {order.waiterName}
+                      {liveOrder.waiterName}
                     </p>
                   )}
-                  {order.preparedBy && (
+                  {liveOrder.preparedBy && (
                     <p>
                       <span className="font-medium text-gray-500">
                         Prepared:
                       </span>{" "}
-                      {order.preparedBy}
+                      {liveOrder.preparedBy}
                     </p>
                   )}
-                  {order.printedBy && (
+                  {liveOrder.printedBy && (
                     <p>
                       <span className="font-medium text-gray-500">
                         Printed:
                       </span>{" "}
-                      {order.printedBy}
+                      {liveOrder.printedBy}
                     </p>
                   )}
                 </div>
@@ -330,37 +367,37 @@ export default function OrderDetailsModal({
             </div>
 
             {/* --- Priority & Kitchen Notes --- */}
-            {(order.priority === "urgent" || order.notes) && (
+            {(liveOrder.priority === "urgent" || liveOrder.notes) && (
               <div className="flex flex-wrap gap-3">
-                {order.priority === "urgent" && (
+                {liveOrder.priority === "urgent" && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold">
                     <ExclamationTriangleIcon className="h-4 w-4" />
                     URGENT ORDER
                   </div>
                 )}
-                {order.notes && (
+                {liveOrder.notes && (
                   <div className="flex-1 min-w-[200px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 break-words">
                     <span className="font-bold">Kitchen Notes:</span>{" "}
-                    {order.notes}
+                    {liveOrder.notes}
                   </div>
                 )}
               </div>
             )}
 
-            {order.estimatedPreparationTime && (
+            {liveOrder.estimatedPreparationTime && (
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <ClockIcon className="h-3.5 w-3.5" />
-                Est. Prep: {order.estimatedPreparationTime} mins
+                Est. Prep: {liveOrder.estimatedPreparationTime} mins
               </div>
             )}
 
             {/* --- Order Items --- */}
             <div>
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                Items ({order.items.length})
+                Items ({liveOrder.items.length})
               </h4>
               <div className="border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-100">
-                {order.items.map((item, idx) => (
+                {liveOrder.items.map((item, idx) => (
                   <div
                     key={idx}
                     className="px-4 py-3 flex justify-between items-start gap-3"
@@ -430,81 +467,83 @@ export default function OrderDetailsModal({
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Subtotal</span>
                 <span className="font-medium">
-                  ${order.subtotal?.toFixed(2) || "0.00"}
+                  ${liveOrder.subtotal?.toFixed(2) || "0.00"}
                 </span>
               </div>
-              {order.tax > 0 && (
+              {liveOrder.tax > 0 && (
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>
                     Tax
-                    {(order as any).taxDetails?.type &&
-                      ` (${(order as any).taxDetails.type} ${(order as any).taxDetails.value}${(order as any).taxDetails.type === "percentage" ? "%" : ""})`}
+                    {(liveOrder as any).taxDetails?.type &&
+                      ` (${(liveOrder as any).taxDetails.type} ${(liveOrder as any).taxDetails.value}${(liveOrder as any).taxDetails.type === "percentage" ? "%" : ""})`}
                   </span>
-                  <span className="font-medium">+${order.tax?.toFixed(2)}</span>
+                  <span className="font-medium">
+                    +${liveOrder.tax?.toFixed(2)}
+                  </span>
                 </div>
               )}
-              {order.discount > 0 && (
+              {liveOrder.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>
                     Discount
-                    {(order as any).discountDetails?.type &&
-                      ` (${(order as any).discountDetails.type} ${(order as any).discountDetails.value}${(order as any).discountDetails.type === "percentage" ? "%" : ""})`}
+                    {(liveOrder as any).discountDetails?.type &&
+                      ` (${(liveOrder as any).discountDetails.type} ${(liveOrder as any).discountDetails.value}${(liveOrder as any).discountDetails.type === "percentage" ? "%" : ""})`}
                   </span>
                   <span className="font-medium">
-                    -${order.discount?.toFixed(2)}
+                    -${liveOrder.discount?.toFixed(2)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between pt-2 border-t border-gray-200">
                 <span className="text-base font-bold text-gray-900">Total</span>
                 <span className="text-base font-black text-[#FF6A00]">
-                  ${order.totalAmount?.toFixed(2)}
+                  ${liveOrder.totalAmount?.toFixed(2)}
                 </span>
               </div>
             </div>
 
             {/* --- Payment --- */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {order.paymentMethod && (
+              {liveOrder.paymentMethod && (
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-center">
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                     Method
                   </p>
                   <p className="text-sm font-bold text-gray-900 mt-0.5">
-                    {order.paymentMethod}
+                    {liveOrder.paymentMethod}
                   </p>
                 </div>
               )}
-              {order.paymentStatus && (
+              {liveOrder.paymentStatus && (
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-center">
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                     Status
                   </p>
                   <p
-                    className={`text-sm font-bold mt-0.5 capitalize ${order.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"}`}
+                    className={`text-sm font-bold mt-0.5 capitalize ${liveOrder.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"}`}
                   >
-                    {order.paymentStatus}
+                    {liveOrder.paymentStatus}
                   </p>
                 </div>
               )}
-              {(order as any).paidAmount !== undefined && (
+              {(liveOrder as any).paidAmount !== undefined && (
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-center">
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                     Paid
                   </p>
                   <p className="text-sm font-bold text-emerald-600 mt-0.5">
-                    ${(order as any).paidAmount?.toFixed(2)}
+                    ${(liveOrder as any).paidAmount?.toFixed(2)}
                   </p>
                 </div>
               )}
-              {(order as any).dueAmount !== undefined &&
-                (order as any).dueAmount > 0 && (
+              {(liveOrder as any).dueAmount !== undefined &&
+                (liveOrder as any).dueAmount > 0 && (
                   <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-center">
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                       Due
                     </p>
                     <p className="text-sm font-bold text-red-600 mt-0.5">
-                      ${(order as any).dueAmount?.toFixed(2)}
+                      ${(liveOrder as any).dueAmount?.toFixed(2)}
                     </p>
                   </div>
                 )}
@@ -516,14 +555,14 @@ export default function OrderDetailsModal({
             <div className="bg-white border-t border-gray-100 px-6 py-4 shrink-0">
               {!isFinalized ? (
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {order.status === "pending" && (
+                  {liveOrder.status === "pending" && (
                     <ActionBtn
                       label="Confirm Order"
                       status="confirmed"
                       color="bg-blue-600 hover:bg-blue-700"
                     />
                   )}
-                  {order.status === "confirmed" && (
+                  {liveOrder.status === "confirmed" && (
                     <>
                       <ActionBtn
                         label="Start Preparing"
@@ -548,21 +587,21 @@ export default function OrderDetailsModal({
                       )}
                     </>
                   )}
-                  {order.status === "preparing" && (
+                  {liveOrder.status === "preparing" && (
                     <ActionBtn
                       label="Mark Ready"
                       status="ready"
                       color="bg-teal-600 hover:bg-teal-700"
                     />
                   )}
-                  {order.status === "ready" && (
+                  {liveOrder.status === "ready" && (
                     <ActionBtn
                       label="Start Delivery"
                       status="out_for_delivery"
                       color="bg-purple-600 hover:bg-purple-700"
                     />
                   )}
-                  {order.status === "out_for_delivery" && (
+                  {liveOrder.status === "out_for_delivery" && (
                     <ActionBtn
                       label="Delivered"
                       status="delivered"
@@ -580,8 +619,8 @@ export default function OrderDetailsModal({
               ) : (
                 <p className="text-center text-sm text-gray-400 font-medium italic">
                   This order is{" "}
-                  <span className="font-bold">{order.status}</span>. No further
-                  actions.
+                  <span className="font-bold">{liveOrder.status}</span>. No
+                  further actions.
                 </p>
               )}
             </div>

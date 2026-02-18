@@ -6,6 +6,7 @@ import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
+import { generateAndStoreReceipt } from "@/app/actions/receiptActions";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import Link from "next/link";
 import {
@@ -116,6 +117,11 @@ export default function AdminFoodOrdersPage() {
             restaurantPrinted: false, // → KOT Listener 1 → Ramson (restaurant receipt)
             kitchenPrintRequested: true, // → KOT Listener 3 → POSX (kitchen ticket)
           } as any);
+
+          // Phase 11: Generate receipt server-side at confirmation
+          generateAndStoreReceipt(orderId).catch((err: unknown) =>
+            console.error("[Receipt] Server generation failed:", err),
+          );
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
         }
@@ -130,8 +136,15 @@ export default function AdminFoodOrdersPage() {
           showToast("Order delivered but Inventory update failed", "warning");
         }
       } else {
+        const statusMessages: Record<string, string> = {
+          confirmed: "✅ Order Confirmed! Receipt is being generated...",
+          preparing: "🍳 Order is now being prepared",
+          ready: "✅ Order is ready for pickup/delivery",
+          out_for_delivery: "🛵 Order is out for delivery",
+        };
         showToast(
-          `Order status updated to ${status.replace("_", " ")}`,
+          statusMessages[status] ||
+            `Order status updated to ${status.replace(/_/g, " ")}`,
           "success",
         );
       }

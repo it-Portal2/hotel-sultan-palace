@@ -5,6 +5,8 @@ import { useAdminRole } from "@/context/AdminRoleContext";
 import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
+import { processOrderInventoryDeduction } from "@/lib/inventoryService";
+import { generateAndStoreReceipt } from "@/app/actions/receiptActions";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import Link from "next/link";
 import {
@@ -120,22 +122,42 @@ export default function BarOrdersServicePage() {
       }
 
       // Auto-trigger RESTAURANT print only when bar order is confirmed (Phase 9G)
-      // Kitchen print is NOT auto-triggered for bar orders
       if (status === "confirmed") {
         try {
           await updateFoodOrder(orderId, {
             barPrinted: false, // → KOT Listener 4 (main_bar) or BOT Listener 1 (beach_bar)
           } as any);
+
+          // Phase 11: Generate receipt server-side at confirmation (bar orders)
+          generateAndStoreReceipt(orderId, "bar").catch((err: unknown) =>
+            console.error("[Receipt] Bar order generation failed:", err),
+          );
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
         }
       }
 
       if (status === "delivered") {
-        showToast("Bar order delivered", "success");
+        try {
+          await processOrderInventoryDeduction(orderId, "Admin User");
+          showToast("Bar order delivered & Inventory deducted", "success");
+        } catch (invError) {
+          console.error("Inventory Deduction Failed:", invError);
+          showToast(
+            "Bar order delivered but Inventory update failed",
+            "warning",
+          );
+        }
       } else {
+        const statusMessages: Record<string, string> = {
+          confirmed: "✅ Bar Order Confirmed! Receipt is being generated...",
+          preparing: "🍹 Bar order is now being prepared",
+          ready: "✅ Bar order is ready to serve",
+          out_for_delivery: "🛵 Bar order is out for delivery",
+        };
         showToast(
-          `Order status updated to ${status.replace("_", " ")}`,
+          statusMessages[status] ||
+            `Order status updated to ${status.replace(/_/g, " ")}`,
           "success",
         );
       }
@@ -437,17 +459,19 @@ export default function BarOrdersServicePage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {/* Reprint */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReprint(order.id);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Reprint to Bar Printer"
-                            >
-                              <PrinterIcon className="h-4 w-4" />
-                            </button>
+                            {/* Reprint — only after confirmed */}
+                            {order.status !== "pending" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReprint(order.id);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Reprint to Bar Printer"
+                              >
+                                <PrinterIcon className="h-4 w-4" />
+                              </button>
+                            )}
 
                             {/* Edit — hidden after confirmation */}
                             {!isReadOnly &&

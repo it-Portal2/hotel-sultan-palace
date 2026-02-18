@@ -1,7 +1,8 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
-import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert, App } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
+import { getAuth } from "firebase-admin/auth";
+import { getStorage } from "firebase-admin/storage";
 
 let adminApp: App | null = null;
 
@@ -22,7 +23,9 @@ export const getAdminApp = (): App => {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
   if (!serviceAccountJson) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set');
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT_JSON environment variable is not set",
+    );
   }
 
   try {
@@ -32,12 +35,15 @@ export const getAdminApp = (): App => {
     adminApp = initializeApp({
       credential: cert(serviceAccount),
       projectId: serviceAccount.project_id,
+      storageBucket:
+        process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.replace(/"/g, "") ||
+        `${serviceAccount.project_id}.firebasestorage.app`,
     });
 
     return adminApp;
   } catch (error) {
-    console.error('Error initializing Firebase Admin:', error);
-    throw new Error('Failed to initialize Firebase Admin SDK');
+    console.error("Error initializing Firebase Admin:", error);
+    throw new Error("Failed to initialize Firebase Admin SDK");
   }
 };
 
@@ -59,3 +65,13 @@ export const getAdminAuth = () => {
   return getAuth(app);
 };
 
+// Get Storage bucket instance (Phase 11A)
+export const getAdminStorage = () => {
+  const app = getAdminApp();
+  const bucketName = (
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || ""
+  ).replace(/"/g, "");
+  return bucketName
+    ? getStorage(app).bucket(bucketName)
+    : getStorage(app).bucket();
+};

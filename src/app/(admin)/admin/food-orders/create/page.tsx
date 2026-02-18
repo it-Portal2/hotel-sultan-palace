@@ -17,11 +17,7 @@ import { getAllBookings, getAllRoomTypes } from "@/lib/firestoreService";
 import type { Booking, RoomTypeData } from "@/lib/firestoreService";
 import type { FoodCategory } from "@/lib/types/foodMenu";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
-import {
-  uploadReceiptToStorage,
-  generateReceiptNumber,
-  generateOrderNumber,
-} from "@/lib/receiptGenerator";
+// Receipt generation removed — now handled server-side at confirmation (Phase 11)
 import { useToast } from "@/context/ToastContext";
 import { ArrowLeftIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -507,25 +503,7 @@ export default function POSCreatePage() {
         if (success) {
           showToast("Order updated successfully!", "success");
 
-          // Regenerate Receipt (Optional but good for consistency)
-          try {
-            // Fetch fresh order to get numbers
-            const updatedOrder = await getFoodOrder(editOrderId);
-            if (updatedOrder) {
-              const receiptUrl = await uploadReceiptToStorage({
-                order: {
-                  ...updatedOrder,
-                  // Overlay current form data to ensure receipt matches what we just saved
-                  // (in case fetch is stale, though await update should ensure consistency)
-                } as any,
-              });
-              if (receiptUrl) {
-                await updateFoodOrder(editOrderId, { receiptUrl } as any);
-              }
-            }
-          } catch (e) {
-            console.error("Receipt regen failed", e);
-          }
+          // Receipt generation removed — handled server-side at confirmation (Phase 11)
 
           router.push(returnUrl);
         } else {
@@ -547,76 +525,18 @@ export default function POSCreatePage() {
             console.error("Inventory deduction failed", invError);
           }
 
-          showToast("Order sent to Kitchen!", "success");
+          showToast(
+            `Order #${result.orderNumber} created successfully!`,
+            "success",
+          );
 
-          try {
-            // Use server-generated IDs from createFoodOrder result
-            const receiptUrl = await uploadReceiptToStorage({
-              order: {
-                id: result.id,
-                orderNumber: result.orderNumber, // Server-generated unique number
-                receiptNo: result.receiptNo, // Server-generated unique number
-                guestName: guestName || "Walk-in",
-                guestEmail: guestEmail || "N/A", // Add contact info
-                roomName: roomName || null,
-                waiterName: waiterName || null,
-                preparedBy: preparedBy || null,
-                printedBy: printedBy || null,
-                tableNumber: tableNumber || null,
-                deliveryLocation: deliveryLocation as any,
-                orderType: orderType as any,
-                items: cart.map((i) => ({
-                  menuItemId: i.id,
-                  name: i.name,
-                  sku: i.sku || null, // Pass actual SKU from menu item
-                  quantity: i.quantity,
-                  price: i.customPrice ?? i.price,
-                  specialInstructions: i.notes || null,
-                  variant: i.selectedVariant
-                    ? {
-                        name: i.selectedVariant.name,
-                        price: i.selectedVariant.price,
-                      }
-                    : null,
-                  selectedModifiers:
-                    i.selectedModifiers && i.selectedModifiers.length > 0
-                      ? i.selectedModifiers
-                      : null,
-                })),
-                subtotal,
-                tax: taxAmount,
-                discount: discountAmount,
-                totalAmount: total,
-                taxDetails: {
-                  type: taxType,
-                  value: taxValue,
-                  amount: taxAmount,
-                },
-                discountDetails: {
-                  type: discountType,
-                  value: discountValue,
-                  amount: discountAmount,
-                },
-                status: "pending" as const,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                paymentMethod,
-                paymentStatus:
-                  paymentMethod === "Complimentary" ? "paid" : paymentStatus,
-                paidAmount: finalPaidAmount,
-                dueAmount: finalDueAmount,
-              } as any,
-            });
+          // Receipt generation removed — handled server-side at confirmation (Phase 11)
 
-            // Save receipt URL to order document
-            if (receiptUrl) {
-              await updateFoodOrder(result.id, { receiptUrl } as any);
-            }
-          } catch (receiptError) {
-            console.error("Receipt failed:", receiptError);
+          if (menuType === "bar") {
+            router.push("/admin/bar-orders/service");
+          } else {
+            router.push("/admin/food-orders");
           }
-
-          router.push(returnUrl);
         }
       }
     } catch (error) {

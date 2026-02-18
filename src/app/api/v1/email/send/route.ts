@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/emailService";
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// POST /api/v1/email/send — Phase 8C: Centralized Email SMTP Relay
+// POST /api/v1/email/send — Centralized Email SMTP Relay
 //
 // Pure SMTP transport — server knows nothing about templates or email types.
 // Caller provides everything: to, subject, html, cc, bcc, attachments.
