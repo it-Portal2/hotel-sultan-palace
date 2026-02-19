@@ -100,6 +100,7 @@ export async function sendBookingCancellationEmailAction(booking: Booking, reaso
 }
 
 export async function sendInvoiceEmailAction(bill: CheckoutBill): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendInvoiceEmailAction triggered for bill: ${bill?.id}, guest: ${bill?.guestEmail}`);
     try {
         if (!bill || !bill.id) {
             return { success: false, error: 'Invalid bill data' };
@@ -126,6 +127,7 @@ export async function sendInvoiceEmailAction(bill: CheckoutBill): Promise<{ succ
 }
 
 export async function sendAdminWelcomeEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendAdminWelcomeEmailAction logic triggered for: ${email}`);
     try {
         const htmlContent = generateAdminWelcomeEmail(email);
         const result = await sendEmail({

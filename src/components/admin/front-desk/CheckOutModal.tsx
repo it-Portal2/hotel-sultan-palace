@@ -123,8 +123,10 @@ export default function CheckOutModal({ booking, roomIndex, onClose, onConfirm, 
         // Send Email Notification Check (Fire & Forget)
         if (bill && booking.guestDetails.email) {
             // Trigger server action to generate PDF and send email
+            console.log("Triggering invoice email for bill:", bill.id);
             sendInvoiceEmailAction(bill)
                 .then((result) => {
+                    console.log("Invoice email action result:", result);
                     if (result.success) {
                         console.log("Invoice email sent successfully to " + booking.guestDetails.email);
                     } else {

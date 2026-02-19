@@ -595,6 +595,8 @@ export const generateAdminWelcomeEmail = (email: string): string => {
 
 
 
+
+
 export const sendNightAuditReport = async (
   pdfBuffer: Buffer,
   recipientEmail: string,
