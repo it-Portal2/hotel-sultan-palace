@@ -6,6 +6,7 @@ import { verifyDPOPayment, type DPOVerifyResponse } from '@/lib/dpoPaymentServic
 import { useCart } from '@/context/CartContext';
 import { createBookingService } from '@/lib/bookingService';
 import BookingConfirmationPopup from '@/components/BookingConfirmationPopup';
+import { sendBookingConfirmationEmailAction } from '@/app/actions/emailActions';
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -109,16 +110,13 @@ function PaymentSuccessContent() {
 
       // Send confirmation email (non-blocking)
       try {
-        const emailResponse = await fetch('/api/email/send-confirmation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookingId }),
-        });
-
-        if (!emailResponse.ok) {
-          console.warn('Failed to send confirmation email:', await emailResponse.text());
-        } else {
-          console.log('Confirmation email sent successfully');
+        if (createdBooking) {
+          const emailResult = await sendBookingConfirmationEmailAction(createdBooking);
+          if (!emailResult.success) {
+            console.warn('Failed to send confirmation email:', emailResult.error);
+          } else {
+            console.log('Confirmation email sent successfully');
+          }
         }
       } catch (emailError) {
         // Don't fail the booking if email fails

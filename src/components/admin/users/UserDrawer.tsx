@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, EyeIcon, EyeSlashIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { sendAdminWelcomeEmailAction } from '@/app/actions/emailActions';
 import { type AdminUser, type AdminRoleType, createSystemUser, updateSystemUserPermissions, createAdminUser } from '@/lib/adminUsers';
 import { getAllRoles, type SystemRole } from '@/lib/roleService';
 import { getStaffMembers } from '@/lib/accountsService';
@@ -253,6 +254,18 @@ export default function UserDrawer({ open, onClose, onSave, user, initialStaffId
                 }, 'admin-portal');
 
                 if (!result.success) throw new Error(result.error);
+                if (!result.success) throw new Error(result.error);
+                console.log('[DRAWER] User created successfully. Triggering welcome email for:', formData.email);
+
+                // Send Welcome Email
+                try {
+                    const emailResult = await sendAdminWelcomeEmailAction(formData.email);
+                    console.log('[DRAWER] Welcome email action completed. Result:', emailResult);
+                } catch (emailErr) {
+                    console.error("[DRAWER] Failed to call sendAdminWelcomeEmailAction:", emailErr);
+                    // Don't block success toast
+                }
+
                 showToast('User created successfully', 'success');
             }
 

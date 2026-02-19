@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { confirmBooking } from '@/lib/bookingService';
-import { sendEmail, generateBookingConfirmationEmail } from '@/lib/emailService';
+import { sendBookingConfirmationEmailAction } from '@/app/actions/emailActions';
 import { getBooking } from '@/lib/firestoreService';
 
 export async function POST(request: NextRequest) {
@@ -20,16 +20,13 @@ export async function POST(request: NextRequest) {
 
 
     // Send confirmation email (non-blocking)
+    // Send confirmation email (non-blocking)
     try {
       const booking = await getBooking(bookingId);
       if (booking) {
-        const emailHtml = generateBookingConfirmationEmail(booking);
-        await sendEmail({
-          to: booking.guestDetails.email,
-          subject: `Booking Confirmation - ${booking.bookingId}`,
-          html: emailHtml,
-        });
-        console.log('Confirmation email sent directly');
+        // Use shared action logic
+        await sendBookingConfirmationEmailAction(booking);
+        console.log('Confirmation email sent via shared action');
       }
     } catch (emailError) {
       // Don't fail the booking confirmation if email fails

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { sendAdminWelcomeEmailAction } from '@/app/actions/emailActions';
 
 export default function AdminSignupPage() {
   const router = useRouter();
@@ -34,7 +35,10 @@ export default function AdminSignupPage() {
     try {
       if (!auth) throw new Error('Auth unavailable');
       await createUserWithEmailAndPassword(auth, email, password);
-      try { if (auth.currentUser) { await signOut(auth); } } catch {}
+      // Send welcome email (Fire & Forget)
+      sendAdminWelcomeEmailAction(email).catch(err => console.error("Failed to send welcome email", err));
+
+      try { if (auth.currentUser) { await signOut(auth); } } catch { }
       router.push('/admin/login');
     } catch {
       setError('Signup failed. Please try again.');
