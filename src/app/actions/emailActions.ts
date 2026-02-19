@@ -6,7 +6,8 @@ import {
     generateBookingEnquiryEmail,
     generateBookingCancellationEmail,
     sendInvoiceEmail,
-    generateAdminWelcomeEmail
+    generateAdminWelcomeEmail,
+    generatePasswordChangedEmail
 } from '@/lib/emailService';
 import { Booking, CheckoutBill } from '@/lib/firestoreService';
 import { generateInvoicePDF } from '@/lib/invoiceGenerator';
@@ -99,6 +100,7 @@ export async function sendBookingCancellationEmailAction(booking: Booking, reaso
 }
 
 export async function sendInvoiceEmailAction(bill: CheckoutBill): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendInvoiceEmailAction triggered for bill: ${bill?.id}, guest: ${bill?.guestEmail}`);
     try {
         if (!bill || !bill.id) {
             return { success: false, error: 'Invalid bill data' };
@@ -125,6 +127,7 @@ export async function sendInvoiceEmailAction(bill: CheckoutBill): Promise<{ succ
 }
 
 export async function sendAdminWelcomeEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendAdminWelcomeEmailAction logic triggered for: ${email}`);
     try {
         const htmlContent = generateAdminWelcomeEmail(email);
         const result = await sendEmail({
@@ -142,6 +145,29 @@ export async function sendAdminWelcomeEmailAction(email: string): Promise<{ succ
         }
     } catch (error: any) {
         console.error('Unexpected error in sendAdminWelcomeEmailAction:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function sendPasswordChangedEmailAction(email: string): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendPasswordChangedEmailAction triggered for: ${email}`);
+    try {
+        const htmlContent = generatePasswordChangedEmail(email);
+        const result = await sendEmail({
+            to: email,
+            subject: 'Security Alert: Your Password Has Been Changed',
+            html: htmlContent
+        });
+
+        if (result.success) {
+            console.log(`[Email] Password changed notification sent to ${email}`);
+            return { success: true };
+        } else {
+            console.error(`[Email] Failed to send password changed notification to ${email}: ${result.error}`);
+            return { success: false, error: 'Failed to send password changed email' };
+        }
+    } catch (error: any) {
+        console.error('Unexpected error in sendPasswordChangedEmailAction:', error);
         return { success: false, error: error.message };
     }
 }
