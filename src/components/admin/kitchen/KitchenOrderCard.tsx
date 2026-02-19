@@ -315,7 +315,7 @@ export default function KitchenOrderCard({
       {order.notes && (
         <div className="mx-3 mt-2 flex items-start gap-1.5 bg-amber-50 p-2 rounded text-amber-800 text-xs font-semibold border border-amber-200">
           <ChatBubbleLeftIcon className="h-4 w-4 flex-shrink-0 text-amber-500 mt-0.5" />
-          <span>{order.notes}</span>
+          <span className="break-words min-w-0 flex-1">{order.notes}</span>
         </div>
       )}
 
