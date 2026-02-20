@@ -2,6 +2,7 @@
 
 import jsPDF from "jspdf";
 import { getAdminFirestore, getAdminStorage } from "@/lib/firebaseAdmin";
+import { sendOrderReceiptEmailAction } from "./emailActions";
 
 // ═══════════════════════════════════════════════════════════════
 //
@@ -366,6 +367,10 @@ export async function generateAndStoreReceipt(
     });
 
     console.log(`[Receipt] Generated for order ${orderId}: ${receiptUrl}`);
+
+    // 5. Send Receipt Email (Non-blocking)
+    sendOrderReceiptEmailAction({ ...order, receiptUrl } as any, receiptUrl);
+
     return receiptUrl;
   } catch (error) {
     console.error("[Receipt] Server-side generation failed:", error);

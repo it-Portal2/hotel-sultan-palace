@@ -685,3 +685,177 @@ export const sendInvoiceEmail = async (
   return result.success;
 };
 
+export const generateNewOrderAdminEmail = (order: any): string => {
+  const itemsList = order.items
+    .map(
+      (item: any) => `
+    <tr>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+        ${item.quantity}x ${item.name}
+        ${item.variant ? `<br><small>${item.variant.name}</small>` : ""}
+        ${item.selectedModifiers && item.selectedModifiers.length > 0
+          ? `<br><small>${item.selectedModifiers.map((m: any) => m.name).join(", ")}</small>`
+          : ""
+        }
+      </td>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
+        ${formatCurrency(item.price * item.quantity)}
+      </td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; text-align: center;">New Order Received</h2>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <table style="width: 100%;">
+        <tr>
+          <td style="padding: 5px 0;"><strong>Order:</strong> #${order.orderNumber}</td>
+          <td style="padding: 5px 0; text-align: right;"><strong>Type:</strong> ${order.orderType.replace("_", " ").toUpperCase()}</td>
+        </tr>
+        <tr>
+          <td style="padding: 5px 0;"><strong>Guest:</strong> ${order.guestName}</td>
+          <td style="padding: 5px 0; text-align: right;"><strong>Location:</strong> ${order.roomName || order.tableNumber || "N/A"}</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3 style="color: ${BRAND_COLORS.primary}; font-size: 16px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 5px;">Order Details</h3>
+    <table style="width: 100%; margin-bottom: 20px;">
+      ${itemsList}
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold;">Total Due</td>
+        <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px;">${formatCurrency(order.totalAmount)}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+      <p style="margin: 0;"><strong>Payment:</strong> <span style="text-transform: capitalize;">${order.paymentMethod || "Pending"}</span> (${order.paymentStatus})</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="${BASE_URL}/admin/orders" class="button">View in Admin Panel</a>
+    </div>
+  `;
+
+  return generateEmailLayout(`New Order #${order.orderNumber}`, content);
+};
+
+export const generateOrderAcknowledgmentEmail = (order: any): string => {
+  const itemsList = order.items
+    .map(
+      (item: any) => `
+    <tr>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+        ${item.quantity}x ${item.name}
+      </td>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
+        ${formatCurrency(item.price * item.quantity)}
+      </td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; text-align: center;">Order Received</h2>
+    <p style="text-align: center; color: ${BRAND_COLORS.lightText}; margin-bottom: 30px;">
+      Thank you <strong>${order.guestName}</strong>, we have received your order!
+    </p>
+    
+    <div style="text-align: center; margin-bottom: 30px;">
+      <span style="background-color: ${BRAND_COLORS.accent}; color: ${BRAND_COLORS.primary}; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
+        Order #${order.orderNumber}
+      </span>
+    </div>
+
+    <table style="width: 100%; margin-bottom: 20px;">
+      ${itemsList}
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">Total Amount</td>
+        <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #eee;">${formatCurrency(order.totalAmount)}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: ${BRAND_COLORS.background}; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;">
+      <p style="margin: 0; font-style: italic; color: ${BRAND_COLORS.lightText};">
+        Our team is reviewing your order. You will receive your official receipt once the order is confirmed.
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+      <p style="margin-bottom: 5px; font-weight: bold;">Need assistance?</p>
+      <p style="margin: 0;">Call us at <a href="tel:${SOCIAL_LINKS.phone.replace(/\s/g, "")}" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">${SOCIAL_LINKS.phone}</a></p>
+    </div>
+  `;
+
+  return generateEmailLayout(`Order Received - #${order.orderNumber}`, content);
+};
+
+export const generateOrderReceiptEmail = (
+  order: any,
+  receiptUrl: string
+): string => {
+  const itemsList = order.items
+    .map(
+      (item: any) => `
+    <tr>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+        ${item.quantity}x ${item.name}
+      </td>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
+        ${formatCurrency(item.price * item.quantity)}
+      </td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.success}; margin-top: 0; text-align: center;">Order Confirmed!</h2>
+    <p style="text-align: center; color: ${BRAND_COLORS.lightText}; margin-bottom: 30px;">
+      Your order <strong>#${order.orderNumber}</strong> has been confirmed and processed.
+    </p>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <table style="width: 100%;">
+        <tr>
+          <td style="padding: 5px 0;"><strong>Date:</strong> ${formatDate(order.createdAt)}</td>
+          <td style="padding: 5px 0; text-align: right;"><strong>Payment:</strong> <span style="text-transform: capitalize;">${order.paymentMethod || "Pending"}</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <h3 style="color: ${BRAND_COLORS.primary}; font-size: 16px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 5px;">Receipt Details</h3>
+    <table style="width: 100%; margin-bottom: 20px;">
+      ${itemsList}
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold; border-top: 1px solid #eee;">Subtotal</td>
+        <td style="padding: 10px 0; text-align: right; border-top: 1px solid #eee;">${formatCurrency(order.subtotal || 0)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax || 0)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold; font-size: 18px; border-top: 2px solid #000;">Total</td>
+        <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #000;">${formatCurrency(order.totalAmount)}</td>
+      </tr>
+    </table>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="${receiptUrl}" class="button" target="_blank" style="background-color: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.white};">View / Download Receipt</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+      <p style="margin-bottom: 5px;"><strong>Sultan Palace Hotel</strong></p>
+      <p style="margin: 0; font-size: 12px; color: ${BRAND_COLORS.lightText};">Dongwe, East Coast, Zanzibar</p>
+      <p style="margin-top: 5px;"><a href="tel:${SOCIAL_LINKS.phone.replace(/\s/g, "")}" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">${SOCIAL_LINKS.phone}</a></p>
+    </div>
+  `;
+
+  return generateEmailLayout(`Your Receipt — Order #${order.orderNumber}`, content);
+};
+

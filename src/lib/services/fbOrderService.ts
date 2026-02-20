@@ -21,6 +21,7 @@ import {
   addTransaction,
   updateDailyFBRevenue,
 } from "../firestoreService";
+import { sendOrderPlacedEmailAction } from "../../app/actions/emailActions";
 import type { FoodOrder } from "../types/foodMenu";
 
 // Re-export for consumers
@@ -195,6 +196,12 @@ export const createFoodOrder = async (
       updatedAt: serverTimestamp(),
       revenueRecorded: false,
     });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // STAGE 1: ORDER PLACED EMAILS (Non-blocking)
+    // ─────────────────────────────────────────────────────────────────────────────
+    const fullOrderData = { id: dr.id, ...cleanData, createdAt: new Date() } as FoodOrder;
+    sendOrderPlacedEmailAction(fullOrderData);
 
     // Update booking if bookingId exists
     if (data.bookingId) {
