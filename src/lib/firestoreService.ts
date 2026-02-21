@@ -3273,9 +3273,13 @@ export const createGalleryImage = async (
 ): Promise<string | null> => {
   if (!db) return null;
   try {
+    // Sanitize: Firestore rejects `undefined` values (e.g. originalFilename when using a URL)
+    const sanitizedData = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v === undefined ? null : v])
+    );
     const c = collection(db, "gallery");
     const dr = await addDoc(c, {
-      ...data,
+      ...sanitizedData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -3302,15 +3306,10 @@ export const updateGalleryImage = async (
 };
 
 export const deleteGalleryImage = async (id: string): Promise<boolean> => {
-  if (!db) return false;
-  try {
-    const r = doc(db, "gallery", id);
-    await deleteDoc(r);
-    return true;
-  } catch (e) {
-    console.error("Error deleting gallery image:", e);
-    return false;
-  }
+  if (!db) throw new Error("Firestore is not initialized");
+  const r = doc(db, "gallery", id);
+  await deleteDoc(r); // throws on failure — let caller handle it
+  return true;
 };
 
 // Testimonials CRUD

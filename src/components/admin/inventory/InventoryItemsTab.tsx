@@ -252,8 +252,11 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex flex-col gap-1">
-                                                        <span className="text-sm font-medium text-gray-700">{item.location || '-'}</span>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.department}</span>
+                                                        {item.location
+                                                            ? <span className="text-sm font-medium text-gray-700">{item.location}</span>
+                                                            : <span className="text-xs text-gray-300 italic">No location set</span>
+                                                        }
+                                                        {item.department && <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.department}</span>}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">

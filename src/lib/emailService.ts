@@ -646,7 +646,7 @@ export const sendInvoiceEmail = async (
   if (!guestEmail) {
     console.warn("[Email] No guest email found for invoice:", billId);
     return false;
-  }
+  } 
 
   const content = `
     <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px;">Your Stay Invoice</h2>

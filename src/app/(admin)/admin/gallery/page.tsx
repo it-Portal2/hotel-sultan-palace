@@ -1,13 +1,86 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getGalleryImages, deleteGalleryImage, GalleryImage } from '@/lib/firestoreService';
-import { PlusIcon, TrashIcon, PencilSquareIcon, PhotoIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import { PlusIcon, TrashIcon, PencilSquareIcon, PhotoIcon, MagnifyingGlassIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import { useAdminRole } from '@/context/AdminRoleContext';
+
+// Self-contained delete confirmation dialog — rendered via portal onto document.body
+// so it always overlays the visible viewport, regardless of CSS transforms on parent layouts.
+function DeleteConfirmDialog({
+  isOpen,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}: {
+  isOpen: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-red-100">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900">Delete Image</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Are you sure you want to remove this image from the gallery? This action cannot be undone.
+              </p>
+            </div>
+            <button
+              onClick={onCancel}
+              disabled={isDeleting}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <div className="bg-gray-50 px-6 py-4 flex gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Keep Image
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+          >
+            {isDeleting && (
+              <span className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+            )}
+            {isDeleting ? 'Deleting…' : 'Delete Image'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export default function AdminGalleryPage() {
   const { isReadOnly } = useAdminRole();
@@ -16,7 +89,8 @@ export default function AdminGalleryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dedupeRun = useRef(false);
 
   useEffect(() => {
@@ -55,11 +129,9 @@ export default function AdminGalleryPage() {
 
   const filteredItems = useMemo(() => {
     let filtered = items;
-
     if (selectedType !== 'All') {
       filtered = filtered.filter(i => (i.type || 'Uncategorized') === selectedType);
     }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(item =>
@@ -69,21 +141,40 @@ export default function AdminGalleryPage() {
     return filtered;
   }, [items, searchQuery, selectedType]);
 
-  const stats = useMemo(() => {
-    return {
-      total: items.length,
-      types: uniqueTypes.length - 1, // Subtract 'All'
-    };
-  }, [items, uniqueTypes]);
+  const handleDeleteClick = useCallback((id: string) => {
+    setErrorMessage(null);
+    setConfirmId(id);
+  }, []);
 
-  const confirmDelete = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!confirmId) return;
-    setDeleting(confirmId);
-    const ok = await deleteGalleryImage(confirmId);
-    if (ok) setItems(items.filter(i => i.id !== confirmId));
-    setDeleting(null);
-    setConfirmId(null);
-  };
+    const idToDelete = confirmId;
+    setIsDeleting(true);
+    setErrorMessage(null);
+
+    try {
+      const ok = await deleteGalleryImage(idToDelete);
+      if (ok) {
+        // Optimistically remove from state
+        setItems(prev => prev.filter(i => i.id !== idToDelete));
+        setConfirmId(null);
+      } else {
+        setErrorMessage('Delete failed. Please check your connection and try again.');
+      }
+    } catch (err) {
+      console.error('Delete gallery image error:', err);
+      setErrorMessage('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [confirmId]);
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!isDeleting) {
+      setConfirmId(null);
+      setErrorMessage(null);
+    }
+  }, [isDeleting]);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-[#FF6A00] rounded-full animate-spin" /></div>;
 
@@ -116,6 +207,17 @@ export default function AdminGalleryPage() {
           )}
         </div>
       </div>
+
+      {/* Error Banner */}
+      {errorMessage && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3">
+          <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="ml-auto text-red-400 hover:text-red-600">
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Stats & Filters Bar */}
       <div className="flex flex-col lg:flex-row gap-6 sticky top-0 z-10 bg-[#fafafa]/95 backdrop-blur-sm py-4 -my-4 border-b border-gray-100/50">
@@ -200,7 +302,16 @@ export default function AdminGalleryPage() {
                       <Link href={`/admin/gallery/edit/${i.id}`} className="p-2 backdrop-blur-md bg-white/20 hover:bg-white text-white hover:text-blue-600 rounded-lg shadow-sm transition-colors border border-white/20">
                         <PencilSquareIcon className="h-5 w-5" />
                       </Link>
-                      <button onClick={() => setConfirmId(i.id)} disabled={deleting === i.id} className="p-2 backdrop-blur-md bg-white/20 hover:bg-white text-white hover:text-red-600 rounded-lg shadow-sm transition-colors border border-white/20">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteClick(i.id);
+                        }}
+                        className="p-2 backdrop-blur-md bg-white/20 hover:bg-white text-white hover:text-red-600 rounded-lg shadow-sm transition-colors border border-white/20"
+                        title="Delete image"
+                      >
                         <TrashIcon className="h-5 w-5" />
                       </button>
                     </>
@@ -215,21 +326,18 @@ export default function AdminGalleryPage() {
                     {i.type ? i.type.replace(/_/g, ' ') : 'Uncategorized'}
                   </span>
                 </div>
-                {/* <p className="text-xs text-gray-400 mt-2">Added on {new Date().toLocaleDateString()}</p> */}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <ConfirmationModal
+      {/* Inline Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
         isOpen={!!confirmId}
-        onClose={() => setConfirmId(null)}
-        onConfirm={confirmDelete}
-        title="Delete Image"
-        message="Are you sure you want to remove this image from the gallery? This action helps keep your portfolio clean but cannot be undone."
-        confirmText={deleting === confirmId ? 'Deleting...' : 'Delete Image'}
-        cancelText="Keep Image"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
       />
     </div>
   );

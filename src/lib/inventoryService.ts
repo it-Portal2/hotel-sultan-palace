@@ -656,7 +656,14 @@ export const createInventoryItem = async (data: Omit<InventoryItem, 'id' | 'crea
 export const updateInventoryItem = async (id: string, data: Partial<InventoryItem>): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
     const docRef = doc(db, 'inventory', id);
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+
+    // Firestore rejects `undefined` field values — strip them before writing.
+    const sanitized = Object.fromEntries(
+        Object.entries({ ...data, updatedAt: serverTimestamp() })
+            .filter(([, v]) => v !== undefined)
+    );
+
+    await updateDoc(docRef, sanitized);
 
     // Check for auto-reorder if stock changed
     if (data.currentStock !== undefined) {
