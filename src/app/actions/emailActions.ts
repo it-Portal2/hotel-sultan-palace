@@ -47,7 +47,7 @@ export async function sendBookingConfirmationEmailAction(booking: Booking): Prom
 export async function sendContactEmailAction(contactData: { name: string; email: string; phone: string; message: string; subject: string }): Promise<{ success: boolean; error?: string }> {
     try {
         // Send notification to ADMIN (or Hotel Reservations)
-        const adminEmail = process.env.SMTP_FROM_EMAIL || 'portalholdingsznz@gmail.com'; // Default fallback
+        const adminEmail = 'portalholdingsznz@gmail.com';
         const htmlContent = generateBookingEnquiryEmail(contactData);
 
         const result = await sendEmail({
@@ -56,10 +56,6 @@ export async function sendContactEmailAction(contactData: { name: string; email:
             html: htmlContent,
             text: `Name: ${contactData.name}\nEmail: ${contactData.email}\nPhone: ${contactData.phone}\nMessage: ${contactData.message}`
         });
-
-        // Optional: Send auto-reply to user?
-        // const replyHtml = generateGeneralReplyEmail(`Thank you for contacting us. We have received your message and will get back to you shortly.`, contactData.name);
-        // await sendEmail({ to: contactData.email, subject: 'We received your message', html: replyHtml });
 
         if (result.success) {
             return { success: true };
