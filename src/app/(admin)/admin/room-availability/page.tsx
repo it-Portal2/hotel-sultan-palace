@@ -550,7 +550,9 @@ export default function RoomAvailabilityPage() {
             // If check-in is 30th, check-out 31st.
             // 30th column: 30 >= 30 && 30 < 31 => TRUE (Occupied)
             // 31st column: 31 >= 30 && 31 < 31 => FALSE (Vacant)
-            return bar.roomName === room.roomName && dTime >= bStart && dTime < bEnd;
+            // Same-day: bStart === bEnd → use inclusive end so the day is marked occupied
+            const isSameDay = bStart === bEnd;
+            return bar.roomName === room.roomName && dTime >= bStart && (isSameDay ? dTime <= bEnd : dTime < bEnd);
           });
 
           // Check if room is blocked for this date
@@ -1262,7 +1264,9 @@ export default function RoomAvailabilityPage() {
                                 const bStart = bar.startDate.getTime();
                                 const bEnd = bar.endDate.getTime();
                                 const dTime = date.getTime();
-                                return dTime >= bStart && dTime < bEnd;
+                                // Same-day booking: use inclusive end so the single day shows
+                                const isSameDay = bStart === bEnd;
+                                return dTime >= bStart && (isSameDay ? dTime <= bEnd : dTime < bEnd);
                               });
 
                               // Logic to determine if we should render the start of a booking bar here
@@ -1272,6 +1276,7 @@ export default function RoomAvailabilityPage() {
                                 const bStart = bookingBar.startDate.getTime();
                                 const bEnd = bookingBar.endDate.getTime();
                                 const dTime = date.getTime();
+                                const isSameDay = bStart === bEnd;
 
                                 // 1. Is this the actual start date?
                                 if (dTime === bStart) return true;
@@ -1279,7 +1284,7 @@ export default function RoomAvailabilityPage() {
                                 // 2. Are we at the first column of the view?
                                 // AND does the booking overlap this date (which we know it does from .find above)
                                 // AND did it start BEFORE this date?
-                                if (dateIdx === 0 && bStart < dTime && bEnd > dTime) return true;
+                                if (dateIdx === 0 && bStart < dTime && (isSameDay ? bEnd >= dTime : bEnd > dTime)) return true;
 
                                 return false;
                               })();
@@ -1384,7 +1389,8 @@ export default function RoomAvailabilityPage() {
                                           const diffTime = effectiveEnd.getTime() - effectiveStart.getTime();
                                           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                                          return `calc(${Math.max(0, diffDays)} * 100% - 4px)`;
+                                          // Same-day booking: diffDays == 0, ensure at least 1 full column
+                                          return `calc(${Math.max(1, diffDays)} * 100% - 4px)`;
                                         })()
                                       }}
                                     >

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { getGalleryImages, updateGalleryImage, GalleryType } from '@/lib/firestoreService';
 import { storage, auth } from '@/lib/firebase';
@@ -10,7 +9,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/context/ToastContext';
 import BackButton from '@/components/admin/BackButton';
 
-const TYPES: {label:string; value: GalleryType}[] = [
+const TYPES: { label: string; value: GalleryType }[] = [
   { label: 'Villas', value: 'villas' },
   { label: 'Pool', value: 'pool' },
   { label: 'Spa', value: 'spa' },
@@ -92,7 +91,7 @@ export default function EditGalleryImagePage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="h-12 w-12 border-b-2 border-orange-500 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
@@ -104,25 +103,27 @@ export default function EditGalleryImagePage() {
       <form onSubmit={handleSave} className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700">Type</label>
-          <select value={type} onChange={(e)=>setType(e.target.value as GalleryType)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:outline-none">
+          <select value={type} onChange={(e) => setType(e.target.value as GalleryType)} className="mt-2 block w-full h-12 rounded-xl border border-gray-300 bg-gray-50/60 px-4 text-base shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:outline-none">
             {TYPES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Image</label>
           <div className="mt-2 flex items-center gap-3">
-            <input type="file" accept="image/*" onChange={(e)=>{const f=e.target.files?.[0]; if(f) handleUpload(f);}} />
-            <button type="button" onClick={()=>{ if (imageUrl) window.open(imageUrl, '_blank'); }} className="px-3 py-2 text-sm rounded border">Open</button>
+            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
+            <button type="button" onClick={() => { if (imageUrl) window.open(imageUrl, '_blank'); }} className="px-3 py-2 text-sm rounded border">Open</button>
           </div>
           {imageUrl && (
-            <div className="mt-3 relative inline-block" style={{ width: 'auto', height: '192px' }}>
-              <Image src={imageUrl} alt="preview" fill className="object-contain rounded border" sizes="(max-width: 768px) 100vw, 400px" unoptimized style={{ width: 'auto', height: 'auto' }} />
+            <div className="mt-3">
+              {/* plain img avoids Next.js fill+style.width conflict in admin preview */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt="preview" className="max-h-48 max-w-xl rounded border object-contain" />
             </div>
           )}
         </div>
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={()=>router.push('/admin/gallery')} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button type="submit" disabled={saving || uploading} className="px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50">{saving? 'Saving...' : 'Save'}</button>
+          <button type="button" onClick={() => router.push('/admin/gallery')} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button type="submit" disabled={saving || uploading} className="px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </form>
     </div>

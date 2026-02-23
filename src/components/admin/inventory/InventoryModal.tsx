@@ -146,8 +146,10 @@ export default function InventoryModal({
             maxStockLevel: parseFloat(formData.maxStockLevel) || 0,
             reorderPoint: parseFloat(formData.reorderPoint) || 0,
             unitCost: parseFloat(formData.unitCost) || 0,
-            purchaseUnit: formData.purchaseUnit || undefined,
+            purchaseUnit: formData.purchaseUnit.trim() || undefined,
             conversionFactor: parseFloat(formData.conversionFactor) || undefined,
+            location: formData.location.trim() || undefined,
+            preferredSupplierId: formData.preferredSupplierId.trim() || undefined,
         });
     };
 

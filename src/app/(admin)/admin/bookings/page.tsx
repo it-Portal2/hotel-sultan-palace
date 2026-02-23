@@ -308,7 +308,61 @@ export default function AdminBookingsPage() {
   };
 
   const exportCsv = () => {
-    console.log('Export CSV placeholder');
+    if (filtered.length === 0) {
+      showToast('No bookings to export', 'error');
+      return;
+    }
+
+    const headers = [
+      'Booking ID',
+      'Guest Name',
+      'Email',
+      'Phone',
+      'Room(s)',
+      'Check-In',
+      'Check-Out',
+      'Status',
+      'Source',
+      'Total Amount',
+      'Created At',
+    ];
+
+    const rows = filtered.map((b) => {
+      const name = `${b.guestDetails?.firstName || ''} ${b.guestDetails?.lastName || ''}`.trim();
+      const rooms = (b.rooms || []).map((r: any) => r.roomName || r.name || '').join(' | ');
+      const checkIn = b.checkIn ? new Date(b.checkIn).toLocaleDateString('en-IN') : '';
+      const checkOut = b.checkOut ? new Date(b.checkOut).toLocaleDateString('en-IN') : '';
+      const createdAt = b.createdAt
+        ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)).toLocaleDateString('en-IN')
+        : '';
+
+      return [
+        b.bookingId || b.id,
+        name,
+        b.guestDetails?.email || '',
+        b.guestDetails?.phone || '',
+        rooms,
+        checkIn,
+        checkOut,
+        b.status || '',
+        b.source || '',
+        b.totalAmount != null ? b.totalAmount : '',
+        createdAt,
+      ].map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.download = `bookings-${activeTab}-${dateStr}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${filtered.length} booking(s)`, 'success');
   };
 
   const allowedActions = ['check_in', 'check_out', 'cancel', 'stay_over'];

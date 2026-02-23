@@ -7,7 +7,10 @@ import {
     generateBookingCancellationEmail,
     sendInvoiceEmail,
     generateAdminWelcomeEmail,
-    generatePasswordChangedEmail
+    generatePasswordChangedEmail,
+    generateNewOrderAdminEmail,
+    generateOrderAcknowledgmentEmail,
+    generateOrderReceiptEmail
 } from '@/lib/emailService';
 import { Booking, CheckoutBill } from '@/lib/firestoreService';
 import { generateInvoicePDF } from '@/lib/invoiceGenerator';
@@ -169,5 +172,57 @@ export async function sendPasswordChangedEmailAction(email: string): Promise<{ s
     } catch (error: any) {
         console.error('Unexpected error in sendPasswordChangedEmailAction:', error);
         return { success: false, error: error.message };
+    }
+}
+
+export async function sendOrderPlacedEmailAction(order: any): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendOrderPlacedEmailAction triggered for order: ${order.orderNumber}`);
+
+    try {
+        // 1. Admin Notification
+        const adminEmail = process.env.SMTP_FROM_EMAIL || 'portalholdingsznz@gmail.com';
+        await sendEmail({
+            to: adminEmail,
+            subject: `New Order #${order.orderNumber} — ${order.orderType}`,
+            html: generateNewOrderAdminEmail(order),
+        });
+        console.log(`[Email] Admin notification sent to ${adminEmail}`);
+
+        // 2. Guest Acknowledgment
+        if (order.guestEmail && order.guestEmail !== "N/A") {
+            await sendEmail({
+                to: order.guestEmail,
+                subject: `Order Received — #${order.orderNumber} | Sultan Palace Hotel`,
+                html: generateOrderAcknowledgmentEmail(order),
+            });
+            console.log(`[Email] Guest acknowledgment sent to ${order.guestEmail}`);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in sendOrderPlacedEmailAction:', error);
+        return { success: false, error: error.message || 'Server error' };
+    }
+}
+
+export async function sendOrderReceiptEmailAction(order: any, receiptUrl: string): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendOrderReceiptEmailAction triggered for order: ${order.orderNumber}`);
+
+    if (!order.guestEmail || order.guestEmail === "N/A") {
+        console.log(`[Email] No guest email to send receipt to for order ${order.orderNumber}`);
+        return { success: false, error: "No guest email" };
+    }
+
+    try {
+        await sendEmail({
+            to: order.guestEmail,
+            subject: `Your Receipt — Order #${order.orderNumber} | Sultan Palace Hotel`,
+            html: generateOrderReceiptEmail(order, receiptUrl),
+        });
+        console.log(`[Email] Receipt email sent to ${order.guestEmail}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in sendOrderReceiptEmailAction:', error);
+        return { success: false, error: error.message || 'Server error' };
     }
 }
