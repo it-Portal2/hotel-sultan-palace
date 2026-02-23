@@ -227,7 +227,7 @@ export const getDefaultGroupOption = (): MenuItemGroupOption => ({
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// ORDER TYPES (moved from firestoreService.ts)
+// ORDER TYPES
 // ═════════════════════════════════════════════════════════════════════════════
 
 export interface FoodOrder {
@@ -318,7 +318,7 @@ export interface FoodOrder {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// REVENUE TYPES (moved from firestoreService.ts)
+// REVENUE TYPES 
 // ═════════════════════════════════════════════════════════════════════════════
 
 export interface FBRevenue {
