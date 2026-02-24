@@ -126,11 +126,11 @@ export default function POSCreatePage() {
             // Reconstruct variant/modifiers strictly typed
             selectedVariant: item.variant
               ? {
-                  id: "v-loaded",
-                  name: item.variant.name,
-                  price: item.variant.price,
-                  isAvailable: true,
-                }
+                id: "v-loaded",
+                name: item.variant.name,
+                price: item.variant.price,
+                isAvailable: true,
+              }
               : undefined,
             selectedModifiers: item.selectedModifiers || [],
             category: item.category,
@@ -250,13 +250,20 @@ export default function POSCreatePage() {
 
   // Toggle checkbox selection
   const toggleSelectItem = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+
+    // Block direct add for variant-based items — they must go through the modal
+    if (item && item.hasVariants && item.variants && item.variants.length > 0) {
+      showToast("Please select a variant to add this item for billing", "error");
+      return;
+    }
+
     const newSelected = new Set(selectedItems);
     if (newSelected.has(itemId)) {
       newSelected.delete(itemId);
       setCart((prev) => prev.filter((i) => i.id !== itemId));
     } else {
       newSelected.add(itemId);
-      const item = items.find((i) => i.id === itemId);
       if (item) {
         setCart((prev) => [...prev, { ...item, quantity: 1 }]);
       }
@@ -520,7 +527,7 @@ export default function POSCreatePage() {
 
         if (result) {
           try {
-            await processOrderInventoryDeduction(result.id, "POS System");
+            await processOrderInventoryDeduction(result.id, "POS System", menuType as "food" | "bar");
           } catch (invError) {
             console.error("Inventory deduction failed", invError);
           }
@@ -580,9 +587,8 @@ export default function POSCreatePage() {
         </div>
         <div className="flex items-center gap-4">
           <Link
-            href={`/admin/food-orders/create?menuType=${
-              menuType === "food" ? "bar" : "food"
-            }&returnUrl=${returnUrl}`}
+            href={`/admin/food-orders/create?menuType=${menuType === "food" ? "bar" : "food"
+              }&returnUrl=${returnUrl}`}
             className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6A00] whitespace-nowrap"
           >
             Switch to {menuType === "food" ? "Bar" : "Food"}

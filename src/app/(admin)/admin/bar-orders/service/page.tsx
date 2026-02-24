@@ -35,43 +35,43 @@ const LOCATION_OPTIONS = [
 ];
 
 const statusColors: Record<string, { bg: string; text: string; dot: string }> =
-  {
-    pending: {
-      bg: "bg-yellow-50 border-yellow-200",
-      text: "text-yellow-700",
-      dot: "bg-yellow-500",
-    },
-    confirmed: {
-      bg: "bg-blue-50 border-blue-200",
-      text: "text-blue-700",
-      dot: "bg-blue-500",
-    },
-    preparing: {
-      bg: "bg-orange-50 border-orange-200",
-      text: "text-orange-700",
-      dot: "bg-orange-500",
-    },
-    ready: {
-      bg: "bg-teal-50 border-teal-200",
-      text: "text-teal-700",
-      dot: "bg-teal-500",
-    },
-    out_for_delivery: {
-      bg: "bg-purple-50 border-purple-200",
-      text: "text-purple-700",
-      dot: "bg-purple-500",
-    },
-    delivered: {
-      bg: "bg-emerald-50 border-emerald-200",
-      text: "text-emerald-700",
-      dot: "bg-emerald-500",
-    },
-    cancelled: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-700",
-      dot: "bg-red-500",
-    },
-  };
+{
+  pending: {
+    bg: "bg-yellow-50 border-yellow-200",
+    text: "text-yellow-700",
+    dot: "bg-yellow-500",
+  },
+  confirmed: {
+    bg: "bg-blue-50 border-blue-200",
+    text: "text-blue-700",
+    dot: "bg-blue-500",
+  },
+  preparing: {
+    bg: "bg-orange-50 border-orange-200",
+    text: "text-orange-700",
+    dot: "bg-orange-500",
+  },
+  ready: {
+    bg: "bg-teal-50 border-teal-200",
+    text: "text-teal-700",
+    dot: "bg-teal-500",
+  },
+  out_for_delivery: {
+    bg: "bg-purple-50 border-purple-200",
+    text: "text-purple-700",
+    dot: "bg-purple-500",
+  },
+  delivered: {
+    bg: "bg-emerald-50 border-emerald-200",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+  },
+  cancelled: {
+    bg: "bg-red-50 border-red-200",
+    text: "text-red-700",
+    dot: "bg-red-500",
+  },
+};
 
 export default function BarOrdersServicePage() {
   const { isReadOnly } = useAdminRole();
@@ -139,7 +139,7 @@ export default function BarOrdersServicePage() {
 
       if (status === "delivered") {
         try {
-          await processOrderInventoryDeduction(orderId, "Admin User");
+          await processOrderInventoryDeduction(orderId, "Admin User", "bar");
           showToast("Bar order delivered & Inventory deducted", "success");
         } catch (invError) {
           console.error("Inventory Deduction Failed:", invError);
@@ -157,7 +157,7 @@ export default function BarOrdersServicePage() {
         };
         showToast(
           statusMessages[status] ||
-            `Order status updated to ${status.replace(/_/g, " ")}`,
+          `Order status updated to ${status.replace(/_/g, " ")}`,
           "success",
         );
       }
@@ -420,11 +420,10 @@ export default function BarOrdersServicePage() {
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                              order.barLocation === "main_bar"
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${order.barLocation === "main_bar"
                                 ? "bg-purple-50 border-purple-200 text-purple-700"
                                 : "bg-cyan-50 border-cyan-200 text-cyan-700"
-                            }`}
+                              }`}
                           >
                             {order.barLocation === "main_bar"
                               ? "Main Bar"
@@ -544,11 +543,10 @@ export default function BarOrdersServicePage() {
                       )}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${
-                          currentPage === page
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === page
                             ? "bg-[#9333EA] text-white"
                             : "text-gray-600 hover:bg-gray-100 border border-gray-200"
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>

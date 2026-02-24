@@ -29,43 +29,43 @@ const STATUS_OPTIONS = [
 ];
 
 const statusColors: Record<string, { bg: string; text: string; dot: string }> =
-  {
-    pending: {
-      bg: "bg-yellow-50 border-yellow-200",
-      text: "text-yellow-700",
-      dot: "bg-yellow-500",
-    },
-    confirmed: {
-      bg: "bg-blue-50 border-blue-200",
-      text: "text-blue-700",
-      dot: "bg-blue-500",
-    },
-    preparing: {
-      bg: "bg-orange-50 border-orange-200",
-      text: "text-orange-700",
-      dot: "bg-orange-500",
-    },
-    ready: {
-      bg: "bg-teal-50 border-teal-200",
-      text: "text-teal-700",
-      dot: "bg-teal-500",
-    },
-    out_for_delivery: {
-      bg: "bg-purple-50 border-purple-200",
-      text: "text-purple-700",
-      dot: "bg-purple-500",
-    },
-    delivered: {
-      bg: "bg-emerald-50 border-emerald-200",
-      text: "text-emerald-700",
-      dot: "bg-emerald-500",
-    },
-    cancelled: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-700",
-      dot: "bg-red-500",
-    },
-  };
+{
+  pending: {
+    bg: "bg-yellow-50 border-yellow-200",
+    text: "text-yellow-700",
+    dot: "bg-yellow-500",
+  },
+  confirmed: {
+    bg: "bg-blue-50 border-blue-200",
+    text: "text-blue-700",
+    dot: "bg-blue-500",
+  },
+  preparing: {
+    bg: "bg-orange-50 border-orange-200",
+    text: "text-orange-700",
+    dot: "bg-orange-500",
+  },
+  ready: {
+    bg: "bg-teal-50 border-teal-200",
+    text: "text-teal-700",
+    dot: "bg-teal-500",
+  },
+  out_for_delivery: {
+    bg: "bg-purple-50 border-purple-200",
+    text: "text-purple-700",
+    dot: "bg-purple-500",
+  },
+  delivered: {
+    bg: "bg-emerald-50 border-emerald-200",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+  },
+  cancelled: {
+    bg: "bg-red-50 border-red-200",
+    text: "text-red-700",
+    dot: "bg-red-500",
+  },
+};
 
 export default function AdminFoodOrdersPage() {
   const { isReadOnly } = useAdminRole();
@@ -129,7 +129,7 @@ export default function AdminFoodOrdersPage() {
 
       if (status === "delivered") {
         try {
-          await processOrderInventoryDeduction(orderId, "Admin User");
+          await processOrderInventoryDeduction(orderId, "Admin User", "food");
           showToast("Order delivered & Inventory deducted", "success");
         } catch (invError) {
           console.error("Inventory Deduction Failed:", invError);
@@ -144,7 +144,7 @@ export default function AdminFoodOrdersPage() {
         };
         showToast(
           statusMessages[status] ||
-            `Order status updated to ${status.replace(/_/g, " ")}`,
+          `Order status updated to ${status.replace(/_/g, " ")}`,
           "success",
         );
       }
@@ -392,9 +392,9 @@ export default function AdminFoodOrdersPage() {
                             {order.roomName
                               ? `Room ${order.roomName}`
                               : (order.deliveryLocation || "N/A").replace(
-                                  "_",
-                                  " ",
-                                )}
+                                "_",
+                                " ",
+                              )}
                           </p>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
@@ -508,11 +508,10 @@ export default function AdminFoodOrdersPage() {
                       )}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${
-                          currentPage === page
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === page
                             ? "bg-[#FF6A00] text-white"
                             : "text-gray-600 hover:bg-gray-100 border border-gray-200"
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>

@@ -83,6 +83,7 @@ const getPortalFromPath = (path: string): PortalType => {
     normalizedPath.startsWith("/admin/kitchen") ||
     normalizedPath.startsWith("/admin/food-orders") ||
     normalizedPath.startsWith("/admin/bar-orders") ||
+    normalizedPath.startsWith("/admin/bar-display") ||
     normalizedPath.startsWith("/admin/menu") ||
     normalizedPath.startsWith("/admin/fb-dashboard")
   )
@@ -429,11 +430,10 @@ function AdminLayoutContent({
                 key={group.name}
                 href={item.href}
                 onClick={onNavClick}
-                className={`group flex items-center px-6 py-4 text-sm font-semibold transition-all border-l-4 ${
-                  isActive
+                className={`group flex items-center px-6 py-4 text-sm font-semibold transition-all border-l-4 ${isActive
                     ? "border-[#FF6A00] bg-orange-50 text-[#FF6A00]"
                     : "border-transparent text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 <div
                   className={`mr-4 ${isActive ? "text-[#FF6A00]" : "text-gray-400 group-hover:text-gray-600"}`}
@@ -463,11 +463,10 @@ function AdminLayoutContent({
               {/* Group Header */}
               <button
                 onClick={() => toggleGroup(group.name)}
-                className={`w-full flex items-center justify-between px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${
-                  hasActiveItem
+                className={`w-full flex items-center justify-between px-6 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${hasActiveItem
                     ? "text-[#FF6A00] bg-orange-50/50"
                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   {sidebarOpen && <span>{group.name}</span>}
@@ -499,11 +498,10 @@ function AdminLayoutContent({
                       key={item.name}
                       href={item.href}
                       onClick={onNavClick}
-                      className={`group flex items-center pl-10 pr-6 py-3 text-sm font-medium transition-all border-l-4 ${
-                        isActive
+                      className={`group flex items-center pl-10 pr-6 py-3 text-sm font-medium transition-all border-l-4 ${isActive
                           ? "border-[#FF6A00] text-[#FF6A00] bg-orange-50"
                           : "border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       <span className="flex-1">{item.name}</span>
                     </Link>
@@ -547,11 +545,10 @@ function AdminLayoutContent({
       {/* Sidebar - Responsive: Overlay on mobile, Push on Desktop */}
       {currentPortal !== "selection" && (
         <div
-          className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-xl md:shadow-sm print:hidden ${
-            sidebarOpen
+          className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-gray-200 shadow-xl md:shadow-sm print:hidden ${sidebarOpen
               ? "w-72 translate-x-0"
               : "w-0 -translate-x-full md:translate-x-0 md:w-0"
-          } overflow-hidden`}
+            } overflow-hidden`}
         >
           <div className="flex h-16 items-center px-6 border-b border-gray-100 bg-white flex-shrink-0">
             <div className="flex items-center gap-3 w-full">

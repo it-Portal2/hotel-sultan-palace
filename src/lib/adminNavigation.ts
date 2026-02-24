@@ -454,7 +454,7 @@ export const portalNavigationGroups: Record<PortalType, NavigationGroup[]> = {
       items: [
         {
           name: "Dashboard",
-          href: "/admin/bar-orders",
+          href: "/admin/bar-display",
           icon: HomeIcon,
           color: "text-purple-600",
           bgColor: "bg-purple-50",

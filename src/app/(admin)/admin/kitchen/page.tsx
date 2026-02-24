@@ -92,7 +92,7 @@ export default function KitchenDashboardPage() {
       if (status === "preparing") {
         const { processOrderInventoryDeduction } =
           await import("@/lib/inventoryService");
-        await processOrderInventoryDeduction(orderId, "Kitchen Staff");
+        await processOrderInventoryDeduction(orderId, "Kitchen Staff", "food");
       }
 
       const updateData: any = { status };
@@ -200,11 +200,10 @@ export default function KitchenDashboardPage() {
           {/* Urgency Toggle */}
           <button
             onClick={() => setShowUrgentOnly(!showUrgentOnly)}
-            className={`px-3 py-2 rounded-lg text-xs font-bold border flex items-center gap-2 transition-colors ${
-              showUrgentOnly
+            className={`px-3 py-2 rounded-lg text-xs font-bold border flex items-center gap-2 transition-colors ${showUrgentOnly
                 ? "bg-red-50 border-red-200 text-red-700"
                 : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${showUrgentOnly ? "bg-red-600 animate-pulse" : "bg-gray-300"}`}

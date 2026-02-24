@@ -162,7 +162,7 @@ function ItemDetailModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl w-full max-w-xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Close */}
@@ -180,14 +180,14 @@ function ItemDetailModal({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-6">
+          <div className="p-4 space-y-4">
             {/* Image Carousel */}
             {images.length > 0 && (
               <div className="relative rounded-xl overflow-hidden bg-gray-100">
                 <img
                   src={images[currentImageIndex] || "/placeholder.svg"}
                   alt={item.name}
-                  className="w-full h-56 sm:h-80 object-cover"
+                  className="w-full h-36 sm:h-44 object-cover"
                 />
                 {images.length > 1 && (
                   <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
@@ -195,11 +195,10 @@ function ItemDetailModal({
                       <button
                         key={idx}
                         onClick={() => setCurrentImageIndex(idx)}
-                        className={`h-2 rounded-full transition-all ${
-                          idx === currentImageIndex
-                            ? "w-8 bg-[#FF6A00]"
-                            : "w-2 bg-white/60"
-                        }`}
+                        className={`h-2 rounded-full transition-all ${idx === currentImageIndex
+                          ? "w-8 bg-[#FF6A00]"
+                          : "w-2 bg-white/60"
+                          }`}
                       />
                     ))}
                   </div>
@@ -222,15 +221,15 @@ function ItemDetailModal({
               <div className="text-3xl font-bold text-[#FF6A00]">
                 {isVariantBased && item.variants && item.variants.length > 0
                   ? (() => {
-                      const prices = item.variants
-                        .filter((v) => v.isAvailable)
-                        .map((v) => v.price)
-                        .sort((a, b) => a - b);
-                      if (prices.length === 0) return "N/A";
-                      if (prices.length === 1)
-                        return `$${prices[0].toFixed(2)}`;
-                      return `$${prices[0].toFixed(2)} - $${prices[prices.length - 1].toFixed(2)}`;
-                    })()
+                    const prices = item.variants
+                      .filter((v) => v.isAvailable)
+                      .map((v) => v.price)
+                      .sort((a, b) => a - b);
+                    if (prices.length === 0) return "N/A";
+                    if (prices.length === 1)
+                      return `$${prices[0].toFixed(2)}`;
+                    return `$${prices[0].toFixed(2)} - $${prices[prices.length - 1].toFixed(2)}`;
+                  })()
                   : `$${item.price.toFixed(2)}`}
               </div>
             </div>
@@ -250,11 +249,10 @@ function ItemDetailModal({
                     .map((variant) => (
                       <label
                         key={variant.id}
-                        className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedVariant?.id === variant.id
-                            ? "border-[#FF6A00] bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300 bg-gray-50"
-                        }`}
+                        className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedVariant?.id === variant.id
+                          ? "border-[#FF6A00] bg-orange-50"
+                          : "border-gray-200 hover:border-gray-300 bg-gray-50"
+                          }`}
                       >
                         <div className="flex items-center gap-3 flex-1">
                           <input
@@ -286,11 +284,10 @@ function ItemDetailModal({
                       {group.groupName}
                     </h3>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        group.required
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${group.required
+                        ? "bg-red-100 text-red-800"
+                        : "bg-gray-100 text-gray-700"
+                        }`}
                     >
                       {group.required ? "Required" : "Optional"}
                     </span>
@@ -305,11 +302,10 @@ function ItemDetailModal({
                         return (
                           <label
                             key={option.name}
-                            className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-[#FF6A00] bg-orange-50"
-                                : "border-gray-200 hover:border-gray-300 bg-gray-50"
-                            }`}
+                            className={`relative flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected
+                              ? "border-[#FF6A00] bg-orange-50"
+                              : "border-gray-200 hover:border-gray-300 bg-gray-50"
+                              }`}
                           >
                             <div className="flex items-center gap-3 flex-1">
                               <input
@@ -362,7 +358,7 @@ function ItemDetailModal({
         </div>
 
         {/* Footer - CTA with Total */}
-        <div className="sticky bottom-0 p-4 sm:p-6 border-t border-gray-200 bg-white">
+        <div className="sticky bottom-0 p-3 border-t border-gray-200 bg-white">
           <div className="flex items-center justify-between mb-3">
             <div className="text-left">
               <p className="text-sm text-gray-600 font-medium">Total</p>
@@ -374,11 +370,10 @@ function ItemDetailModal({
           <button
             onClick={handleAdd}
             disabled={!canAdd}
-            className={`w-full py-4 font-bold text-white rounded-xl transition-all text-lg ${
-              canAdd
-                ? "bg-[#FF6A00] hover:bg-[#E55A00] active:scale-95"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
+            className={`w-full py-4 font-bold text-white rounded-xl transition-all text-lg ${canAdd
+              ? "bg-[#FF6A00] hover:bg-[#E55A00] active:scale-95"
+              : "bg-gray-300 cursor-not-allowed"
+              }`}
           >
             {canAdd ? "Add to Order" : "Select Options"}
           </button>
@@ -882,11 +877,10 @@ export function POSCart({
                       });
                     }
                   }}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                    validationErrors.guestName
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${validationErrors.guestName
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
+                    }`}
                 />
                 {validationErrors.guestName && (
                   <span className="text-xs text-red-500 mt-1 block">
@@ -931,11 +925,10 @@ export function POSCart({
                     });
                   }
                 }}
-                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  validationErrors.guestEmail
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${validationErrors.guestEmail
+                  ? "border-red-500 bg-red-50"
+                  : "border-gray-300"
+                  }`}
               />
               {validationErrors.guestEmail && (
                 <span className="text-xs text-red-500 mt-1 block">
@@ -1010,20 +1003,20 @@ export function POSCart({
                 >
                   {(deliveryLocation === "restaurant" ||
                     deliveryLocation === "bar") && (
-                    <>
-                      <option value="walk_in">Walk In</option>
-                      <option value="takeaway">Takeaway</option>
-                      <option value="delivery">Delivery</option>
-                    </>
-                  )}
+                      <>
+                        <option value="walk_in">Walk In</option>
+                        <option value="takeaway">Takeaway</option>
+                        <option value="delivery">Delivery</option>
+                      </>
+                    )}
                   {(deliveryLocation === "pool_side" ||
                     deliveryLocation === "beach_side") && (
-                    <>
-                      <option value="walk_in">Walk In</option>
-                      <option value="takeaway">Takeaway</option>
-                      <option value="delivery">Delivery</option>
-                    </>
-                  )}
+                      <>
+                        <option value="walk_in">Walk In</option>
+                        <option value="takeaway">Takeaway</option>
+                        <option value="delivery">Delivery</option>
+                      </>
+                    )}
                 </select>
               )}
             </div>
@@ -1064,11 +1057,10 @@ export function POSCart({
                       });
                     }
                   }}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                    validationErrors.roomName
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed ${validationErrors.roomName
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
+                    }`}
                 >
                   <option value="">Select a room</option>
                   {(() => {
@@ -1264,11 +1256,10 @@ export function POSCart({
                     }
                   }}
                   placeholder="Enter amount received"
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] ${
-                    validationErrors.paidAmount
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] ${validationErrors.paidAmount
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
+                    }`}
                   min={0}
                   max={total}
                 />
@@ -1513,11 +1504,10 @@ export function MenuBrowser({
               return (
                 <div
                   key={item.id}
-                  className={`relative bg-white rounded-xl border-2 overflow-hidden shadow-sm transition-all hover:shadow-md ${
-                    isSelected
-                      ? "border-[#FF6A00] ring-2 ring-orange-100"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
+                  className={`relative bg-white rounded-xl border-2 overflow-hidden shadow-sm transition-all hover:shadow-md ${isSelected
+                    ? "border-[#FF6A00] ring-2 ring-orange-100"
+                    : "border-gray-200 hover:border-gray-300"
+                    }`}
                 >
                   {/* Image Container */}
                   {item.image && (
@@ -1575,13 +1565,25 @@ export function MenuBrowser({
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
                     <div className="flex gap-3">
                       <button
-                        onClick={() => onToggleSelect(item.id)}
-                        className={`w-11 h-11 rounded-full flex items-center justify-center transition-all text-white shadow-lg ${
-                          isSelected
-                            ? "bg-[#FF6A00] scale-110"
-                            : "bg-gray-700/90 hover:bg-gray-900"
-                        }`}
-                        title={isSelected ? "Remove from order" : "Quick add"}
+                        onClick={() => {
+                          if (item.hasVariants && item.variants && item.variants.length > 0) {
+                            // Variant items MUST go through the modal so a variant can be selected
+                            setDetailItem(item);
+                          } else {
+                            onToggleSelect(item.id);
+                          }
+                        }}
+                        className={`w-11 h-11 rounded-full flex items-center justify-center transition-all text-white shadow-lg ${isSelected
+                          ? "bg-[#FF6A00] scale-110"
+                          : "bg-gray-700/90 hover:bg-gray-900"
+                          }`}
+                        title={
+                          item.hasVariants
+                            ? "Select variant to add"
+                            : isSelected
+                              ? "Remove from order"
+                              : "Quick add"
+                        }
                       >
                         {isSelected ? (
                           <CheckIcon className="h-5 w-5 stroke-2" />
@@ -1638,11 +1640,10 @@ export function MenuBrowser({
                 <button
                   key={n}
                   onClick={() => setCurrentPage(n)}
-                  className={`h-9 px-3 rounded-lg text-sm font-bold transition-all ${
-                    currentPage === n
-                      ? "bg-[#FF6A00] text-white shadow-md"
-                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`h-9 px-3 rounded-lg text-sm font-bold transition-all ${currentPage === n
+                    ? "bg-[#FF6A00] text-white shadow-md"
+                    : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
                 >
                   {n}
                 </button>

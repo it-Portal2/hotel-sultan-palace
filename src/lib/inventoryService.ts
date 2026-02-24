@@ -493,11 +493,12 @@ export const getRecipeByMenuItem = async (menuItemId: string): Promise<Recipe | 
 // ==================== STOCK DEDUCTION (THE MAGIC) ====================
 
 // Call this when a Food Order is "Confirmed" or "Completed"
-export const processOrderInventoryDeduction = async (orderId: string, performedBy: string) => {
+export const processOrderInventoryDeduction = async (orderId: string, performedBy: string, menuType: "food" | "bar" = "food") => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;
 
-    const orderRef = doc(firestore, 'foodOrders', orderId);
+    const collectionName = menuType === "bar" ? "barOrders" : "foodOrders";
+    const orderRef = doc(firestore, collectionName, orderId);
 
     await runTransaction(firestore, async (transaction) => {
         const orderSnap = await transaction.get(orderRef);
