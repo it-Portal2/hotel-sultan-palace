@@ -32,28 +32,28 @@ const STATUS_OPTIONS = [
 ];
 
 const statusColors: Record<string, { bg: string; text: string; dot: string }> =
-  {
-    delivered: {
-      bg: "bg-emerald-50 border-emerald-200",
-      text: "text-emerald-700",
-      dot: "bg-emerald-500",
-    },
-    cancelled: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-700",
-      dot: "bg-red-500",
-    },
-    completed: {
-      bg: "bg-gray-100 border-gray-300",
-      text: "text-gray-600",
-      dot: "bg-gray-500",
-    },
-    pending: {
-      bg: "bg-yellow-50 border-yellow-200",
-      text: "text-yellow-700",
-      dot: "bg-yellow-500",
-    },
-  };
+{
+  delivered: {
+    bg: "bg-emerald-50 border-emerald-200",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+  },
+  cancelled: {
+    bg: "bg-red-50 border-red-200",
+    text: "text-red-700",
+    dot: "bg-red-500",
+  },
+  completed: {
+    bg: "bg-gray-100 border-gray-300",
+    text: "text-gray-600",
+    dot: "bg-gray-500",
+  },
+  pending: {
+    bg: "bg-yellow-50 border-yellow-200",
+    text: "text-yellow-700",
+    dot: "bg-yellow-500",
+  },
+};
 
 export default function KitchenHistoryPage() {
   const { isReadOnly } = useAdminRole();
@@ -62,27 +62,31 @@ export default function KitchenHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<FoodOrder | null>(null);
 
   useEffect(() => {
-    const startOfDay = new Date(dateFilter);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(dateFilter);
-    endOfDay.setHours(23, 59, 59, 999);
-
     const firestore = db;
     if (!firestore) return;
 
-    const q = query(
-      collection(firestore, "foodOrders"),
-      where("createdAt", ">=", startOfDay),
-      where("createdAt", "<=", endOfDay),
-      orderBy("createdAt", "desc"),
-    );
+    // Build query constraints based on date range
+    const constraints: any[] = [orderBy("createdAt", "desc")];
+
+    if (dateFrom) {
+      const start = new Date(dateFrom);
+      start.setHours(0, 0, 0, 0);
+      constraints.unshift(where("createdAt", ">=", start));
+    }
+
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      constraints.unshift(where("createdAt", "<=", end));
+    }
+
+    const q = query(collection(firestore, "foodOrders"), ...constraints);
 
     setLoading(true);
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -94,7 +98,7 @@ export default function KitchenHistoryPage() {
     });
 
     return () => unsubscribe();
-  }, [dateFilter]);
+  }, [dateFrom, dateTo]);
 
   const handleStatusUpdate = async (
     orderId: string,
@@ -159,7 +163,7 @@ export default function KitchenHistoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, dateFilter]);
+  }, [searchQuery, statusFilter, dateFrom, dateTo]);
 
   // Stats
   const stats = useMemo(
@@ -206,14 +210,35 @@ export default function KitchenHistoryPage() {
             Review past orders (Delivered, Cancelled, Completed).
           </p>
         </div>
-        <div className="bg-white px-4 py-2 rounded-lg border border-gray-300 flex items-center gap-3 shadow-sm">
-          <CalendarIcon className="h-5 w-5 text-gray-400" />
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none uppercase tracking-wider cursor-pointer"
-          />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-white px-3 py-2 rounded-lg border border-gray-300 flex items-center gap-2 shadow-sm">
+            <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none cursor-pointer"
+            />
+          </div>
+          <div className="bg-white px-3 py-2 rounded-lg border border-gray-300 flex items-center gap-2 shadow-sm">
+            <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none cursor-pointer"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="px-3 py-2 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition-colors whitespace-nowrap"
+            >
+              Clear Dates
+            </button>
+          )}
         </div>
       </div>
 
@@ -373,9 +398,9 @@ export default function KitchenHistoryPage() {
                             {order.roomName
                               ? `Room ${order.roomName}`
                               : (order.deliveryLocation || "N/A").replace(
-                                  "_",
-                                  " ",
-                                )}
+                                "_",
+                                " ",
+                              )}
                           </p>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
@@ -456,11 +481,10 @@ export default function KitchenHistoryPage() {
                       )}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${
-                          currentPage === page
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === page
                             ? "bg-[#FF6A00] text-white"
                             : "text-gray-600 hover:bg-gray-100 border border-gray-200"
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>

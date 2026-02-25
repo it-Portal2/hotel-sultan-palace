@@ -6,7 +6,6 @@ import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
-import Link from "next/link";
 import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
@@ -15,7 +14,7 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ArrowLeftIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 
 const ITEMS_PER_PAGE = 15;
@@ -64,6 +63,8 @@ export default function BarOrdersHistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<FoodOrder | null>(null);
 
@@ -146,11 +147,23 @@ export default function BarOrdersHistoryPage() {
       );
     }
 
+    if (dateFrom) {
+      const start = new Date(dateFrom);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((o) => new Date(o.createdAt) >= start);
+    }
+
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((o) => new Date(o.createdAt) <= end);
+    }
+
     return filtered.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [historyOrders, statusFilter, locationFilter, searchQuery]);
+  }, [historyOrders, statusFilter, locationFilter, searchQuery, dateFrom, dateTo]);
 
   // ── Pagination ─────────────────────────────────────────────────────────────
   const totalPages = Math.max(
@@ -164,7 +177,7 @@ export default function BarOrdersHistoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, locationFilter]);
+  }, [searchQuery, statusFilter, locationFilter, dateFrom, dateTo]);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -202,14 +215,8 @@ export default function BarOrdersHistoryPage() {
   return (
     <div className="flex flex-col h-full bg-gray-50/30">
       {/* ── Header ── */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 flex items-center gap-4">
-        <Link
-          href="/admin/bar-orders"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5" />
-        </Link>
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
             <BeakerIcon className="h-5 w-5 text-purple-600" />
           </div>
@@ -221,6 +228,38 @@ export default function BarOrdersHistoryPage() {
               Completed and cancelled bar orders
             </p>
           </div>
+        </div>
+
+        {/* ── Date Range Picker ── */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-white px-3 py-2 rounded-lg border border-gray-300 flex items-center gap-2 shadow-sm">
+            <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none cursor-pointer"
+            />
+          </div>
+          <div className="bg-white px-3 py-2 rounded-lg border border-gray-300 flex items-center gap-2 shadow-sm">
+            <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none cursor-pointer"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="px-3 py-2 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors whitespace-nowrap"
+            >
+              Clear Dates
+            </button>
+          )}
         </div>
       </div>
 

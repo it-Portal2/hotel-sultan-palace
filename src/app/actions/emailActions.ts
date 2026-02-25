@@ -10,7 +10,8 @@ import {
     generatePasswordChangedEmail,
     generateNewOrderAdminEmail,
     generateOrderAcknowledgmentEmail,
-    generateOrderReceiptEmail
+    generateOrderReceiptEmail,
+    generateOrderUpdatedEmail
 } from '@/lib/emailService';
 import { Booking, CheckoutBill } from '@/lib/firestoreService';
 import { generateInvoicePDF } from '@/lib/invoiceGenerator';
@@ -219,6 +220,28 @@ export async function sendOrderReceiptEmailAction(order: any, receiptUrl: string
         return { success: true };
     } catch (error: any) {
         console.error('Error in sendOrderReceiptEmailAction:', error);
+        return { success: false, error: error.message || 'Server error' };
+    }
+}
+
+export async function sendOrderUpdatedEmailAction(order: any): Promise<{ success: boolean; error?: string }> {
+    console.log(`[ACTION] sendOrderUpdatedEmailAction triggered for order: ${order.orderNumber}`);
+
+    if (!order.guestEmail || order.guestEmail === 'N/A') {
+        console.log(`[Email] No guest email to notify for order update ${order.orderNumber}`);
+        return { success: false, error: 'No guest email' };
+    }
+
+    try {
+        await sendEmail({
+            to: order.guestEmail,
+            subject: `Your Order Has Been Updated — #${order.orderNumber} | Sultan Palace Hotel`,
+            html: generateOrderUpdatedEmail(order),
+        });
+        console.log(`[Email] Order update notification sent to ${order.guestEmail}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in sendOrderUpdatedEmailAction:', error);
         return { success: false, error: error.message || 'Server error' };
     }
 }

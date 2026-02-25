@@ -421,8 +421,8 @@ export default function BarOrdersServicePage() {
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${order.barLocation === "main_bar"
-                                ? "bg-purple-50 border-purple-200 text-purple-700"
-                                : "bg-cyan-50 border-cyan-200 text-cyan-700"
+                              ? "bg-purple-50 border-purple-200 text-purple-700"
+                              : "bg-cyan-50 border-cyan-200 text-cyan-700"
                               }`}
                           >
                             {order.barLocation === "main_bar"
@@ -478,7 +478,7 @@ export default function BarOrdersServicePage() {
                               order.status !== "cancelled" &&
                               order.status !== "confirmed" && (
                                 <Link
-                                  href={`/admin/food-orders/create?menuType=bar&editOrderId=${order.id}`}
+                                  href={`/admin/food-orders/create?menuType=bar&editOrderId=${order.id}&returnUrl=/admin/bar-orders/service`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                   title="Edit Order"
@@ -544,8 +544,8 @@ export default function BarOrdersServicePage() {
                       <button
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === page
-                            ? "bg-[#9333EA] text-white"
-                            : "text-gray-600 hover:bg-gray-100 border border-gray-200"
+                          ? "bg-[#9333EA] text-white"
+                          : "text-gray-600 hover:bg-gray-100 border border-gray-200"
                           }`}
                       >
                         {page}

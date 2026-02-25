@@ -646,7 +646,7 @@ export const sendInvoiceEmail = async (
   if (!guestEmail) {
     console.warn("[Email] No guest email found for invoice:", billId);
     return false;
-  } 
+  }
 
   const content = `
     <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 24px;">Your Stay Invoice</h2>
@@ -774,7 +774,21 @@ export const generateOrderAcknowledgmentEmail = (order: any): string => {
     <table style="width: 100%; margin-bottom: 20px;">
       ${itemsList}
       <tr>
-        <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">Total Amount</td>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; color: ${BRAND_COLORS.lightText};">Subtotal</td>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal || order.totalAmount)}</td>
+      </tr>
+      ${order.discount && order.discount > 0 ? `
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
+      </tr>` : ''}
+      ${order.tax && order.tax > 0 ? `
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax)}</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">Grand Total</td>
         <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #eee;">${formatCurrency(order.totalAmount)}</td>
       </tr>
     </table>
@@ -792,6 +806,72 @@ export const generateOrderAcknowledgmentEmail = (order: any): string => {
   `;
 
   return generateEmailLayout(`Order Received - #${order.orderNumber}`, content);
+};
+
+export const generateOrderUpdatedEmail = (order: any): string => {
+  const itemsList = order.items
+    .map(
+      (item: any) => `
+    <tr>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+        ${item.quantity}x ${item.name}
+        ${item.variant ? `<br><small style="color: #888;">${item.variant.name}</small>` : ""}
+      </td>
+      <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
+        ${formatCurrency(item.price * item.quantity)}
+      </td>
+    </tr>
+  `,
+    )
+    .join("");
+
+  const content = `
+    <h2 style="color: ${BRAND_COLORS.primary}; margin-top: 0; text-align: center;">Order Updated</h2>
+    <p style="text-align: center; color: ${BRAND_COLORS.lightText}; margin-bottom: 30px;">
+      Hi <strong>${order.guestName}</strong>, your order has been updated by our team. Here are the revised details:
+    </p>
+
+    <div style="text-align: center; margin-bottom: 30px;">
+      <span style="background-color: ${BRAND_COLORS.warning}; color: #333; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
+        Order #${order.orderNumber} — Updated
+      </span>
+    </div>
+
+    <table style="width: 100%; margin-bottom: 20px;">
+      ${itemsList}
+      <tr>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; color: ${BRAND_COLORS.lightText};">Subtotal</td>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal || order.totalAmount)}</td>
+      </tr>
+      ${order.discount && order.discount > 0 ? `
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
+      </tr>` : ""}
+      ${order.tax && order.tax > 0 ? `
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax)}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">New Total</td>
+        <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #eee;">${formatCurrency(order.totalAmount)}</td>
+      </tr>
+    </table>
+
+    <div style="background-color: ${BRAND_COLORS.background}; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;">
+      <p style="margin: 0; font-style: italic; color: ${BRAND_COLORS.lightText};">
+        If you have any questions about these changes, please don't hesitate to contact us.
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+      <p style="margin-bottom: 5px; font-weight: bold;">Need assistance?</p>
+      <p style="margin: 0;">Call us at <a href="tel:${SOCIAL_LINKS.phone.replace(/\s/g, "")}" style="color: ${BRAND_COLORS.primary}; text-decoration: none;">${SOCIAL_LINKS.phone}</a></p>
+    </div>
+  `;
+
+  return generateEmailLayout(`Order Updated — #${order.orderNumber}`, content);
 };
 
 export const generateOrderReceiptEmail = (
@@ -822,7 +902,11 @@ export const generateOrderReceiptEmail = (
     <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
       <table style="width: 100%;">
         <tr>
-          <td style="padding: 5px 0;"><strong>Date:</strong> ${formatDate(order.createdAt)}</td>
+          <td style="padding: 5px 0;"><strong>Date:</strong> ${formatDate(
+    order.createdAt?.toDate
+      ? order.createdAt.toDate().toISOString()
+      : order.createdAt
+  )}</td>
           <td style="padding: 5px 0; text-align: right;"><strong>Payment:</strong> <span style="text-transform: capitalize;">${order.paymentMethod || "Pending"}</span></td>
         </tr>
       </table>
@@ -835,6 +919,11 @@ export const generateOrderReceiptEmail = (
         <td style="padding: 10px 0; font-weight: bold; border-top: 1px solid #eee;">Subtotal</td>
         <td style="padding: 10px 0; text-align: right; border-top: 1px solid #eee;">${formatCurrency(order.subtotal || 0)}</td>
       </tr>
+      ${order.discount && order.discount > 0 ? `
+      <tr>
+        <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
+        <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
+      </tr>` : ''}
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax || 0)}</td>

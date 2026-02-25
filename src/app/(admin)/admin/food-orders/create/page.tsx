@@ -19,6 +19,7 @@ import type { FoodCategory } from "@/lib/types/foodMenu";
 import { processOrderInventoryDeduction } from "@/lib/inventoryService";
 // Receipt generation removed — now handled server-side at confirmation (Phase 11)
 import { useToast } from "@/context/ToastContext";
+import { sendOrderUpdatedEmailAction } from "@/app/actions/emailActions";
 import { ArrowLeftIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
@@ -41,12 +42,14 @@ export default function POSCreatePage() {
   const [activeGuests, setActiveGuests] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Selection State
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedItems = useMemo(
+    () => new Set(cart.map((i) => i.id.split("::")[0])),
+    [cart]
+  );
 
   // Order Details
   const [guestName, setGuestName] = useState("");
@@ -138,16 +141,21 @@ export default function POSCreatePage() {
           }));
           setCart(mappedCart);
 
-          // Update Selection State
-          setSelectedItems(
-            new Set(mappedCart.map((item) => item.id.split("::")[0])),
-          );
-
-          // Financials
-          setDiscountValue(order.discount || 0);
-          setTaxValue(order.tax || 0);
-          // Note context: discountType/taxType might need inferring if not saved explicitly
-          // For now assuming defaults or fixed values from order if mapped
+          if (order.discountDetails) {
+            setDiscountType(order.discountDetails.type || "percentage");
+            setDiscountValue(order.discountDetails.value ?? 0);
+          } else {
+            // Legacy fallback: treat raw amount as a fixed value
+            setDiscountType("fixed");
+            setDiscountValue(order.discount || 0);
+          }
+          if (order.taxDetails) {
+            setTaxType(order.taxDetails.type || "percentage");
+            setTaxValue(order.taxDetails.value ?? 18);
+          } else {
+            setTaxType("fixed");
+            setTaxValue(order.tax || 0);
+          }
         }
       } catch (error) {
         console.error("Failed to load order", error);
@@ -162,7 +170,6 @@ export default function POSCreatePage() {
     }
   }, [editOrderId]);
 
-  // Effect to enforce Order Type rules based on Location
   useEffect(() => {
     if (deliveryLocation === "in_room") {
       setOrderType("room_service");
@@ -258,17 +265,13 @@ export default function POSCreatePage() {
       return;
     }
 
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(itemId)) {
-      newSelected.delete(itemId);
-      setCart((prev) => prev.filter((i) => i.id !== itemId));
+    if (selectedItems.has(itemId)) {
+      setCart((prev) => prev.filter((i) => i.id.split("::")[0] !== itemId));
     } else {
-      newSelected.add(itemId);
       if (item) {
         setCart((prev) => [...prev, { ...item, quantity: 1 }]);
       }
     }
-    setSelectedItems(newSelected);
   };
 
   // Add to cart from modal (handles variants and modifiers)
@@ -318,7 +321,6 @@ export default function POSCreatePage() {
         },
       ];
     });
-    setSelectedItems((prev) => new Set(prev).add(item.id));
     showToast(`Added ${displayName}`, "success");
   };
 
@@ -337,8 +339,6 @@ export default function POSCreatePage() {
         })
         .filter((i) => i.quantity > 0);
 
-      // Update selection
-      setSelectedItems(new Set(updated.map((i) => i.id)));
       return updated;
     });
   };
@@ -346,11 +346,6 @@ export default function POSCreatePage() {
   // Remove from cart
   const removeFromCart = (itemId: string) => {
     setCart((prev) => prev.filter((i) => i.id !== itemId));
-    setSelectedItems((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(itemId);
-      return newSet;
-    });
   };
 
   // Totals
@@ -510,7 +505,16 @@ export default function POSCreatePage() {
         if (success) {
           showToast("Order updated successfully!", "success");
 
-          // Receipt generation removed — handled server-side at confirmation (Phase 11)
+          // Notify guest of the order modification (fire-and-forget, non-blocking)
+          const updatedOrderPayload = {
+            ...orderData,
+            orderNumber: (await getFoodOrder(editOrderId))?.orderNumber ?? editOrderId,
+            guestEmail: guestEmail || "N/A",
+            guestName: guestName || "Guest",
+          };
+          sendOrderUpdatedEmailAction(updatedOrderPayload).catch((err: unknown) =>
+            console.warn("[Email] Order update notification failed:", err)
+          );
 
           router.push(returnUrl);
         } else {
