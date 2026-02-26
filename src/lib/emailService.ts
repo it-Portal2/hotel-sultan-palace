@@ -405,8 +405,8 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Reservation Details</h3>
     <table style="width: 100%; margin-bottom: 20px;">
       ${booking.rooms
-      .map(
-        (room) => `
+        .map(
+          (room) => `
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
             <strong style="color: ${BRAND_COLORS.text}; display: block;">${room.type}</strong>
@@ -417,12 +417,13 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
           </td>
         </tr>
       `,
-      )
-      .join("")}
+        )
+        .join("")}
     </table>
 
-    ${booking.addOns.length > 0
-      ? `
+    ${
+      booking.addOns.length > 0
+        ? `
     <!-- Add-ons -->
     <h3 style="color: ${BRAND_COLORS.primary}; font-size: 18px; border-bottom: 2px solid ${BRAND_COLORS.accent}; padding-bottom: 10px; margin-bottom: 15px;">Enhancements</h3>
     <table style="width: 100%; margin-bottom: 20px;">
@@ -442,7 +443,7 @@ export const generateBookingConfirmationEmail = (booking: Booking): string => {
         .join("")}
     </table>
     `
-      : ""
+        : ""
     }
 
     <!-- Total Amount -->
@@ -483,8 +484,9 @@ export const generateBookingCancellationEmail = (
         <tr>
            <td style="padding: 5px 0;"><strong style="color: ${BRAND_COLORS.text};">Dates:</strong> <span style="color: ${BRAND_COLORS.lightText};">${formatDate(booking.checkIn)} - ${formatDate(booking.checkOut)}</span></td>
         </tr>
-         ${cancellationReason
-      ? `
+         ${
+           cancellationReason
+             ? `
         <tr>
            <td style="padding: 15px 0 5px; border-top: 1px dashed ${BRAND_COLORS.danger}30; margin-top: 10px;">
              <strong style="color: ${BRAND_COLORS.danger};">Cancellation Reason:</strong><br>
@@ -492,8 +494,8 @@ export const generateBookingCancellationEmail = (
            </td>
         </tr>
         `
-      : ""
-    }
+             : ""
+         }
       </table>
     </div>
 
@@ -593,10 +595,6 @@ export const generateAdminWelcomeEmail = (email: string): string => {
   return generateEmailLayout("Welcome to Sultan Palace Admin", content);
 };
 
-
-
-
-
 export const sendNightAuditReport = async (
   pdfBuffer: Buffer,
   recipientEmail: string,
@@ -636,11 +634,15 @@ export const sendNightAuditReport = async (
 };
 
 export const sendInvoiceEmail = async (
-  bill: Booking | any, // Using any for CheckoutBill to avoid circular dependency if possible, or Import it. 
-  pdfBuffer: Buffer
+  bill: Booking | any, // Using any for CheckoutBill to avoid circular dependency if possible, or Import it.
+  pdfBuffer: Buffer,
 ): Promise<boolean> => {
   const guestEmail = bill.guestEmail || bill.guestDetails?.email;
-  const guestName = bill.guestName || (bill.guestDetails ? `${bill.guestDetails.firstName} ${bill.guestDetails.lastName}` : "Guest");
+  const guestName =
+    bill.guestName ||
+    (bill.guestDetails
+      ? `${bill.guestDetails.firstName} ${bill.guestDetails.lastName}`
+      : "Guest");
   const billId = bill.id || bill.bookingId; // CheckoutBill has id, Booking has bookingId
 
   if (!guestEmail) {
@@ -679,7 +681,9 @@ export const sendInvoiceEmail = async (
   if (result.success) {
     console.log(`[Email] Invoice sent to ${guestEmail}`);
   } else {
-    console.error(`[Email] Failed to send invoice to ${guestEmail}: ${result.error}`);
+    console.error(
+      `[Email] Failed to send invoice to ${guestEmail}: ${result.error}`,
+    );
   }
 
   return result.success;
@@ -693,9 +697,10 @@ export const generateNewOrderAdminEmail = (order: any): string => {
       <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
         ${item.quantity}x ${item.name}
         ${item.variant ? `<br><small>${item.variant.name}</small>` : ""}
-        ${item.selectedModifiers && item.selectedModifiers.length > 0
-          ? `<br><small>${item.selectedModifiers.map((m: any) => m.name).join(", ")}</small>`
-          : ""
+        ${
+          item.selectedModifiers && item.selectedModifiers.length > 0
+            ? `<br><small>${item.selectedModifiers.map((m: any) => m.name).join(", ")}</small>`
+            : ""
         }
       </td>
       <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
@@ -775,18 +780,26 @@ export const generateOrderAcknowledgmentEmail = (order: any): string => {
       ${itemsList}
       <tr>
         <td style="padding: 8px 0; border-top: 1px solid #eee; color: ${BRAND_COLORS.lightText};">Subtotal</td>
-        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal || order.totalAmount)}</td>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal ?? order.totalAmount)}</td>
       </tr>
-      ${order.discount && order.discount > 0 ? `
+      ${
+        order.discount && order.discount > 0
+          ? `
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
-      </tr>` : ''}
-      ${order.tax && order.tax > 0 ? `
+      </tr>`
+          : ""
+      }
+      ${
+        order.tax && order.tax > 0
+          ? `
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax)}</td>
-      </tr>` : ''}
+      </tr>`
+          : ""
+      }
       <tr>
         <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">Grand Total</td>
         <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #eee;">${formatCurrency(order.totalAmount)}</td>
@@ -841,18 +854,26 @@ export const generateOrderUpdatedEmail = (order: any): string => {
       ${itemsList}
       <tr>
         <td style="padding: 8px 0; border-top: 1px solid #eee; color: ${BRAND_COLORS.lightText};">Subtotal</td>
-        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal || order.totalAmount)}</td>
+        <td style="padding: 8px 0; border-top: 1px solid #eee; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.subtotal ?? order.totalAmount)}</td>
       </tr>
-      ${order.discount && order.discount > 0 ? `
+      ${
+        order.discount && order.discount > 0
+          ? `
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
-      </tr>` : ""}
-      ${order.tax && order.tax > 0 ? `
+      </tr>`
+          : ""
+      }
+      ${
+        order.tax && order.tax > 0
+          ? `
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax)}</td>
-      </tr>` : ""}
+      </tr>`
+          : ""
+      }
       <tr>
         <td style="padding: 10px 0; font-weight: bold; border-top: 2px solid #eee;">New Total</td>
         <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; border-top: 2px solid #eee;">${formatCurrency(order.totalAmount)}</td>
@@ -876,7 +897,7 @@ export const generateOrderUpdatedEmail = (order: any): string => {
 
 export const generateOrderReceiptEmail = (
   order: any,
-  receiptUrl: string
+  receiptUrl: string,
 ): string => {
   const itemsList = order.items
     .map(
@@ -903,10 +924,10 @@ export const generateOrderReceiptEmail = (
       <table style="width: 100%;">
         <tr>
           <td style="padding: 5px 0;"><strong>Date:</strong> ${formatDate(
-    order.createdAt?.toDate
-      ? order.createdAt.toDate().toISOString()
-      : order.createdAt
-  )}</td>
+            order.createdAt?.toDate
+              ? order.createdAt.toDate().toISOString()
+              : order.createdAt,
+          )}</td>
           <td style="padding: 5px 0; text-align: right;"><strong>Payment:</strong> <span style="text-transform: capitalize;">${order.paymentMethod || "Pending"}</span></td>
         </tr>
       </table>
@@ -919,11 +940,15 @@ export const generateOrderReceiptEmail = (
         <td style="padding: 10px 0; font-weight: bold; border-top: 1px solid #eee;">Subtotal</td>
         <td style="padding: 10px 0; text-align: right; border-top: 1px solid #eee;">${formatCurrency(order.subtotal || 0)}</td>
       </tr>
-      ${order.discount && order.discount > 0 ? `
+      ${
+        order.discount && order.discount > 0
+          ? `
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Discount</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">-${formatCurrency(order.discount)}</td>
-      </tr>` : ''}
+      </tr>`
+          : ""
+      }
       <tr>
         <td style="padding: 5px 0; color: ${BRAND_COLORS.lightText};">Tax</td>
         <td style="padding: 5px 0; text-align: right; color: ${BRAND_COLORS.lightText};">${formatCurrency(order.tax || 0)}</td>
@@ -945,6 +970,8 @@ export const generateOrderReceiptEmail = (
     </div>
   `;
 
-  return generateEmailLayout(`Your Receipt — Order #${order.orderNumber}`, content);
+  return generateEmailLayout(
+    `Your Receipt — Order #${order.orderNumber}`,
+    content,
+  );
 };
-
