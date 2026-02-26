@@ -241,10 +241,11 @@ export const sendEmail = async (
 };
 
 const formatCurrency = (amount: number, currency: string = "USD"): string => {
+  const safeAmount = typeof amount === "number" && !isNaN(amount) ? amount : 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
-  }).format(amount);
+  }).format(safeAmount);
 };
 
 const formatDate = (dateString: string): string => {
