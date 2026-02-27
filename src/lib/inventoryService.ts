@@ -474,12 +474,27 @@ export const receivePurchaseOrder = async (
 
 export const createRecipe = async (data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     if (!db) throw new Error("Firestore not initialized");
-    const docRef = await addDoc(collection(db, 'recipes'), {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-    });
-    return docRef.id;
+
+    const q = query(collection(db, 'recipes'), where('menuItemId', '==', data.menuItemId), limit(1));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+        // Update existing recipe
+        const existingDoc = snap.docs[0];
+        await updateDoc(existingDoc.ref, {
+            ...data,
+            updatedAt: serverTimestamp()
+        });
+        return existingDoc.id;
+    } else {
+        // Create new recipe
+        const docRef = await addDoc(collection(db, 'recipes'), {
+            ...data,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+        return docRef.id;
+    }
 };
 
 export const getRecipeByMenuItem = async (menuItemId: string): Promise<Recipe | null> => {
@@ -500,93 +515,133 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
     const collectionName = menuType === "bar" ? "barOrders" : "foodOrders";
     const orderRef = doc(firestore, collectionName, orderId);
 
+    // --- Pre-fetch all recipes BEFORE entering the transaction ---
+    // Firestore transactions require ALL reads before ANY writes.
+    // getDocs() is a non-transactional read and cannot be used inside runTransaction.
+    // We fetch recipes (which are read-only reference data) outside the transaction.
+
+    // First, get the order outside the transaction to know which menu items to look up.
+    const preOrderSnap = await getDoc(orderRef);
+    if (!preOrderSnap.exists()) throw new Error("Order not found");
+    const preOrder = preOrderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
+
+    if (preOrder.inventoryDeducted) {
+        console.warn(`Inventory already deducted for Order ${orderId}`);
+        return;
+    }
+
+    // Fetch all recipes for the order items in parallel before the transaction.
+    const recipesByMenuItemId = new Map<string, Recipe | null>();
+    await Promise.all(
+        preOrder.items.map(async (item) => {
+            if (!recipesByMenuItemId.has(item.menuItemId)) {
+                const recipesQuery = query(
+                    collection(firestore, 'recipes'),
+                    where('menuItemId', '==', item.menuItemId),
+                    limit(1)
+                );
+                const recipeSnap = await getDocs(recipesQuery);
+                recipesByMenuItemId.set(
+                    item.menuItemId,
+                    recipeSnap.empty ? null : (recipeSnap.docs[0].data() as Recipe)
+                );
+            }
+        })
+    );
+
+    // Build the full list of inventory item IDs we need to read inside the transaction.
+    const inventoryItemIds = new Set<string>();
+    for (const item of preOrder.items) {
+        const recipe = recipesByMenuItemId.get(item.menuItemId);
+        if (recipe) {
+            for (const ingredient of recipe.ingredients) {
+                inventoryItemIds.add(ingredient.inventoryItemId);
+            }
+        }
+    }
+
+    // --- Run the transaction with reads first, then writes ---
     await runTransaction(firestore, async (transaction) => {
+        // READS PHASE: Read the order and all inventory items first.
         const orderSnap = await transaction.get(orderRef);
         if (!orderSnap.exists()) throw new Error("Order not found");
         const order = orderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
 
-        // 1. Idempotency Check
+        // Double-check idempotency inside the transaction for safety.
         if (order.inventoryDeducted) {
             console.warn(`Inventory already deducted for Order ${orderId}`);
-            return; // Exit if already deducted
+            return;
         }
 
-        let hasDeductions = false;
-
-        for (const item of order.items) {
-            // Find Recipe
-            const recipesQuery = query(collection(firestore, 'recipes'), where('menuItemId', '==', item.menuItemId), limit(1));
-            const recipeSnap = await getDocs(recipesQuery);
-
-            if (!recipeSnap.empty) {
-                const recipe = recipeSnap.docs[0].data() as Recipe;
-                hasDeductions = true;
-
-                // Deduct Ingredients
-                for (const ingredient of recipe.ingredients) {
-                    const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
-                    const invSnap = await transaction.get(invRef);
-                    if (invSnap.exists()) {
-                        const currentInv = invSnap.data() as InventoryItem;
-
-                        // Determine DEDUCTION LOCATION based on Menu Item Station
-                        // Default to 'kitchen' or 'bar' based on item category or station
-                        // This is a simple heuristic mapping
-                        let targetLocation = 'main_store'; // Fallback
-                        const station = item.station || 'kitchen'; // You might need to fetch item station if not in order
-
-                        if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
-                            targetLocation = 'bar';
-                        } else {
-                            targetLocation = 'kitchen';
-                        }
-
-                        // Check stock in specific location
-                        const currentLocationStock = (currentInv.stockByLocation && currentInv.stockByLocation[targetLocation])
-                            ? currentInv.stockByLocation[targetLocation]
-                            : 0;
-
-                        const deductionAmount = ingredient.quantity * item.quantity;
-
-                        // Calculate New Location Stock
-                        const newLocationStock = currentLocationStock - deductionAmount;
-
-                        // Update stockByLocation map
-                        const updatedStockByLocation = { ...(currentInv.stockByLocation || {}) };
-                        updatedStockByLocation[targetLocation] = newLocationStock;
-
-                        // Also update global count for backward compatibility / total asset value
-                        const newGlobalStock = (currentInv.currentStock || 0) - deductionAmount;
-
-                        transaction.update(invRef, {
-                            currentStock: newGlobalStock,
-                            stockByLocation: updatedStockByLocation,
-                            updatedAt: serverTimestamp()
-                        });
-
-                        // Create Transaction Record
-                        const transRef = doc(collection(firestore, 'inventoryTransactions'));
-                        transaction.set(transRef, {
-                            inventoryItemId: ingredient.inventoryItemId,
-                            itemName: currentInv.name,
-                            transactionType: 'sales_deduction',
-                            quantity: -deductionAmount,
-                            unitCost: currentInv.unitCost || 0,
-                            totalCost: (currentInv.unitCost || 0) * deductionAmount,
-                            previousStock: currentLocationStock, // Log location stock
-                            newStock: newLocationStock,
-                            locationId: targetLocation, // Track location
-                            reason: `Order ${order.orderNumber} - ${item.name} (${targetLocation})`,
-                            referenceId: orderId,
-                            performedBy: performedBy,
-                            createdAt: serverTimestamp()
-                        });
-                    }
+        // Read all inventory documents up front (all reads before any writes).
+        const invSnapMap = new Map<string, ReturnType<typeof orderSnap.data> & { id: string }>();
+        await Promise.all(
+            Array.from(inventoryItemIds).map(async (invItemId) => {
+                const invRef = doc(firestore, 'inventory', invItemId);
+                const invSnap = await transaction.get(invRef);
+                if (invSnap.exists()) {
+                    invSnapMap.set(invItemId, { id: invItemId, ...invSnap.data() } as any);
                 }
+            })
+        );
+
+        // WRITES PHASE: Now perform all updates and sets.
+        for (const item of order.items) {
+            const recipe = recipesByMenuItemId.get(item.menuItemId);
+            if (!recipe) continue;
+
+            for (const ingredient of recipe.ingredients) {
+                const currentInv = invSnapMap.get(ingredient.inventoryItemId) as InventoryItem | undefined;
+                if (!currentInv) continue;
+
+                const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
+
+                // Determine DEDUCTION LOCATION based on Menu Item Station
+                let targetLocation = 'main_store';
+                const station = item.station || 'kitchen';
+                if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
+                    targetLocation = 'bar';
+                } else {
+                    targetLocation = 'kitchen';
+                }
+
+                const currentLocationStock = (currentInv.stockByLocation && currentInv.stockByLocation[targetLocation])
+                    ? currentInv.stockByLocation[targetLocation]
+                    : 0;
+
+                const deductionAmount = ingredient.quantity * item.quantity;
+                const newLocationStock = currentLocationStock - deductionAmount;
+                const newGlobalStock = (currentInv.currentStock || 0) - deductionAmount;
+
+                const updatedStockByLocation = { ...(currentInv.stockByLocation || {}) };
+                updatedStockByLocation[targetLocation] = newLocationStock;
+
+                transaction.update(invRef, {
+                    currentStock: newGlobalStock,
+                    stockByLocation: updatedStockByLocation,
+                    updatedAt: serverTimestamp()
+                });
+
+                const transRef = doc(collection(firestore, 'inventoryTransactions'));
+                transaction.set(transRef, {
+                    inventoryItemId: ingredient.inventoryItemId,
+                    itemName: currentInv.name,
+                    transactionType: 'sales_deduction',
+                    quantity: -deductionAmount,
+                    unitCost: currentInv.unitCost || 0,
+                    totalCost: (currentInv.unitCost || 0) * deductionAmount,
+                    previousStock: currentLocationStock,
+                    newStock: newLocationStock,
+                    locationId: targetLocation,
+                    reason: `Order ${order.orderNumber} - ${item.name} (${targetLocation})`,
+                    referenceId: orderId,
+                    performedBy: performedBy,
+                    createdAt: serverTimestamp()
+                });
             }
         }
 
-        // 2. Mark as Deducted
+        // Mark order as deducted (write — after all reads).
         transaction.update(orderRef, {
             inventoryDeducted: true,
             updatedAt: serverTimestamp()
@@ -703,16 +758,24 @@ export const createStockAdjustment = async (
         // Handle Location Logic
         let updatedStockByLocation = { ...(item.stockByLocation || {}) };
 
-        // If location is provided, we must check/update that specific location
+        // If location is provided, update location tracking
         if (locationId) {
-            const currentLocStock = updatedStockByLocation[locationId] || 0;
-            const newLocStock = currentLocStock + quantity;
+            const currentLocStock = updatedStockByLocation[locationId] ?? -1; // -1 means "not tracked yet"
+            const hasLocationTracking = currentLocStock >= 0;
 
-            if (newLocStock < 0) {
-                // Block if specific location goes negative
-                throw new Error(`Insufficient stock in selected location. Available: ${currentLocStock}`);
+            if (hasLocationTracking) {
+                // This location has been tracked — enforce its stock limit
+                const newLocStock = currentLocStock + quantity;
+                if (newLocStock < 0) {
+                    throw new Error(`Insufficient stock in selected location. Available: ${currentLocStock}`);
+                }
+                updatedStockByLocation[locationId] = newLocStock;
+            } else {
+                // No per-location tracking yet for this item — just record the movement
+                // without blocking (global stock check below handles the limit)
+                const implied = Math.max(0, currentStock + quantity);
+                updatedStockByLocation[locationId] = implied;
             }
-            updatedStockByLocation[locationId] = newLocStock;
         }
 
         const newStock = currentStock + quantity;

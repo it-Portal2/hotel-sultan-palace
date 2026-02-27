@@ -76,7 +76,8 @@ function RecipeEditor({
     };
 
     const totalCost = ingredients.reduce((sum, i) => sum + (i.quantity * i.costPerUnit), 0);
-    const foodCostPercent = menuItem.price > 0 ? (totalCost / menuItem.price) * 100 : 0;
+    const sellingPrice = menuItem.price || 0;
+    const foodCostPercent = sellingPrice > 0 ? (totalCost / sellingPrice) * 100 : 0;
 
     const handleSave = async () => {
         if (ingredients.some(i => !i.inventoryItemId)) {
@@ -98,7 +99,7 @@ function RecipeEditor({
                     totalCost: Number(i.quantity) * Number(i.costPerUnit)
                 })),
                 totalCost,
-                sellingPrice: menuItem.price,
+                sellingPrice: sellingPrice,
                 foodCostPercentage: foodCostPercent,
                 isActive: true
             });
@@ -119,7 +120,7 @@ function RecipeEditor({
             <div className="bg-orange-50 p-4 rounded-lg flex items-center justify-between border border-orange-100">
                 <div>
                     <h3 className="font-bold text-gray-900">{menuItem.name}</h3>
-                    <p className="text-sm text-gray-500">Selling Price: ${menuItem.price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">Selling Price: ${sellingPrice.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-gray-500">Total Food Cost</p>
@@ -206,7 +207,7 @@ export default function RecipesPage() {
                 getMenuItems(),
                 getInventoryItems()
             ]);
-            setMenuItems(menus.filter(m => m.status === 'published' && m.category !== 'management'));
+            setMenuItems(menus.filter(m => (m.status === 'published' || !m.status) && m.category !== 'management'));
             setInventoryItems(inv.filter(i => i.isActive !== false));
         } catch (error) {
             console.error(error);
