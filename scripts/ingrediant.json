@@ -1,0 +1,1590 @@
+{
+  "menu_items": [
+    {
+      "id": "food_001",
+      "name": "Bruschetta",
+      "ingredients": [
+        { "name": "baguette bread", "quantity": 4, "unit": "pcs" },
+        { "name": "tomatoes", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "fresh basil", "quantity": 2.5, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 1, "unit": "g" },
+        { "name": "black pepper", "quantity": 1, "unit": "g" },
+        { "name": "balsamic glaze", "quantity": 5, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_002",
+      "name": "Chicken finger",
+      "ingredients": [
+        { "name": "chicken breast", "quantity": 200, "unit": "g" },
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "eggs", "quantity": 1, "unit": "pcs" },
+        { "name": "bread crumbs", "quantity": 100, "unit": "g" },
+        { "name": "garlic powder", "quantity": 2, "unit": "g" },
+        { "name": "paprika", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 3, "unit": "g" },
+        { "name": "pepper", "quantity": 1, "unit": "g" },
+        { "name": "oil", "quantity": 200, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_003",
+      "name": "Prawns' tempura",
+      "ingredients": [
+        { "name": "prawns", "quantity": 120, "unit": "g" },
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "cornstarch", "quantity": 30, "unit": "g" },
+        { "name": "egg", "quantity": 50, "unit": "pcs" },
+        { "name": "ice water", "quantity": 100, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 250, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_004",
+      "name": "Samosa",
+      "ingredients": [
+        { "name": "flour", "quantity": 100, "unit": "g" },
+        { "name": "potatoes", "quantity": 150, "unit": "g" },
+        { "name": "peas", "quantity": 30, "unit": "g" },
+        { "name": "cumin", "quantity": 2, "unit": "g" },
+        { "name": "coriander powder", "quantity": 2, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "turmeric", "quantity": 1, "unit": "g" },
+        { "name": "green chilies", "quantity": 2, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 3, "unit": "g" },
+        { "name": "oil", "quantity": 200, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_005",
+      "name": "Sesame fish",
+      "ingredients": [
+        { "name": "fish fillet", "quantity": 200, "unit": "g" },
+        { "name": "sesame seeds", "quantity": 20, "unit": "g" },
+        { "name": "soy sauce", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "cornstarch", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_006",
+      "name": "Spring rolls",
+      "ingredients": [
+        { "name": "spring roll wrappers", "quantity": 45, "unit": "g" },
+        { "name": "cabbage", "quantity": 50, "unit": "g" },
+        { "name": "carrots", "quantity": 30, "unit": "g" },
+        { "name": "bell peppers", "quantity": 20, "unit": "g" },
+        { "name": "bean sprouts", "quantity": 20, "unit": "g" },
+        { "name": "soy sauce", "quantity": 5, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 150, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_007",
+      "name": "Tuna tataki",
+      "ingredients": [
+        { "name": "tuna", "quantity": 150, "unit": "g" },
+        { "name": "soy sauce", "quantity": 15, "unit": "ml" },
+        { "name": "sesame oil", "quantity": 5, "unit": "ml" },
+        { "name": "rice vinegar", "quantity": 5, "unit": "ml" },
+        { "name": "ginger", "quantity": 2, "unit": "g" },
+        { "name": "garlic", "quantity": 2, "unit": "g" },
+        { "name": "green onions", "quantity": 10, "unit": "g" },
+        { "name": "sesame seeds", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_008",
+      "name": "Zanzibar kachori",
+      "ingredients": [
+        { "name": "flour", "quantity": 100, "unit": "g" },
+        { "name": "gram flour", "quantity": 20, "unit": "g" },
+        { "name": "onions", "quantity": 50, "unit": "g" },
+        { "name": "green chilies", "quantity": 2, "unit": "g" },
+        { "name": "coriander", "quantity": 5, "unit": "g" },
+        { "name": "turmeric", "quantity": 1, "unit": "g" },
+        { "name": "cumin", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 3, "unit": "g" },
+        { "name": "oil", "quantity": 200, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_009",
+      "name": "BREAKFAST MENU (Combo)",
+      "ingredients": [
+        { "name": "scrambled eggs", "quantity": 100, "unit": "pcs" },
+        { "name": "toast", "quantity": 2, "unit": "pcs" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "sausages", "quantity": 5, "unit": "pcs" },
+        { "name": "baked beans", "quantity": 100, "unit": "g" },
+        { "name": "hash browns", "quantity": 50, "unit": "g" },
+        { "name": "juice", "quantity": 200, "unit": "ml" },
+        { "name": "salt", "quantity": 1, "unit": "g" },
+        { "name": "pepper", "quantity": 1, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_010",
+      "name": "BREWED COFFEE",
+      "ingredients": [
+        { "name": "coffee beans", "quantity": 18, "unit": "g" },
+        { "name": "water", "quantity": 250, "unit": "ml" },
+        { "name": "milk (optional)", "quantity": 30, "unit": "ml" },
+        { "name": "sugar (optional)", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_011",
+      "name": "Cheese burger",
+      "ingredients": [
+        { "name": "burger bun", "quantity": 60, "unit": "pcs" },
+        { "name": "veg patty", "quantity": 150, "unit": "g" },
+        { "name": "cheddar cheese", "quantity": 1, "unit": "pcs" },
+        { "name": "lettuce", "quantity": 0.5, "unit": "g" },
+        { "name": "tomato", "quantity": 20, "unit": "g" },
+        { "name": "onion", "quantity": 10, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "ketchup", "quantity": 15, "unit": "g" },
+        { "name": "butter", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_012",
+      "name": "Chicken burger",
+      "ingredients": [
+        { "name": "burger bun", "quantity": 60, "unit": "pcs" },
+        { "name": "chicken patty", "quantity": 150, "unit": "g" },
+        { "name": "lettuce", "quantity": 0.5, "unit": "g" },
+        { "name": "tomato", "quantity": 20, "unit": "g" },
+        { "name": "onion", "quantity": 10, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "ketchup", "quantity": 15, "unit": "g" },
+        { "name": "cheese slice", "quantity": 1, "unit": "pcs" },
+        { "name": "butter", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_013",
+      "name": "Vegetables burger",
+      "ingredients": [
+        { "name": "burger bun", "quantity": 60, "unit": "pcs" },
+        { "name": "vegetable patty", "quantity": 150, "unit": "g" },
+        { "name": "lettuce", "quantity": 0.5, "unit": "g" },
+        { "name": "tomato", "quantity": 20, "unit": "g" },
+        { "name": "onion", "quantity": 10, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "ketchup", "quantity": 15, "unit": "g" },
+        { "name": "cheese", "quantity": 1, "unit": "pcs" },
+        { "name": "butter", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_014",
+      "name": "Chicken breast (Combo)",
+      "ingredients": [
+        { "name": "chicken breast", "quantity": 200, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" },
+        { "name": "salad", "quantity": 100, "unit": "g" },
+        { "name": "sauce", "quantity": 30, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_015",
+      "name": "Chicken leg (Combo)",
+      "ingredients": [
+        { "name": "chicken leg", "quantity": 300, "unit": "g" },
+        { "name": "marinade spices", "quantity": 15, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "paprika", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salad", "quantity": 100, "unit": "g" },
+        { "name": "sauce", "quantity": 30, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_016",
+      "name": "CHOCOLATE ICE CREAM",
+      "ingredients": [
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "cream", "quantity": 100, "unit": "ml" },
+        { "name": "cocoa powder", "quantity": 15, "unit": "g" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "vanilla extract", "quantity": 2, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_017",
+      "name": "FRUIT SALAD",
+      "ingredients": [
+        { "name": "apple", "quantity": 30, "unit": "g" },
+        { "name": "banana", "quantity": 30, "unit": "g" },
+        { "name": "papaya", "quantity": 30, "unit": "g" },
+        { "name": "watermelon", "quantity": 30, "unit": "g" },
+        { "name": "grapes", "quantity": 25, "unit": "g" },
+        { "name": "pomegranate", "quantity": 15, "unit": "g" },
+        { "name": "orange", "quantity": 30, "unit": "g" },
+        { "name": "honey", "quantity": 15, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 5, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_018",
+      "name": "STRAWBERRY ICE CREAM",
+      "ingredients": [
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "cream", "quantity": 100, "unit": "ml" },
+        { "name": "strawberry puree", "quantity": 50, "unit": "g" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "vanilla extract", "quantity": 2, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_019",
+      "name": "VANILLA ICE CREAM",
+      "ingredients": [
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "cream", "quantity": 100, "unit": "ml" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "vanilla extract", "quantity": 5, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_020",
+      "name": "Ice cream of your choice",
+      "ingredients": [
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "cream", "quantity": 100, "unit": "ml" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "flavoring", "quantity": 5, "unit": "ml" },
+        { "name": "toppings", "quantity": 10, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_021",
+      "name": "Fruit platter",
+      "ingredients": [
+        { "name": "apple", "quantity": 75, "unit": "g" },
+        { "name": "banana", "quantity": 120, "unit": "g" },
+        { "name": "papaya", "quantity": 50, "unit": "g" },
+        { "name": "pineapple", "quantity": 50, "unit": "g" },
+        { "name": "watermelon", "quantity": 100, "unit": "g" },
+        { "name": "grapes", "quantity": 50, "unit": "g" },
+        { "name": "kiwi", "quantity": 30, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_022",
+      "name": "Fruits salad",
+      "ingredients": [
+        { "name": "mixed fruits", "quantity": 200, "unit": "g" },
+        { "name": "honey", "quantity": 15, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 5, "unit": "ml" },
+        { "name": "mint", "quantity": 1, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_023",
+      "name": "Cake of the day",
+      "ingredients": [
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "eggs", "quantity": 1, "unit": "pcs" },
+        { "name": "butter", "quantity": 30, "unit": "g" },
+        { "name": "baking powder", "quantity": 1, "unit": "g" },
+        { "name": "milk", "quantity": 20, "unit": "ml" },
+        { "name": "essence", "quantity": 1, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_024",
+      "name": "Cheese cake",
+      "ingredients": [
+        { "name": "cream cheese", "quantity": 100, "unit": "g" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "eggs", "quantity": 1, "unit": "pcs" },
+        { "name": "biscuits", "quantity": 2, "unit": "pcs" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "vanilla", "quantity": 2, "unit": "ml" },
+        { "name": "cream", "quantity": 20, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_025",
+      "name": "Chocolate grass",
+      "ingredients": [
+        { "name": "chocolate sponge", "quantity": 100, "unit": "g" },
+        { "name": "whipped cream", "quantity": 50, "unit": "g" },
+        { "name": "chocolate shavings", "quantity": 10, "unit": "g" },
+        { "name": "cocoa powder", "quantity": 5, "unit": "g" },
+        { "name": "syrup", "quantity": 20, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_026",
+      "name": "Tiramisu",
+      "ingredients": [
+        { "name": "ladyfinger biscuits", "quantity": 2, "unit": "pcs" },
+        { "name": "espresso", "quantity": 30, "unit": "ml" },
+        { "name": "mascarpone", "quantity": 50, "unit": "g" },
+        { "name": "cream", "quantity": 30, "unit": "ml" },
+        { "name": "sugar", "quantity": 15, "unit": "g" },
+        { "name": "cocoa powder", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_027",
+      "name": "Rice kheer",
+      "ingredients": [
+        { "name": "rice", "quantity": 30, "unit": "g" },
+        { "name": "milk", "quantity": 200, "unit": "ml" },
+        { "name": "sugar", "quantity": 30, "unit": "g" },
+        { "name": "cardamom", "quantity": 0.5, "unit": "g" },
+        { "name": "cashews", "quantity": 5, "unit": "g" },
+        { "name": "almonds", "quantity": 5, "unit": "g" },
+        { "name": "raisins", "quantity": 2.5, "unit": "g" },
+        { "name": "saffron", "quantity": 1, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_028",
+      "name": "Shahi tukda",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "sugar syrup", "quantity": 30, "unit": "ml" },
+        { "name": "ghee", "quantity": 15, "unit": "ml" },
+        { "name": "cardamom", "quantity": 1, "unit": "g" },
+        { "name": "saffron", "quantity": 1, "unit": "g" },
+        { "name": "almonds", "quantity": 5, "unit": "g" },
+        { "name": "pistachios", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_029",
+      "name": "Gajar ka halwa",
+      "ingredients": [
+        { "name": "carrots", "quantity": 200, "unit": "g" },
+        { "name": "milk", "quantity": 100, "unit": "ml" },
+        { "name": "sugar", "quantity": 50, "unit": "g" },
+        { "name": "ghee", "quantity": 30, "unit": "ml" },
+        { "name": "cardamom", "quantity": 1, "unit": "g" },
+        { "name": "cashews", "quantity": 10, "unit": "g" },
+        { "name": "almonds", "quantity": 10, "unit": "g" },
+        { "name": "raisins", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_030",
+      "name": "Afgani chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "cream", "quantity": 30, "unit": "ml" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "green chilies", "quantity": 4, "unit": "g" },
+        { "name": "cashew paste", "quantity": 15, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_031",
+      "name": "Chicken Seekh Kebab",
+      "ingredients": [
+        { "name": "minced chicken", "quantity": 200, "unit": "g" },
+        { "name": "onion", "quantity": 50, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 5, "unit": "g" },
+        { "name": "chilies", "quantity": 2, "unit": "g" },
+        { "name": "coriander", "quantity": 5, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "cumin", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_032",
+      "name": "Kalmi Kebab",
+      "ingredients": [
+        { "name": "chicken drumsticks", "quantity": 450, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "lemon juice", "quantity": 5, "unit": "ml" },
+        { "name": "red chili powder", "quantity": 2, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_033",
+      "name": "Paneer tikka",
+      "ingredients": [
+        { "name": "paneer", "quantity": 200, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "red chili powder", "quantity": 2, "unit": "g" },
+        { "name": "turmeric", "quantity": 1, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "capsicum", "quantity": 50, "unit": "g" },
+        { "name": "onion", "quantity": 50, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_034",
+      "name": "Samosa (Indian Starter Variant)",
+      "ingredients": [
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "potatoes", "quantity": 70, "unit": "g" },
+        { "name": "peas", "quantity": 10, "unit": "g" },
+        { "name": "cumin", "quantity": 1, "unit": "g" },
+        { "name": "coriander powder", "quantity": 1, "unit": "g" },
+        { "name": "garam masala", "quantity": 1, "unit": "g" },
+        { "name": "turmeric", "quantity": 1, "unit": "g" },
+        { "name": "green chilies", "quantity": 1, "unit": "g" },
+        { "name": "ginger", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 100, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_035",
+      "name": "Tandoori chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "red chili powder", "quantity": 5, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "lemon juice", "quantity": 5, "unit": "ml" },
+        { "name": "mustard oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_036",
+      "name": "CHICKEN CURRY (Main Dish Combo)",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "tomatoes", "quantity": 80, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "red chili powder", "quantity": 5, "unit": "g" },
+        { "name": "coriander powder", "quantity": 5, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_037",
+      "name": "CHIPS MAYAI",
+      "ingredients": [
+        { "name": "french fries", "quantity": 200, "unit": "g" },
+        { "name": "eggs", "quantity": 2, "unit": "pcs" },
+        { "name": "onions", "quantity": 30, "unit": "g" },
+        { "name": "capsicum", "quantity": 20, "unit": "g" },
+        { "name": "tomatoes", "quantity": 20, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "black pepper", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_038",
+      "name": "HAWAIIAN PIZZA",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 100, "unit": "g" },
+        { "name": "chicken/ham", "quantity": 50, "unit": "g" },
+        { "name": "pineapple", "quantity": 50, "unit": "g" },
+        { "name": "olive oil", "quantity": 5, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_039",
+      "name": "MARGHERITA PIZZA",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 120, "unit": "g" },
+        { "name": "fresh basil", "quantity": 2.5, "unit": "g" },
+        { "name": "olive oil", "quantity": 5, "unit": "ml" },
+        { "name": "salt", "quantity": 1, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_040",
+      "name": "PLAIN CHIPS",
+      "ingredients": [
+        { "name": "potatoes", "quantity": 250, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 300, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_041",
+      "name": "PLAIN RICE",
+      "ingredients": [
+        { "name": "rice", "quantity": 100, "unit": "g" },
+        { "name": "water", "quantity": 200, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_042",
+      "name": "Chicken Biryani",
+      "ingredients": [
+        { "name": "basmati rice", "quantity": 100, "unit": "g" },
+        { "name": "chicken", "quantity": 200, "unit": "g" },
+        { "name": "onions", "quantity": 50, "unit": "g" },
+        { "name": "tomatoes", "quantity": 50, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "biryani masala", "quantity": 15, "unit": "g" },
+        { "name": "mint", "quantity": 5, "unit": "g" },
+        { "name": "coriander", "quantity": 15, "unit": "g" },
+        { "name": "saffron", "quantity": 1, "unit": "g" },
+        { "name": "ghee", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_043",
+      "name": "Chicken Fried rice",
+      "ingredients": [
+        { "name": "rice", "quantity": 150, "unit": "g" },
+        { "name": "chicken", "quantity": 50, "unit": "g" },
+        { "name": "soy sauce", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "vegetables", "quantity": 50, "unit": "g" },
+        { "name": "egg", "quantity": 50, "unit": "pcs" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_044",
+      "name": "Chicken curry",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "tomatoes", "quantity": 80, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "chili powder", "quantity": 5, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_045",
+      "name": "Chilli Chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "soy sauce", "quantity": 15, "unit": "ml" },
+        { "name": "cornflour", "quantity": 15, "unit": "g" },
+        { "name": "garlic", "quantity": 15, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "chilies", "quantity": 4, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "vinegar", "quantity": 5, "unit": "ml" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_046",
+      "name": "Kadai Chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "tomatoes", "quantity": 80, "unit": "g" },
+        { "name": "capsicum", "quantity": 50, "unit": "g" },
+        { "name": "kadai masala", "quantity": 15, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_047",
+      "name": "Mutton Rogan josh",
+      "ingredients": [
+        { "name": "mutton", "quantity": 250, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "red chili powder", "quantity": 15, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_048",
+      "name": "Mutton masala",
+      "ingredients": [
+        { "name": "mutton", "quantity": 250, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "tomatoes", "quantity": 50, "unit": "g" },
+        { "name": "ginger-garlic paste", "quantity": 15, "unit": "g" },
+        { "name": "spices", "quantity": 15, "unit": "g" },
+        { "name": "oil", "quantity": 30, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_049",
+      "name": "Punjabi Chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 250, "unit": "g" },
+        { "name": "onions", "quantity": 100, "unit": "g" },
+        { "name": "tomatoes", "quantity": 80, "unit": "g" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "cream", "quantity": 30, "unit": "ml" },
+        { "name": "spices", "quantity": 15, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 5, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_050",
+      "name": "Chicken Pasta",
+      "ingredients": [
+        { "name": "pasta", "quantity": 100, "unit": "g" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "cheese", "quantity": 20, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_051",
+      "name": "Chicken Schnitzer",
+      "ingredients": [
+        { "name": "chicken breast", "quantity": 200, "unit": "g" },
+        { "name": "flour", "quantity": 30, "unit": "g" },
+        { "name": "eggs", "quantity": 1, "unit": "pcs" },
+        { "name": "bread crumbs", "quantity": 50, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 50, "unit": "ml" },
+        { "name": "lemon", "quantity": 20, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_052",
+      "name": "Chicken fried rice (Continental)",
+      "ingredients": [
+        { "name": "rice", "quantity": 150, "unit": "g" },
+        { "name": "chicken", "quantity": 50, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "vegetables", "quantity": 50, "unit": "g" },
+        { "name": "soy sauce", "quantity": 5, "unit": "ml" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 5, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_053",
+      "name": "Linguine pasta",
+      "ingredients": [
+        { "name": "linguine pasta", "quantity": 150, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "cream sauce", "quantity": 50, "unit": "ml" },
+        { "name": "parmesan cheese", "quantity": 30, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_054",
+      "name": "Penne pasta",
+      "ingredients": [
+        { "name": "penne pasta", "quantity": 150, "unit": "g" },
+        { "name": "tomato sauce", "quantity": 60, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "cheese", "quantity": 30, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_055",
+      "name": "Seafood pasta",
+      "ingredients": [
+        { "name": "pasta", "quantity": 150, "unit": "g" },
+        { "name": "prawns", "quantity": 50, "unit": "g" },
+        { "name": "fish", "quantity": 50, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "cream sauce", "quantity": 50, "unit": "ml" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_056",
+      "name": "Spaghetti pasta",
+      "ingredients": [
+        { "name": "spaghetti", "quantity": 150, "unit": "g" },
+        { "name": "tomato sauce", "quantity": 60, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "basil", "quantity": 5, "unit": "g" },
+        { "name": "cheese", "quantity": 30, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_057",
+      "name": "Tagliatelle pasta",
+      "ingredients": [
+        { "name": "tagliatelle pasta", "quantity": 150, "unit": "g" },
+        { "name": "cream sauce", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "parmesan cheese", "quantity": 30, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_058",
+      "name": "Cheese pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 150, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_059",
+      "name": "Chicken pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 100, "unit": "g" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_060",
+      "name": "Focaccia pizza",
+      "ingredients": [
+        { "name": "focaccia bread", "quantity": 200, "unit": "g" },
+        { "name": "olive oil", "quantity": 20, "unit": "ml" },
+        { "name": "garlic", "quantity": 10, "unit": "g" },
+        { "name": "herbs", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_061",
+      "name": "Hawaiian pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 100, "unit": "g" },
+        { "name": "chicken/ham", "quantity": 50, "unit": "g" },
+        { "name": "pineapple", "quantity": 50, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_062",
+      "name": "Margarita pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 150, "unit": "g" },
+        { "name": "fresh basil", "quantity": 5, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_063",
+      "name": "Seafood pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 100, "unit": "g" },
+        { "name": "prawns", "quantity": 100, "unit": "g" },
+        { "name": "fish", "quantity": 50, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_064",
+      "name": "Sultan special pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 100, "unit": "g" },
+        { "name": "chicken", "quantity": 50, "unit": "g" },
+        { "name": "beef", "quantity": 50, "unit": "g" },
+        { "name": "vegetables", "quantity": 50, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_065",
+      "name": "Vegetable pizza",
+      "ingredients": [
+        { "name": "pizza dough", "quantity": 250, "unit": "pcs" },
+        { "name": "pizza sauce", "quantity": 60, "unit": "ml" },
+        { "name": "mozzarella cheese", "quantity": 150, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "mushroom", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_066",
+      "name": "Chicken Caesar salad",
+      "ingredients": [
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "romaine lettuce", "quantity": 30, "unit": "g" },
+        { "name": "parmesan cheese", "quantity": 20, "unit": "g" },
+        { "name": "croutons", "quantity": 20, "unit": "g" },
+        { "name": "caesar dressing", "quantity": 30, "unit": "ml" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_067",
+      "name": "Chickpeas salad",
+      "ingredients": [
+        { "name": "chickpeas", "quantity": 150, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "cucumber", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 10, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_068",
+      "name": "Greek salad",
+      "ingredients": [
+        { "name": "cucumber", "quantity": 50, "unit": "g" },
+        { "name": "tomato", "quantity": 50, "unit": "g" },
+        { "name": "red onion", "quantity": 30, "unit": "g" },
+        { "name": "feta cheese", "quantity": 50, "unit": "g" },
+        { "name": "olives", "quantity": 20, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "oregano", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_069",
+      "name": "Hot chicken salad",
+      "ingredients": [
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_070",
+      "name": "Mixed salad",
+      "ingredients": [
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "cucumber", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "carrot", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 20, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_071",
+      "name": "Prawns and avocado salad",
+      "ingredients": [
+        { "name": "prawns", "quantity": 100, "unit": "g" },
+        { "name": "avocado", "quantity": 50, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "cherry tomatoes", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_072",
+      "name": "Seafood salad",
+      "ingredients": [
+        { "name": "prawns", "quantity": 50, "unit": "g" },
+        { "name": "fish", "quantity": 50, "unit": "g" },
+        { "name": "calamari", "quantity": 50, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_073",
+      "name": "Chicken sandwich",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "lettuce", "quantity": 20, "unit": "g" },
+        { "name": "tomato", "quantity": 20, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_074",
+      "name": "Egg sandwich",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "boiled eggs", "quantity": 100, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "lettuce", "quantity": 20, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_075",
+      "name": "New York club sandwich",
+      "ingredients": [
+        { "name": "bread", "quantity": 3, "unit": "pcs" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "bacon", "quantity": 30, "unit": "g" },
+        { "name": "lettuce", "quantity": 20, "unit": "g" },
+        { "name": "tomato", "quantity": 20, "unit": "g" },
+        { "name": "cheese", "quantity": 30, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 20, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_076",
+      "name": "Tuna sandwich",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "tuna", "quantity": 100, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "lettuce", "quantity": 20, "unit": "g" },
+        { "name": "onion", "quantity": 10, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_077",
+      "name": "Vegetable sandwich",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "cucumber", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "lettuce", "quantity": 20, "unit": "g" },
+        { "name": "capsicum", "quantity": 20, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_078",
+      "name": "Calamari",
+      "ingredients": [
+        { "name": "calamari", "quantity": 200, "unit": "g" },
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "cornstarch", "quantity": 20, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 100, "unit": "ml" },
+        { "name": "lemon", "quantity": 20, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_079",
+      "name": "King fish",
+      "ingredients": [
+        { "name": "king fish fillet", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_080",
+      "name": "King prawns",
+      "ingredients": [
+        { "name": "king prawns", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_081",
+      "name": "Octopus",
+      "ingredients": [
+        { "name": "octopus", "quantity": 200, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_082",
+      "name": "Tuna",
+      "ingredients": [
+        { "name": "tuna", "quantity": 200, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_083",
+      "name": "Chicken Swahili soup",
+      "ingredients": [
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "coconut milk", "quantity": 100, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_084",
+      "name": "Chicken and Mushroom soup",
+      "ingredients": [
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "mushrooms", "quantity": 50, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_085",
+      "name": "Cream of Carrot and Zucchini soup",
+      "ingredients": [
+        { "name": "carrot", "quantity": 50, "unit": "g" },
+        { "name": "zucchini", "quantity": 50, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_086",
+      "name": "Cream of Leeks and Potato soup",
+      "ingredients": [
+        { "name": "leeks", "quantity": 50, "unit": "g" },
+        { "name": "potatoes", "quantity": 50, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_087",
+      "name": "Cream of Pumpkin soup",
+      "ingredients": [
+        { "name": "pumpkin", "quantity": 100, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_088",
+      "name": "Cream of Tomato soup",
+      "ingredients": [
+        { "name": "tomatoes", "quantity": 100, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_089",
+      "name": "Mixed Vegetable soup",
+      "ingredients": [
+        { "name": "carrot", "quantity": 30, "unit": "g" },
+        { "name": "beans", "quantity": 30, "unit": "g" },
+        { "name": "cabbage", "quantity": 30, "unit": "g" },
+        { "name": "peas", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "vegetable stock", "quantity": 200, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_090",
+      "name": "Seafood soup",
+      "ingredients": [
+        { "name": "prawns", "quantity": 30, "unit": "g" },
+        { "name": "fish", "quantity": 30, "unit": "g" },
+        { "name": "calamari", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "vegetable stock", "quantity": 200, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_091",
+      "name": "Jumbo prawns",
+      "ingredients": [
+        { "name": "jumbo prawns", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "butter", "quantity": 15, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_092",
+      "name": "Lobster",
+      "ingredients": [
+        { "name": "lobster", "quantity": 200, "unit": "g" },
+        { "name": "butter", "quantity": 20, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 10, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_093",
+      "name": "Seafood platter",
+      "ingredients": [
+        { "name": "prawns", "quantity": 100, "unit": "g" },
+        { "name": "lobster", "quantity": 100, "unit": "g" },
+        { "name": "calamari", "quantity": 100, "unit": "g" },
+        { "name": "fish", "quantity": 100, "unit": "g" },
+        { "name": "lemon", "quantity": 20, "unit": "g" },
+        { "name": "garlic butter", "quantity": 30, "unit": "g" },
+        { "name": "herbs", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_094",
+      "name": "Sultan special chicken platter",
+      "ingredients": [
+        { "name": "grilled chicken", "quantity": 150, "unit": "g" },
+        { "name": "chicken tikka", "quantity": 150, "unit": "g" },
+        { "name": "kebab", "quantity": 150, "unit": "g" },
+        { "name": "fries", "quantity": 100, "unit": "g" },
+        { "name": "salad", "quantity": 50, "unit": "g" },
+        { "name": "sauce", "quantity": 15, "unit": "ml" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_095",
+      "name": "BRUSCHETTA",
+      "ingredients": [
+        { "name": "baguette", "quantity": 2, "unit": "pcs" },
+        { "name": "tomatoes", "quantity": 50, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "basil", "quantity": 2, "unit": "g" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_096",
+      "name": "CHICKEN SAMOSA",
+      "ingredients": [
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "minced chicken", "quantity": 100, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_097",
+      "name": "CHICKEN SANDWICH",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_098",
+      "name": "VEG SAMOSA",
+      "ingredients": [
+        { "name": "flour", "quantity": 50, "unit": "g" },
+        { "name": "potatoes", "quantity": 100, "unit": "g" },
+        { "name": "peas", "quantity": 50, "unit": "g" },
+        { "name": "cumin", "quantity": 2, "unit": "g" },
+        { "name": "coriander powder", "quantity": 2, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "green chilies", "quantity": 5, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_099",
+      "name": "VEG SANDWICH",
+      "ingredients": [
+        { "name": "bread", "quantity": 2, "unit": "pcs" },
+        { "name": "cucumber", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "butter", "quantity": 10, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_100",
+      "name": "Beans",
+      "ingredients": [
+        { "name": "beans", "quantity": 100, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "coconut milk", "quantity": 100, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_101",
+      "name": "Calamari stew",
+      "ingredients": [
+        { "name": "calamari", "quantity": 150, "unit": "g" },
+        { "name": "coconut milk", "quantity": 100, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_102",
+      "name": "Fried changu",
+      "ingredients": [
+        { "name": "changu fish", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "lemon juice", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_103",
+      "name": "Green banana & mutton",
+      "ingredients": [
+        { "name": "green bananas", "quantity": 150, "unit": "g" },
+        { "name": "mutton", "quantity": 150, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_104",
+      "name": "Octopus in coconut sauce",
+      "ingredients": [
+        { "name": "octopus", "quantity": 200, "unit": "g" },
+        { "name": "coconut milk", "quantity": 100, "unit": "ml" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_105",
+      "name": "Roast chicken",
+      "ingredients": [
+        { "name": "chicken", "quantity": 200, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "lemon juice", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" }
+      ]
+    },
+    {
+      "id": "food_106",
+      "name": "Zanzibar pilau",
+      "ingredients": [
+        { "name": "rice", "quantity": 100, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "coconut milk", "quantity": 100, "unit": "ml" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "cardamom", "quantity": 2, "unit": "g" },
+        { "name": "cinnamon", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_107",
+      "name": "Bhindi masala",
+      "ingredients": [
+        { "name": "okra", "quantity": 150, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "coriander powder", "quantity": 2, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_108",
+      "name": "Dal Makani",
+      "ingredients": [
+        { "name": "black lentils", "quantity": 50, "unit": "g" },
+        { "name": "kidney beans", "quantity": 50, "unit": "g" },
+        { "name": "butter", "quantity": 20, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_109",
+      "name": "Dal tadka",
+      "ingredients": [
+        { "name": "yellow lentils", "quantity": 100, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "cumin", "quantity": 2, "unit": "g" },
+        { "name": "turmeric", "quantity": 2, "unit": "g" },
+        { "name": "red chili powder", "quantity": 2, "unit": "g" },
+        { "name": "ghee", "quantity": 20, "unit": "g" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_110",
+      "name": "Kadai paneer",
+      "ingredients": [
+        { "name": "paneer", "quantity": 150, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "kadai masala", "quantity": 2, "unit": "g" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_111",
+      "name": "Mixed vegetables",
+      "ingredients": [
+        { "name": "carrot", "quantity": 30, "unit": "g" },
+        { "name": "beans", "quantity": 30, "unit": "g" },
+        { "name": "peas", "quantity": 30, "unit": "g" },
+        { "name": "cauliflower", "quantity": 30, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_112",
+      "name": "Paneer masala",
+      "ingredients": [
+        { "name": "paneer", "quantity": 150, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_113",
+      "name": "Paneer tikka masala",
+      "ingredients": [
+        { "name": "paneer", "quantity": 150, "unit": "g" },
+        { "name": "yogurt", "quantity": 50, "unit": "g" },
+        { "name": "onion", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "cream", "quantity": 50, "unit": "ml" },
+        { "name": "ginger", "quantity": 5, "unit": "g" },
+        { "name": "garlic", "quantity": 5, "unit": "g" },
+        { "name": "garam masala", "quantity": 2, "unit": "g" },
+        { "name": "spices", "quantity": 2, "unit": "g" },
+        { "name": "oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_114",
+      "name": "Chicken wrap",
+      "ingredients": [
+        { "name": "tortilla", "quantity": 1, "unit": "piece" },
+        { "name": "chicken", "quantity": 100, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 20, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "sauce", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_115",
+      "name": "Seafood wrap",
+      "ingredients": [
+        { "name": "tortilla", "quantity": 1, "unit": "piece" },
+        { "name": "prawns", "quantity": 50, "unit": "g" },
+        { "name": "fish", "quantity": 50, "unit": "g" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 20, "unit": "g" },
+        { "name": "sauce", "quantity": 15, "unit": "ml" },
+        { "name": "olive oil", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    },
+    {
+      "id": "food_116",
+      "name": "Vegetable wrap",
+      "ingredients": [
+        { "name": "tortilla", "quantity": 1, "unit": "piece" },
+        { "name": "lettuce", "quantity": 30, "unit": "g" },
+        { "name": "cucumber", "quantity": 30, "unit": "g" },
+        { "name": "tomato", "quantity": 30, "unit": "g" },
+        { "name": "capsicum", "quantity": 30, "unit": "g" },
+        { "name": "onion", "quantity": 20, "unit": "g" },
+        { "name": "mayonnaise", "quantity": 15, "unit": "g" },
+        { "name": "sauce", "quantity": 15, "unit": "ml" },
+        { "name": "salt", "quantity": 2, "unit": "g" },
+        { "name": "pepper", "quantity": 2, "unit": "g" }
+      ]
+    }
+  ]
+}
