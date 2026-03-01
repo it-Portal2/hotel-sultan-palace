@@ -262,13 +262,13 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-gray-900 text-base">{item.currentStock}</span>
+                                                            <span className="font-bold text-gray-900 text-base">{Number((item.currentStock).toFixed(2))}</span>
                                                             <span className="text-xs text-gray-500 font-medium uppercase">{item.unit}</span>
                                                         </div>
                                                         {item.purchaseUnit && item.conversionFactor && (
                                                             <span className="text-[10px] text-orange-600 font-medium bg-orange-50 px-1.5 py-0.5 rounded w-fit">
                                                                 {Math.floor(item.currentStock / item.conversionFactor)} {item.purchaseUnit}
-                                                                {(item.currentStock % item.conversionFactor) > 0 ? ` + ${(item.currentStock % item.conversionFactor)} ${item.unit}` : ''}
+                                                                {(item.currentStock % item.conversionFactor) > 0 ? ` + ${parseFloat((item.currentStock % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
                                                             </span>
                                                         )}
                                                     </div>
@@ -376,11 +376,11 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                             <div className="bg-gray-50 p-2 rounded-lg">
                                                 <span className="text-xs text-gray-500 block">Stock</span>
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{item.currentStock} {item.unit}</span>
+                                                    <span className="font-bold text-gray-900">{Number((item.currentStock).toFixed(2))} {item.unit}</span>
                                                     {item.purchaseUnit && item.conversionFactor && (
                                                         <span className="text-[10px] text-orange-600 font-medium">
                                                             {Math.floor(item.currentStock / item.conversionFactor)} {item.purchaseUnit}
-                                                            {(item.currentStock % item.conversionFactor) > 0 ? ` + ${(item.currentStock % item.conversionFactor)} ${item.unit}` : ''}
+                                                            {(item.currentStock % item.conversionFactor) > 0 ? ` + ${parseFloat((item.currentStock % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
                                                         </span>
                                                     )}
                                                 </div>

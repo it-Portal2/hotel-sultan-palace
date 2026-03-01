@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FoodOrder } from "@/lib/firestoreService";
+import { checkOrderIngredients, type IngredientCheckResult } from "@/lib/inventoryService";
 import Link from "next/link";
 import {
   XMarkIcon,
@@ -12,6 +13,7 @@ import {
   MapPinIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -39,14 +41,16 @@ export default function OrderDetailsModal({
   const [reprintSent, setReprintSent] = useState(false);
   const [kitchenPrintSent, setKitchenPrintSent] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [ingredientCheckResults, setIngredientCheckResults] = useState<IngredientCheckResult[] | null>(null);
+  const [ingredientCheckLoading, setIngredientCheckLoading] = useState(false);
+  const [showIngredientCheck, setShowIngredientCheck] = useState(true);
 
-  // Real-time listener for order updates (status, receiptUrl, etc.)
+  // Real-time listener for order updates
   useEffect(() => {
     setLiveOrder(order);
 
     if (!db || !order.id) return;
 
-    // specific collection based on menuType if available, else default to 'foodOrders'
     const menuType = (order as any).menuType || "food";
     const collectionName = menuType === "bar" ? "barOrders" : "foodOrders";
 
@@ -59,6 +63,18 @@ export default function OrderDetailsModal({
 
     return () => unsub();
   }, [order]);
+
+  // Auto-fetch ingredient availability when order is pending
+  useEffect(() => {
+    if (order.status !== 'pending' || !order.id) return;
+    const menuType = (order as any).menuType || "food";
+    setIngredientCheckLoading(true);
+    setIngredientCheckResults(null);
+    checkOrderIngredients(order.id, menuType)
+      .then((results) => setIngredientCheckResults(results))
+      .catch((err) => { console.error("Ingredient check failed", err); setIngredientCheckResults([]); })
+      .finally(() => setIngredientCheckLoading(false));
+  }, [order.id, order.status]);
 
   const handleReprint = () => {
     if (onReprint && !reprintSent) {
@@ -265,11 +281,10 @@ export default function OrderDetailsModal({
                 <button
                   onClick={handleReprint}
                   disabled={reprintSent}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors ${
-                    reprintSent
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors ${reprintSent
                       ? "bg-green-100 text-green-600"
                       : "bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20"
-                  }`}
+                    }`}
                 >
                   <PrinterIcon className="h-4 w-4" />
                   {reprintSent ? "Sent!" : "Print"}
@@ -493,6 +508,69 @@ export default function OrderDetailsModal({
               </div>
             </div>
 
+            {/* --- Ingredient Availability Check (Pending orders only) --- */}
+            {liveOrder.status === 'pending' && (
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowIngredientCheck(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {ingredientCheckLoading ? (
+                      <svg className="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    ) : ingredientCheckResults && ingredientCheckResults.some(r => !r.sufficient) ? (
+                      <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
+                    ) : (
+                      <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
+                    )}
+                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      {ingredientCheckLoading
+                        ? 'Checking ingredients...'
+                        : ingredientCheckResults === null
+                          ? 'Ingredient Availability'
+                          : ingredientCheckResults.length === 0
+                            ? 'No recipe data found'
+                            : ingredientCheckResults.some(r => !r.sufficient)
+                              ? `Insufficient Ingredients (${ingredientCheckResults.filter(r => !r.sufficient).length} item${ingredientCheckResults.filter(r => !r.sufficient).length > 1 ? 's' : ''})`
+                              : 'All Ingredients Available'}
+                    </span>
+                  </div>
+                  <span className="text-gray-400 text-xs">{showIngredientCheck ? '▲' : '▼'}</span>
+                </button>
+
+                {showIngredientCheck && ingredientCheckResults && ingredientCheckResults.length > 0 && (
+                  <div className="divide-y divide-gray-50">
+                    {ingredientCheckResults.map((r) => (
+                      <div
+                        key={r.inventoryItemId}
+                        className={`flex items-center justify-between px-4 py-2 text-xs ${r.sufficient ? 'bg-white' : 'bg-red-50'
+                          }`}
+                      >
+                        <span className={`font-medium ${r.sufficient ? 'text-gray-700' : 'text-red-700 font-bold'}`}>
+                          {r.ingredientName}
+                        </span>
+                        <div className="flex items-center gap-3 text-right">
+                          <span className={`${r.sufficient ? 'text-gray-400' : 'text-red-500 font-bold'}`}>
+                            req: {r.required}{r.unit}
+                          </span>
+                          <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${r.sufficient
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-red-100 text-red-700'
+                            }`}>
+                            {r.available}{r.unit} STOCK
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* --- Financials --- */}
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
@@ -604,11 +682,10 @@ export default function OrderDetailsModal({
                         <button
                           onClick={handleKitchenPrint}
                           disabled={kitchenPrintSent || !!loadingAction}
-                          className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
-                            kitchenPrintSent
+                          className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${kitchenPrintSent
                               ? "bg-green-100 text-green-700 border border-green-200"
                               : "bg-[#FF6A00] hover:bg-[#E55A00] text-white"
-                          }`}
+                            }`}
                         >
                           <PrinterIcon className="h-4 w-4" />
                           {kitchenPrintSent

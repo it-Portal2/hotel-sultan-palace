@@ -53,7 +53,7 @@ async function seedBarRecipes() {
         return;
     }
     const ingrediantsData = JSON.parse(fs.readFileSync(ingrediantPath, "utf8"));
-    const sourceRecipes = ingrediantsData.menu_items || [];
+    const sourceRecipes = ingrediantsData.bar_menu_items || ingrediantsData.menu_items || [];
     console.log(`Loaded ${sourceRecipes.length} bar recipes from JSON.`);
 
     // 2. Fetch all bar menu items

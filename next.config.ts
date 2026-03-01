@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig & {
-  eslint?: { ignoreDuringBuilds?: boolean };
-} = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: NextConfig = {
   images: {
     unoptimized: false,
     formats: ["image/avif", "image/webp"],
@@ -80,7 +75,9 @@ const nextConfig: NextConfig & {
   compiler: {
     removeConsole: false,
   },
-  turbopack: {},
+  turbopack: {
+    root: "C:/Users/gauta/OneDrive/Desktop/resto",
+  },
 };
 
 export default nextConfig;

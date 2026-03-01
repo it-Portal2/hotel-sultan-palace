@@ -505,6 +505,124 @@ export const getRecipeByMenuItem = async (menuItemId: string): Promise<Recipe | 
     return { id: snap.docs[0].id, ...snap.docs[0].data() } as Recipe;
 };
 
+// ==================== INGREDIENT AVAILABILITY CHECK (READ-ONLY) ====================
+
+export interface IngredientCheckResult {
+    ingredientName: string;
+    inventoryItemId: string;
+    required: number;       // total needed for this order
+    available: number;      // currentStock in inventory
+    unit: string;
+    sufficient: boolean;
+}
+
+/**
+ * Pure read-only check — does NOT write to Firestore.
+ * Returns an array of ingredient statuses for the given order.
+ */
+export const checkOrderIngredients = async (
+    orderId: string,
+    menuType: 'food' | 'bar' = 'food'
+): Promise<IngredientCheckResult[]> => {
+    if (!db) return [];
+    const firestore = db;
+
+    const collectionName = menuType === 'bar' ? 'barOrders' : 'foodOrders';
+    const orderSnap = await getDoc(doc(firestore, collectionName, orderId));
+    if (!orderSnap.exists()) return [];
+
+    const order = orderSnap.data() as FoodOrder;
+
+    // Collect all recipe lookups in parallel
+    // Strategy: try by menuItemId first, then fall back to menuItemName
+    const recipeMap = new Map<string, Recipe | null>();
+    await Promise.all(
+        order.items.map(async (item: any) => {
+            const key = item.menuItemId || '';
+            if (recipeMap.has(key)) return;
+
+            // 1st attempt: exact match by menuItemId
+            if (item.menuItemId) {
+                const q = query(
+                    collection(firestore, 'recipes'),
+                    where('menuItemId', '==', item.menuItemId),
+                    limit(1)
+                );
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    recipeMap.set(key, snap.docs[0].data() as Recipe);
+                    return;
+                }
+            }
+
+            // 2nd attempt: fallback — match by menuItemName (strip variant suffix after " - ")
+            if (item.name) {
+                const baseName = item.name.includes(' - ')
+                    ? item.name.split(' - ')[0].trim()
+                    : item.name.trim();
+
+                const nameQ = query(
+                    collection(firestore, 'recipes'),
+                    where('menuItemName', '==', baseName),
+                    limit(1)
+                );
+                const nameSnap = await getDocs(nameQ);
+                if (!nameSnap.empty) {
+                    recipeMap.set(key, nameSnap.docs[0].data() as Recipe);
+                    return;
+                }
+            }
+
+            // No recipe found
+            recipeMap.set(key, null);
+        })
+    );
+
+    // Aggregate required amounts per inventory item
+    const required = new Map<string, { name: string; qty: number; unit: string }>();
+    for (const item of order.items) {
+        const recipeKey = (item as any).menuItemId || '';
+        const recipe = recipeMap.get(recipeKey);
+        if (!recipe) continue;
+        for (const ing of recipe.ingredients) {
+            const key = ing.inventoryItemId;
+            const existing = required.get(key);
+            if (existing) {
+                existing.qty += ing.quantity * item.quantity;
+            } else {
+                required.set(key, {
+                    name: ing.inventoryItemName || ing.inventoryItemId,
+                    qty: ing.quantity * item.quantity,
+                    unit: ing.unit || ''
+                });
+            }
+        }
+    }
+
+    if (required.size === 0) return [];
+
+    // Fetch current stock for every needed item in parallel
+    const results: IngredientCheckResult[] = [];
+    await Promise.all(
+        Array.from(required.entries()).map(async ([invId, info]) => {
+            const invSnap = await getDoc(doc(firestore, 'inventory', invId));
+            const available = invSnap.exists() ? (invSnap.data().currentStock || 0) : 0;
+            const invUnit = invSnap.exists() ? (invSnap.data().unit || info.unit) : info.unit;
+            results.push({
+                ingredientName: invSnap.exists() ? invSnap.data().name : info.name,
+                inventoryItemId: invId,
+                required: parseFloat(info.qty.toFixed(4)),
+                available: parseFloat(available.toFixed(4)),
+                unit: invUnit,
+                sufficient: available >= info.qty
+            });
+        })
+    );
+
+    // Sort: insufficient first
+    return results.sort((a, b) => (a.sufficient === b.sufficient ? 0 : a.sufficient ? 1 : -1));
+};
+
 // ==================== STOCK DEDUCTION (THE MAGIC) ====================
 
 // Call this when a Food Order is "Confirmed" or "Completed"
