@@ -182,10 +182,10 @@ export default function InventoryReportsTab() {
                                                 </span>
                                             </td>
                                             <td className={`px-6 py-4 whitespace-nowrap font-bold text-right ${trans.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {trans.quantity > 0 ? '+' : ''}{trans.quantity}
+                                                {trans.quantity > 0 ? '+' : ''}{parseFloat(trans.quantity.toFixed(3))}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-gray-600 font-mono">
-                                                {trans.newStock}
+                                                {parseFloat(trans.newStock.toFixed(3))}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                                 {trans.performedBy}

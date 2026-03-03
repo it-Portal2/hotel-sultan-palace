@@ -86,9 +86,10 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
     });
 
     const getStockStatus = (item: InventoryItem) => {
-        if (item.currentStock <= item.reorderPoint) return 'critical';
-        if (item.currentStock <= item.minStockLevel) return 'low';
-        if (item.currentStock >= item.maxStockLevel) return 'high';
+        const stock = item.currentStock ?? 0;
+        if (stock <= (item.reorderPoint ?? 0)) return 'critical';
+        if (stock <= (item.minStockLevel ?? 0)) return 'low';
+        if (stock >= (item.maxStockLevel ?? Infinity)) return 'high';
         return 'normal';
     };
 
@@ -262,19 +263,19 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-gray-900 text-base">{Number((item.currentStock).toFixed(2))}</span>
+                                                            <span className="font-bold text-gray-900 text-base">{Number((item.currentStock ?? 0).toFixed(2))}</span>
                                                             <span className="text-xs text-gray-500 font-medium uppercase">{item.unit}</span>
                                                         </div>
                                                         {item.purchaseUnit && item.conversionFactor && (
                                                             <span className="text-[10px] text-orange-600 font-medium bg-orange-50 px-1.5 py-0.5 rounded w-fit">
-                                                                {Math.floor(item.currentStock / item.conversionFactor)} {item.purchaseUnit}
-                                                                {(item.currentStock % item.conversionFactor) > 0 ? ` + ${parseFloat((item.currentStock % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
+                                                                {Math.floor((item.currentStock ?? 0) / item.conversionFactor)} {item.purchaseUnit}
+                                                                {((item.currentStock ?? 0) % item.conversionFactor) > 0 ? ` + ${parseFloat(((item.currentStock ?? 0) % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
-                                                    ${(item.currentStock * item.unitCost).toFixed(2)}
+                                                    ${((item.currentStock ?? 0) * (item.unitCost ?? 0)).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                                     <span className={`px-3 py-1 inline-flex text-[10px] uppercase tracking-wide font-bold rounded-full ${getStockColor(status)} shadow-sm`}>
@@ -376,18 +377,18 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                             <div className="bg-gray-50 p-2 rounded-lg">
                                                 <span className="text-xs text-gray-500 block">Stock</span>
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number((item.currentStock).toFixed(2))} {item.unit}</span>
+                                                    <span className="font-bold text-gray-900">{Number((item.currentStock ?? 0).toFixed(2))} {item.unit}</span>
                                                     {item.purchaseUnit && item.conversionFactor && (
                                                         <span className="text-[10px] text-orange-600 font-medium">
-                                                            {Math.floor(item.currentStock / item.conversionFactor)} {item.purchaseUnit}
-                                                            {(item.currentStock % item.conversionFactor) > 0 ? ` + ${parseFloat((item.currentStock % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
+                                                            {Math.floor((item.currentStock ?? 0) / item.conversionFactor)} {item.purchaseUnit}
+                                                            {((item.currentStock ?? 0) % item.conversionFactor) > 0 ? ` + ${parseFloat(((item.currentStock ?? 0) % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="bg-gray-50 p-2 rounded-lg">
                                                 <span className="text-xs text-gray-500 block">Value</span>
-                                                <span className="font-bold text-gray-900">${(item.currentStock * item.unitCost).toFixed(2)}</span>
+                                                <span className="font-bold text-gray-900">${((item.currentStock ?? 0) * (item.unitCost ?? 0)).toFixed(2)}</span>
                                             </div>
                                         </div>
 
