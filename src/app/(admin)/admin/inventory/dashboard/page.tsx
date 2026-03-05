@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowPathIcon, ChartBarIcon, CubeIcon, FireIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ChartBarIcon, CubeIcon, FireIcon, TrophyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/solid';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import type { ProfitLossStatement, BalanceSheet } from '@/lib/financeAnalytics';
+import { getAuth } from 'firebase/auth';
+import Link from 'next/link';
 
 // ── Types for API response ────────────────────────────────────────────────────
 interface DishStat { name: string; qty: number; revenue: number; }
@@ -25,32 +27,35 @@ interface InsightsData {
 const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
-const fmtNum = (n: number, decimals = 2) => n.toFixed(decimals);
+const fmtNum = (n: number | undefined | null, decimals = 2) => (n ?? 0).toFixed(decimals);
 
-// Simple inline bar chart using SVG — no external library
-function BarChart({ revenue, expense }: { revenue: number; expense: number }) {
-    const max = Math.max(revenue, expense, 1);
+// ── Bar Chart ─────────────────────────────────────────────────────────────────
+function BarChart({ revenue, cogs, profit }: { revenue: number; cogs: number; profit: number }) {
+    const max = Math.max(revenue, cogs, Math.abs(profit), 1);
     const rPct = (revenue / max) * 100;
-    const ePct = (expense / max) * 100;
-
-    // Profit logic
-    const profit = revenue - expense;
-    const pPct = ((Math.abs(profit)) / max) * 100;
+    const cPct = (cogs / max) * 100;
+    const pPct = (Math.abs(profit) / max) * 100;
 
     return (
-        <div className="flex items-end gap-6 h-64 px-4 pb-2 border-b border-gray-100 mt-4">
+        <div className="flex items-end gap-6 h-60 px-4 pb-2 border-b border-gray-100 mt-4">
             {/* Revenue Bar */}
             <div className="flex flex-col items-center flex-1 h-full justify-end">
                 <span className="text-xl font-bold text-green-600 mb-2">{fmt(revenue)}</span>
-                <div className="w-full max-w-[80px] bg-green-500 rounded-t-md transition-all duration-700" style={{ height: revenue === 0 ? '0%' : `${Math.max(rPct, 4)}%`, maxHeight: 'calc(100% - 70px)' }} />
-                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-3 h-6 flex items-center justify-center">Revenue</span>
+                <div
+                    className="w-full max-w-[80px] bg-green-500 rounded-t-lg transition-all duration-700"
+                    style={{ height: revenue === 0 ? '0%' : `${Math.max(rPct, 4)}%`, maxHeight: 'calc(100% - 70px)' }}
+                />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-3">Revenue</span>
             </div>
 
-            {/* Expense Bar */}
+            {/* COGS Bar */}
             <div className="flex flex-col items-center flex-1 h-full justify-end">
-                <span className="text-xl font-bold text-red-600 mb-2">{fmt(expense)}</span>
-                <div className="w-full max-w-[80px] bg-red-500 rounded-t-md transition-all duration-700" style={{ height: expense === 0 ? '0%' : `${Math.max(ePct, 4)}%`, maxHeight: 'calc(100% - 70px)' }} />
-                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-3 h-6 flex items-center justify-center">Expense</span>
+                <span className="text-xl font-bold text-red-500 mb-2">{fmt(cogs)}</span>
+                <div
+                    className="w-full max-w-[80px] bg-red-400 rounded-t-lg transition-all duration-700"
+                    style={{ height: cogs === 0 ? '0%' : `${Math.max(cPct, 4)}%`, maxHeight: 'calc(100% - 70px)' }}
+                />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-3">COGS</span>
             </div>
 
             {/* Profit Bar */}
@@ -59,27 +64,27 @@ function BarChart({ revenue, expense }: { revenue: number; expense: number }) {
                     {fmt(profit)}
                 </span>
                 <div
-                    className={`w-full max-w-[80px] rounded-t-md transition-all duration-700 ${profit >= 0 ? 'bg-blue-500' : 'bg-orange-500'}`}
+                    className={`w-full max-w-[80px] rounded-t-lg transition-all duration-700 ${profit >= 0 ? 'bg-blue-500' : 'bg-orange-500'}`}
                     style={{ height: profit === 0 ? '0%' : `${Math.max(pPct, 4)}%`, maxHeight: 'calc(100% - 70px)' }}
                 />
-                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-3 h-6 flex items-center justify-center">Profit</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-3">Profit</span>
             </div>
         </div>
     );
 }
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, color, icon: Icon }: {
-    label: string; value: string; sub?: string; color: string; icon: React.ElementType;
+function KpiCard({ label, value, sub, iconBg, icon: Icon }: {
+    label: string; value: string; sub?: string; iconBg: string; icon: React.ElementType;
 }) {
     return (
-        <div className={`bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-start gap-4`}>
-            <div className={`p-2.5 rounded-lg ${color}`}>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-start gap-4">
+            <div className={`p-2.5 rounded-lg ${iconBg} shrink-0`}>
                 <Icon className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-0.5 truncate">{value}</p>
                 {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
             </div>
         </div>
@@ -97,7 +102,12 @@ export default function InsightsDashboardPage() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/v1/insights?filter=${filter}`);
+            const user = getAuth().currentUser;
+            if (!user) throw new Error('Not authenticated. Please sign in.');
+            const token = await user.getIdToken();
+            const res = await fetch(`/api/v1/insights?filter=${filter}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             if (!res.ok) throw new Error('Failed to fetch insights');
             const json = await res.json();
             setData(json);
@@ -118,19 +128,19 @@ export default function InsightsDashboardPage() {
     }[filter];
 
     return (
-        <div className="min-h-screen bg-gray-50/50 p-6 space-y-6">
+        <div className="min-h-screen bg-gray-50/60 p-6 space-y-6">
 
             {/* ── Header ── */}
             <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Insights Dashboard</h1>
-                    <p className="text-sm text-gray-500">Revenue · Expenses · Profit · Inventory Consumption</p>
+                    <p className="text-sm text-gray-400">Revenue · COGS · Profit · Inventory Consumption</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <select
                         value={filter}
                         onChange={e => setFilter(e.target.value as any)}
-                        className="block w-40 rounded-lg border-gray-200 py-2 pl-3 pr-10 text-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500 bg-gray-50 hover:bg-white transition-colors cursor-pointer border"
+                        className="block w-40 rounded-lg border border-gray-200 py-2 pl-3 pr-10 text-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500 bg-gray-50 hover:bg-white transition-colors cursor-pointer"
                     >
                         <option value="daily">Last 24 Hours</option>
                         <option value="weekly">Last 7 Days</option>
@@ -161,10 +171,25 @@ export default function InsightsDashboardPage() {
             )}
 
             {data && !loading && (() => {
+                // ── Core Calculations ──
+                // Revenue = POS service revenue (+ room revenue if any)
                 const revenue = data.pl.revenue.totalRevenue;
-                const expense = data.pl.expenses.totalExpenses + data.pl.cogs.totalCOGS;
-                const profit = data.pl.netIncome;
-                const foodCostPct = revenue > 0 ? (data.pl.cogs.totalCOGS / revenue) * 100 : 0;
+                // Expense = COGS only (food & beverage cost — no operational expenses)
+                const cogs = data.pl.cogs.totalCOGS;
+                // Profit = Revenue - COGS
+                const profit = revenue - cogs;
+                // Food Cost % = COGS / Revenue × 100
+                const foodCostPct = revenue > 0 ? (cogs / revenue) * 100 : 0;
+
+                const foodCostColor =
+                    foodCostPct < 25 ? 'text-green-600' :
+                        foodCostPct <= 35 ? 'text-yellow-600' :
+                            'text-red-600';
+
+                const foodCostBg =
+                    foodCostPct < 25 ? 'bg-green-50 border-green-200 text-green-700' :
+                        foodCostPct <= 35 ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                            'bg-red-50 border-red-200 text-red-700';
 
                 return (
                     <>
@@ -174,59 +199,59 @@ export default function InsightsDashboardPage() {
                                 label="Revenue"
                                 value={fmt(revenue)}
                                 sub={filterLabel}
-                                color="bg-green-500"
+                                iconBg="bg-green-500"
                                 icon={ArrowTrendingUpIcon}
                             />
                             <KpiCard
-                                label="Expense"
-                                value={fmt(expense)}
-                                sub={`COGS: ${fmt(data.pl.cogs.totalCOGS)}`}
-                                color="bg-red-500"
+                                label="Expense (COGS)"
+                                value={fmt(cogs)}
+                                sub="Food & Beverage Cost"
+                                iconBg="bg-red-500"
                                 icon={ArrowTrendingDownIcon}
                             />
                             <KpiCard
                                 label="Net Profit"
                                 value={fmt(profit)}
-                                sub={`Margin: ${fmtNum(data.pl.marginPercent)}%`}
-                                color={profit >= 0 ? 'bg-blue-500' : 'bg-orange-500'}
+                                sub={`Margin: ${fmtNum(revenue > 0 ? (profit / revenue) * 100 : 0)}%`}
+                                iconBg={profit >= 0 ? 'bg-blue-500' : 'bg-orange-500'}
                                 icon={ChartBarIcon}
                             />
                             <KpiCard
                                 label="Orders"
                                 value={String(data.totalOrders)}
                                 sub={`Food Cost: ${fmtNum(foodCostPct)}%`}
-                                color="bg-orange-500"
+                                iconBg="bg-orange-500"
                                 icon={FireIcon}
                             />
                         </div>
 
-                        {/* ── Section 2: Revenue vs Expense Chart + Food Cost % ── */}
+                        {/* ── Section 2: Chart + P&L Snapshot ── */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                             {/* Bar Chart */}
                             <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-800">Revenue vs Expense</h3>
-                                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">{filterLabel}</span>
+                                    <h3 className="font-bold text-gray-800">Revenue / COGS / Profit Overview</h3>
+                                    <span className="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-medium">{filterLabel}</span>
                                 </div>
                                 <div className="p-6">
-                                    <BarChart revenue={revenue} expense={expense} />
-                                    <div className="mt-4 grid grid-cols-3 text-center text-sm border-t border-gray-100 pt-4">
+                                    <BarChart revenue={revenue} cogs={cogs} profit={profit} />
+
+                                    {/* Summary Row */}
+                                    <div className="mt-4 grid grid-cols-2 text-center text-sm border-t border-gray-100 pt-4 gap-4">
                                         <div>
-                                            <p className="text-gray-400 text-xs">Gross Profit</p>
-                                            <p className="font-bold text-gray-900">{fmt(data.pl.grossProfit)}</p>
+                                            <p className="text-gray-400 text-xs mb-0.5">Net Profit</p>
+                                            <p className={`font-bold text-base ${profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{fmt(profit)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-400 text-xs">Operating Expenses</p>
-                                            <p className="font-bold text-gray-900">{fmt(data.pl.expenses.totalExpenses)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-400 text-xs">Food Cost %</p>
-                                            <p className={`font-bold ${foodCostPct > 35 ? 'text-red-600' : 'text-green-600'}`}>
+                                            <p className="text-gray-400 text-xs mb-0.5">Food Cost %</p>
+                                            <p className={`font-bold text-base ${foodCostColor}`}>
                                                 {fmtNum(foodCostPct)}%
                                             </p>
                                         </div>
                                     </div>
+
+
                                 </div>
                             </div>
 
@@ -234,21 +259,33 @@ export default function InsightsDashboardPage() {
                             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
                                     <h3 className="font-bold text-gray-800">P&L Snapshot</h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">{filterLabel}</p>
                                 </div>
-                                <div className="p-6 space-y-3 text-sm">
-                                    <Row label="Room Revenue" value={fmt(data.pl.revenue.roomRevenue)} />
+                                <div className="p-6 space-y-2.5 text-sm">
+
+                                    {/* Revenue */}
+                                    {data.pl.revenue.roomRevenue > 0 && (
+                                        <Row label="Room Revenue" value={fmt(data.pl.revenue.roomRevenue)} />
+                                    )}
                                     <Row label="Service Revenue" value={fmt(data.pl.revenue.serviceRevenue)} />
-                                    <div className="border-t border-gray-100 pt-3">
-                                        <Row label="COGS (F&B)" value={`(${fmt(data.pl.cogs.totalCOGS)})`} valueClass="text-red-600" />
-                                        <Row label="Salaries & Ops" value={`(${fmt(data.pl.expenses.operating)})`} valueClass="text-red-600" />
-                                        <Row label="Marketing" value={`(${fmt(data.pl.expenses.marketing)})`} valueClass="text-red-600" />
-                                        <Row label="Maintenance" value={`(${fmt(data.pl.expenses.maintenance)})`} valueClass="text-red-600" />
+
+                                    {/* Divider */}
+                                    <div className="border-t border-dashed border-gray-200 pt-2.5">
+                                        <Row
+                                            label="COGS (F&B)"
+                                            value={`(${fmt(cogs)})`}
+                                            valueClass="text-red-500 font-semibold"
+                                        />
                                     </div>
-                                    <div className="border-t-2 border-gray-200 pt-3 flex justify-between font-bold">
-                                        <span>Net Income</span>
+
+                                    {/* Net Income */}
+                                    <div className="border-t-2 border-gray-800 pt-3 flex justify-between font-bold text-base">
+                                        <span className="text-gray-800">Net Income</span>
                                         <span className={profit >= 0 ? 'text-green-600' : 'text-red-500'}>{fmt(profit)}</span>
                                     </div>
-                                    <div className="pt-2 space-y-1 text-xs text-gray-400">
+
+                                    {/* Balance Sheet Info */}
+                                    <div className="pt-3 space-y-1.5 text-xs text-gray-400 border-t border-gray-100">
                                         <div className="flex justify-between">
                                             <span>Inventory Stock Value</span>
                                             <span className="text-gray-700 font-medium">{fmt(data.bs.assets.inventoryValue)}</span>
@@ -257,12 +294,26 @@ export default function InsightsDashboardPage() {
                                             <span>Pending Payables</span>
                                             <span className="text-orange-600 font-medium">{fmt(data.bs.liabilities.accountsPayable)}</span>
                                         </div>
-                                        {data.lowStockCount > 0 && (
-                                            <div className="mt-2 bg-yellow-50 border border-yellow-200 text-yellow-700 px-3 py-1.5 rounded text-xs font-medium">
-                                                ⚠ {data.lowStockCount} item{data.lowStockCount > 1 ? 's' : ''} below minimum stock
-                                            </div>
-                                        )}
                                     </div>
+
+                                    {/* Inventory Alert */}
+                                    {data.lowStockCount > 0 && (
+                                        <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-2">
+                                            <div className="flex items-center gap-2 text-yellow-800 font-semibold text-xs">
+                                                <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500 shrink-0" />
+                                                Inventory Alert
+                                            </div>
+                                            <p className="text-xs text-yellow-700">
+                                                {data.lowStockCount} ingredient{data.lowStockCount > 1 ? 's' : ''} below minimum stock level
+                                            </p>
+                                            <Link
+                                                href="/admin/inventory"
+                                                className="inline-flex items-center text-xs font-semibold text-yellow-800 underline underline-offset-2 hover:text-yellow-900"
+                                            >
+                                                View Inventory →
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -327,8 +378,8 @@ export default function InsightsDashboardPage() {
                                         : data.topDishes.map((d, i) => (
                                             <div key={d.name} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
-                            ${i === 0 ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                    <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0
+                                                        ${i === 0 ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
                                                         {i + 1}
                                                     </span>
                                                     <span className="text-sm font-medium text-gray-800 truncate max-w-[160px]">{d.name}</span>
@@ -352,8 +403,8 @@ export default function InsightsDashboardPage() {
                                         : data.mostConsumedIngredient.map((d, i) => (
                                             <div key={d.ingredientName} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
-                            ${i === 0 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                    <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0
+                                                        ${i === 0 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
                                                         {i + 1}
                                                     </span>
                                                     <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">{d.ingredientName}</span>

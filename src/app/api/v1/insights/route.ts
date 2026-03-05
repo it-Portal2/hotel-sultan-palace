@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProfitLossStatement, getBalanceSheet } from '@/lib/financeAnalytics';
-import { getFoodOrders } from '@/lib/services/fbOrderService';
+import { getFoodOrdersByDateRange } from '@/lib/services/fbOrderService';
+import type { FoodOrder } from '@/lib/services/fbOrderService';
 import { getInventoryItems } from '@/lib/inventoryService';
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import type { Recipe } from '@/lib/firestoreService';
+import { getAdminAuth } from '@/lib/firebaseAdmin';
 
 export async function GET(req: NextRequest) {
+    // ── Authentication Guard ──────────────────────────────────────────────────
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized: missing token' }, { status: 401 });
+    }
+    const idToken = authHeader.split('Bearer ')[1];
+    try {
+        await getAdminAuth().verifyIdToken(idToken);
+    } catch {
+        return NextResponse.json({ error: 'Unauthorized: invalid or expired token' }, { status: 401 });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     try {
         const { searchParams } = new URL(req.url);
         const filter = searchParams.get('filter') || 'monthly';
@@ -19,12 +34,15 @@ export async function GET(req: NextRequest) {
         else if (filter === 'monthly') startDate.setMonth(endDate.getMonth() - 1);
         else startDate.setFullYear(endDate.getFullYear() - 1); // yearly
 
-        // Phase 1 & 2: Parallel fetch using existing services, substituting transactions with recipes
+        // Valid terminal statuses for completed/settled F&B sales
+        const validStatuses: Array<FoodOrder['status']> = ['settled', 'delivered'];
+
+        // Firestore-filtered fetch: only documents in the date range with a valid status
         const [pl, bs, foodOrders, barOrders, inventoryItems, recipesSnap] = await Promise.all([
             getProfitLossStatement(startDate, endDate),
             getBalanceSheet(),
-            getFoodOrders(undefined, 'food'),
-            getFoodOrders(undefined, 'bar'),
+            getFoodOrdersByDateRange(startDate, endDate, validStatuses, 'food'),
+            getFoodOrdersByDateRange(startDate, endDate, validStatuses, 'bar'),
             getInventoryItems(),
             getDocs(collection(db!, 'recipes'))
         ]);
@@ -36,19 +54,10 @@ export async function GET(req: NextRequest) {
         const inventoryItemMap = new Map<string, any>();
         inventoryItems.forEach(i => inventoryItemMap.set(i.id, i));
 
-        const allOrders = [...foodOrders, ...barOrders];
+        // Orders are already date+status filtered by Firestore
+        const filteredOrders = [...foodOrders, ...barOrders];
 
-        // Ensure we only count completely successful/settled sales
-        const validStatuses = ['completed', 'settled', 'delivered'];
-
-        const filteredOrders = allOrders.filter(o => {
-            if (!validStatuses.includes(o.status)) return false;
-            const t = o.createdAt instanceof Date ? o.createdAt : new Date(o.createdAt);
-            // Strict bounds check respecting timezone handling of `Date` objects
-            return t >= startDate && t <= endDate;
-        });
-
-        // Phase 5 Validation check: IF 0 orders -> 0 for all financial values
+        // If 0 F&B orders in range, F&B figures are zero but real operating expenses still apply
         if (filteredOrders.length === 0) {
             return NextResponse.json({
                 pl: {
@@ -56,8 +65,8 @@ export async function GET(req: NextRequest) {
                     revenue: { totalRevenue: 0, serviceRevenue: 0, roomRevenue: 0 },
                     cogs: { totalCOGS: 0, inventoryOrFoodCost: 0 },
                     grossProfit: 0,
-                    expenses: { totalExpenses: 0, operating: 0, marketing: 0, administrative: 0, maintenance: 0, other: 0 },
-                    netIncome: 0,
+                    expenses: pl.expenses, // real operating expenses — never overwrite with zeros
+                    netIncome: -(pl.expenses.totalExpenses),
                     marginPercent: 0
                 },
                 fbRevenue: 0,
@@ -148,7 +157,6 @@ export async function GET(req: NextRequest) {
         const lowStockCount = inventoryItems.filter(i => (i.currentStock || 0) <= (i.minStockLevel || 0)).length;
 
         return NextResponse.json({
-            // Phase 5 validation logic explicitly avoids unrelated expenses in dashboard
             pl: {
                 ...pl,
                 revenue: {
@@ -162,12 +170,9 @@ export async function GET(req: NextRequest) {
                     inventoryOrFoodCost: fbCOGS
                 },
                 grossProfit: fbProfit,
-                expenses: {
-                    totalExpenses: 0, // 0 to avoid salary/rent hitting the chart
-                    operating: 0, marketing: 0, administrative: 0, maintenance: 0, other: 0
-                },
-                netIncome: fbProfit,
-                marginPercent: fbRevenue > 0 ? (fbProfit / fbRevenue) * 100 : 0
+                expenses: pl.expenses, // real operating expenses from P&L service
+                netIncome: fbProfit - pl.expenses.totalExpenses,
+                marginPercent: fbRevenue > 0 ? ((fbProfit - pl.expenses.totalExpenses) / fbRevenue) * 100 : 0
             },
             fbRevenue,
             fbCOGS,

@@ -8,6 +8,8 @@ import {
   deleteDoc,
   query,
   orderBy,
+  where,
+  Timestamp,
   serverTimestamp,
   runTransaction,
 } from "firebase/firestore";
@@ -105,6 +107,50 @@ export const getFoodOrder = async (id: string): Promise<FoodOrder | null> => {
   } catch (e) {
     console.error("Error getting food order:", e);
     return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Date-range query — pushes filtering to Firestore (avoids full collection scan)
+// Requires a composite index on (createdAt ASC, status ASC) per collection.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getFoodOrdersByDateRange = async (
+  startDate: Date,
+  endDate: Date,
+  statusIn: FoodOrder["status"][],
+  menuType: "food" | "bar",
+): Promise<FoodOrder[]> => {
+  if (!db) return [];
+  try {
+    const colName = getCollectionName(menuType);
+    const c = collection(db, colName);
+    // Note: combining where("status", "in") with orderBy("createdAt") requires a composite
+    // Firestore index. To avoid that, we filter by date range only at the DB level and
+    // apply the status filter in-memory — still orders of magnitude faster than a full scan.
+    const qy = query(
+      c,
+      where("createdAt", ">=", Timestamp.fromDate(startDate)),
+      where("createdAt", "<=", Timestamp.fromDate(endDate)),
+      orderBy("createdAt", "desc"),
+    );
+    const snap = await getDocs(qy);
+    const statusSet = new Set(statusIn);
+    return snap.docs
+      .map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          scheduledDeliveryTime: data.scheduledDeliveryTime?.toDate(),
+          actualDeliveryTime: data.actualDeliveryTime?.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as FoodOrder;
+      })
+      .filter((o) => statusSet.has(o.status));
+  } catch (e) {
+    console.error("Error fetching food orders by date range:", e);
+    return [];
   }
 };
 

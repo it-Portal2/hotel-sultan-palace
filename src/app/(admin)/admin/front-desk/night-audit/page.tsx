@@ -6,7 +6,8 @@ import { useToast } from '@/context/ToastContext';
 import {
     getCurrentBusinessDate,
     getAuditBlockers,
-    getAuditHistory
+    getAuditHistory,
+    isAuditAlreadyRun,
 } from '@/lib/nightAuditService';
 import { performNightAudit } from '@/app/actions/nightAuditActions';
 import { getAuditLogs, AuditLogEntry, NightAuditLog } from '@/lib/firestoreService';
@@ -14,7 +15,7 @@ import {
     CalendarDaysIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 interface PreAuditBlocker {
@@ -23,50 +24,60 @@ interface PreAuditBlocker {
     count: number;
 }
 
+// Returns today's date as YYYY-MM-DD in local time (used as `max` for the date input)
+function getTodayLocalStr(): string {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function NightAuditPage() {
-    const { isReadOnly } = useAdminRole(); // Assuming role object has info, otherwise mock user
+    const { isReadOnly } = useAdminRole();
     const { showToast } = useToast();
 
-    const [currentDate, setCurrentDate] = useState<string>('');
+    // The date fetched from Firestore (business day doc)
+    const [backendDate, setBackendDate] = useState<string>('');
+    // The date the user has selected in the picker (starts equal to backendDate)
+    const [selectedDate, setSelectedDate] = useState<string>('');
+
     const [status, setStatus] = useState<string>('idle');
     const [blockers, setBlockers] = useState<PreAuditBlocker[]>([]);
+    const [alreadyAudited, setAlreadyAudited] = useState<boolean>(false);
     const [history, setHistory] = useState<NightAuditLog[]>([]);
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'status' | 'history' | 'trail'>('status');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+    const todayStr = getTodayLocalStr();
+
     useEffect(() => {
         loadData();
     }, []);
+
+    // Re-run blocker + duplicate checks whenever the selected date changes
+    useEffect(() => {
+        if (selectedDate) {
+            runDateChecks(selectedDate);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDate]);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const date = await getCurrentBusinessDate();
-            setCurrentDate(date.toISOString().split('T')[0]);
+            const dateStr = date.toISOString().split('T')[0];
+            setBackendDate(dateStr);
+            setSelectedDate(dateStr); // initialise picker to backend date
 
             const hist = await getAuditHistory();
             setHistory(hist);
 
             const logs = await getAuditLogs();
             setAuditLogs(logs);
-
-            // Check blockers
-            const auditBlockers = await getAuditBlockers(date);
-            const newBlockers: PreAuditBlocker[] = [];
-
-            if (auditBlockers.pendingArrivals > 0) {
-                newBlockers.push({ type: 'Pending Arrivals', message: 'Guests expected to arrive', count: auditBlockers.pendingArrivals });
-            }
-            if (auditBlockers.pendingDepartures > 0) {
-                newBlockers.push({ type: 'Pending Departures', message: 'Guests expected to checkout', count: auditBlockers.pendingDepartures });
-            }
-            if (auditBlockers.uncleanRooms > 0) {
-                newBlockers.push({ type: 'Unclean Rooms', message: 'Rooms status dirty/inspection', count: auditBlockers.uncleanRooms });
-            }
-            setBlockers(newBlockers);
-
         } catch (error) {
             console.error(error);
             showToast('Failed to load night audit data', 'error');
@@ -75,7 +86,45 @@ export default function NightAuditPage() {
         }
     };
 
+    // Checks blockers and duplicate-audit status for a given YYYY-MM-DD string
+    const runDateChecks = async (dateStr: string) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+        const [auditBlockers, audited] = await Promise.all([
+            getAuditBlockers(dateObj),
+            isAuditAlreadyRun(dateStr),
+        ]);
+
+        const newBlockers: PreAuditBlocker[] = [];
+        if (auditBlockers.pendingArrivals > 0) {
+            newBlockers.push({ type: 'Pending Arrivals', message: 'Guests expected to arrive', count: auditBlockers.pendingArrivals });
+        }
+        if (auditBlockers.pendingDepartures > 0) {
+            newBlockers.push({ type: 'Pending Departures', message: 'Guests expected to checkout', count: auditBlockers.pendingDepartures });
+        }
+        if (auditBlockers.uncleanRooms > 0) {
+            newBlockers.push({ type: 'Unclean Rooms', message: 'Rooms status dirty/inspection', count: auditBlockers.uncleanRooms });
+        }
+        setBlockers(newBlockers);
+        setAlreadyAudited(audited);
+    };
+
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value; // YYYY-MM-DD
+        if (!val) return;
+        setSelectedDate(val);
+    };
+
     const handleRunAudit = () => {
+        if (selectedDate > todayStr) {
+            showToast('Cannot run audit for a future date.', 'error');
+            return;
+        }
+        if (alreadyAudited) {
+            showToast('Night Audit already completed for this date.', 'error');
+            return;
+        }
         if (blockers.length > 0) {
             showToast('Cannot run audit. Resolve blockers first.', 'error');
             return;
@@ -87,18 +136,30 @@ export default function NightAuditPage() {
         setShowConfirmModal(false);
         setStatus('running');
         try {
-            // Mock staff info or get from auth context if available
             const staffId = 'admin';
             const staffName = 'Main Admin';
 
-            const resultId = await performNightAudit(staffId, staffName);
+            const result = await performNightAudit(staffId, staffName, selectedDate);
 
-            if (resultId) {
-                showToast('Night Audit completed successfully', 'success');
-                loadData();
-            } else {
+            if (!result) {
                 showToast('Night Audit failed. Check console.', 'error');
+                return;
             }
+
+            if ('error' in result) {
+                if (result.error === 'future_date') {
+                    showToast('Cannot run audit for a future date.', 'error');
+                } else if (result.error === 'already_audited') {
+                    showToast('Night Audit already completed for this date.', 'error');
+                    setAlreadyAudited(true);
+                } else {
+                    showToast('Night Audit failed. Check console.', 'error');
+                }
+                return;
+            }
+
+            showToast('Night Audit completed successfully', 'success');
+            loadData();
         } catch (error) {
             console.error(error);
             showToast('Error running night audit', 'error');
@@ -107,13 +168,44 @@ export default function NightAuditPage() {
         }
     };
 
+    const isRunDisabled =
+        status === 'running' ||
+        blockers.length > 0 ||
+        alreadyAudited ||
+        selectedDate > todayStr ||
+        isReadOnly;
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
+            {/* ── Header ─────────────────────────────────────────────────── */}
+            <div className="flex justify-between items-center flex-wrap gap-4">
+                <div className="flex flex-col gap-1">
                     <h1 className="text-2xl font-bold text-gray-900">Night Audit</h1>
-                    <p className="text-gray-500">Business Date: {currentDate}</p>
+                    {/* Calendar Date Picker */}
+                    <div className="flex items-center gap-2 text-gray-600">
+                        <span className="text-sm font-medium">Business Date:</span>
+                        <div className="relative flex items-center">
+                            <input
+                                type="date"
+                                id="night-audit-date-picker"
+                                value={selectedDate}
+                                max={todayStr}
+                                onChange={handleDateChange}
+                                disabled={loading || status === 'running'}
+                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 bg-white shadow-sm
+                                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                           disabled:bg-gray-100 disabled:cursor-not-allowed
+                                           cursor-pointer"
+                            />
+                        </div>
+                        {backendDate && selectedDate !== backendDate && (
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                                ≠ Current business day ({backendDate})
+                            </span>
+                        )}
+                    </div>
                 </div>
+
                 <div className="flex gap-2">
                     <button
                         onClick={() => setActiveTab('status')}
@@ -136,14 +228,46 @@ export default function NightAuditPage() {
                 </div>
             </div>
 
+            {/* ── Current Status Tab ─────────────────────────────────────── */}
             {activeTab === 'status' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Pre-Audit Check Panel */}
                     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                         <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />
                             Pre-Audit Check
                         </h2>
-                        {blockers.length === 0 ? (
+
+                        {/* Info rows */}
+                        <div className="mb-4 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="text-gray-500 w-40 shrink-0">Selected Business Date:</span>
+                                <span className="font-semibold text-gray-800">{selectedDate || '—'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="text-gray-500 w-40 shrink-0">Audit Status:</span>
+                                {alreadyAudited ? (
+                                    <span className="flex items-center gap-1 text-amber-600 font-semibold">
+                                        <ExclamationTriangleIcon className="h-4 w-4" />
+                                        Already audited for this date
+                                    </span>
+                                ) : selectedDate > todayStr ? (
+                                    <span className="text-red-600 font-semibold">Future date — not allowed</span>
+                                ) : (
+                                    <span className="text-gray-600">Not yet audited</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Blockers / Ready banner */}
+                        {alreadyAudited ? (
+                            <div className="text-amber-700 flex items-center gap-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
+                                <ExclamationTriangleIcon className="h-6 w-6 shrink-0" />
+                                <span className="font-medium">
+                                    Night Audit already completed for {selectedDate}. Select a different date.
+                                </span>
+                            </div>
+                        ) : blockers.length === 0 && selectedDate <= todayStr ? (
                             <div className="text-green-600 flex items-center gap-2 bg-green-50 p-4 rounded-lg">
                                 <CheckCircleIcon className="h-6 w-6" />
                                 <span className="font-medium">All checks passed. Ready to run audit.</span>
@@ -163,18 +287,20 @@ export default function NightAuditPage() {
                         )}
                     </div>
 
+                    {/* Run Audit Panel */}
                     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-center items-center text-center">
                         <CalendarDaysIcon className="h-16 w-16 text-blue-600 mb-4" />
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Run Night Audit</h3>
                         <p className="text-gray-500 mb-6 max-w-sm">
-                            This process will close the current business date ({currentDate}) and roll over to the next day.
-                            Ensure all transactions are posted.
+                            This process will close the business date{' '}
+                            <span className="font-semibold text-gray-700">({selectedDate})</span> and roll over to
+                            the next day. Ensure all transactions are posted.
                         </p>
                         <button
                             onClick={handleRunAudit}
-                            disabled={status === 'running' || blockers.length > 0 || isReadOnly}
+                            disabled={isRunDisabled}
                             className={`px-8 py-3 rounded-lg text-white font-bold flex items-center gap-2 shadow-lg transition-all
-                                ${status === 'running' || blockers.length > 0 || isReadOnly
+                                ${isRunDisabled
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'}`}
                         >
@@ -191,6 +317,7 @@ export default function NightAuditPage() {
                 </div>
             )}
 
+            {/* ── Audit History Tab ──────────────────────────────────────── */}
             {activeTab === 'history' && (
                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -251,9 +378,9 @@ export default function NightAuditPage() {
                 </div>
             )}
 
+            {/* ── Audit Trail Tab ────────────────────────────────────────── */}
             {activeTab === 'trail' && (
                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Filter Header similar to screenshot */}
                     <div className="p-4 bg-gray-50 border-b flex gap-4 overflow-x-auto">
                         <select className="text-sm border-gray-300 rounded"><option>All Users</option></select>
                         <select className="text-sm border-gray-300 rounded"><option>All Actions</option></select>
@@ -263,7 +390,7 @@ export default function NightAuditPage() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-100 text-gray-700">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">Date & Time</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold uppercase">Date &amp; Time</th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase">Logs</th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase">User</th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase">IP</th>
@@ -293,7 +420,7 @@ export default function NightAuditPage() {
                                             {log.user || 'System'}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">
-                                            {log.ip || '192.168.1.1'} {/* Mock IP if missing */}
+                                            {log.ip || '192.168.1.1'}
                                         </td>
                                     </tr>
                                 ))
@@ -302,7 +429,8 @@ export default function NightAuditPage() {
                     </table>
                 </div>
             )}
-            {/* Confirmation Modal */}
+
+            {/* ── Confirmation Modal ─────────────────────────────────────── */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)}></div>
@@ -313,7 +441,9 @@ export default function NightAuditPage() {
                             </div>
                             <h3 className="text-lg font-bold text-gray-900 mb-2">Run Night Audit?</h3>
                             <p className="text-gray-500 text-sm mb-6">
-                                This action will close the current business date ({currentDate}) and roll over to the next day.
+                                This action will close the business date{' '}
+                                <span className="font-semibold text-gray-700">({selectedDate})</span> and roll over
+                                to the next day.
                                 <br /><br />
                                 <span className="font-semibold text-gray-700">This action cannot be undone.</span>
                             </p>

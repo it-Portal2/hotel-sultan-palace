@@ -124,6 +124,31 @@ export const getAuditBlockers = async (businessDate: Date): Promise<AuditBlocker
 
 // performNightAudit moved to src/app/actions/nightAuditActions.ts
 
+// Check if an audit already exists for a specific date string (YYYY-MM-DD, local time)
+export const isAuditAlreadyRun = async (dateStr: string): Promise<boolean> => {
+    if (!db) return false;
+    try {
+        const logsRef = collection(db, 'nightAuditLogs');
+        const snap = await getDocs(logsRef);
+        return snap.docs.some(d => {
+            const data = d.data();
+            const logDate: Date | undefined = data.date?.toDate?.();
+            if (!logDate) return false;
+            // Use local date parts to avoid UTC midnight shift (IST = UTC+5:30)
+            const yyyy = logDate.getFullYear();
+            const mm = String(logDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(logDate.getDate()).padStart(2, '0');
+            const logDateStr = `${yyyy}-${mm}-${dd}`;
+            return (
+                logDateStr === dateStr &&
+                (data.status === 'completed' || data.status === 'completed_with_warnings')
+            );
+        });
+    } catch {
+        return false;
+    }
+};
+
 export const getAuditHistory = async (): Promise<NightAuditLog[]> => {
     if (!db) return [];
     try {
