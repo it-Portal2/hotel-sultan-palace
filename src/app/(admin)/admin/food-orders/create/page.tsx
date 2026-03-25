@@ -381,7 +381,7 @@ export default function POSCreatePage() {
       errors.guestName = "Guest name required (min 2 chars)";
     }
 
-    if (!guestEmail.trim() || !isValidEmail(guestEmail.trim())) {
+    if (guestEmail.trim() && !isValidEmail(guestEmail.trim())) {
       errors.guestEmail = "Valid email address required";
     }
 

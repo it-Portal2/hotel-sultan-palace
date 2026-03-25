@@ -909,7 +909,7 @@ export function POSCart({
             {/* Email Field */}
             <div className="space-y-1">
               <label className="block text-xs font-medium text-gray-700">
-                Guest Contact (Email) <span className="text-red-500">*</span>
+                Guest Contact (Email)
               </label>
               <input
                 type="email"

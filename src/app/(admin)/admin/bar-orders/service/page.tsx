@@ -191,6 +191,18 @@ export default function BarOrdersServicePage() {
     }
   };
 
+  const handleBarPrint = async (orderId: string) => {
+    try {
+      await updateFoodOrder(orderId, {
+        barPrintRequested: true,
+      } as any);
+      showToast("Print request sent to bar printer", "success");
+    } catch (error) {
+      console.error("Error requesting bar print:", error);
+      showToast("Failed to send bar print request", "error");
+    }
+  };
+
   // Filter & search
   const filteredOrders = useMemo(() => {
     let filtered = orders.filter((o) =>
@@ -576,6 +588,7 @@ export default function BarOrdersServicePage() {
           isReadOnly={isReadOnly}
           onReprint={handleReprint}
           onKitchenPrint={handleKitchenPrint}
+          onBarPrint={handleBarPrint}
         />
       )}
     </div>

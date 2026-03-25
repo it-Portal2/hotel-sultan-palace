@@ -411,6 +411,7 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
 
             <InventoryModal
                 item={editingItem}
+                allItems={items}
                 isOpen={showModal}
                 onClose={() => {
                     setShowModal(false);
