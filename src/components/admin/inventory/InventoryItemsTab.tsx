@@ -5,7 +5,7 @@ import InventoryModal from './InventoryModal';
 import CategoryManager from './CategoryManager';
 import DepartmentManager from './DepartmentManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon, BoltIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
@@ -29,6 +29,13 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [categories, setCategories] = useState<InventoryCategory[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterCategory, filterDepartment, filterExpiry]);
 
     useEffect(() => {
         loadCategories();
@@ -148,6 +155,9 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
 
         return matchesSearch && matchesCategory && matchesDepartment && matchesExpiry;
     });
+
+    const paginatedItems = filteredItems.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1;
 
     // Combine static 'All' with dynamic categories
     const displayCategories = [
@@ -318,7 +328,7 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredItems.map((item) => {
+                                    paginatedItems.map((item) => {
                                         const status = getStockStatus(item);
                                         return (
                                             <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
@@ -450,14 +460,13 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                         </table>
                     </div>
 
-                    {/* Mobile Card List */}
-                    <div className="md:hidden space-y-3 p-4 pb-20 overflow-y-auto">
-                        {filteredItems.length === 0 ? (
+                    <div className="md:hidden space-y-3 p-4 overflow-y-auto">
+                        {paginatedItems.length === 0 ? (
                             <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                                 <p>No items found.</p>
                             </div>
                         ) : (
-                            filteredItems.map(item => {
+                            paginatedItems.map(item => {
                                 const status = getStockStatus(item);
                                 const statusColor = getStockColor(status);
                                 return (
@@ -562,6 +571,35 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                             })
                         )}
                     </div>
+                    
+                    {/* Pagination Footer */}
+                    {totalPages > 1 && (
+                        <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                            <p className="text-sm text-gray-500">
+                                Showing <span className="font-medium">{currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1}</span> to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}
+                                </span>{' '}
+                                of <span className="font-medium">{filteredItems.length}</span> results
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                                >
+                                    <ChevronLeftIcon className="w-4 h-4 mr-1" /> Prev
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                                >
+                                    Next <ChevronRightIcon className="w-4 h-4 ml-1" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

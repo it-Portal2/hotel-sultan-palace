@@ -1060,16 +1060,155 @@ export const transferStock = async (
     });
 };
 
+// ==================== BULK TRANSFER STOCK ====================
+
+export interface BulkTransferItem {
+    itemId: string;
+    fromLocationId: string;
+    toLocationId: string;
+    quantity: number;
+}
+
+export const transferStockBulk = async (
+    items: BulkTransferItem[],
+    performedBy: string,
+    notes?: string
+): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    if (items.length === 0) throw new Error("No items to transfer");
+
+    const firestore = db;
+    const batchId = `bulk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    // Fetch departments to map slugs to names
+    const departments = await getInventoryDepartments();
+    const deptMap = new Map<string, string>();
+    departments.forEach(d => deptMap.set(d.slug, d.name));
+
+    await runTransaction(firestore, async (transaction) => {
+        // === READS PHASE: Read all inventory docs first ===
+        const itemRefs = items.map(i => doc(firestore, 'inventory', i.itemId));
+        const itemSnaps = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
+
+        // Build a map for easy lookup
+        const invDataMap = new Map<string, InventoryItem>();
+        for (let i = 0; i < items.length; i++) {
+            const snap = itemSnaps[i];
+            if (!snap.exists()) {
+                throw new Error(`Item not found: ${items[i].itemId}`);
+            }
+            invDataMap.set(items[i].itemId, snap.data() as InventoryItem);
+        }
+
+        // === VALIDATION: Check each item's source stock ===
+        for (const transfer of items) {
+            const inv = invDataMap.get(transfer.itemId)!;
+            const stockMap = inv.stockByLocation || {};
+            const sourceStock = stockMap[transfer.fromLocationId] || 0;
+            if (sourceStock < transfer.quantity) {
+                throw new Error(
+                    `Insufficient stock for "${inv.name}". Available at source: ${sourceStock}, requested: ${transfer.quantity}`
+                );
+            }
+        }
+
+        // === WRITES PHASE: Update stock maps and log transactions ===
+        for (let i = 0; i < items.length; i++) {
+            const transfer = items[i];
+            const inv = invDataMap.get(transfer.itemId)!;
+            const itemRef = itemRefs[i];
+
+            const stockMap = { ...(inv.stockByLocation || {}) };
+            const sourceStock = stockMap[transfer.fromLocationId] || 0;
+            const destStock = stockMap[transfer.toLocationId] || 0;
+
+            stockMap[transfer.fromLocationId] = sourceStock - transfer.quantity;
+            stockMap[transfer.toLocationId] = destStock + transfer.quantity;
+
+            transaction.update(itemRef, {
+                stockByLocation: stockMap,
+                updatedAt: serverTimestamp()
+            });
+
+            // Log transfer_out
+            const transRefOut = doc(collection(firestore, 'inventoryTransactions'));
+            transaction.set(transRefOut, {
+                inventoryItemId: transfer.itemId,
+                itemName: inv.name,
+                transactionType: 'transfer_out',
+                quantity: -transfer.quantity,
+                unit: inv.unit || '',
+                unitCost: inv.unitCost || 0,
+                totalCost: (inv.unitCost || 0) * transfer.quantity,
+                previousStock: sourceStock,
+                newStock: stockMap[transfer.fromLocationId],
+                locationId: transfer.fromLocationId,
+                batchId,
+                reason: notes 
+                    ? `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId} — ${notes}` 
+                    : `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId}`,
+                performedBy,
+                createdAt: serverTimestamp()
+            });
+
+            // Log transfer_in
+            const transRefIn = doc(collection(firestore, 'inventoryTransactions'));
+            transaction.set(transRefIn, {
+                inventoryItemId: transfer.itemId,
+                itemName: inv.name,
+                transactionType: 'transfer_in',
+                quantity: transfer.quantity,
+                unit: inv.unit || '',
+                unitCost: inv.unitCost || 0,
+                totalCost: (inv.unitCost || 0) * transfer.quantity,
+                previousStock: destStock,
+                newStock: stockMap[transfer.toLocationId],
+                locationId: transfer.toLocationId,
+                batchId,
+                reason: notes 
+                    ? `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId} — ${notes}` 
+                    : `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}`,
+                performedBy,
+                createdAt: serverTimestamp()
+            });
+        }
+    });
+};
+
 export const getInventoryTransactions = async (): Promise<InventoryTransaction[]> => {
     if (!db) return [];
     try {
         const q = query(collection(db, 'inventoryTransactions'), orderBy('createdAt', 'desc'), limit(100));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({
+        const txData = snap.docs.map(d => ({
             id: d.id,
             ...d.data(),
             createdAt: d.data().createdAt?.toDate() || new Date()
         } as InventoryTransaction));
+
+        // Refined sort to handle identical timestamps (bulk operations)
+        return txData.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+
+            // 1. Primary: Time (Descending)
+            if (timeB !== timeA) return timeB - timeA;
+
+            // 2. Secondary: Batch & Item Grouping
+            if (a.batchId && b.batchId && a.batchId !== b.batchId) {
+                return a.batchId.localeCompare(b.batchId);
+            }
+            if (a.inventoryItemId !== b.inventoryItemId) {
+                return a.inventoryItemId.localeCompare(b.inventoryItemId);
+            }
+
+            // 3. Tertiary: In descending list, Addition (In) stays on top of Deduction (Out)
+            // so the visual flow (bottom-up) is Out -> In.
+            if (a.transactionType === 'transfer_in' && b.transactionType === 'transfer_out') return -1;
+            if (a.transactionType === 'transfer_out' && b.transactionType === 'transfer_in') return 1;
+
+            return 0;
+        });
     } catch (e) {
         console.error(e);
         return [];

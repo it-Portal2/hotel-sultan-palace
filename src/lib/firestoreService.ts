@@ -969,14 +969,17 @@ export interface InventoryTransaction {
   | "sales_deduction";
 
   quantity: number; // Positive for add, Negative for reduce
+  unit?: string;
   unitCost: number;
   totalCost: number;
 
   previousStock: number;
   newStock: number;
+  locationId?: string;
 
   reason?: string;
   referenceId?: string; // Link to PO, Order, or Adjustment ID
+  batchId?: string;     // Group bulk transactions (e.g., Bulk Transfer)
 
   performedBy: string; // Staff member
   createdAt: Date;
