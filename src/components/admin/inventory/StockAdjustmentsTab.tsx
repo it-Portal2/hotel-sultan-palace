@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastContext';
-import { createStockAdjustment, getInventoryDepartments, getInventoryLocations } from '@/lib/inventoryService';
-import type { InventoryItem, InventoryDepartment, Department, InventoryLocation } from '@/lib/firestoreService';
+import { createStockAdjustment, getInventoryDepartments } from '@/lib/inventoryService';
+import type { InventoryItem, Department } from '@/lib/firestoreService';
 import {
     ArrowPathIcon,
     ClipboardDocumentCheckIcon,
@@ -11,7 +11,6 @@ import {
     TrashIcon,
     ArrowDownTrayIcon,
     ArrowUpTrayIcon,
-
     WrenchScrewdriverIcon,
     CheckCircleIcon
 } from '@heroicons/react/24/outline';
@@ -27,7 +26,6 @@ export default function StockAdjustmentsTab({ initialItems, onRefresh }: StockAd
     const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [locations, setLocations] = useState<InventoryLocation[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -37,15 +35,8 @@ export default function StockAdjustmentsTab({ initialItems, onRefresh }: StockAd
     const loadData = async () => {
         setLoading(true);
         try {
-            // We use initialItems if provided (passed from parent), otherwise we would fetch
-            // But here the parent passes everything.
-            // However, we need DEPARTMENTS and LOCATIONS.
-            const [depts, locs] = await Promise.all([
-                getInventoryDepartments(),
-                getInventoryLocations()
-            ]);
+            const depts = await getInventoryDepartments();
             setDepartments(depts);
-            setLocations(locs);
 
             if (initialItems) {
                 setItems(initialItems);
@@ -91,9 +82,9 @@ export default function StockAdjustmentsTab({ initialItems, onRefresh }: StockAd
             </div>
 
             {activeTab === 'single' ? (
-                <SingleAdjustmentForm items={items} departments={departments} locations={locations} onRefresh={onRefresh} setLoading={setLoading} loading={loading} showToast={showToast} />
+                <SingleAdjustmentForm items={items} departments={departments} onRefresh={onRefresh} setLoading={setLoading} loading={loading} showToast={showToast} />
             ) : (
-                <BulkStockTakeForm items={items} departments={departments} locations={locations} onRefresh={onRefresh} setLoading={setLoading} loading={loading} showToast={showToast} />
+                <BulkStockTakeForm items={items} departments={departments} onRefresh={onRefresh} setLoading={setLoading} loading={loading} showToast={showToast} />
             )}
         </div>
     );
@@ -104,7 +95,6 @@ export default function StockAdjustmentsTab({ initialItems, onRefresh }: StockAd
 interface AdjustmentFormProps {
     items: InventoryItem[];
     departments: Department[];
-    locations: InventoryLocation[];
     onRefresh: () => void;
     setLoading: (loading: boolean) => void;
     loading: boolean;
@@ -113,7 +103,7 @@ interface AdjustmentFormProps {
 
 // ==================== SINGLE ADJUSTMENT FORM (Redesigned) ====================
 
-function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoading, loading, showToast }: AdjustmentFormProps) {
+function SingleAdjustmentForm({ items, departments, onRefresh, setLoading, loading, showToast }: AdjustmentFormProps) {
     const [formData, setFormData] = useState({
         itemId: '',
         quantity: 0,
@@ -124,17 +114,12 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
     });
 
     useEffect(() => {
-        // Only default if not set
-        if (departments.length > 0 && !formData.department) {
-            // Optional: Don't auto-select department to allow seeing "All Items" initially
-            // setFormData(prev => ({ ...prev, department: departments[0].name }));
-        }
         // Default location to Main Store or first available
-        if (locations.length > 0 && !formData.locationId) {
-            const store = locations.find(l => l.type === 'store');
-            setFormData(prev => ({ ...prev, locationId: store?.id || locations[0].id }));
+        if (departments.length > 0 && !formData.locationId) {
+            const store = departments.find(d => d.slug === 'main_store');
+            setFormData(prev => ({ ...prev, locationId: store?.slug || departments[0].slug }));
         }
-    }, [departments, locations, formData.department, formData.locationId]);
+    }, [departments, formData.locationId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -163,7 +148,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                 type: 'usage',
                 reason: '',
                 department: '', // Reset to empty to show all items
-                locationId: locations.length > 0 ? (locations.find(l => l.type === 'store')?.id || locations[0].id) : ''
+                locationId: departments.length > 0 ? (departments.find(d => d.slug === 'main_store')?.slug || departments[0].slug) : ''
             });
             onRefresh();
             onRefresh();
@@ -257,9 +242,9 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] bg-white transition-all shadow-sm"
                                 >
                                     <option value="">-- Choose Location --</option>
-                                    {locations.map(loc => (
-                                        <option key={loc.id} value={loc.id}>
-                                            {loc.name} ({loc.type})
+                                    {departments.map(dept => (
+                                        <option key={dept.id} value={dept.slug}>
+                                            {dept.name}
                                         </option>
                                     ))}
                                 </select>
@@ -361,7 +346,7 @@ function SingleAdjustmentForm({ items, departments, locations, onRefresh, setLoa
 
 // ==================== BULK STOCK TAKE FORM ====================
 
-function BulkStockTakeForm({ items, departments, locations, onRefresh, setLoading, loading, showToast }: AdjustmentFormProps) {
+function BulkStockTakeForm({ items, departments, onRefresh, setLoading, loading, showToast }: AdjustmentFormProps) {
     const [started, setStarted] = useState(false);
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [notes, setNotes] = useState('');
@@ -454,9 +439,9 @@ function BulkStockTakeForm({ items, departments, locations, onRefresh, setLoadin
                         onChange={(e) => setFilterLocation(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FF6A00] bg-white transition-all hover:border-gray-400"
                     >
-                        <option value="">-- Select Location (Optional) --</option>
-                        {locations.map((loc) => (
-                            <option key={loc.id} value={loc.id}>{loc.name}</option>
+                        <option value="">-- Select Target Dept (Required) --</option>
+                        {departments.map((dept) => (
+                            <option key={dept.id} value={dept.slug}>{dept.name}</option>
                         ))}
                     </select>
 
@@ -521,7 +506,7 @@ function BulkStockTakeForm({ items, departments, locations, onRefresh, setLoadin
                                     <td className="px-6 py-3 text-center text-gray-500">
                                         {/* Show Stock for Selected Location if possible, else global */}
                                         {filterLocation && item.stockByLocation ? (item.stockByLocation[filterLocation] || 0) : item.currentStock} {item.unit}
-                                        {filterLocation && <div className="text-[10px] text-gray-400">at location</div>}
+                                        {filterLocation && <div className="text-[10px] text-gray-400">at depart</div>}
                                     </td>
                                     <td className="px-6 py-3 text-center">
                                         <div className="flex justify-center items-center gap-2">

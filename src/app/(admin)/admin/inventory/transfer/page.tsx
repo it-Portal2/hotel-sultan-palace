@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     getInventoryItems,
-    getInventoryLocations,
-    transferStock,
-    InventoryItem,
-    InventoryLocation
+    getInventoryDepartments,
+    transferStock
 } from '@/lib/inventoryService';
+import { InventoryItem, Department } from '@/lib/firestoreService';
 import { useToast } from '@/context/ToastContext';
 import {
     ArrowsRightLeftIcon,
@@ -22,7 +21,7 @@ export default function TransferStockPage() {
     const { showToast } = useToast();
 
     const [items, setItems] = useState<InventoryItem[]>([]);
-    const [locations, setLocations] = useState<InventoryLocation[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
@@ -36,19 +35,22 @@ export default function TransferStockPage() {
     useEffect(() => {
         async function loadData() {
             try {
-                const [itemsData, locsData] = await Promise.all([
+                const [itemsData, deptsData] = await Promise.all([
                     getInventoryItems(),
-                    getInventoryLocations()
+                    getInventoryDepartments()
                 ]);
                 setItems(itemsData.filter(i => i.isActive));
-                setLocations(locsData);
+                setDepartments(deptsData);
 
                 // Set Defaults
-                const store = locsData.find(l => l.type === 'store')?.id;
-                const kitchen = locsData.find(l => l.type === 'kitchen' || l.type === 'outlet')?.id;
+                const mainStore = deptsData.find(d => d.slug === 'main_store')?.slug;
+                const kitchen = deptsData.find(d => d.slug === 'kitchen_bar')?.slug;
 
-                if (store) setFromLocation(store); // Default Source: Main Store
-                if (kitchen) setToLocation(kitchen); // Default Dest: Kitchen/Outlet
+                if (mainStore) setFromLocation(mainStore);
+                else if (deptsData.length > 0) setFromLocation(deptsData[0].slug);
+
+                if (kitchen) setToLocation(kitchen);
+                else if (deptsData.length > 1) setToLocation(deptsData[1].slug);
 
             } catch (error) {
                 console.error("Failed to load inventory data", error);
@@ -147,8 +149,8 @@ export default function TransferStockPage() {
                                         className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] transition-all outline-none font-medium text-gray-900"
                                     >
                                         <option value="" disabled>Select Source</option>
-                                        {locations.map(loc => (
-                                            <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.id} value={dept.slug}>{dept.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -165,8 +167,8 @@ export default function TransferStockPage() {
                                         className="w-full pl-10 pr-4 py-3 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium text-gray-900"
                                     >
                                         <option value="" disabled>Select Destination</option>
-                                        {locations.map(loc => (
-                                            <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.id} value={dept.slug}>{dept.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -196,8 +198,8 @@ export default function TransferStockPage() {
                                 </div>
                                 {/* Stock Warning / Info */}
                                 {selectedItemId && (
-                                    <div className={`text-sm flex justify-between items-center px-3 py-2 rounded-lg ${currentStockAtSource < quantity ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
-                                        <span>Available at <strong>Source ({locations.find(l => l.id === fromLocation)?.name})</strong>:</span>
+                                <div className={`text-sm flex justify-between items-center px-3 py-2 rounded-lg ${currentStockAtSource < quantity ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                                        <span>Available at <strong>Source ({departments.find(d => d.slug === fromLocation)?.name})</strong>:</span>
                                         <span className="font-bold text-lg">{currentStockAtSource} {selectedItem?.unit}</span>
                                     </div>
                                 )}

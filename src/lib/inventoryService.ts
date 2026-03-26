@@ -78,7 +78,9 @@ export const getInventoryDepartments = async (): Promise<Department[]> => {
     try {
         const q = query(collection(db, 'inventoryDepartments'), orderBy('name', 'asc'));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Department));
+        return snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as Department))
+            .filter(d => !d.isDeleted);
     } catch (e) {
         console.error("Error fetching departments:", e);
         return [];
@@ -91,6 +93,7 @@ export const createInventoryDepartment = async (name: string): Promise<string> =
     const docRef = await addDoc(collection(db, 'inventoryDepartments'), {
         name,
         slug,
+        isDeleted: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     });
@@ -99,12 +102,30 @@ export const createInventoryDepartment = async (name: string): Promise<string> =
 
 export const deleteInventoryDepartment = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
-    await deleteDoc(doc(db, 'inventoryDepartments', id));
+    const docRef = doc(db, 'inventoryDepartments', id);
+    await updateDoc(docRef, { 
+        isDeleted: true,
+        updatedAt: serverTimestamp()
+    });
+};
+
+export const updateInventoryDepartment = async (id: string, name: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'inventoryDepartments', id);
+    await updateDoc(docRef, { 
+        name,
+        updatedAt: serverTimestamp()
+    });
 };
 
 export const seedDefaultDepartments = async (): Promise<void> => {
+    if (!db) return;
     const defaults = ["Kitchen", "Bar", "Housekeeping", "Front Office", "Maintenance", "Spa", "Other"];
-    const existing = await getInventoryDepartments();
+    
+    // Fetch ALL departments (even deleted ones) for seeding check to avoid recreating intentionally deleted defaults
+    const q = query(collection(db, 'inventoryDepartments'));
+    const snap = await getDocs(q);
+    const existing = snap.docs.map(d => ({ id: d.id, ...d.data() } as Department));
     const existingNames = new Set(existing.map(d => d.name));
 
     const toCreate = defaults.filter(d => !existingNames.has(d));
@@ -742,9 +763,9 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                 let targetLocation = 'main_store';
                 const station = item.station || 'kitchen';
                 if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
-                    targetLocation = 'bar';
-                } else {
-                    targetLocation = 'kitchen';
+                    targetLocation = 'beach_bar';
+                } else if (station === 'kitchen') {
+                    targetLocation = 'kitchen_bar';
                 }
 
                 const currentLocationStock = (currentInv.stockByLocation && currentInv.stockByLocation[targetLocation])

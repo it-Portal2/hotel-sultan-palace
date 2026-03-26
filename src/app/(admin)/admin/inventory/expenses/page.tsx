@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     getSuppliers,
-    getInventoryLocations,
+    getInventoryDepartments,
     createPurchaseOrder,
     receivePurchaseOrder,
     getInventoryItems
 } from '@/lib/inventoryService';
 import {
     Supplier,
-    InventoryLocation,
+    Department,
     InventoryItem,
     PurchaseOrder
 } from '@/lib/firestoreService';
@@ -40,7 +40,7 @@ export default function DirectExpensePage() {
 
     // Data
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [locations, setLocations] = useState<InventoryLocation[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -59,18 +59,18 @@ export default function DirectExpensePage() {
 
     const loadData = async () => {
         try {
-            const [supData, locData, invData] = await Promise.all([
+            const [supData, deptsData, invData] = await Promise.all([
                 getSuppliers(),
-                getInventoryLocations(),
+                getInventoryDepartments(),
                 getInventoryItems()
             ]);
             setSuppliers(supData);
-            setLocations(locData);
+            setDepartments(deptsData);
             setInventoryItems(invData);
 
             // Set default location if Main Store exists
-            const mainStore = locData.find(l => l.name === 'Main Store');
-            if (mainStore) setLocationId(mainStore.id);
+            const mainStore = deptsData.find(d => d.slug === 'main_store');
+            if (mainStore) setLocationId(mainStore.slug);
 
         } catch (error) {
             console.error(error);
@@ -243,8 +243,8 @@ export default function DirectExpensePage() {
                                 onChange={e => setLocationId(e.target.value)}
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500"
                             >
-                                <option value="">Select Location...</option>
-                                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                <option value="">Select Department...</option>
+                                {departments.map(d => <option key={d.id} value={d.slug}>{d.name}</option>)}
                             </select>
                             <p className="text-[10px] text-gray-400 mt-1">Where are these items going?</p>
                         </div>

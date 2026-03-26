@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PurchaseOrder } from '@/lib/firestoreService';
-import { receivePurchaseOrder, getInventoryLocations, InventoryLocation } from '@/lib/inventoryService';
+import { receivePurchaseOrder, getInventoryDepartments } from '@/lib/inventoryService';
+import { Department } from '@/lib/firestoreService';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { XMarkIcon, ExclamationTriangleIcon, PhotoIcon, BuildingStorefrontIcon } from '@heroicons/react/24/outline';
@@ -40,7 +41,7 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
     const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
     const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
 
-    const [locations, setLocations] = useState<InventoryLocation[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [targetLocation, setTargetLocation] = useState<string>('');
 
     const [items, setItems] = useState<ItemReceiveRow[]>([]);
@@ -49,12 +50,12 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
 
     useEffect(() => {
         if (isOpen) {
-            getInventoryLocations().then(locs => {
-                setLocations(locs);
-                // Default to first 'store'
-                const store = locs.find(l => l.type === 'store');
-                if (store) setTargetLocation(store.id);
-                else if (locs.length > 0) setTargetLocation(locs[0].id);
+            getInventoryDepartments().then(depts => {
+                setDepartments(depts);
+                // Default to 'main_store'
+                const mainStore = depts.find(d => d.slug === 'main_store');
+                if (mainStore) setTargetLocation(mainStore.slug);
+                else if (depts.length > 0) setTargetLocation(depts[0].slug);
             });
         }
         if (isOpen && po) {
@@ -238,40 +239,20 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                     {/* 2. Location Selector */}
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <label className="block text-sm font-bold text-gray-900 mb-2">Received At (Location)</label>
-                        <div className="relative flex gap-2">
-                            <div className="relative flex-1">
-                                <BuildingStorefrontIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <select
-                                    value={targetLocation}
-                                    onChange={(e) => setTargetLocation(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] outline-none transition-all"
-                                >
-                                    <option value="" disabled>Select Location</option>
-                                    {locations.map(loc => (
-                                        <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
-                                    ))}
-                                </select>
-                            </div>
-                            {locations.length === 0 && (
-                                <button
-                                    onClick={async () => {
-                                        setSubmitting(true);
-                                        const { seedDefaultLocations } = await import('@/lib/inventoryService');
-                                        await seedDefaultLocations();
-                                        const locs = await getInventoryLocations();
-                                        setLocations(locs);
-                                        if (locs.length > 0) setTargetLocation(locs[0].id);
-                                        setSubmitting(false);
-                                        showToast("Default locations created", "success");
-                                    }}
-                                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold whitespace-nowrap hover:bg-blue-200"
-                                    type="button"
-                                >
-                                    Initialize Defaults
-                                </button>
-                            )}
+                        <div className="relative">
+                            <BuildingStorefrontIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <select
+                                value={targetLocation}
+                                onChange={(e) => setTargetLocation(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:border-[#FF6A00] outline-none transition-all"
+                            >
+                                <option value="" disabled>Select Location</option>
+                                {departments.map(dept => (
+                                    <option key={dept.id} value={dept.slug}>{dept.name}</option>
+                                ))}
+                            </select>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Stock will be added to this location.</p>
+                        <p className="text-xs text-gray-500 mt-1">Stock will be added to this department's inventory.</p>
                     </div>
 
                     {/* 3. Items Table */}

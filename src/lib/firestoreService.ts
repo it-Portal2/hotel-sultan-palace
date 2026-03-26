@@ -797,6 +797,7 @@ export interface Department {
   id: string;
   name: string; // The display name, e.g. "Kitchen"
   slug: string; // The functional ID, e.g. "kitchen"
+  isDeleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
