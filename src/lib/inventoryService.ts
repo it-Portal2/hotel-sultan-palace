@@ -325,7 +325,8 @@ export const receivePurchaseOrder = async (
             receivedQty: number; // Good stock
             rejectedQty: number; // Bad stock
             actualUnitCost?: number; // New price
-            expiryDate?: string;
+            manufacturingDate?: string; // ISO YYYY-MM-DD — source of truth in PO
+            expiryDate?: string;        // ISO YYYY-MM-DD — source of truth in PO
         }>;
         creditNoteRequested?: boolean;
         notes?: string;
@@ -333,6 +334,17 @@ export const receivePurchaseOrder = async (
     receivedBy: string
 ) => {
     if (!db) throw new Error("Firestore not initialized");
+
+    // ---- Date validation (before transaction) ----
+    for (const item of data.items) {
+        if (item.manufacturingDate && item.expiryDate) {
+            if (item.expiryDate <= item.manufacturingDate) {
+                throw new Error(
+                    `Invalid dates for item ${item.itemId}: Expiry date must be after manufacturing date.`
+                );
+            }
+        }
+    }
     const firestore = db;
 
     await runTransaction(firestore, async (transaction) => {
@@ -399,7 +411,18 @@ export const receivePurchaseOrder = async (
                 }
 
                 if (receivedItem.expiryDate) {
-                    updateData.expiryDate = new Date(receivedItem.expiryDate);
+                    // Derive: set to the MINIMUM known expiry (earliest = soonest expiry = most critical)
+                    const incomingExpiry = new Date(receivedItem.expiryDate);
+                    const existingExpiry = invItem.expiryDate
+                        ? (invItem.expiryDate instanceof Date ? invItem.expiryDate : new Date((invItem.expiryDate as any).toDate ? (invItem.expiryDate as any).toDate() : invItem.expiryDate))
+                        : null;
+                    if (!existingExpiry || incomingExpiry < existingExpiry) {
+                        updateData.expiryDate = incomingExpiry;
+                    }
+                }
+                // Store manufacturingDate from this receive (latest receive wins for display)
+                if (receivedItem.manufacturingDate) {
+                    updateData.manufacturingDate = new Date(receivedItem.manufacturingDate);
                 }
 
                 transaction.update(itemRef, updateData);
@@ -455,8 +478,9 @@ export const receivePurchaseOrder = async (
                     orderedQty: i.orderedQty,
                     receivedQty: i.receivedQty,
                     rejectedQty: i.rejectedQty,
-                    actualUnitCost: i.actualUnitCost ?? null, // Ensure not undefined
-                    expiryDate: i.expiryDate ?? null, // Ensure not undefined
+                    actualUnitCost: i.actualUnitCost ?? null,
+                    manufacturingDate: i.manufacturingDate ?? null, // ISO YYYY-MM-DD — source of truth
+                    expiryDate: i.expiryDate ?? null,               // ISO YYYY-MM-DD — source of truth
                     missingQty: i.orderedQty - i.receivedQty - i.rejectedQty
                 })),
                 totalReceivedValue,

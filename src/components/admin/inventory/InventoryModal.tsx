@@ -53,6 +53,8 @@ export default function InventoryModal({
         preferredSupplierId: '',
         purchaseUnit: '',
         conversionFactor: '',
+        manufacturingDate: '',
+        expiryDate: '',
         isActive: true,
     });
 
@@ -76,6 +78,8 @@ export default function InventoryModal({
                 preferredSupplierId: item.preferredSupplierId || '',
                 purchaseUnit: item.purchaseUnit || '',
                 conversionFactor: item.conversionFactor ? item.conversionFactor.toString() : '',
+                manufacturingDate: item.manufacturingDate ? (item.manufacturingDate instanceof Date ? item.manufacturingDate.toISOString().split('T')[0] : (item.manufacturingDate as any).toDate ? (item.manufacturingDate as any).toDate().toISOString().split('T')[0] : '') : '',
+                expiryDate: item.expiryDate ? (item.expiryDate instanceof Date ? item.expiryDate.toISOString().split('T')[0] : (item.expiryDate as any).toDate ? (item.expiryDate as any).toDate().toISOString().split('T')[0] : '') : '',
                 isActive: item.isActive,
             });
         } else {
@@ -95,6 +99,8 @@ export default function InventoryModal({
                 preferredSupplierId: '',
                 purchaseUnit: '',
                 conversionFactor: '',
+                manufacturingDate: '',
+                expiryDate: '',
                 isActive: true,
             });
         }
@@ -161,6 +167,10 @@ export default function InventoryModal({
             newErrors.conversionFactor = "Must be >= 1";
         }
 
+        if (formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate) {
+            newErrors.expiryDate = "Expiry must be after manufacturing date";
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -182,6 +192,8 @@ export default function InventoryModal({
             conversionFactor: parseFloat(formData.conversionFactor) || undefined,
             location: formData.location.trim() || undefined,
             preferredSupplierId: formData.preferredSupplierId.trim() || undefined,
+            manufacturingDate: formData.manufacturingDate ? new Date(formData.manufacturingDate) : undefined,
+            expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined,
         });
     };
 
@@ -366,6 +378,31 @@ export default function InventoryModal({
                                     className={`w-full pl-7 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none ${errors.unitCost ? 'border-red-500' : 'border-gray-200'}`}
                                 />
                                 {errors.unitCost && <span className="absolute -bottom-5 left-0 text-xs text-red-500">{errors.unitCost}</span>}
+                            </div>
+                        </div>
+
+                        {/* Manufacturing & Expiry Dates */}
+                        <div className="col-span-2 grid grid-cols-2 gap-4 mt-2">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-900 mb-1.5">Manufacturing Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.manufacturingDate}
+                                    onChange={(e) => setFormData({ ...formData, manufacturingDate: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-900 mb-1.5">Expiry Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.expiryDate}
+                                    onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none ${formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                />
+                                {formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-1">Expiry must be after manufacturing date</p>
+                                )}
                             </div>
                         </div>
                     </div>

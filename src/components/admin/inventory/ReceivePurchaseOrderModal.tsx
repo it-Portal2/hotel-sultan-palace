@@ -25,7 +25,9 @@ interface ItemReceiveRow {
     missingQty: number; // Auto-calc
 
     actualUnitCost: number; // New cost if changed
-    expiryDate: string;
+    manufacturingDate: string; // ISO YYYY-MM-DD
+    expiryDate: string;        // ISO YYYY-MM-DD
+    dateError?: string;        // Per-row validation message
 
     rejectionReason: string;
 }
@@ -67,7 +69,9 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                 rejectedQty: 0,
                 missingQty: 0,
                 actualUnitCost: i.unitCost, // Default to same price
+                manufacturingDate: '',
                 expiryDate: '',
+                dateError: '',
                 rejectionReason: ''
             })));
             setInvoiceFile(null);
@@ -84,6 +88,17 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
 
         if (field === 'receivedQty' || field === 'rejectedQty') {
             item.missingQty = item.orderedQty - item.receivedQty - item.rejectedQty;
+        }
+
+        // Per-row date validation
+        if (field === 'manufacturingDate' || field === 'expiryDate') {
+            const mfd = field === 'manufacturingDate' ? value : item.manufacturingDate;
+            const exp = field === 'expiryDate' ? value : item.expiryDate;
+            if (mfd && exp && exp <= mfd) {
+                item.dateError = 'Expiry date must be after manufacturing date';
+            } else {
+                item.dateError = '';
+            }
         }
 
         newItems[index] = item;
@@ -117,6 +132,13 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
             return;
         }
 
+        // Validation: Check date pairs
+        const dateErrors = items.filter(i => i.manufacturingDate && i.expiryDate && i.expiryDate <= i.manufacturingDate);
+        if (dateErrors.length > 0) {
+            showToast(`Error: ${dateErrors[0].name} - Expiry date must be after manufacturing date.`, "error");
+            return;
+        }
+
         setSubmitting(true);
         try {
             // 1. Upload Invoice if exists
@@ -137,6 +159,7 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                     receivedQty: i.receivedQty,
                     rejectedQty: i.rejectedQty,
                     actualUnitCost: i.actualUnitCost,
+                    manufacturingDate: i.manufacturingDate || undefined,
                     expiryDate: i.expiryDate || undefined
                 })),
                 creditNoteRequested,
@@ -263,7 +286,7 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                                         <th className="px-4 py-3 text-center font-semibold text-green-700 bg-green-50">Good Qty</th>
                                         <th className="px-4 py-3 text-center font-semibold text-red-700 bg-red-50">Bad/Broken</th>
                                         <th className="px-4 py-3 text-center font-semibold text-gray-600">Cost ($)</th>
-                                        <th className="px-4 py-3 text-left font-semibold text-gray-600">Expiry / Notes</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-600">Manufacturing &amp; Expiry</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
@@ -306,13 +329,32 @@ export default function ReceivePurchaseOrderModal({ isOpen, onClose, po, onSucce
                                                     <div className="text-[10px] text-gray-400 text-right line-through">${item.unitCost}</div>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 space-y-2">
-                                                <input
-                                                    type="date"
-                                                    className="block w-full text-xs border-gray-200 rounded focus:border-blue-500"
-                                                    value={item.expiryDate}
-                                                    onChange={e => updateItem(idx, 'expiryDate', e.target.value)}
-                                                />
+                                            <td className="px-4 py-3 space-y-2 min-w-[160px]">
+                                                <div>
+                                                    <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">MFD</label>
+                                                    <input
+                                                        type="date"
+                                                        className={`block w-full text-xs rounded border px-1.5 py-1 focus:outline-none transition-colors ${
+                                                            item.dateError ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-blue-500'
+                                                        }`}
+                                                        value={item.manufacturingDate}
+                                                        onChange={e => updateItem(idx, 'manufacturingDate', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">EXP</label>
+                                                    <input
+                                                        type="date"
+                                                        className={`block w-full text-xs rounded border px-1.5 py-1 focus:outline-none transition-colors ${
+                                                            item.dateError ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-blue-500'
+                                                        }`}
+                                                        value={item.expiryDate}
+                                                        onChange={e => updateItem(idx, 'expiryDate', e.target.value)}
+                                                    />
+                                                </div>
+                                                {item.dateError && (
+                                                    <p className="text-[10px] font-medium text-red-500 leading-tight">{item.dateError}</p>
+                                                )}
                                                 {(item.rejectedQty > 0 || item.missingQty > 0) && (
                                                     <input
                                                         type="text"

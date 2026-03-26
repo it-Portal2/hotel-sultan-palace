@@ -16,7 +16,8 @@ import { db } from '@/lib/firebase';
 import type { NightAuditLog, Booking, FoodOrder, Recipe, InventoryItem } from '@/lib/firestoreService';
 import { createLedgerEntry, getLedgerEntries } from '@/lib/accountsService';
 import { generateNightAuditPDF } from '@/lib/reportGenerator';
-import { sendNightAuditReport } from '@/lib/emailService';
+import { sendNightAuditReport, sendNightAuditAlert } from '@/lib/emailService';
+import { getAuditBlockers, isAuditAlreadyRun } from '@/lib/nightAuditService';
 
 const BUSINESS_DAY_DOC_ID = 'current';
 
@@ -494,5 +495,130 @@ export async function performNightAudit(
     } catch (error) {
         console.error('Night Audit Failed:', error);
         return { error: 'db_error' };
+    }
+}
+
+/**
+ * AUTOMATED NIGHT AUDIT (Cron Triggered)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 1. Checks if already manually run for the date
+ * 2. Checks for blockers (Validation)
+ * 3. If blockers exist: Sends Partial Report (POC Revenue) & Action Alert
+ * 4. If no blockers: Executes full Night Audit
+ */
+export async function automatedNightAudit(): Promise<{ success: boolean; message: string }> {
+    if (!db) return { success: false, message: 'Database not initialized' };
+
+    try {
+        const businessDate = await getCurrentBusinessDateServer();
+        const dateStr = toLocalDateStr(businessDate);
+
+        // ── A. Manual Override Check (Point A) ────────────────────────────────
+        const alreadyRun = await isAuditAlreadyRun(dateStr);
+        if (alreadyRun) {
+            console.log(`[Cron] Night Audit already run for ${dateStr}. Skipping.`);
+            return { success: true, message: 'Already audited manually' };
+        }
+
+        // ── B. Validation Check (Point B) ─────────────────────────────────────
+        const blockers = await getAuditBlockers(businessDate);
+        const blockerList = [];
+        if (blockers.pendingArrivals > 0) blockerList.push({ type: 'Pending Arrivals', count: blockers.pendingArrivals });
+        if (blockers.pendingDepartures > 0) blockerList.push({ type: 'Pending Departures', count: blockers.pendingDepartures });
+        if (blockers.uncleanRooms > 0) blockerList.push({ type: 'Unclean Rooms', count: blockers.uncleanRooms });
+
+        if (blockerList.length > 0) {
+            console.warn(`[Cron] Night Audit blocked for ${dateStr} due to validation issues.`);
+
+            // Capture Partial POS Data for the report (Point B)
+            const startOfDay = new Date(businessDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(businessDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const foodOrdersQuery = query(
+                collection(db, 'foodOrders'),
+                where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+                where('createdAt', '<=', Timestamp.fromDate(endOfDay))
+            );
+            const barOrdersQuery = query(
+                collection(db, 'barOrders'),
+                where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+                where('createdAt', '<=', Timestamp.fromDate(endOfDay))
+            );
+            
+            const [fSnap, bSnap] = await Promise.all([getDocs(foodOrdersQuery), getDocs(barOrdersQuery)]);
+            
+            const mapOrder = (d: any): FoodOrder => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate() || new Date(),
+                } as FoodOrder;
+            };
+
+            const allOrders = [...fSnap.docs.map(mapOrder), ...bSnap.docs.map(mapOrder)];
+            const posData = await computePOSData(allOrders, startOfDay, endOfDay);
+
+            await sendNightAuditAlert(
+                'portalholdingsznz@gmail.com',
+                businessDate,
+                blockerList,
+                {
+                    sales: posData.posSales,
+                    orders: posData.totalOrders,
+                    profit: posData.orderProfit
+                }
+            );
+
+            // Log validation failure
+            const auditLogRef = collection(db, 'nightAuditLogs');
+            await setDoc(doc(auditLogRef), {
+                date: businessDate,
+                startedAt: new Date(),
+                completedAt: new Date(),
+                auditedBy: 'system-cron',
+                status: 'validation_failed',
+                error: `Blocked by ${blockerList.length} operational issues`,
+                summary: {
+                    posSales: posData.posSales,
+                    totalOrders: posData.totalOrders
+                },
+                createdAt: new Date()
+            });
+
+            return { success: false, message: 'Validation Fail: Check email for partial report' };
+        }
+
+        // ── C. Execute Full Audit ─────────────────────────────────────────────
+        console.log(`[Cron] Proceeding with full Night Audit for ${dateStr}...`);
+        const result = await performNightAudit('system-cron', 'Automated System');
+        
+        if (result && 'id' in result) {
+            return { success: true, message: 'Audit completed successfully' };
+        } else {
+            const errorMsg = result && 'error' in result ? result.error : 'Unknown audit error';
+            throw new Error(errorMsg);
+        }
+
+    } catch (error) {
+        console.error('[Cron] Automated Night Audit Failed:', error);
+        
+        // Distinguish Server Fail (Point C)
+        try {
+            const businessDate = await getCurrentBusinessDateServer();
+            await sendNightAuditAlert(
+                'portalholdingsznz@gmail.com',
+                businessDate,
+                [],
+                undefined,
+                true // isServerError
+            );
+        } catch (e) {
+            console.error('[Cron] Failed to send server error alert:', e);
+        }
+
+        return { success: false, message: `Server Fail: ${error instanceof Error ? error.message : 'Unknown'}` };
     }
 }

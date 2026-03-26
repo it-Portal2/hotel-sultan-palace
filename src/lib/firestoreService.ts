@@ -843,7 +843,9 @@ export interface InventoryItem {
   // New: Stock by Location ID
   stockByLocation?: Record<string, number>; // e.g. { 'main_store': 100, 'bar_1': 20 }
 
-  expiryDate?: Date; // For perishable items
+  // Perishable tracking (derived from purchase receives — do NOT set directly)
+  expiryDate?: Date; // Earliest known expiry date across all receives
+  manufacturingDate?: Date; // Manufacturing date from latest receive
 
   isActive: boolean;
   createdAt: Date;
@@ -884,7 +886,8 @@ export interface PurchaseOrder {
       receivedQty: number; // Good stock
       rejectedQty: number; // Broken/Expired
       missingQty: number; // Ordered - (Received + Rejected)
-      expiryDate?: string; // For perishable items
+      manufacturingDate?: string; // ISO YYYY-MM-DD — source of truth for MFD
+      expiryDate?: string; // ISO YYYY-MM-DD — source of truth for EXP
       actualUnitCost?: number; // If price changed
       rejectionReason?: string;
     }>;

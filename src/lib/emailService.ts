@@ -632,6 +632,89 @@ export const sendNightAuditReport = async (
   return result.success;
 };
 
+export const sendNightAuditAlert = async (
+  recipientEmail: string,
+  date: Date,
+  blockers: { type: string; count: number }[],
+  posSummary?: { sales: number; orders: number; profit: number },
+  isServerError: boolean = false
+): Promise<boolean> => {
+  const dateStr = date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const title = isServerError
+    ? `CRITICAL: Night Audit Failed (System Error) - ${dateStr}`
+    : `ACTION REQUIRED: Night Audit Blocked (Validation) - ${dateStr}`;
+
+  const blockerHtml = blockers.length > 0
+    ? `
+      <div style="background-color: #FFF5F5; border: 1px solid ${BRAND_COLORS.danger}; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+        <h3 style="color: ${BRAND_COLORS.danger}; margin-top: 0; font-size: 16px;">Operational Blockers</h3>
+        <ul style="color: ${BRAND_COLORS.text}; font-size: 14px; padding-left: 20px;">
+          ${blockers.map(b => `<li><strong>${b.type}:</strong> ${b.count} pending items</li>`).join("")}
+        </ul>
+      </div>
+    `
+    : isServerError
+      ? `<div style="background-color: #FFF5F5; border: 1px solid ${BRAND_COLORS.danger}; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+          <p style="color: ${BRAND_COLORS.danger}; margin: 0;">A system error occurred during the automated audit process. Please check server logs.</p>
+         </div>`
+      : "";
+
+  const posHtml = posSummary
+    ? `
+      <div style="background-color: #F8F9FA; border: 1px solid #E9ECEF; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+        <h3 style="color: ${BRAND_COLORS.primary}; margin-top: 0; font-size: 16px;">Daily POS Snapshot (Partial Data)</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #EEE; color: ${BRAND_COLORS.lightText}; font-size: 14px;">Total Orders</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #EEE; text-align: right; font-weight: bold;">${posSummary.orders}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #EEE; color: ${BRAND_COLORS.lightText}; font-size: 14px;">Gross Sales</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #EEE; text-align: right; font-weight: bold;">${formatCurrency(posSummary.sales)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: ${BRAND_COLORS.lightText}; font-size: 14px;">Estimated Profit</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: ${BRAND_COLORS.success};">${formatCurrency(posSummary.profit)}</td>
+          </tr>
+        </table>
+      </div>
+    `
+    : "";
+
+  const content = `
+    <h2 style="color: ${isServerError ? BRAND_COLORS.danger : BRAND_COLORS.warning}; margin-top: 0;">${isServerError ? "Audit System Error" : "Audit Validation Failed"}</h2>
+    <p style="color: ${BRAND_COLORS.text}; font-size: 15px; line-height: 1.6;">
+      The automated Night Audit for <strong>${dateStr}</strong> could not be completed successfully.
+    </p>
+    
+    ${blockerHtml}
+    ${posHtml}
+
+    <p style="color: ${BRAND_COLORS.lightText}; font-size: 14px; margin-top: 25px;">
+      <strong>Next Steps:</strong> Please resolve the blockers manually in the Admin Dashboard and run the Night Audit process to roll the business date.
+    </p>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="${BASE_URL}/admin/front-desk/night-audit" class="button" style="background-color: ${BRAND_COLORS.primary}; color: white;">Open Audit Dashboard</a>
+    </div>
+  `;
+
+  const html = generateEmailLayout(title, content);
+
+  const result = await sendEmail({
+    to: recipientEmail,
+    subject: title,
+    html,
+  });
+
+  return result.success;
+};
+
 export const sendInvoiceEmail = async (
   bill: Booking | any, // Using any for CheckoutBill to avoid circular dependency if possible, or Import it.
   pdfBuffer: Buffer,

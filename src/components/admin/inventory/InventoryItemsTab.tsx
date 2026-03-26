@@ -102,6 +102,30 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         }
     };
 
+    // Expiry status helper (null-safe for items without expiryDate)
+    const getExpiryBadge = (item: InventoryItem): { label: string; className: string } | null => {
+        if (!item.expiryDate) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiry = item.expiryDate instanceof Date
+            ? item.expiryDate
+            : new Date((item.expiryDate as any)?.toDate ? (item.expiryDate as any).toDate() : item.expiryDate);
+        if (isNaN(expiry.getTime())) return null;
+        const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+        if (diffDays < 0) return { label: 'Expired', className: 'bg-red-100 text-red-700 border border-red-200' };
+        if (diffDays <= 30) return { label: `Exp ${diffDays}d`, className: 'bg-amber-100 text-amber-700 border border-amber-200' };
+        return null; // Far future — no badge needed
+    };
+
+    const formatDateISO = (date: any): string => {
+        if (!date) return '';
+        const d = date instanceof Date
+            ? date
+            : new Date(date?.toDate ? date.toDate() : date);
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().split('T')[0];
+    };
+
     // Combine static 'All' with dynamic categories
     const displayCategories = [
         { id: 'all', label: 'All Categories', name: 'all' },
@@ -245,9 +269,18 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-gray-900 text-[15px]">{item.name}</span>
-                                                        <div className="flex items-center gap-2 mt-1">
+                                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                             <span className="text-xs text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">SKU: {item.sku}</span>
                                                             <span className="text-[10px] text-gray-500 uppercase tracking-wide md:hidden bg-gray-100 px-1.5 py-0.5 rounded">{item.department}</span>
+                                                            {(() => { const b = getExpiryBadge(item); return b ? <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${b.className}`}>{b.label}</span> : null; })()}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                                                            {item.manufacturingDate && (
+                                                                <span title="Manufacturing Date">MFD: {formatDateISO(item.manufacturingDate)}</span>
+                                                            )}
+                                                            {item.expiryDate && (
+                                                                <span title="Expiry Date">EXP: {formatDateISO(item.expiryDate)}</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -348,9 +381,18 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="font-bold text-gray-900">{item.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                     <span className="text-xs text-gray-500 font-mono">SKU: {item.sku}</span>
                                                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase font-semibold">{item.department}</span>
+                                                    {(() => { const b = getExpiryBadge(item); return b ? <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${b.className}`}>{b.label}</span> : null; })()}
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[10px] text-gray-500 font-medium">
+                                                    {item.manufacturingDate && (
+                                                        <span>MFD: {formatDateISO(item.manufacturingDate)}</span>
+                                                    )}
+                                                    {item.expiryDate && (
+                                                        <span>EXP: {formatDateISO(item.expiryDate)}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
