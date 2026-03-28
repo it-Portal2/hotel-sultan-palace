@@ -576,12 +576,6 @@ export default function POSCreatePage() {
         });
 
         if (result) {
-          try {
-            await processOrderInventoryDeduction(result.id, "POS System", menuType as "food" | "bar");
-          } catch (invError) {
-            console.error("Inventory deduction failed", invError);
-          }
-
           showToast(
             `Order #${result.orderNumber} created successfully!`,
             "success",

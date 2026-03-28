@@ -115,7 +115,7 @@ export default function InventoryOverviewTab({ items, loading, onNavigateToItems
                                     </div>
                                     <div className="text-right">
                                         <span className={`text-sm font-bold ${tx.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {tx.quantity > 0 ? '+' : ''}{tx.quantity}
+                                            {tx.quantity > 0 ? '+' : ''}{Number.isInteger(tx.quantity) ? tx.quantity : Number(tx.quantity.toFixed(2))}
                                         </span>
                                     </div>
                                 </div>
@@ -144,7 +144,7 @@ export default function InventoryOverviewTab({ items, loading, onNavigateToItems
                                         <span className="text-xs text-gray-500">Min: {item.minStockLevel}</span>
                                     </div>
                                     <span className="text-sm font-bold text-red-600 flex flex-col items-end">
-                                        {item.currentStock} {item.unit}
+                                        {Number.isInteger(item.currentStock) ? item.currentStock : Number(item.currentStock.toFixed(2))} {item.unit}
                                         <span className="text-[10px] text-red-400 font-normal">Current</span>
                                     </span>
                                 </div>

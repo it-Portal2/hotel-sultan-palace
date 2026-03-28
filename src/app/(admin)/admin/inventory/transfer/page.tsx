@@ -335,7 +335,7 @@ export default function TransferStockPage() {
                                                         <div className="text-xs text-gray-400">{item.unit}</div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-semibold text-gray-700 text-sm">
-                                                        {avail}
+                                                        {Number.isInteger(avail) ? avail : Number(avail.toFixed(2))}
                                                     </TableCell>
                                                     <TableCell className="text-right text-sm text-gray-500">
                                                         {item.unitCost ? `$${item.unitCost.toFixed(2)}` : '—'}
@@ -414,7 +414,7 @@ export default function TransferStockPage() {
                                                         <div className="text-xs text-gray-400">{t.unit}</div>
                                                     </TableCell>
                                                     <TableCell className="text-right text-sm text-gray-500 font-medium">
-                                                        {t.availableQty}
+                                                        {Number.isInteger(t.availableQty) ? t.availableQty : Number(t.availableQty.toFixed(2))}
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         <div className="flex flex-col items-center gap-1">
@@ -433,7 +433,7 @@ export default function TransferStockPage() {
                                                             />
                                                             {isInvalid && (
                                                                 <span className="text-[10px] text-red-500 font-medium leading-none">
-                                                                    {t.transferQty <= 0 ? 'Must be > 0' : `Max: ${t.availableQty}`}
+                                                                    {t.transferQty <= 0 ? 'Must be > 0' : `Max: ${Number.isInteger(t.availableQty) ? t.availableQty : Number(t.availableQty.toFixed(2))}`}
                                                                 </span>
                                                             )}
                                                         </div>

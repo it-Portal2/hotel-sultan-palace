@@ -271,7 +271,7 @@ function SingleAdjustmentForm({ items, departments, onRefresh, setLoading, loadi
                                         })
                                         .map((item: InventoryItem) => (
                                             <option key={item.id} value={item.id}>
-                                                {item.name} | Stock: {item.currentStock} {item.unit}
+                                                {item.name} | Stock: {Number.isInteger(item.currentStock) ? item.currentStock : Number(item.currentStock.toFixed(2))} {item.unit}
                                             </option>
                                         ))}
                                 </select>
@@ -505,7 +505,10 @@ function BulkStockTakeForm({ items, departments, onRefresh, setLoading, loading,
                                     </td>
                                     <td className="px-6 py-3 text-center text-gray-500">
                                         {/* Show Stock for Selected Location if possible, else global */}
-                                        {filterLocation && item.stockByLocation ? (item.stockByLocation[filterLocation] || 0) : item.currentStock} {item.unit}
+                                        {(() => {
+                                            const stock = filterLocation && item.stockByLocation ? (item.stockByLocation[filterLocation] || 0) : item.currentStock;
+                                            return Number.isInteger(stock) ? stock : Number(stock.toFixed(2));
+                                        })()} {item.unit}
                                         {filterLocation && <div className="text-[10px] text-gray-400">at depart</div>}
                                     </td>
                                     <td className="px-6 py-3 text-center">

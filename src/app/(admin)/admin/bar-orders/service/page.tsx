@@ -132,22 +132,15 @@ export default function BarOrdersServicePage() {
           generateAndStoreReceipt(orderId, "bar").catch((err: unknown) =>
             console.error("[Receipt] Bar order generation failed:", err),
           );
+
+          await processOrderInventoryDeduction(orderId, "Admin User", "bar");
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
         }
       }
 
       if (status === "delivered") {
-        try {
-          await processOrderInventoryDeduction(orderId, "Admin User", "bar");
-          showToast("Bar order delivered & Inventory deducted", "success");
-        } catch (invError) {
-          console.error("Inventory Deduction Failed:", invError);
-          showToast(
-            "Bar order delivered but Inventory update failed",
-            "warning",
-          );
-        }
+        showToast("Bar order delivered successfully", "success");
       } else {
         const statusMessages: Record<string, string> = {
           confirmed: "✅ Bar Order Confirmed! Receipt is being generated...",

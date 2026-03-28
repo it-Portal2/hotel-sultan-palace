@@ -103,7 +103,7 @@ export const createInventoryDepartment = async (name: string): Promise<string> =
 export const deleteInventoryDepartment = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
     const docRef = doc(db, 'inventoryDepartments', id);
-    await updateDoc(docRef, { 
+    await updateDoc(docRef, {
         isDeleted: true,
         updatedAt: serverTimestamp()
     });
@@ -112,7 +112,7 @@ export const deleteInventoryDepartment = async (id: string): Promise<void> => {
 export const updateInventoryDepartment = async (id: string, name: string): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
     const docRef = doc(db, 'inventoryDepartments', id);
-    await updateDoc(docRef, { 
+    await updateDoc(docRef, {
         name,
         updatedAt: serverTimestamp()
     });
@@ -121,7 +121,7 @@ export const updateInventoryDepartment = async (id: string, name: string): Promi
 export const seedDefaultDepartments = async (): Promise<void> => {
     if (!db) return;
     const defaults = ["Kitchen", "Bar", "Housekeeping", "Front Office", "Maintenance", "Spa", "Other"];
-    
+
     // Fetch ALL departments (even deleted ones) for seeding check to avoid recreating intentionally deleted defaults
     const q = query(collection(db, 'inventoryDepartments'));
     const snap = await getDocs(q);
@@ -623,14 +623,26 @@ export const checkOrderIngredients = async (
         })
     );
 
-    // Aggregate required amounts per inventory item
-    const required = new Map<string, { name: string; qty: number; unit: string }>();
+    // Aggregate required amounts per inventory item PER location
+    const required = new Map<string, { name: string; qty: number; unit: string; location: string; invId: string }>();
     for (const item of order.items) {
         const recipeKey = (item as any).menuItemId || '';
         const recipe = recipeMap.get(recipeKey);
         if (!recipe) continue;
+
+        // Determine Location for this Menu Item
+        let targetLocation = 'main_store';
+        const station = ((item as any).station || '').toLowerCase();
+        
+        if (menuType === 'bar' || station === 'bar' || (item as any).category === 'beverages' || (item as any).category === 'liquors') {
+            targetLocation = 'beach_bar';
+        } else {
+            // Default to kitchen for food orders or items with kitchen stations
+            targetLocation = 'kitchen_bar'; 
+        }
+
         for (const ing of recipe.ingredients) {
-            const key = ing.inventoryItemId;
+            const key = `${ing.inventoryItemId}_${targetLocation}`;
             const existing = required.get(key);
             if (existing) {
                 existing.qty += ing.quantity * item.quantity;
@@ -638,7 +650,9 @@ export const checkOrderIngredients = async (
                 required.set(key, {
                     name: ing.inventoryItemName || ing.inventoryItemId,
                     qty: ing.quantity * item.quantity,
-                    unit: ing.unit || ''
+                    unit: ing.unit || '',
+                    location: targetLocation,
+                    invId: ing.inventoryItemId
                 });
             }
         }
@@ -649,13 +663,27 @@ export const checkOrderIngredients = async (
     // Fetch current stock for every needed item in parallel
     const results: IngredientCheckResult[] = [];
     await Promise.all(
-        Array.from(required.entries()).map(async ([invId, info]) => {
-            const invSnap = await getDoc(doc(firestore, 'inventory', invId));
-            const available = invSnap.exists() ? (invSnap.data().currentStock || 0) : 0;
+        Array.from(required.entries()).map(async ([key, info]) => {
+            const invSnap = await getDoc(doc(firestore, 'inventory', info.invId));
+
+            let available = 0;
+            if (invSnap.exists()) {
+                const data = invSnap.data();
+                if (data.stockByLocation && data.stockByLocation[info.location] !== undefined) {
+                    available = data.stockByLocation[info.location];
+                }
+            }
+
             const invUnit = invSnap.exists() ? (invSnap.data().unit || info.unit) : info.unit;
+
+            // Format location name for UI
+            let locName = 'Main Store';
+            if (info.location === 'kitchen_bar') locName = 'Kitchen';
+            if (info.location === 'beach_bar') locName = 'Bar';
+
             results.push({
-                ingredientName: invSnap.exists() ? invSnap.data().name : info.name,
-                inventoryItemId: invId,
+                ingredientName: invSnap.exists() ? `${invSnap.data().name} (${locName})` : `${info.name} (${locName})`,
+                inventoryItemId: info.invId,
                 required: parseFloat(info.qty.toFixed(4)),
                 available: parseFloat(available.toFixed(4)),
                 unit: invUnit,
@@ -759,12 +787,14 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
 
                 const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
 
-                // Determine DEDUCTION LOCATION based on Menu Item Station
+                // Determine DEDUCTION LOCATION based on Menu Item Station and menuType
                 let targetLocation = 'main_store';
-                const station = item.station || 'kitchen';
-                if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
+                const station = (item.station || '').toLowerCase();
+
+                if (menuType === 'bar' || station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
                     targetLocation = 'beach_bar';
-                } else if (station === 'kitchen') {
+                } else {
+                    // Default to main kitchen for food orders
                     targetLocation = 'kitchen_bar';
                 }
 
@@ -1144,8 +1174,8 @@ export const transferStockBulk = async (
                 newStock: stockMap[transfer.fromLocationId],
                 locationId: transfer.fromLocationId,
                 batchId,
-                reason: notes 
-                    ? `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId} — ${notes}` 
+                reason: notes
+                    ? `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId} — ${notes}`
                     : `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId}`,
                 performedBy,
                 createdAt: serverTimestamp()
@@ -1165,8 +1195,8 @@ export const transferStockBulk = async (
                 newStock: stockMap[transfer.toLocationId],
                 locationId: transfer.toLocationId,
                 batchId,
-                reason: notes 
-                    ? `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId} — ${notes}` 
+                reason: notes
+                    ? `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId} — ${notes}`
                     : `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}`,
                 performedBy,
                 createdAt: serverTimestamp()

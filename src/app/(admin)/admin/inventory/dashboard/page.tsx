@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowPathIcon, ChartBarIcon, CubeIcon, FireIcon, TrophyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ChartBarIcon, CubeIcon, FireIcon, TrophyIcon, ExclamationTriangleIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/solid';
 import PremiumLoader from '@/components/ui/PremiumLoader';
 import type { ProfitLossStatement, BalanceSheet } from '@/lib/financeAnalytics';
@@ -97,6 +97,9 @@ export default function InsightsDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+    const [consumptionPage, setConsumptionPage] = useState(1);
+    const CONSUMPTION_PAGE_SIZE = 10;
+
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -119,6 +122,8 @@ export default function InsightsDashboardPage() {
     }, [filter]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => { setConsumptionPage(1); }, [filter]);
+
 
     const filterLabel = {
         daily: 'Last 24 Hours',
@@ -346,21 +351,72 @@ export default function InsightsDashboardPage() {
                                                     No consumption data yet. Transactions appear when orders are fulfilled.
                                                 </td>
                                             </tr>
-                                        ) : (
-                                            data.inventoryConsumption.map((row, i) => (
-                                                <tr key={row.ingredientName} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-3 text-sm text-gray-400">{i + 1}</td>
-                                                    <td className="px-6 py-3 text-sm font-medium text-gray-900">{row.ingredientName}</td>
-                                                    <td className="px-6 py-3 text-sm text-right font-mono text-orange-700 font-semibold">
-                                                        {row.totalQuantityUsed.toFixed(3)}
-                                                    </td>
-                                                    <td className="px-6 py-3 text-sm text-gray-500">{row.unit || '—'}</td>
-                                                </tr>
-                                            ))
-                                        )}
+                                        ) : (() => {
+                                            const total = data.inventoryConsumption.length;
+                                            const totalPages = Math.ceil(total / CONSUMPTION_PAGE_SIZE);
+                                            const startIdx = (consumptionPage - 1) * CONSUMPTION_PAGE_SIZE;
+                                            const paginated = data.inventoryConsumption.slice(startIdx, startIdx + CONSUMPTION_PAGE_SIZE);
+
+                                            return (
+                                                <>
+                                                    {paginated.map((row, i) => (
+                                                        <tr key={row.ingredientName} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-3 text-sm text-gray-400">{startIdx + i + 1}</td>
+                                                            <td className="px-6 py-3 text-sm font-medium text-gray-900">{row.ingredientName}</td>
+                                                            <td className="px-6 py-3 text-sm text-right font-mono text-orange-700 font-semibold">
+                                                                {row.totalQuantityUsed.toFixed(3)}
+                                                            </td>
+                                                            <td className="px-6 py-3 text-sm text-gray-500">{row.unit || '—'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </>
+                                            );
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            {data.inventoryConsumption.length > CONSUMPTION_PAGE_SIZE && (
+                                <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+                                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                                        Showing {(consumptionPage - 1) * CONSUMPTION_PAGE_SIZE + 1} to {Math.min(consumptionPage * CONSUMPTION_PAGE_SIZE, data.inventoryConsumption.length)} of {data.inventoryConsumption.length} items
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            disabled={consumptionPage === 1}
+                                            onClick={() => setConsumptionPage(p => Math.max(1, p - 1))}
+                                            className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-orange-500 hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronLeftIcon className="w-4 h-4" />
+                                        </button>
+                                        
+                                        {(() => {
+                                            const totalPages = Math.ceil(data.inventoryConsumption.length / CONSUMPTION_PAGE_SIZE);
+                                            return Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setConsumptionPage(p)}
+                                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${consumptionPage === p 
+                                                        ? 'bg-orange-500 text-white shadow-md shadow-orange-100' 
+                                                        : 'bg-white border border-gray-200 text-gray-500 hover:border-orange-200 hover:text-orange-500'}`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ));
+                                        })()}
+
+                                        <button
+                                            disabled={consumptionPage >= Math.ceil(data.inventoryConsumption.length / CONSUMPTION_PAGE_SIZE)}
+                                            onClick={() => setConsumptionPage(p => Math.min(Math.ceil(data.inventoryConsumption.length / CONSUMPTION_PAGE_SIZE), p + 1))}
+                                            className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-orange-500 hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronRightIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
                         {/* ── Section 4: Top Analytics ── */}

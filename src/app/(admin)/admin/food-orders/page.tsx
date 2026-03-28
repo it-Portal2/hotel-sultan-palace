@@ -122,19 +122,15 @@ export default function AdminFoodOrdersPage() {
           generateAndStoreReceipt(orderId).catch((err: unknown) =>
             console.error("[Receipt] Server generation failed:", err),
           );
+
+          await processOrderInventoryDeduction(orderId, "Admin User", "food");
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
         }
       }
 
       if (status === "delivered") {
-        try {
-          await processOrderInventoryDeduction(orderId, "Admin User", "food");
-          showToast("Order delivered & Inventory deducted", "success");
-        } catch (invError) {
-          console.error("Inventory Deduction Failed:", invError);
-          showToast("Order delivered but Inventory update failed", "warning");
-        }
+        showToast("Order delivered successfully", "success");
       } else {
         const statusMessages: Record<string, string> = {
           confirmed: "✅ Order Confirmed! Receipt is being generated...",
