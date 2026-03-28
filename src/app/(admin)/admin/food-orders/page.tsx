@@ -443,7 +443,7 @@ export default function AdminFoodOrdersPage() {
                               order.status !== "cancelled" &&
                               order.status !== "confirmed" && (
                                 <Link
-                                  href={`/admin/food-orders/create?menuType=food&editOrderId=${order.id}`}
+                                  href={`/admin/food-orders/create?menuType=${(order as any).menuType || 'food'}&editOrderId=${order.id}&returnUrl=/admin/food-orders`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                   title="Edit Order"

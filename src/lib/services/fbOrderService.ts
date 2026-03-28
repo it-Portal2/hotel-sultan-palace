@@ -299,10 +299,86 @@ export const createFoodOrder = async (
 
 export const updateFoodOrder = async (
   id: string,
-  data: Partial<FoodOrder>,
+  data: Partial<FoodOrder> & { newPaymentEntry?: { amount: number; method: string; recordedBy?: string } },
 ): Promise<boolean> => {
   if (!db) return false;
   try {
+    const currentOrder = await getFoodOrder(id);
+    if (!currentOrder) return false;
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // STRICT EDIT RULES / CONCURRENCY SAFETY (Phase 9/11)
+    // ─────────────────────────────────────────────────────────────────────────────
+    const isOrderDetailsEdit = data.items !== undefined || data.subtotal !== undefined || data.guestName !== undefined;
+
+    if (currentOrder.status !== "pending" && isOrderDetailsEdit) {
+      throw new Error("Cannot edit order details for confirmed orders. Only payments or status can be updated.");
+    }
+
+    if (data.newPaymentEntry) {
+      if ((currentOrder.dueAmount || 0) <= 0) {
+        throw new Error("Order is already fully paid. No further payments allowed.");
+      }
+
+      const { amount, method, recordedBy } = data.newPaymentEntry;
+
+      // Determine collection
+      let r = doc(db, FOOD_ORDERS, id);
+      let s = await getDoc(r);
+      if (!s.exists()) {
+        r = doc(db, BAR_ORDERS, id);
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const orderDoc = await transaction.get(r);
+        if (!orderDoc.exists()) throw new Error("Order not found");
+        const order = orderDoc.data() as FoodOrder;
+
+        if ((order.dueAmount || 0) <= 0) {
+          throw new Error("Order is fully paid.");
+        }
+        const roundedAmount = Math.round(amount * 100) / 100;
+        const roundedDue = Math.round((order.dueAmount || 0) * 100) / 100;
+
+        if (roundedAmount <= 0 || roundedAmount > roundedDue) {
+          throw new Error(`Invalid payment amount. Due is ${roundedDue}`);
+        }
+
+        const paymentHistory = order.paymentHistory || [];
+        paymentHistory.push({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          amount,
+          method,
+          date: new Date(),
+          recordedBy: recordedBy || "System"
+        });
+
+        const paidAmount = Math.round(((order.paidAmount || 0) + amount) * 100) / 100;
+        const dueAmount = Math.round((order.totalAmount - paidAmount) * 100) / 100;
+        
+        let paymentStatus: "paid" | "due" | "partial" = "partial";
+        if (dueAmount <= 0) paymentStatus = "paid";
+        if (paidAmount === 0) paymentStatus = "due";
+
+        transaction.update(r, {
+          paymentHistory,
+          paidAmount,
+          dueAmount,
+          paymentStatus,
+          paymentMethod: method,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      // After transaction, check if it became FULLY PAID, if so, record revenue.
+      const updatedOrder = await getFoodOrder(id);
+      if (updatedOrder && updatedOrder.paymentStatus === "paid" && !updatedOrder.revenueRecorded) {
+        await updateDailyFBRevenue(new Date(), updatedOrder);
+        await updateDoc(doc(db, getCollectionName(updatedOrder.menuType), id), { revenueRecorded: true });
+        console.log("Revenue Recorded for Order after partial payment completion:", id);
+      }
+      return true;
+    }
     // Check if we need to record revenue (status changed to delivered/paid)
     if (data.status === "delivered" || data.paymentStatus === "paid") {
       const currentOrder = await getFoodOrder(id);

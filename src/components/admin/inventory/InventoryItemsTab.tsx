@@ -95,9 +95,12 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
             ? item.expiryDate
             : new Date((item.expiryDate as any)?.toDate ? (item.expiryDate as any).toDate() : item.expiryDate);
         if (isNaN(expiry.getTime())) return null;
+        
         const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
-        if (diffDays < 0) return { label: 'Expired', className: 'bg-red-100 text-red-700 border border-red-200' };
-        if (diffDays <= 30) return { label: `Exp ${diffDays}d`, className: 'bg-amber-100 text-amber-700 border border-amber-200' };
+        
+        if (diffDays < 0) return { label: 'Expired', className: 'bg-red-50 text-red-700 border border-red-100 shadow-sm' };
+        if (diffDays <= 7) return { label: `Exp in ${diffDays}d`, className: 'bg-orange-100 text-orange-800 border border-orange-200 shadow-sm' };
+        if (diffDays <= 30) return { label: `Exp in ${diffDays}d`, className: 'bg-amber-50 text-amber-700 border border-amber-100 shadow-sm' };
         return null; // Far future — no badge needed
     };
 

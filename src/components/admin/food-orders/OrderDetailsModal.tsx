@@ -278,9 +278,9 @@ export default function OrderDetailsModal({
               {/* Edit — hidden after confirmation (Phase 9C) */}
               {!isReadOnly &&
                 !isFinalized &&
-                liveOrder.status !== "confirmed" && (
+                (liveOrder.status === "pending" || ((liveOrder as any).dueAmount || 0) > 0) && (
                   <Link
-                    href={`/admin/food-orders/create?menuType=food&editOrderId=${liveOrder.id}`}
+                    href={`/admin/food-orders/create?menuType=${(liveOrder as any).menuType || 'food'}&editOrderId=${liveOrder.id}&returnUrl=${typeof window !== 'undefined' ? window.location.pathname : ''}`}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
                   >
                     <PencilSquareIcon className="h-4 w-4" />

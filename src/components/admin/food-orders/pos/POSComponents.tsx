@@ -619,6 +619,10 @@ interface POSCartProps {
   barLocation?: string;
   setBarLocation?: (val: string) => void;
   submitLabel?: string;
+  isPartialPaymentEdit?: boolean;
+  originalOrder?: import("@/lib/types/foodMenu").FoodOrder;
+  newPaymentAmount?: number | string;
+  setNewPaymentAmount?: (val: number | string) => void;
 }
 
 export function POSCart({
@@ -679,6 +683,10 @@ export function POSCart({
   barLocation,
   setBarLocation,
   submitLabel = "Place Order",
+  isPartialPaymentEdit,
+  originalOrder,
+  newPaymentAmount,
+  setNewPaymentAmount,
 }: POSCartProps) {
   const [showGuestResults, setShowGuestResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -817,7 +825,7 @@ export function POSCart({
                             });
                           }
                         }}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isPartialPaymentEdit}
                         className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <MinusIcon className="h-4 w-4 text-gray-600" />
@@ -829,7 +837,7 @@ export function POSCart({
                         onClick={() =>
                           onUpdateItem(item.id, { quantity: item.quantity + 1 })
                         }
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isPartialPaymentEdit}
                         className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <PlusIcon className="h-4 w-4 text-gray-600" />
@@ -837,7 +845,7 @@ export function POSCart({
                     </div>
                     <button
                       onClick={() => onRemove(item.id)}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isPartialPaymentEdit}
                       className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Remove item"
                     >
@@ -866,7 +874,7 @@ export function POSCart({
                   type="text"
                   placeholder="Enter guest name"
                   value={guestName}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   onChange={(e) => {
                     setGuestName(e.target.value);
                     setShowGuestResults(true);
@@ -915,7 +923,7 @@ export function POSCart({
                 type="email"
                 placeholder="Enter guest email"
                 value={guestEmail}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPartialPaymentEdit}
                 onChange={(e) => {
                   setGuestEmail(e.target.value);
                   if (validationErrors.guestEmail) {
@@ -954,7 +962,7 @@ export function POSCart({
                 <select
                   value={barLocation}
                   onChange={(e) => setBarLocation(e.target.value)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="main_bar">Main Bar</option>
@@ -971,7 +979,7 @@ export function POSCart({
               <select
                 value={deliveryLocation}
                 onChange={(e) => setDeliveryLocation(e.target.value)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPartialPaymentEdit}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
                 <option value="restaurant">Restaurant (Dine-in)</option>
@@ -998,7 +1006,7 @@ export function POSCart({
                 <select
                   value={orderType}
                   onChange={(e) => setOrderType(e.target.value as any)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   {(deliveryLocation === "restaurant" ||
@@ -1031,7 +1039,7 @@ export function POSCart({
                   type="text"
                   placeholder="Enter table number"
                   value={tableNumber}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   onChange={(e) => {
                     setTableNumber(e.target.value);
                   }}
@@ -1047,7 +1055,7 @@ export function POSCart({
                 </label>
                 <select
                   value={roomName}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   onChange={(e) => {
                     setRoomName(e.target.value);
                     if (validationErrors.roomName) {
@@ -1108,7 +1116,7 @@ export function POSCart({
                     type="text"
                     value={waiterName}
                     onChange={(e) => setWaiterName(e.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Enter waiter name"
                   />
@@ -1121,7 +1129,7 @@ export function POSCart({
                     type="text"
                     value={preparedBy}
                     onChange={(e) => setPreparedBy(e.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Chef/Staff name"
                   />
@@ -1134,7 +1142,7 @@ export function POSCart({
                     type="text"
                     value={printedBy}
                     onChange={(e) => setPrintedBy(e.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Staff name"
                   />
@@ -1150,7 +1158,7 @@ export function POSCart({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPartialPaymentEdit}
                 placeholder="Special instructions or notes..."
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed h-16 resize-none"
               />
@@ -1166,7 +1174,7 @@ export function POSCart({
                   type="number"
                   value={prepTime}
                   onChange={(e) => setPrepTime(Number(e.target.value))}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPartialPaymentEdit}
                   onBlur={(e) => {
                     const val = parseInt(e.target.value) || 30;
                     setPrepTime(Math.max(5, val));
@@ -1181,7 +1189,7 @@ export function POSCart({
                     type="checkbox"
                     checked={isUrgent || false}
                     onChange={(e) => onSetUrgent?.(e.target.checked)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     className="w-5 h-5 accent-[#FF6A00] rounded focus:ring-[#FF6A00] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span
@@ -1218,61 +1226,140 @@ export function POSCart({
               </select>
             </div>
 
-            {/* Payment Status (not for Complimentary) */}
-            {paymentMethod !== "Complimentary" && (
-              <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">
-                  Payment Status
-                </label>
-                <select
-                  value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
-                  disabled={isSubmitting}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="paid">Paid in Full</option>
-                  <option value="due">Partial Payment / Due</option>
-                </select>
-              </div>
-            )}
-
-            {/* Paid Amount (only when status is due) */}
-            {paymentMethod !== "Complimentary" && paymentStatus === "due" && (
-              <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">
-                  Amount Paid <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={paidAmount}
-                  onChange={(e) => {
-                    const val = Math.max(0, Number(e.target.value));
-                    setPaidAmount(val > total ? total : val);
-                    if (validationErrors.paidAmount) {
-                      setValidationErrors({
-                        ...validationErrors,
-                        paidAmount: "",
-                      });
-                    }
-                  }}
-                  placeholder="Enter amount received"
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] ${validationErrors.paidAmount
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
-                    }`}
-                  min={0}
-                  max={total}
-                />
-                {validationErrors.paidAmount && (
-                  <span className="text-xs text-red-500 mt-1 block">
-                    {validationErrors.paidAmount}
-                  </span>
+            {isPartialPaymentEdit && originalOrder ? (
+              <div className="space-y-3">
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-sm">
+                  <p className="font-bold text-orange-900 mb-1">Partial Payment Mode</p>
+                  <p className="text-orange-800 flex justify-between">
+                    <span>Previously Paid:</span>
+                    <span className="font-mono">${(originalOrder.paidAmount || 0).toFixed(2)}</span>
+                  </p>
+                  <p className="text-orange-800 flex justify-between font-bold mt-1">
+                    <span>Remaining Due:</span>
+                    <span className="font-mono">${(originalOrder.dueAmount || 0).toFixed(2)}</span>
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center justify-between text-xs font-medium text-gray-700 mb-1">
+                    <span>Add New Payment Amount <span className="text-red-500">*</span></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const due = originalOrder.dueAmount || 0;
+                        setNewPaymentAmount?.(due.toFixed(2));
+                      }}
+                      className="text-[#FF6A00] font-bold hover:underline"
+                    >
+                      Pay Full (${(originalOrder.dueAmount || 0).toFixed(2)})
+                    </button>
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymentAmount?.toString() || ""}
+                    onChange={(e) => {
+                      const valStr = e.target.value;
+                      // Allow only numbers and a single decimal point
+                      if (valStr === "" || /^\d*\.?\d{0,2}$/.test(valStr)) {
+                        const val = valStr === "" ? 0 : Number(valStr);
+                        if (setNewPaymentAmount) {
+                          const maxDue = Math.round((originalOrder.dueAmount || 0) * 100) / 100;
+                          if (val <= maxDue) {
+                            setNewPaymentAmount(valStr);
+                          } else {
+                            setNewPaymentAmount(maxDue.toFixed(2));
+                          }
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      // On blur, format to 2 decimal places if there's a value
+                      if (newPaymentAmount && setNewPaymentAmount) {
+                         setNewPaymentAmount(Number(newPaymentAmount).toFixed(2));
+                      }
+                    }}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]"
+                  />
+                </div>
+                {/* Payment History View */}
+                {originalOrder.paymentHistory && originalOrder.paymentHistory.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-bold text-gray-700 mb-2 uppercase">Payment History</p>
+                    <div className="space-y-1.5">
+                      {originalOrder.paymentHistory.map(ph => (
+                         <div key={ph.id} className="flex justify-between items-center text-xs bg-white border border-gray-200 p-2 rounded-lg shadow-sm">
+                            <div className="flex flex-col">
+                              <span className="text-gray-900 font-medium">{ph.method}</span>
+                              <span className="text-gray-500 text-[10px]">
+                                {new Date(ph.date).toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="font-bold text-green-600">+${ph.amount.toFixed(2)}</span>
+                         </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-                <p className="text-xs text-gray-500">
-                  How much has the customer paid now? The remaining will be
-                  marked as due.
-                </p>
               </div>
+            ) : (
+              <>
+                {/* Payment Status (not for Complimentary) */}
+                {paymentMethod !== "Complimentary" && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Payment Status
+                    </label>
+                    <select
+                      value={paymentStatus}
+                      onChange={(e) => setPaymentStatus(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="paid">Paid in Full</option>
+                      <option value="due">Partial Payment / Due</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Paid Amount (only when status is due) */}
+                {paymentMethod !== "Complimentary" && paymentStatus === "due" && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Amount Paid <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={paidAmount}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value));
+                        setPaidAmount(val > total ? total : val);
+                        if (validationErrors.paidAmount) {
+                          setValidationErrors({
+                            ...validationErrors,
+                            paidAmount: "",
+                          });
+                        }
+                      }}
+                      placeholder="Enter amount received"
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] ${validationErrors.paidAmount
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                        }`}
+                      min={0}
+                      max={total}
+                    />
+                    {validationErrors.paidAmount && (
+                      <span className="text-xs text-red-500 mt-1 block">
+                        {validationErrors.paidAmount}
+                      </span>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      How much has the customer paid now? The remaining will be
+                      marked as due.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Complimentary Note */}
@@ -1298,10 +1385,11 @@ export function POSCart({
                 <div className="flex items-center gap-1">
                   <select
                     value={discountType}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     onChange={(e) =>
                       setDiscountType(e.target.value as "percentage" | "fixed")
                     }
-                    className="text-xs border border-gray-300 rounded-l-lg py-2 px-2 focus:outline-none focus:border-[#FF6A00] bg-white min-w-[100px]"
+                    className="text-xs border border-gray-300 rounded-l-lg py-2 px-2 focus:outline-none focus:border-[#FF6A00] bg-white min-w-[100px] disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed ($)</option>
@@ -1310,7 +1398,8 @@ export function POSCart({
                     type="number"
                     value={discountValue}
                     onChange={(e) => setDiscountValue(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-l-0 border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]"
+                    disabled={isSubmitting || isPartialPaymentEdit}
+                    className="w-full px-3 py-2 text-sm border border-l-0 border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     min={0}
                   />
                 </div>
@@ -1324,10 +1413,11 @@ export function POSCart({
                 <div className="flex items-center gap-1">
                   <select
                     value={taxType}
+                    disabled={isSubmitting || isPartialPaymentEdit}
                     onChange={(e) =>
                       setTaxType(e.target.value as "percentage" | "fixed")
                     }
-                    className="text-xs border border-gray-300 rounded-l-lg py-2 px-2 focus:outline-none focus:border-[#FF6A00] bg-white min-w-[100px]"
+                    className="text-xs border border-gray-300 rounded-l-lg py-2 px-2 focus:outline-none focus:border-[#FF6A00] bg-white min-w-[100px] disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed ($)</option>
@@ -1336,7 +1426,8 @@ export function POSCart({
                     type="number"
                     value={taxValue}
                     onChange={(e) => setTaxValue(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-l-0 border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00]"
+                    disabled={isSubmitting || isPartialPaymentEdit}
+                    className="w-full px-3 py-2 text-sm border border-l-0 border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     min={0}
                   />
                 </div>

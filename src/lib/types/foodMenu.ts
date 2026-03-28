@@ -297,6 +297,13 @@ export interface FoodOrder {
   paymentMethod?: string;
   paidAmount?: number;
   dueAmount?: number;
+  paymentHistory?: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    date: Date;
+    recordedBy?: string;
+  }>;
   userId?: string;
   ownerId?: string;
   notes?: string;
