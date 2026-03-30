@@ -300,45 +300,47 @@ export const createFoodOrder = async (
 export const updateFoodOrder = async (
   id: string,
   data: Partial<FoodOrder> & { newPaymentEntry?: { amount: number; method: string; recordedBy?: string } },
+  menuType?: "food" | "bar" 
 ): Promise<boolean> => {
   if (!db) return false;
   try {
-    const currentOrder = await getFoodOrder(id);
-    if (!currentOrder) return false;
+    // 1. DETERMINE COLLECTION (Moved inside or optimized with hint)
+    const assumedCol = menuType ? (menuType === "bar" ? "barOrders" : "foodOrders") : "foodOrders";
+    let orderRef = doc(db, assumedCol, id);
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // STRICT EDIT RULES / CONCURRENCY SAFETY (Phase 9/11)
+    // CONCURRENCY SAFETY: Everything inside the transaction (Phase 11-Atomic)
     // ─────────────────────────────────────────────────────────────────────────────
-    const isOrderDetailsEdit = data.items !== undefined || data.subtotal !== undefined || data.guestName !== undefined;
-
-    if (currentOrder.status !== "pending" && isOrderDetailsEdit) {
-      throw new Error("Cannot edit order details for confirmed orders. Only payments or status can be updated.");
-    }
-
     if (data.newPaymentEntry) {
-      if ((currentOrder.dueAmount || 0) <= 0) {
-        throw new Error("Order is already fully paid. No further payments allowed.");
-      }
-
       const { amount, method, recordedBy } = data.newPaymentEntry;
 
-      // Determine collection
-      let r = doc(db, FOOD_ORDERS, id);
-      let s = await getDoc(r);
-      if (!s.exists()) {
-        r = doc(db, BAR_ORDERS, id);
-      }
-
       await runTransaction(db, async (transaction) => {
-        const orderDoc = await transaction.get(r);
-        if (!orderDoc.exists()) throw new Error("Order not found");
+        let orderDoc = await transaction.get(orderRef);
+
+        // Fallback check if menuType was wrong or hint was missing
+        if (!orderDoc.exists() && !menuType) {
+          orderRef = doc(db as any, "barOrders", id);
+          orderDoc = await transaction.get(orderRef);
+        }
+
+        if (!orderDoc.exists()) throw new Error("Order not found in any collection");
         const order = orderDoc.data() as FoodOrder;
 
-        if ((order.dueAmount || 0) <= 0) {
-          throw new Error("Order is fully paid.");
+        // ─────────────────────────────────────────────────────────────────────────────
+        // EDIT RULES (Apply here since we have current state inside transaction)
+        // ─────────────────────────────────────────────────────────────────────────────
+        const isOrderDetailsEdit = data.items !== undefined || data.subtotal !== undefined || data.guestName !== undefined;
+        if (order.status !== "pending" && isOrderDetailsEdit) {
+           throw new Error("Cannot edit order details for confirmed orders. Only payments or status can be updated.");
         }
+
+        const currentDue = order.dueAmount || 0;
+        if (currentDue <= 0) {
+          throw new Error("Order is already fully paid.");
+        }
+
         const roundedAmount = Math.round(amount * 100) / 100;
-        const roundedDue = Math.round((order.dueAmount || 0) * 100) / 100;
+        const roundedDue = Math.round(currentDue * 100) / 100;
 
         if (roundedAmount <= 0 || roundedAmount > roundedDue) {
           throw new Error(`Invalid payment amount. Due is ${roundedDue}`);
@@ -360,7 +362,7 @@ export const updateFoodOrder = async (
         if (dueAmount <= 0) paymentStatus = "paid";
         if (paidAmount === 0) paymentStatus = "due";
 
-        transaction.update(r, {
+        transaction.update(orderRef, {
           paymentHistory,
           paidAmount,
           dueAmount,
@@ -370,25 +372,35 @@ export const updateFoodOrder = async (
         });
       });
 
-      // After transaction, check if it became FULLY PAID, if so, record revenue.
-      const updatedOrder = await getFoodOrder(id);
+      // After transaction completes successfully, check if it became FULLY PAID, if so, record revenue.
+      const finalDoc = await getDoc(orderRef);
+      const updatedOrder = { id, ...finalDoc.data() } as FoodOrder;
+      
       if (updatedOrder && updatedOrder.paymentStatus === "paid" && !updatedOrder.revenueRecorded) {
         await updateDailyFBRevenue(new Date(), updatedOrder);
-        await updateDoc(doc(db, getCollectionName(updatedOrder.menuType), id), { revenueRecorded: true });
+        await updateDoc(orderRef, { revenueRecorded: true });
         console.log("Revenue Recorded for Order after partial payment completion:", id);
       }
       return true;
     }
+
+    // 2. NON-PAYMENT UPDATES
+    if (!orderRef) {
+      const lookup = await getFoodOrder(id);
+      if (!lookup) return false;
+      orderRef = doc(db, getCollectionName(lookup.menuType), id);
+    }
+
     // Check if we need to record revenue (status changed to delivered/paid)
     if (data.status === "delivered" || data.paymentStatus === "paid") {
-      const currentOrder = await getFoodOrder(id);
-      if (currentOrder && !currentOrder.revenueRecorded) {
-        await updateDailyFBRevenue(new Date(), {
-          ...currentOrder,
-          ...data,
-        } as FoodOrder);
-        data.revenueRecorded = true;
-        console.log("Revenue Recorded for Order:", id);
+      const snap = await getDoc(orderRef);
+      if (snap.exists()) {
+        const order = snap.data() as FoodOrder;
+        if (!order.revenueRecorded) {
+          await updateDailyFBRevenue(new Date(), { ...order, ...data } as FoodOrder);
+          data.revenueRecorded = true;
+          console.log("Revenue Recorded for Order:", id);
+        }
       }
     }
 
@@ -401,19 +413,7 @@ export const updateFoodOrder = async (
       }
     });
 
-    // Determine collection by trying to find valid doc
-    // Optimization: if we start passing menuType to updateFoodOrder, we can skip this check.
-    // For now, check existence.
-    let colName = FOOD_ORDERS;
-    let r = doc(db, FOOD_ORDERS, id);
-    let s = await getDoc(r);
-
-    if (!s.exists()) {
-      colName = BAR_ORDERS;
-      r = doc(db, BAR_ORDERS, id);
-    }
-
-    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    await updateDoc(orderRef, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
   } catch (e) {
     console.error("Error updating food order:", e);

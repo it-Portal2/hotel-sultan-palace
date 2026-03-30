@@ -12,6 +12,7 @@ import {
   createFoodOrder,
   updateFoodOrder,
   getFoodOrder,
+  FoodOrder,
 } from "@/lib/services/fbOrderService";
 import { getAllBookings, getAllRoomTypes } from "@/lib/firestoreService";
 import type { Booking, RoomTypeData } from "@/lib/firestoreService";
@@ -434,7 +435,7 @@ export default function POSCreatePage() {
           return;
         }
 
-        const updatePayload: any = {};
+        const updatePayload: Parameters<typeof updateFoodOrder>[1] = {};
         if (Number(newPaymentAmount) > 0) {
           updatePayload.newPaymentEntry = {
             amount: Number(newPaymentAmount),
@@ -445,8 +446,7 @@ export default function POSCreatePage() {
           updatePayload.paymentMethod = paymentMethod;
         }
 
-        // @ts-ignore
-        const success = await updateFoodOrder(editOrderId, updatePayload);
+        const success = await updateFoodOrder(editOrderId, updatePayload, originalOrder?.menuType || menuType);
         if (success) {
           showToast("Payment updated successfully!", "success");
           router.push(returnUrl);
@@ -545,8 +545,7 @@ export default function POSCreatePage() {
 
       if (isEditing && editOrderId) {
         // UPDATE MODE
-        // @ts-ignore
-        const success = await updateFoodOrder(editOrderId, orderData);
+        const success = await updateFoodOrder(editOrderId, orderData as Partial<FoodOrder>, originalOrder?.menuType || menuType);
 
         if (success) {
           showToast("Order updated successfully!", "success");
@@ -568,9 +567,8 @@ export default function POSCreatePage() {
         }
       } else {
         // CREATE MODE
-        // @ts-ignore
         const result = await createFoodOrder({
-          ...orderData,
+          ...orderData as any, // Cast to any for the Omit overlap check
           status: "pending",
           kitchenStatus: "received",
         });

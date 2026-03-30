@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Department } from '@/lib/firestoreService';
-import { createInventoryDepartment, deleteInventoryDepartment, updateInventoryDepartment, seedDefaultDepartments } from '@/lib/inventoryService';
+import { createInventoryDepartment, deleteInventoryDepartment, updateInventoryDepartment, seedDefaultDepartments, CANONICAL_LOCATIONS } from '@/lib/inventoryService';
 import { TrashIcon, PlusIcon, BuildingOfficeIcon, BoltIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import Drawer from '@/components/ui/Drawer';
@@ -13,7 +13,11 @@ interface DepartmentManagerProps {
     onRefresh: () => void;
 }
 
-const PERMANENT_SLUGS = ['main_store', 'kitchen_bar', 'beach_bar'];
+const PERMANENT_SLUGS = [
+    CANONICAL_LOCATIONS.MAIN_STORE,
+    CANONICAL_LOCATIONS.KITCHEN,
+    CANONICAL_LOCATIONS.BAR
+];
 
 export default function DepartmentManager({ departments, isOpen, onClose, onRefresh }: DepartmentManagerProps) {
     const { showToast } = useToast();

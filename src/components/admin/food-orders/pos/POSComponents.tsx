@@ -50,10 +50,10 @@ export interface POSItem {
   price: number;
   image?: string;
   images?: string[]; // Multiple images for carousel
-  category?: string;
-  station?: string;
-  kitchenSection?: string;
-  sku?: string; // Stock Keeping Unit from menu item
+  category?: string | null;
+  station?: string | null;
+  kitchenSection?: string | null;
+  sku?: string | null; // Stock Keeping Unit from menu item
   // Variant support
   itemType?: "simple" | "variant_based" | "complex_combo";
   hasVariants?: boolean;

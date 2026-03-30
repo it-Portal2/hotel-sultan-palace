@@ -595,8 +595,8 @@ export default function RoomAvailabilityPage() {
   const summaryStats = useMemo(() => {
     // Calculate strict total rooms from the database
     const totalRoomsCount = roomTypes.length || 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use the UI-selected date instead of actual system date for all statistics
+    const today = normalizeDate(currentDate);
     const todayTime = today.getTime();
 
     let vacant = 0;
@@ -635,24 +635,9 @@ export default function RoomAvailabilityPage() {
         // Standard Overlap: Start <= Today < End
         const standardStay = todayTime >= start && todayTime < end;
 
-        // Due Out Case: End == Today (and Checked In)
-        const isDueOutDate = end === todayTime;
-
-        // "Due Out" Check:
-        // Technically "Due Out" means checkout is expected today.
-        // However, if the room is CLEAN, it implies the guest has left or room is ready.
-        // To resolve user inconsistency ("I cleaned it, why still Due Out?"), 
-        // we check the room status.
-        let isActuallyDueOut = isDueOutDate && b.status === 'checked_in';
-        if (isActuallyDueOut) {
-          const rs = roomStatuses.find(s => s.roomName === room.roomName);
-          // If room is CLEAN, we treat it as Vacant/Ready for the stats, or at least NOT "Due Out" (Red)
-          // But wait, "Occupied" stat might still apply if they haven't settled bill.
-          // User wants the "Due Out" label/count specifically to go away.
-          if (rs?.housekeepingStatus === 'clean') {
-            isActuallyDueOut = false;
-          }
-        }
+        // Due Out Case: Checkout <= Today (and Checked In)
+        const isDueOutDate = end <= todayTime;
+        const isActuallyDueOut = isDueOutDate && b.status === 'checked_in';
 
         return standardStay || isActuallyDueOut;
       });
@@ -664,12 +649,7 @@ export default function RoomAvailabilityPage() {
         } else if (booking.status === 'checked_in') {
           const checkOutDate = normalizeDate(booking.checkOut).getTime();
 
-          let isDueOut = checkOutDate === todayTime;
-          // Apply same "Clean" filter for the stats count
-          const rs = roomStatuses.find(s => s.roomName === room.roomName);
-          if (isDueOut && rs?.housekeepingStatus === 'clean') {
-            isDueOut = false;
-          }
+          const isDueOut = checkOutDate <= todayTime;
 
           if (isDueOut) {
             dueOut++;

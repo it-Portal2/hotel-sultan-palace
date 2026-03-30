@@ -77,8 +77,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
 
     const summaryStats = useMemo(() => {
         const totalRoomsCount = rooms.length || 15;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = normalizeDate(currentDate);
         const todayTime = today.getTime();
 
         let vacant = 0;
@@ -124,7 +123,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
             if (booking) {
                 const status = booking.status;
                 const checkOutDate = normalizeDate(booking.checkOut);
-                const isDueOut = checkOutDate.getTime() === todayTime;
+                const isDueOut = checkOutDate.getTime() <= todayTime;
 
                 // MAINTENANCE BOOKING FIX (Hibiscus issue)
                 if (status === 'maintenance') {
@@ -151,7 +150,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                     if (b.status !== 'checked_in') return false;
                     // Matches Room
                     if (!b.rooms.some(r => r.allocatedRoomType === room.roomName || r.type === room.roomName)) return false;
-                    return normalizeDate(b.checkOut).getTime() === todayTime;
+                    return normalizeDate(b.checkOut).getTime() <= todayTime;
                 });
 
                 const isClean = statuses.find(s => s.roomName === room.roomName)?.housekeepingStatus === 'clean';
@@ -175,8 +174,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
 
     // Determine Room Visual State
     const getRoomVisuals = (room: RoomType) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = normalizeDate(currentDate);
         const todayTime = today.getTime();
 
         const roomStatus = statuses.find(s => s.roomName === room.roomName);
@@ -191,7 +189,7 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
             const end = normalizeDate(b.checkOut).getTime();
 
             // Check inclusive to catch Due Out today if checked_in
-            if (normalizeDate(b.checkOut).getTime() === todayTime && b.status === 'checked_in') return true;
+            if (normalizeDate(b.checkOut).getTime() <= todayTime && b.status === 'checked_in') return true;
 
             return isDateInRange(todayTime, start, end);
         });
@@ -233,11 +231,11 @@ export default function RoomViewGrid({ isReadOnly }: RoomViewGridProps) {
                 icon = <FaUser className="w-5 h-5 mx-auto" />;
             } else {
                 const checkOutDate = normalizeDate(booking.checkOut);
-                const isDueOut = checkOutDate.getTime() === today.getTime();
+                const isDueOut = checkOutDate.getTime() <= todayTime;
 
                 if (booking.status === 'checked_in') {
 
-                    if (isDueOut && housekeeping !== 'clean') {
+                    if (isDueOut) {
                         status = 'due_out';
                         colorClass = 'bg-red-50 text-red-700 border-red-200';
                         label = 'Due Out';

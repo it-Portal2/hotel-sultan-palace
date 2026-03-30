@@ -51,8 +51,8 @@ export default function HouseStatusView({ roomStatuses, roomTypes, bookings, sui
       const start = normalizeDate(b.checkIn).getTime();
       const end = normalizeDate(b.checkOut).getTime();
 
-      // Catch "Due Out" today (checked_in ending today)
-      if (normalizeDate(b.checkOut).getTime() === todayTime && b.status === 'checked_in') return true;
+      // Catch "Due Out" (checked_in ending today or in the past)
+      if (normalizeDate(b.checkOut).getTime() <= todayTime && b.status === 'checked_in') return true;
 
       // Standard range
       return isDateInRange(todayTime, start, end);
@@ -83,7 +83,7 @@ export default function HouseStatusView({ roomStatuses, roomTypes, bookings, sui
         isOOO = true;
       } else if (booking.status === 'checked_in') {
         const checkOutDate = normalizeDate(booking.checkOut);
-        if (checkOutDate.getTime() === todayTime) {
+        if (checkOutDate.getTime() <= todayTime) {
           primaryStatus = 'due_out';
         } else {
           primaryStatus = 'occupied';

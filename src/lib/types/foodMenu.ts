@@ -256,13 +256,15 @@ export interface FoodOrder {
   items: Array<{
     menuItemId: string;
     name: string;
+    sku?: string | null;
     price: number;
     quantity: number;
     specialInstructions?: string;
-    variant?: { name: string; price: number };
-    selectedModifiers?: Array<{ name: string; price: number }>;
-    category?: string;
-    station?: string;
+    notes?: string | null;
+    variant?: { name: string; price: number } | null;
+    selectedModifiers?: Array<{ name: string; price: number }> | null;
+    category?: string | null;
+    station?: string | null;
   }>;
   subtotal: number;
   tax: number;

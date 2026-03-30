@@ -5,7 +5,7 @@ import { useAdminRole } from "@/context/AdminRoleContext";
 import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
-import { processOrderInventoryDeduction } from "@/lib/inventoryService";
+import { handleInventoryByStatusChange } from "@/lib/inventoryService";
 import { generateAndStoreReceipt } from "@/app/actions/receiptActions";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import Link from "next/link";
@@ -101,8 +101,21 @@ export default function AdminFoodOrdersPage() {
     status: FoodOrder["status"],
   ) => {
     if (isReadOnly) return;
+    const currentOrder = orders.find((o) => o.id === orderId);
+    const prevStatus = currentOrder?.status || "pending";
+
     try {
-      await updateFoodOrder(orderId, { status });
+      // 🔄 Centralized Inventory Logic (Sales Deduction / Rollback)
+      if (currentOrder) {
+        await handleInventoryByStatusChange(
+          prevStatus,
+          status,
+          currentOrder,
+          "Admin User"
+        );
+      }
+
+      await updateFoodOrder(orderId, { status }, currentOrder?.menuType);
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
       );
@@ -116,14 +129,12 @@ export default function AdminFoodOrdersPage() {
           await updateFoodOrder(orderId, {
             restaurantPrinted: false, // → KOT Listener 1 → Ramson (restaurant receipt)
             kitchenPrintRequested: true, // → KOT Listener 3 → POSX (kitchen ticket)
-          } as any);
+          } as any, currentOrder?.menuType);
 
           // Phase 11: Generate receipt server-side at confirmation
           generateAndStoreReceipt(orderId).catch((err: unknown) =>
             console.error("[Receipt] Server generation failed:", err),
           );
-
-          await processOrderInventoryDeduction(orderId, "Admin User", "food");
         } catch (printErr) {
           console.error("Print trigger failed:", printErr);
         }
@@ -153,7 +164,7 @@ export default function AdminFoodOrdersPage() {
 
   const handleReprint = async (orderId: string) => {
     try {
-      await updateFoodOrder(orderId, { reprintRequested: true } as any);
+      await updateFoodOrder(orderId, { reprintRequested: true } as any, orders.find(o => o.id === orderId)?.menuType);
       showToast("Print request sent to restaurant printer", "success");
     } catch (error) {
       console.error("Error requesting reprint:", error);
@@ -165,7 +176,7 @@ export default function AdminFoodOrdersPage() {
     try {
       await updateFoodOrder(orderId, {
         kitchenPrintRequested: true,
-      } as any);
+      } as any, orders.find(o => o.id === orderId)?.menuType);
       showToast("Print request sent to kitchen printer", "success");
     } catch (error) {
       console.error("Error requesting kitchen print:", error);
@@ -505,8 +516,8 @@ export default function AdminFoodOrdersPage() {
                       <button
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === page
-                            ? "bg-[#FF6A00] text-white"
-                            : "text-gray-600 hover:bg-gray-100 border border-gray-200"
+                          ? "bg-[#FF6A00] text-white"
+                          : "text-gray-600 hover:bg-gray-100 border border-gray-200"
                           }`}
                       >
                         {page}

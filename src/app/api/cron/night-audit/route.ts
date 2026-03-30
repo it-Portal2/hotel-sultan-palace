@@ -3,16 +3,26 @@ import { automatedNightAudit } from '@/app/actions/nightAuditActions';
 
 export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
-    
-    // Check for Vercel Cron header or custom secret
-    // Vercel adds 'Authorization: Bearer <CRON_SECRET>' if configured
-    const isCronTrigger = 
-        authHeader === `Bearer ${process.env.CRON_SECRET}` || 
-        request.nextUrl.searchParams.get('key') === process.env.CRON_SECRET ||
-        process.env.NODE_ENV === 'development'; // Allow local calls for testing
+    const cronSecret = process.env.CRON_SECRET;
 
-    if (!isCronTrigger) {
+    // 1. Initial Auth Check (No Token)
+    if (!authHeader) {
+        console.warn('[Cron] Unauthorized attempt: No token provided at', new Date().toISOString());
         return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    // 2. Secret Configuration Check
+    if (!cronSecret) {
+        console.error('[Cron] Security Critical: CRON_SECRET is missing from environment variables.');
+        return new NextResponse('Forbidden: Configuration Error', { status: 403 });
+    }
+
+    // 3. Strict Validation (Only Header Auth)
+    const isAuthorized = authHeader === `Bearer ${cronSecret}`;
+
+    if (!isAuthorized) {
+        console.warn('[Cron] Forbidden: Invalid token attempt at', new Date().toISOString());
+        return new NextResponse('Forbidden: Invalid Token', { status: 403 });
     }
 
     console.log('[Cron] Starting automated Night Audit at', new Date().toISOString());
