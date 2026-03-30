@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { getInventoryTransactions } from '@/lib/inventoryService';
-import type { InventoryTransaction } from '@/lib/firestoreService';
+import { getInventoryTransactions, getInventoryDepartments, getInventoryItems } from '@/lib/inventoryService';
+import type { InventoryTransaction, Department, InventoryItem } from '@/lib/firestoreService';
 import {
     ArrowDownTrayIcon,
     ChartPieIcon,
-    ClockIcon
+    ClockIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function InventoryReportsTab() {
     const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [itemsMap, setItemsMap] = useState<Record<string, InventoryItem>>({});
+    
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'history' | 'usage'>('usage');
+
+    const [currentPageHistory, setCurrentPageHistory] = useState(1);
+    const [currentPageUsage, setCurrentPageUsage] = useState(1);
 
     useEffect(() => {
         loadData();
@@ -19,8 +29,18 @@ export default function InventoryReportsTab() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await getInventoryTransactions();
-            setTransactions(data);
+            const [txData, depts, items] = await Promise.all([
+                getInventoryTransactions(),
+                getInventoryDepartments(),
+                getInventoryItems(),
+            ]);
+
+            setTransactions(txData);
+            setDepartments(depts);
+
+            const iMap: Record<string, InventoryItem> = {};
+            items.forEach(i => iMap[i.id] = i);
+            setItemsMap(iMap);
         } catch (error) {
             console.error(error);
         } finally {
@@ -39,6 +59,18 @@ export default function InventoryReportsTab() {
             case 'sales_deduction': return 'bg-emerald-100 text-emerald-700';
             default: return 'bg-gray-100 text-gray-700';
         }
+    };
+
+    const getLocationName = (slug?: string) => {
+        if (!slug) return '—';
+        const dept = departments.find(d => d.slug === slug);
+        return dept ? dept.name : slug;
+    };
+
+    const getItemUnit = (tx: InventoryTransaction) => {
+        if (tx.unit) return tx.unit;
+        const mappedItem = itemsMap[tx.inventoryItemId];
+        return mappedItem?.unit || '';
     };
 
     // Calculate Usage Summary
@@ -64,18 +96,29 @@ export default function InventoryReportsTab() {
         return Object.values(summary).sort((a, b) => b.cost - a.cost); // Sort by highest cost
     }, [transactions]);
 
+    // Pagination
+    const paginatedHistory = transactions.slice((currentPageHistory - 1) * ITEMS_PER_PAGE, currentPageHistory * ITEMS_PER_PAGE);
+    const paginatedUsage = usageSummary.slice((currentPageUsage - 1) * ITEMS_PER_PAGE, currentPageUsage * ITEMS_PER_PAGE);
+
+    const totalHistoryPages = Math.ceil(transactions.length / ITEMS_PER_PAGE) || 1;
+    const totalUsagePages = Math.ceil(usageSummary.length / ITEMS_PER_PAGE) || 1;
+
     const handleExport = () => {
         // Simple CSV Export of current view
         let headers = [];
         let rows = [];
 
         if (activeTab === 'history') {
-            headers = ['Date', 'Item', 'Type', 'Quantity', 'Stock After', 'Performed By', 'Reason'];
+            headers = ['Date', 'Location', 'Item', 'Type', 'Quantity', 'Unit', 'Unit Cost', 'Total Cost', 'Stock After', 'Performed By', 'Reason'];
             rows = transactions.map(t => [
                 new Date(t.createdAt).toLocaleString(),
+                getLocationName(t.locationId),
                 t.itemName,
                 t.transactionType,
                 t.quantity.toString(),
+                getItemUnit(t),
+                (t.unitCost || 0).toFixed(2),
+                (t.totalCost || 0).toFixed(2),
                 t.newStock.toString(),
                 t.performedBy,
                 `"${t.reason || ''}"`
@@ -106,7 +149,7 @@ export default function InventoryReportsTab() {
         <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 flex gap-1 max-w-md">
                 <button
-                    onClick={() => setActiveTab('usage')}
+                    onClick={() => { setActiveTab('usage'); setCurrentPageUsage(1); }}
                     className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all ${activeTab === 'usage'
                         ? 'bg-orange-50 text-[#FF6A00] shadow-sm'
                         : 'text-gray-500 hover:bg-gray-50'
@@ -116,7 +159,7 @@ export default function InventoryReportsTab() {
                     Usage Summary
                 </button>
                 <button
-                    onClick={() => setActiveTab('history')}
+                    onClick={() => { setActiveTab('history'); setCurrentPageHistory(1); }}
                     className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all ${activeTab === 'history'
                         ? 'bg-orange-50 text-[#FF6A00] shadow-sm'
                         : 'text-gray-500 hover:bg-gray-50'
@@ -154,9 +197,11 @@ export default function InventoryReportsTab() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pricing</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock After</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performed By</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
@@ -164,14 +209,19 @@ export default function InventoryReportsTab() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200 text-sm">
                                 {loading ? (
-                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">Loading transactions...</td></tr>
-                                ) : transactions.length === 0 ? (
-                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">No transactions found.</td></tr>
+                                    <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-500">Loading transactions...</td></tr>
+                                ) : paginatedHistory.length === 0 ? (
+                                    <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-500">No transactions found.</td></tr>
                                 ) : (
-                                    transactions.map((trans) => (
+                                    paginatedHistory.map((trans) => (
                                         <tr key={trans.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                                 {new Date(trans.createdAt).toLocaleDateString()} <span className="text-xs">{new Date(trans.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">
+                                                    {getLocationName(trans.locationId)}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                                                 {trans.itemName}
@@ -182,7 +232,11 @@ export default function InventoryReportsTab() {
                                                 </span>
                                             </td>
                                             <td className={`px-6 py-4 whitespace-nowrap font-bold text-right ${trans.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {trans.quantity > 0 ? '+' : ''}{parseFloat(trans.quantity.toFixed(3))}
+                                                {trans.quantity > 0 ? '+' : ''}{parseFloat(trans.quantity.toFixed(3))} <span className="text-xs font-normal ml-0.5">{getItemUnit(trans)}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="font-medium text-gray-900">${(trans.totalCost || 0).toFixed(2)}</div>
+                                                <div className="text-xs text-gray-400">@ ${(trans.unitCost || 0).toFixed(2)}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-gray-600 font-mono">
                                                 {parseFloat(trans.newStock.toFixed(3))}
@@ -210,10 +264,10 @@ export default function InventoryReportsTab() {
                             <tbody className="bg-white divide-y divide-gray-200 text-sm">
                                 {loading ? (
                                     <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-500">Calculating usage...</td></tr>
-                                ) : usageSummary.length === 0 ? (
+                                ) : paginatedUsage.length === 0 ? (
                                     <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-500">No usage recorded yet.</td></tr>
                                 ) : (
-                                    usageSummary.map((item, idx) => (
+                                    paginatedUsage.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                                                 {item.name}
@@ -231,6 +285,35 @@ export default function InventoryReportsTab() {
                         </table>
                     )}
                 </div>
+                
+                {/* Pagination Footer */}
+                {((activeTab === 'history' && totalHistoryPages > 1) || (activeTab === 'usage' && totalUsagePages > 1)) && !loading && (
+                    <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                        <p className="text-sm text-gray-500">
+                            Showing <span className="font-medium">{(activeTab === 'history' ? currentPageHistory : currentPageUsage) * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1}</span> to{' '}
+                            <span className="font-medium">
+                                {Math.min((activeTab === 'history' ? currentPageHistory : currentPageUsage) * ITEMS_PER_PAGE, activeTab === 'history' ? transactions.length : usageSummary.length)}
+                            </span>{' '}
+                            of <span className="font-medium">{activeTab === 'history' ? transactions.length : usageSummary.length}</span> results
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => activeTab === 'history' ? setCurrentPageHistory(p => Math.max(1, p - 1)) : setCurrentPageUsage(p => Math.max(1, p - 1))}
+                                disabled={(activeTab === 'history' ? currentPageHistory : currentPageUsage) === 1}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                <ChevronLeftIcon className="w-4 h-4 mr-1" /> Prev
+                            </button>
+                            <button
+                                onClick={() => activeTab === 'history' ? setCurrentPageHistory(p => Math.min(totalHistoryPages, p + 1)) : setCurrentPageUsage(p => Math.min(totalUsagePages, p + 1))}
+                                disabled={(activeTab === 'history' ? currentPageHistory : currentPageUsage) === (activeTab === 'history' ? totalHistoryPages : totalUsagePages)}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                Next <ChevronRightIcon className="w-4 h-4 ml-1" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

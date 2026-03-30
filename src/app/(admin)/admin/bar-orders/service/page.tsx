@@ -5,7 +5,7 @@ import { useAdminRole } from "@/context/AdminRoleContext";
 import { useToast } from "@/context/ToastContext";
 import { getFoodOrders, updateFoodOrder } from "@/lib/services/fbOrderService";
 import type { FoodOrder } from "@/lib/firestoreService";
-import { processOrderInventoryDeduction } from "@/lib/inventoryService";
+import { handleInventoryByStatusChange } from "@/lib/inventoryService";
 import { generateAndStoreReceipt } from "@/app/actions/receiptActions";
 import OrderDetailsModal from "@/components/admin/food-orders/OrderDetailsModal";
 import Link from "next/link";
@@ -112,8 +112,21 @@ export default function BarOrdersServicePage() {
     status: FoodOrder["status"],
   ) => {
     if (isReadOnly) return;
+    const currentOrder = orders.find((o) => o.id === orderId);
+    const prevStatus = currentOrder?.status || "pending";
+
     try {
-      await updateFoodOrder(orderId, { status });
+      // 🔄 Centralized Inventory Logic (Sales Deduction / Rollback)
+      if (currentOrder) {
+        await handleInventoryByStatusChange(
+          prevStatus,
+          status,
+          currentOrder,
+          "Admin User"
+        );
+      }
+
+      await updateFoodOrder(orderId, { status }, "bar");
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
       );
@@ -126,7 +139,7 @@ export default function BarOrdersServicePage() {
         try {
           await updateFoodOrder(orderId, {
             barPrinted: false, // → KOT Listener 4 (main_bar) or BOT Listener 1 (beach_bar)
-          } as any);
+          } as any, "bar");
 
           // Phase 11: Generate receipt server-side at confirmation (bar orders)
           generateAndStoreReceipt(orderId, "bar").catch((err: unknown) =>
@@ -138,16 +151,7 @@ export default function BarOrdersServicePage() {
       }
 
       if (status === "delivered") {
-        try {
-          await processOrderInventoryDeduction(orderId, "Admin User", "bar");
-          showToast("Bar order delivered & Inventory deducted", "success");
-        } catch (invError) {
-          console.error("Inventory Deduction Failed:", invError);
-          showToast(
-            "Bar order delivered but Inventory update failed",
-            "warning",
-          );
-        }
+        showToast("Bar order delivered successfully", "success");
       } else {
         const statusMessages: Record<string, string> = {
           confirmed: "✅ Bar Order Confirmed! Receipt is being generated...",
@@ -170,7 +174,7 @@ export default function BarOrdersServicePage() {
 
   const handleReprint = async (orderId: string) => {
     try {
-      await updateFoodOrder(orderId, { reprintRequested: true } as any);
+      await updateFoodOrder(orderId, { reprintRequested: true } as any, "bar");
       showToast("Reprint request sent to bar printer", "success");
     } catch (error) {
       console.error("Error requesting reprint:", error);
@@ -183,11 +187,23 @@ export default function BarOrdersServicePage() {
     try {
       await updateFoodOrder(orderId, {
         kitchenPrintRequested: true,
-      } as any);
+      } as any, "bar");
       showToast("Print request sent to kitchen printer", "success");
     } catch (error) {
       console.error("Error requesting kitchen print:", error);
       showToast("Failed to send kitchen print request", "error");
+    }
+  };
+
+  const handleBarPrint = async (orderId: string) => {
+    try {
+      await updateFoodOrder(orderId, {
+        barPrintRequested: true,
+      } as any, "bar");
+      showToast("Print request sent to bar printer", "success");
+    } catch (error) {
+      console.error("Error requesting bar print:", error);
+      showToast("Failed to send bar print request", "error");
     }
   };
 
@@ -576,6 +592,7 @@ export default function BarOrdersServicePage() {
           isReadOnly={isReadOnly}
           onReprint={handleReprint}
           onKitchenPrint={handleKitchenPrint}
+          onBarPrint={handleBarPrint}
         />
       )}
     </div>

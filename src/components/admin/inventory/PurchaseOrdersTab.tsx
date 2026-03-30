@@ -5,7 +5,7 @@ import PurchaseOrderDrawer from './PurchaseOrderDrawer';
 import ReceivePurchaseOrderModal from './ReceivePurchaseOrderModal';
 import PurchaseOrderDetailsModal from './PurchaseOrderDetailsModal';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon, DocumentTextIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, MagnifyingGlassIcon, TrashIcon, CheckCircleIcon, PencilIcon, TruckIcon, DocumentTextIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 
 interface PurchaseOrdersTabProps {
@@ -22,6 +22,13 @@ export default function PurchaseOrdersTab() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'ordered' | 'received'>('all'); // Basic filtering
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     // Modal States
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -84,6 +91,9 @@ export default function PurchaseOrdersTab() {
         const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    const paginatedOrders = filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
 
     if (loading) return <div className="text-center py-12 text-gray-500">Loading orders...</div>;
 
@@ -155,7 +165,7 @@ export default function PurchaseOrdersTab() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredOrders.map((po) => (
+                                paginatedOrders.map((po) => (
                                     <tr key={po.id} className="hover:bg-gray-50 transition-colors group">
                                         <td className="px-6 py-4 font-mono text-sm font-bold text-gray-900">
                                             {po.poNumber}
@@ -258,6 +268,35 @@ export default function PurchaseOrdersTab() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Footer */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                        <p className="text-sm text-gray-500">
+                            Showing <span className="font-medium">{currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1}</span> to{' '}
+                            <span className="font-medium">
+                                {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)}
+                            </span>{' '}
+                            of <span className="font-medium">{filteredOrders.length}</span> results
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                <ChevronLeftIcon className="w-4 h-4 mr-1" /> Prev
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                Next <ChevronRightIcon className="w-4 h-4 ml-1" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <PurchaseOrderDrawer

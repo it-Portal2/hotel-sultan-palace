@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Department } from '@/lib/firestoreService';
-import { createInventoryDepartment, deleteInventoryDepartment, seedDefaultDepartments } from '@/lib/inventoryService';
-import { TrashIcon, PlusIcon, BuildingOfficeIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { createInventoryDepartment, deleteInventoryDepartment, updateInventoryDepartment, seedDefaultDepartments, CANONICAL_LOCATIONS } from '@/lib/inventoryService';
+import { TrashIcon, PlusIcon, BuildingOfficeIcon, BoltIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import Drawer from '@/components/ui/Drawer';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -13,12 +13,22 @@ interface DepartmentManagerProps {
     onRefresh: () => void;
 }
 
+const PERMANENT_SLUGS = [
+    CANONICAL_LOCATIONS.MAIN_STORE,
+    CANONICAL_LOCATIONS.KITCHEN,
+    CANONICAL_LOCATIONS.BAR
+];
+
 export default function DepartmentManager({ departments, isOpen, onClose, onRefresh }: DepartmentManagerProps) {
     const { showToast } = useToast();
     const [newDepartmentName, setNewDepartmentName] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    
+    // Edit state
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,6 +43,22 @@ export default function DepartmentManager({ departments, isOpen, onClose, onRefr
         } catch (error) {
             console.error(error);
             showToast("Failed to add department", "error");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleUpdate = async (id: string) => {
+        if (!editingName.trim()) return;
+        setSubmitting(true);
+        try {
+            await updateInventoryDepartment(id, editingName.trim());
+            showToast("Department updated", "success");
+            setEditingId(null);
+            onRefresh();
+        } catch (error) {
+            console.error(error);
+            showToast("Failed to update department", "error");
         } finally {
             setSubmitting(false);
         }
@@ -134,23 +160,63 @@ export default function DepartmentManager({ departments, isOpen, onClose, onRefr
                         ) : (
                             departments.map(dept => (
                                 <div key={dept.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm group hover:border-[#FF6A00]/30 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-orange-50 text-[#FF6A00] rounded-lg">
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <div className="p-2 bg-orange-50 text-[#FF6A00] rounded-lg h-fit">
                                             <BuildingOfficeIcon className="w-4 h-4" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold text-gray-700">{dept.name}</span>
-                                            <span className="text-[10px] text-gray-400 font-mono">ID: {dept.slug}</span>
+                                        <div className="flex flex-col flex-1">
+                                            {editingId === dept.id ? (
+                                                <div className="flex items-center gap-2 pr-2">
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={editingName}
+                                                        onChange={(e) => setEditingName(e.target.value)}
+                                                        className="flex-1 px-2 py-1 border border-[#FF6A00] rounded text-sm outline-none"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleUpdate(dept.id);
+                                                            if (e.key === 'Escape') setEditingId(null);
+                                                        }}
+                                                    />
+                                                    <button onClick={() => handleUpdate(dept.id)} className="text-green-600 hover:bg-green-50 p-1 rounded">
+                                                        <CheckIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => setEditingId(null)} className="text-gray-400 hover:bg-gray-50 p-1 rounded">
+                                                        <XMarkIcon className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="font-semibold text-gray-700">{dept.name}</span>
+                                                    <span className="text-[10px] text-gray-400 font-mono">ID: {dept.slug}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(dept.id)}
-                                        disabled={deletingId === dept.id}
-                                        className="text-gray-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100"
-                                        title="Delete department"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        {editingId !== dept.id && (
+                                            <button
+                                                onClick={() => {
+                                                    setEditingId(dept.id);
+                                                    setEditingName(dept.name);
+                                                }}
+                                                className="text-gray-300 hover:text-[#FF6A00] transition-colors p-2 rounded-lg hover:bg-orange-50 opacity-0 group-hover:opacity-100"
+                                                title="Edit name"
+                                            >
+                                                <PencilIcon className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {!PERMANENT_SLUGS.includes(dept.slug) && editingId !== dept.id && (
+                                            <button
+                                                onClick={() => handleDelete(dept.id)}
+                                                disabled={deletingId === dept.id}
+                                                className="text-gray-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                                                title="Delete department"
+                                            >
+                                                <TrashIcon className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))
                         )}

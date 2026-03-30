@@ -5,7 +5,7 @@ import InventoryModal from './InventoryModal';
 import CategoryManager from './CategoryManager';
 import DepartmentManager from './DepartmentManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusIcon, FolderPlusIcon, BuildingOfficeIcon, BoltIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/context/ToastContext';
 import { useAdminRole } from '@/context/AdminRoleContext';
 
@@ -20,7 +20,8 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
     const { hasSectionAccess } = useAdminRole();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
-    // Removed department filter to restore legacy view
+    const [filterDepartment, setFilterDepartment] = useState<string>('all');
+    const [filterExpiry, setFilterExpiry] = useState<boolean>(false);
     const [showModal, setShowModal] = useState(false);
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [showDepartmentManager, setShowDepartmentManager] = useState(false);
@@ -28,6 +29,13 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [categories, setCategories] = useState<InventoryCategory[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterCategory, filterDepartment, filterExpiry]);
 
     useEffect(() => {
         loadCategories();
@@ -78,12 +86,23 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         }
     };
 
-    const filteredItems = items.filter(item => {
-        const matchesSearch = (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-        return matchesSearch && matchesCategory;
-    });
+    // Helper functions moved to top to avoid ReferenceErrors during filtering
+    const getExpiryBadge = (item: InventoryItem): { label: string; className: string } | null => {
+        if (!item.expiryDate) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiry = item.expiryDate instanceof Date
+            ? item.expiryDate
+            : new Date((item.expiryDate as any)?.toDate ? (item.expiryDate as any).toDate() : item.expiryDate);
+        if (isNaN(expiry.getTime())) return null;
+        
+        const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+        
+        if (diffDays < 0) return { label: 'Expired', className: 'bg-red-50 text-red-700 border border-red-100 shadow-sm' };
+        if (diffDays <= 7) return { label: `Exp in ${diffDays}d`, className: 'bg-orange-100 text-orange-800 border border-orange-200 shadow-sm' };
+        if (diffDays <= 30) return { label: `Exp in ${diffDays}d`, className: 'bg-amber-50 text-amber-700 border border-amber-100 shadow-sm' };
+        return null; // Far future — no badge needed
+    };
 
     const getStockStatus = (item: InventoryItem) => {
         const stock = item.currentStock ?? 0;
@@ -102,6 +121,47 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
         }
     };
 
+    const formatDateISO = (date: any): string => {
+        if (!date) return '';
+        const d = date instanceof Date
+            ? date
+            : new Date(date?.toDate ? date.toDate() : date);
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().split('T')[0];
+    };
+
+    const filteredItems = items.filter(item => {
+        const matchesSearch = (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
+
+        // Department Filter Logic
+        let matchesDepartment = true;
+        if (filterDepartment !== 'all') {
+            // Check if item belongs to the department OR has stock in the department
+            const belongsToDept = item.department === filterDepartment;
+            const hasStockInDept = item.stockByLocation && (item.stockByLocation[filterDepartment] !== undefined);
+
+            // Handle legacy cases where department name might be used instead of slug
+            const deptObj = departments.find(d => d.slug === filterDepartment);
+            const matchesDeptName = deptObj ? (item.department === deptObj.name) : false;
+
+            matchesDepartment = belongsToDept || hasStockInDept || matchesDeptName;
+        }
+
+        // Expiry Filter Logic
+        let matchesExpiry = true;
+        if (filterExpiry) {
+            const badge = getExpiryBadge(item);
+            matchesExpiry = !!badge && (badge.label !== 'Expired' || true); // Show anything with an expiry badge
+        }
+
+        return matchesSearch && matchesCategory && matchesDepartment && matchesExpiry;
+    });
+
+    const paginatedItems = filteredItems.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1;
+
     // Combine static 'All' with dynamic categories
     const displayCategories = [
         { id: 'all', label: 'All Categories', name: 'all' },
@@ -118,15 +178,46 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
 
                 {/* Left Side: Search (Expanded) */}
-                <div className="relative w-full md:max-w-md">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search inventory items..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6A00] transition-all"
-                    />
+                <div className="flex flex-col md:flex-row gap-3 w-full md:max-w-2xl">
+                    <div className="relative flex-1">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search inventory items..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6A00] transition-all"
+                        />
+                    </div>
+
+                    {/* Department Filter */}
+                    <div className="flex-none">
+                        <select
+                            value={filterDepartment}
+                            onChange={(e) => setFilterDepartment(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6A00] transition-all font-medium text-gray-700"
+                        >
+                            <option value="all">All Departments</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.slug}>{dept.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Expiry Toggle */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg whitespace-nowrap">
+                        <input
+                            type="checkbox"
+                            role="checkbox"
+                            id="expiryFilter"
+                            checked={filterExpiry}
+                            onChange={(e) => setFilterExpiry(e.target.checked)}
+                            className="h-4 w-4 text-[#FF6A00] border-gray-300 rounded focus:ring-[#FF6A00]"
+                        />
+                        <label htmlFor="expiryFilter" className="text-xs font-bold text-gray-600 cursor-pointer uppercase select-none">
+                            Near Expiry
+                        </label>
+                    </div>
                 </div>
 
                 {/* Right Side: Actions */}
@@ -229,6 +320,8 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                     onClick={() => {
                                                         setSearchTerm('');
                                                         setFilterCategory('all');
+                                                        setFilterDepartment('all');
+                                                        setFilterExpiry(false);
                                                     }}
                                                     className="mt-2 text-[#FF6A00] font-medium text-sm hover:underline"
                                                 >
@@ -238,16 +331,25 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredItems.map((item) => {
+                                    paginatedItems.map((item) => {
                                         const status = getStockStatus(item);
                                         return (
                                             <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-gray-900 text-[15px]">{item.name}</span>
-                                                        <div className="flex items-center gap-2 mt-1">
+                                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                             <span className="text-xs text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">SKU: {item.sku}</span>
                                                             <span className="text-[10px] text-gray-500 uppercase tracking-wide md:hidden bg-gray-100 px-1.5 py-0.5 rounded">{item.department}</span>
+                                                            {(() => { const b = getExpiryBadge(item); return b ? <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${b.className}`}>{b.label}</span> : null; })()}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                                                            {item.manufacturingDate && (
+                                                                <span title="Manufacturing Date">MFD: {formatDateISO(item.manufacturingDate)}</span>
+                                                            )}
+                                                            {item.expiryDate && (
+                                                                <span title="Expiry Date">EXP: {formatDateISO(item.expiryDate)}</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -263,19 +365,47 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-gray-900 text-base">{Number((item.currentStock ?? 0).toFixed(2))}</span>
+                                                            <span className="font-bold text-gray-900 text-base">
+                                                                {(() => {
+                                                                    const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                                        ? (item.stockByLocation[filterDepartment] || 0)
+                                                                        : (item.currentStock ?? 0);
+                                                                    return Number(stock.toFixed(2));
+                                                                })()}
+                                                            </span>
                                                             <span className="text-xs text-gray-500 font-medium uppercase">{item.unit}</span>
                                                         </div>
                                                         {item.purchaseUnit && item.conversionFactor && (
                                                             <span className="text-[10px] text-orange-600 font-medium bg-orange-50 px-1.5 py-0.5 rounded w-fit">
-                                                                {Math.floor((item.currentStock ?? 0) / item.conversionFactor)} {item.purchaseUnit}
-                                                                {((item.currentStock ?? 0) % item.conversionFactor) > 0 ? ` + ${parseFloat(((item.currentStock ?? 0) % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
+                                                                {(() => {
+                                                                    const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                                        ? (item.stockByLocation[filterDepartment] || 0)
+                                                                        : (item.currentStock ?? 0);
+                                                                    const whole = Math.floor(stock / item.conversionFactor);
+                                                                    const rem = stock % item.conversionFactor;
+                                                                    return (
+                                                                        <>
+                                                                            {whole} {item.purchaseUnit}
+                                                                            {rem > 0 ? ` + ${parseFloat(rem.toFixed(4))} ${item.unit}` : ''}
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                            </span>
+                                                        )}
+                                                        {filterDepartment !== 'all' && (
+                                                            <span className="text-[9px] text-blue-600 font-bold uppercase mt-1">
+                                                                at {departments.find(d => d.slug === filterDepartment)?.name || filterDepartment}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
-                                                    ${((item.currentStock ?? 0) * (item.unitCost ?? 0)).toFixed(2)}
+                                                    ${(() => {
+                                                        const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                            ? (item.stockByLocation[filterDepartment] || 0)
+                                                            : (item.currentStock ?? 0);
+                                                        return (stock * (item.unitCost ?? 0)).toFixed(2);
+                                                    })()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                                     <span className={`px-3 py-1 inline-flex text-[10px] uppercase tracking-wide font-bold rounded-full ${getStockColor(status)} shadow-sm`}>
@@ -333,14 +463,13 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                         </table>
                     </div>
 
-                    {/* Mobile Card List */}
-                    <div className="md:hidden space-y-3 p-4 pb-20 overflow-y-auto">
-                        {filteredItems.length === 0 ? (
+                    <div className="md:hidden space-y-3 p-4 overflow-y-auto">
+                        {paginatedItems.length === 0 ? (
                             <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                                 <p>No items found.</p>
                             </div>
                         ) : (
-                            filteredItems.map(item => {
+                            paginatedItems.map(item => {
                                 const status = getStockStatus(item);
                                 const statusColor = getStockColor(status);
                                 return (
@@ -348,9 +477,18 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="font-bold text-gray-900">{item.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                     <span className="text-xs text-gray-500 font-mono">SKU: {item.sku}</span>
                                                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase font-semibold">{item.department}</span>
+                                                    {(() => { const b = getExpiryBadge(item); return b ? <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${b.className}`}>{b.label}</span> : null; })()}
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[10px] text-gray-500 font-medium">
+                                                    {item.manufacturingDate && (
+                                                        <span>MFD: {formatDateISO(item.manufacturingDate)}</span>
+                                                    )}
+                                                    {item.expiryDate && (
+                                                        <span>EXP: {formatDateISO(item.expiryDate)}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
@@ -377,18 +515,48 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                                             <div className="bg-gray-50 p-2 rounded-lg">
                                                 <span className="text-xs text-gray-500 block">Stock</span>
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900">{Number((item.currentStock ?? 0).toFixed(2))} {item.unit}</span>
+                                                    <span className="font-bold text-gray-900">
+                                                        {(() => {
+                                                            const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                                ? (item.stockByLocation[filterDepartment] || 0)
+                                                                : (item.currentStock ?? 0);
+                                                            return Number(stock.toFixed(2));
+                                                        })()} {item.unit}
+                                                    </span>
                                                     {item.purchaseUnit && item.conversionFactor && (
                                                         <span className="text-[10px] text-orange-600 font-medium">
-                                                            {Math.floor((item.currentStock ?? 0) / item.conversionFactor)} {item.purchaseUnit}
-                                                            {((item.currentStock ?? 0) % item.conversionFactor) > 0 ? ` + ${parseFloat(((item.currentStock ?? 0) % item.conversionFactor).toFixed(4))} ${item.unit}` : ''}
+                                                            {(() => {
+                                                                const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                                    ? (item.stockByLocation[filterDepartment] || 0)
+                                                                    : (item.currentStock ?? 0);
+                                                                const whole = Math.floor(stock / item.conversionFactor);
+                                                                const rem = stock % item.conversionFactor;
+                                                                return (
+                                                                    <>
+                                                                        {whole} {item.purchaseUnit}
+                                                                        {rem > 0 ? ` + ${parseFloat(rem.toFixed(4))} ${item.unit}` : ''}
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </span>
+                                                    )}
+                                                    {filterDepartment !== 'all' && (
+                                                        <span className="text-[9px] text-blue-600 font-bold uppercase mt-1">
+                                                            at {departments.find(d => d.slug === filterDepartment)?.name || filterDepartment}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="bg-gray-50 p-2 rounded-lg">
                                                 <span className="text-xs text-gray-500 block">Value</span>
-                                                <span className="font-bold text-gray-900">${((item.currentStock ?? 0) * (item.unitCost ?? 0)).toFixed(2)}</span>
+                                                <span className="font-bold text-gray-900">
+                                                    ${(() => {
+                                                        const stock = (filterDepartment !== 'all' && item.stockByLocation)
+                                                            ? (item.stockByLocation[filterDepartment] || 0)
+                                                            : (item.currentStock ?? 0);
+                                                        return (stock * (item.unitCost ?? 0)).toFixed(2);
+                                                    })()}
+                                                </span>
                                             </div>
                                         </div>
 
@@ -406,11 +574,41 @@ export default function InventoryItemsTab({ items, loading, onRefresh }: Invento
                             })
                         )}
                     </div>
+                    
+                    {/* Pagination Footer */}
+                    {totalPages > 1 && (
+                        <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                            <p className="text-sm text-gray-500">
+                                Showing <span className="font-medium">{currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1}</span> to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}
+                                </span>{' '}
+                                of <span className="font-medium">{filteredItems.length}</span> results
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                                >
+                                    <ChevronLeftIcon className="w-4 h-4 mr-1" /> Prev
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                                >
+                                    Next <ChevronRightIcon className="w-4 h-4 ml-1" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <InventoryModal
                 item={editingItem}
+                allItems={items}
                 isOpen={showModal}
                 onClose={() => {
                     setShowModal(false);

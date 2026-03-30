@@ -12,6 +12,7 @@ import {
   createFoodOrder,
   updateFoodOrder,
   getFoodOrder,
+  FoodOrder,
 } from "@/lib/services/fbOrderService";
 import { getAllBookings, getAllRoomTypes } from "@/lib/firestoreService";
 import type { Booking, RoomTypeData } from "@/lib/firestoreService";
@@ -34,8 +35,8 @@ export default function POSCreatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const returnUrl = searchParams.get("returnUrl") || "/admin/food-orders";
   const menuType = (searchParams.get("menuType") as "food" | "bar") || "food";
+  const returnUrl = searchParams.get("returnUrl") || (menuType === "bar" ? "/admin/bar-orders/service" : "/admin/food-orders");
 
   // Data State
   const [items, setItems] = useState<POSItem[]>([]);
@@ -86,6 +87,14 @@ export default function POSCreatePage() {
 
   const editOrderId = searchParams.get("editOrderId");
   const [isEditing, setIsEditing] = useState(false);
+  const [originalOrder, setOriginalOrder] = useState<import("@/lib/types/foodMenu").FoodOrder | null>(null);
+  const [newPaymentAmount, setNewPaymentAmount] = useState<number | string>(0);
+
+  const isPartialPaymentEdit =
+    isEditing &&
+    originalOrder !== null &&
+    originalOrder.status !== "pending" &&
+    (originalOrder.dueAmount || 0) > 0;
 
   // ... (existing state)
 
@@ -98,6 +107,7 @@ export default function POSCreatePage() {
         const order = await getFoodOrder(editOrderId);
         if (order) {
           setIsEditing(true);
+          setOriginalOrder(order as import("@/lib/types/foodMenu").FoodOrder);
           // Populate Form
           setGuestName(order.guestName || "");
           setGuestEmail(order.guestEmail || "");
@@ -377,34 +387,32 @@ export default function POSCreatePage() {
     // Validate all fields
     const errors: Record<string, string> = {};
 
-    if (!guestName.trim() || guestName.trim().length < 2) {
-      errors.guestName = "Guest name required (min 2 chars)";
-    }
+    if (!isPartialPaymentEdit) {
+      if (!guestName.trim() || guestName.trim().length < 2) {
+        errors.guestName = "Guest name required (min 2 chars)";
+      }
 
-    if (!guestEmail.trim() || !isValidEmail(guestEmail.trim())) {
-      errors.guestEmail = "Valid email address required";
-    }
+      if (guestEmail.trim() && guestEmail.trim() !== "N/A" && !isValidEmail(guestEmail.trim())) {
+        errors.guestEmail = "Valid email address required";
+      }
 
-    // if (deliveryLocation === "restaurant" && !tableNumber.trim()) {
-    //   errors.tableNumber = "Table number required for dine-in";
-    // }
-
-    if (deliveryLocation === "in_room" && !roomName.trim()) {
-      errors.roomName = "Room selection required";
+      if (deliveryLocation === "in_room" && !roomName.trim()) {
+        errors.roomName = "Room selection required";
+      }
+      
+      if (cart.length === 0) {
+        showToast("Please add at least 1 item", "error");
+        return;
+      }
     }
 
     // Validate paid amount when payment is due
-    if (paymentMethod !== "Complimentary" && paymentStatus === "due") {
+    if (paymentMethod !== "Complimentary" && paymentStatus === "due" && !isPartialPaymentEdit) {
       if (paidAmount < 0) {
         errors.paidAmount = "Amount paid cannot be negative";
       } else if (paidAmount >= total) {
         errors.paidAmount = "If fully paid, select 'Paid in Full' status";
       }
-    }
-
-    if (cart.length === 0) {
-      showToast("Please add at least 1 item", "error");
-      return;
     }
 
     if (Object.keys(errors).length > 0) {
@@ -419,6 +427,35 @@ export default function POSCreatePage() {
 
     setSubmitting(true);
     try {
+      if (isPartialPaymentEdit && originalOrder && editOrderId) {
+        // ONLY handle incremental payment
+        if (Number(newPaymentAmount) <= 0 && paymentMethod === originalOrder.paymentMethod) {
+          showToast("No new payment added or method changed", "error");
+          setSubmitting(false);
+          return;
+        }
+
+        const updatePayload: Parameters<typeof updateFoodOrder>[1] = {};
+        if (Number(newPaymentAmount) > 0) {
+          updatePayload.newPaymentEntry = {
+            amount: Number(newPaymentAmount),
+            method: paymentMethod,
+            recordedBy: "Admin", // Would be actual user name in prod
+          };
+        } else if (paymentMethod !== originalOrder.paymentMethod) {
+          updatePayload.paymentMethod = paymentMethod;
+        }
+
+        const success = await updateFoodOrder(editOrderId, updatePayload, originalOrder?.menuType || menuType);
+        if (success) {
+          showToast("Payment updated successfully!", "success");
+          router.push(returnUrl);
+        } else {
+          showToast("Failed to update payment", "error");
+        }
+        return;
+      }
+
       // Order & receipt numbers are now generated server-side by createFoodOrder()
       // using Firestore atomic counters for guaranteed uniqueness
 
@@ -493,14 +530,22 @@ export default function POSCreatePage() {
           paymentMethod === "Complimentary" ? "paid" : paymentStatus,
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
+        paymentHistory: (isEditing && originalOrder?.paymentHistory && originalOrder.paymentHistory.length > 0)
+          ? originalOrder.paymentHistory
+          : (finalPaidAmount > 0 ? [{
+            id: Date.now().toString(),
+            amount: finalPaidAmount,
+            method: paymentMethod,
+            date: new Date(),
+            recordedBy: "POS"
+          }] : []),
         // restaurantPrinted NOT set — print only triggers on confirmation (Phase 9)
         reprintRequested: false, // Reset reprint if edited
       };
 
       if (isEditing && editOrderId) {
         // UPDATE MODE
-        // @ts-ignore
-        const success = await updateFoodOrder(editOrderId, orderData);
+        const success = await updateFoodOrder(editOrderId, orderData as Partial<FoodOrder>, originalOrder?.menuType || menuType);
 
         if (success) {
           showToast("Order updated successfully!", "success");
@@ -522,20 +567,13 @@ export default function POSCreatePage() {
         }
       } else {
         // CREATE MODE
-        // @ts-ignore
         const result = await createFoodOrder({
-          ...orderData,
+          ...orderData as any, // Cast to any for the Omit overlap check
           status: "pending",
           kitchenStatus: "received",
         });
 
         if (result) {
-          try {
-            await processOrderInventoryDeduction(result.id, "POS System", menuType as "food" | "bar");
-          } catch (invError) {
-            console.error("Inventory deduction failed", invError);
-          }
-
           showToast(
             `Order #${result.orderNumber} created successfully!`,
             "success",
@@ -625,7 +663,18 @@ export default function POSCreatePage() {
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {isPartialPaymentEdit && (
+          <div className="absolute inset-x-0 top-0 bottom-0 md:mr-96 bg-white/60 backdrop-blur-sm z-30 flex items-center justify-center pointer-events-none">
+            <div className="bg-white/90 p-6 rounded-2xl shadow-xl flex items-center gap-3 border border-gray-100 max-w-sm text-center">
+              <div>
+                <span className="text-3xl mb-2 block">🔒</span>
+                <h3 className="font-bold text-gray-900 text-lg">Order Locked</h3>
+                <p className="text-sm text-gray-600 font-medium">Items cannot be modified after confirmation. Please use the sidebar to manage payments.</p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex-1 md:mr-96 overflow-hidden">
           <MenuBrowser
             items={items}
@@ -636,7 +685,7 @@ export default function POSCreatePage() {
         </div>
 
         <POSCart
-          submitLabel={isEditing ? "Update Order" : "Place Order"}
+          submitLabel={isEditing ? (isPartialPaymentEdit ? "Update Payment" : "Update Order") : "Place Order"}
           cart={cart}
           onRemove={removeFromCart}
           onUpdateItem={updateCartItem}
@@ -693,6 +742,10 @@ export default function POSCreatePage() {
           menuType={menuType}
           barLocation={barLocation}
           setBarLocation={setBarLocation}
+          isPartialPaymentEdit={isPartialPaymentEdit}
+          originalOrder={originalOrder || undefined}
+          newPaymentAmount={newPaymentAmount}
+          setNewPaymentAmount={setNewPaymentAmount}
         />
       </div>
     </div>

@@ -3,11 +3,10 @@
 /**
  * BOT Printer Listener — Entry Point
  *
- * Connects to Firestore and starts real-time listeners for:
- *  1. Beach bar orders (barPrinted == false, barLocation == beach_bar) → print
- *  2. Beach bar reprints (reprintRequested == true, barLocation == beach_bar) → print
- *
- * Main Bar printing is handled by KOT service (Phase 9E — shares Ramson printer).
+ * Connects to Firestore and starts real-time listeners for bar orders:
+ *  1. New orders (barPrinted == false) → print
+ *  2. Reprint requests (reprintRequested == true) → print
+ *  3. Manual bar print requests (barPrintRequested == true) → print
  *
  * Usage:
  *   1. Copy .env.example → .env and fill in values
@@ -22,6 +21,7 @@ const { isPrinterReady, PRINTER_CONFIGS } = require("./printer");
 const {
   listenForNewBarOrders,
   listenForBarReprintRequests,
+  listenForBarPrintRequests,
 } = require("./listener");
 
 async function main() {
@@ -30,36 +30,31 @@ async function main() {
     chalk.bold.hex("#9333EA")("╔══════════════════════════════════════╗"),
   );
   console.log(
-    chalk.bold.hex("#9333EA")("║   BOT PRINTER LISTENER — v2.0.0     ║"),
+    chalk.bold.hex("#9333EA")("║   BOT PRINTER LISTENER          ║"),
   );
   console.log(
-    chalk.bold.hex("#9333EA")("║   Sultan Palace Hotel               ║"),
+    chalk.bold.hex("#9333EA")("║   Sultan Palace Hotel           ║"),
   );
   console.log(
-    chalk.bold.hex("#9333EA")("║   Beach Bar Only (Phase 9F)         ║"),
+    chalk.bold.hex("#9333EA")("║   All Bar Locations             ║"),
   );
   console.log(
     chalk.bold.hex("#9333EA")("╚══════════════════════════════════════╝"),
   );
   console.log("");
 
-  // Show config — Beach Bar Printer (only printer in this service now)
-  console.log(chalk.bold.cyan("  🏖️  Beach Bar Printer:"));
-  console.log(chalk.dim("     Type:"), config.beachBarPrinter.type);
-  console.log(chalk.dim("     Interface:"), config.beachBarPrinter.interface);
-  console.log(chalk.dim("     Width:"), config.beachBarPrinter.width, "chars");
+  // Show config — Bar Printer
+  console.log(chalk.bold.cyan("  📠 Bar Printer (BOT):"));
+  console.log(chalk.dim("     Type:"), config.barPrinter.type);
+  console.log(chalk.dim("     Interface:"), config.barPrinter.interface);
+  console.log(chalk.dim("     Width:"), config.barPrinter.width, "chars");
 
-  const beachBarReady = await isPrinterReady("beach_bar");
-  if (beachBarReady) {
+  const barReady = await isPrinterReady("bar");
+  if (barReady) {
     console.log(chalk.green("     ✓ Connected and ready"));
   } else {
     console.log(chalk.yellow("     ⚠ Not detected — will retry when printing"));
   }
-  console.log("");
-
-  console.log(
-    chalk.dim("  ℹ Main Bar printing moved to KOT service (Ramson printer)"),
-  );
   console.log("");
 
   // Environment
@@ -73,13 +68,14 @@ async function main() {
   }
   console.log("");
 
-  // Start listeners (beach bar only)
+  // Start listeners (all bar orders)
   listenForNewBarOrders();
   listenForBarReprintRequests();
+  listenForBarPrintRequests();
 
   console.log("");
   console.log(
-    chalk.green.bold("  ● System is live — waiting for beach bar orders..."),
+    chalk.green.bold("  ● System is live — waiting for bar orders..."),
   );
   console.log(chalk.dim("  Press Ctrl+C to stop"));
   console.log("");

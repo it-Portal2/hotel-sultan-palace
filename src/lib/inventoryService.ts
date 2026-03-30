@@ -42,7 +42,63 @@ export type {
     InventoryLocation
 };
 
+
+// ==================== LOCATION & DEPARTMENT CONSTANTS ====================
+
+export const CANONICAL_LOCATIONS = {
+    MAIN_STORE: 'main_store',
+    KITCHEN: 'kitchen_bar',
+    BAR: 'beach_bar',
+};
+
+// Map legacy slugs to canonical ones (to prevent orphaned data)
+export const LEGACY_LOCATION_MAP: Record<string, string> = {
+    'bar': CANONICAL_LOCATIONS.BAR,
+    'kitchen': CANONICAL_LOCATIONS.KITCHEN,
+};
+
+/**
+ * Resolves the target location slug for an item based on its station/category.
+ */
+export const resolveLocationSlug = (item?: any, menuType: "food" | "bar" = "food"): string => {
+    const station = (item?.station || '').toLowerCase();
+    const category = (item?.category || '').toLowerCase();
+
+    if (menuType === 'bar' || station === 'bar' || category === 'beverages' || category === 'liquors') {
+        return CANONICAL_LOCATIONS.BAR;
+    }
+    
+    // Default to kitchen for food orders or items with kitchen stations
+    return CANONICAL_LOCATIONS.KITCHEN;
+};
+
+/**
+ * Safely retrieves stock for a location, including checking legacy aliases.
+ */
+export const getLocationStock = (invItem: InventoryItem, locationSlug: string): number => {
+    if (!invItem.stockByLocation) return 0;
+    
+    // 1. Try canonical slug
+    if (invItem.stockByLocation[locationSlug] !== undefined) {
+        return invItem.stockByLocation[locationSlug];
+    }
+    
+    // 2. Fallback: check if the canonical slug has a legacy alias
+    const legacySlugs = Object.entries(LEGACY_LOCATION_MAP)
+        .filter(([_, canonical]) => canonical === locationSlug)
+        .map(([legacy, _]) => legacy);
+
+    for (const legacy of legacySlugs) {
+        if (invItem.stockByLocation[legacy] !== undefined) {
+            return invItem.stockByLocation[legacy];
+        }
+    }
+
+    return 0;
+};
+
 // ==================== CATEGORIES ====================
+
 
 export const getInventoryCategories = async (): Promise<InventoryCategory[]> => {
     if (!db) return [];
@@ -78,7 +134,9 @@ export const getInventoryDepartments = async (): Promise<Department[]> => {
     try {
         const q = query(collection(db, 'inventoryDepartments'), orderBy('name', 'asc'));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Department));
+        return snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as Department))
+            .filter(d => !d.isDeleted);
     } catch (e) {
         console.error("Error fetching departments:", e);
         return [];
@@ -91,6 +149,7 @@ export const createInventoryDepartment = async (name: string): Promise<string> =
     const docRef = await addDoc(collection(db, 'inventoryDepartments'), {
         name,
         slug,
+        isDeleted: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     });
@@ -99,19 +158,56 @@ export const createInventoryDepartment = async (name: string): Promise<string> =
 
 export const deleteInventoryDepartment = async (id: string): Promise<void> => {
     if (!db) throw new Error("Firestore not initialized");
-    await deleteDoc(doc(db, 'inventoryDepartments', id));
+    const docRef = doc(db, 'inventoryDepartments', id);
+    await updateDoc(docRef, {
+        isDeleted: true,
+        updatedAt: serverTimestamp()
+    });
+};
+
+export const updateInventoryDepartment = async (id: string, name: string): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const docRef = doc(db, 'inventoryDepartments', id);
+    await updateDoc(docRef, {
+        name,
+        updatedAt: serverTimestamp()
+    });
 };
 
 export const seedDefaultDepartments = async (): Promise<void> => {
-    const defaults = ["Kitchen", "Bar", "Housekeeping", "Front Office", "Maintenance", "Spa", "Other"];
-    const existing = await getInventoryDepartments();
-    const existingNames = new Set(existing.map(d => d.name));
+    if (!db) return;
+    const defaults = [
+        { name: "Main Store", slug: CANONICAL_LOCATIONS.MAIN_STORE },
+        { name: "Kitchen Bar", slug: CANONICAL_LOCATIONS.KITCHEN },
+        { name: "Beach Bar", slug: CANONICAL_LOCATIONS.BAR },
+        { name: "Housekeeping" },
+        { name: "Front Office" },
+        { name: "Maintenance" },
+        { name: "Spa" },
+        { name: "Other" }
+    ];
 
-    const toCreate = defaults.filter(d => !existingNames.has(d));
+    // Fetch ALL departments (even deleted ones) for seeding check to avoid recreating intentionally deleted defaults
+    const q = query(collection(db, 'inventoryDepartments'));
+    const snap = await getDocs(q);
+    const existing = snap.docs.map(d => ({ id: d.id, ...d.data() } as Department));
+    const existingSlugs = new Set(existing.map(d => d.slug));
+
+    const toCreate = defaults.filter(d => !existingSlugs.has(d.slug || d.name.toLowerCase().replace(/\s+/g, '_')));
 
     if (toCreate.length === 0) return;
 
-    await Promise.all(toCreate.map(name => createInventoryDepartment(name)));
+    await Promise.all(toCreate.map(async (dept) => {
+        const slug = dept.slug || dept.name.toLowerCase().replace(/\s+/g, '_');
+        const firestore = db!;
+        await addDoc(collection(firestore, 'inventoryDepartments'), {
+            name: dept.name,
+            slug,
+            isDeleted: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+    }));
 };
 
 // ==================== LOCATIONS ====================
@@ -209,9 +305,9 @@ export const cleanupDuplicates = async () => {
 
 export const seedDefaultLocations = async (): Promise<void> => {
     const defaults = [
-        { id: "loc_main_store", name: "Main Store", type: "store" },
-        { id: "loc_main_kitchen", name: "Main Kitchen", type: "kitchen" },
-        { id: "loc_beach_bar", name: "Beach Bar", type: "outlet" },
+        { id: CANONICAL_LOCATIONS.MAIN_STORE, name: "Main Store", type: "store" },
+        { id: "loc_main_kitchen", name: "Main Kitchen", type: "kitchen" }, // Legacy ID, but should it be kitchen_bar?
+        { id: CANONICAL_LOCATIONS.BAR, name: "Beach Bar", type: "outlet" },
         { id: "loc_pool_bar", name: "Pool Bar", type: "outlet" },
         { id: "loc_housekeeping", name: "Housekeeping Store", type: "store" }
     ];
@@ -325,7 +421,8 @@ export const receivePurchaseOrder = async (
             receivedQty: number; // Good stock
             rejectedQty: number; // Bad stock
             actualUnitCost?: number; // New price
-            expiryDate?: string;
+            manufacturingDate?: string; // ISO YYYY-MM-DD — source of truth in PO
+            expiryDate?: string;        // ISO YYYY-MM-DD — source of truth in PO
         }>;
         creditNoteRequested?: boolean;
         notes?: string;
@@ -333,6 +430,17 @@ export const receivePurchaseOrder = async (
     receivedBy: string
 ) => {
     if (!db) throw new Error("Firestore not initialized");
+
+    // ---- Date validation (before transaction) ----
+    for (const item of data.items) {
+        if (item.manufacturingDate && item.expiryDate) {
+            if (item.expiryDate <= item.manufacturingDate) {
+                throw new Error(
+                    `Invalid dates for item ${item.itemId}: Expiry date must be after manufacturing date.`
+                );
+            }
+        }
+    }
     const firestore = db;
 
     await runTransaction(firestore, async (transaction) => {
@@ -399,7 +507,18 @@ export const receivePurchaseOrder = async (
                 }
 
                 if (receivedItem.expiryDate) {
-                    updateData.expiryDate = new Date(receivedItem.expiryDate);
+                    // Derive: set to the MINIMUM known expiry (earliest = soonest expiry = most critical)
+                    const incomingExpiry = new Date(receivedItem.expiryDate);
+                    const existingExpiry = invItem.expiryDate
+                        ? (invItem.expiryDate instanceof Date ? invItem.expiryDate : new Date((invItem.expiryDate as any).toDate ? (invItem.expiryDate as any).toDate() : invItem.expiryDate))
+                        : null;
+                    if (!existingExpiry || incomingExpiry < existingExpiry) {
+                        updateData.expiryDate = incomingExpiry;
+                    }
+                }
+                // Store manufacturingDate from this receive (latest receive wins for display)
+                if (receivedItem.manufacturingDate) {
+                    updateData.manufacturingDate = new Date(receivedItem.manufacturingDate);
                 }
 
                 transaction.update(itemRef, updateData);
@@ -455,8 +574,9 @@ export const receivePurchaseOrder = async (
                     orderedQty: i.orderedQty,
                     receivedQty: i.receivedQty,
                     rejectedQty: i.rejectedQty,
-                    actualUnitCost: i.actualUnitCost ?? null, // Ensure not undefined
-                    expiryDate: i.expiryDate ?? null, // Ensure not undefined
+                    actualUnitCost: i.actualUnitCost ?? null,
+                    manufacturingDate: i.manufacturingDate ?? null, // ISO YYYY-MM-DD — source of truth
+                    expiryDate: i.expiryDate ?? null,               // ISO YYYY-MM-DD — source of truth
                     missingQty: i.orderedQty - i.receivedQty - i.rejectedQty
                 })),
                 totalReceivedValue,
@@ -578,14 +698,18 @@ export const checkOrderIngredients = async (
         })
     );
 
-    // Aggregate required amounts per inventory item
-    const required = new Map<string, { name: string; qty: number; unit: string }>();
+    // Aggregate required amounts per inventory item PER location
+    const required = new Map<string, { name: string; qty: number; unit: string; location: string; invId: string }>();
     for (const item of order.items) {
         const recipeKey = (item as any).menuItemId || '';
         const recipe = recipeMap.get(recipeKey);
         if (!recipe) continue;
+
+        // Determine Location for this Menu Item
+        const targetLocation = resolveLocationSlug(item, menuType);
+
         for (const ing of recipe.ingredients) {
-            const key = ing.inventoryItemId;
+            const key = `${ing.inventoryItemId}_${targetLocation}`;
             const existing = required.get(key);
             if (existing) {
                 existing.qty += ing.quantity * item.quantity;
@@ -593,7 +717,9 @@ export const checkOrderIngredients = async (
                 required.set(key, {
                     name: ing.inventoryItemName || ing.inventoryItemId,
                     qty: ing.quantity * item.quantity,
-                    unit: ing.unit || ''
+                    unit: ing.unit || '',
+                    location: targetLocation,
+                    invId: ing.inventoryItemId
                 });
             }
         }
@@ -604,13 +730,26 @@ export const checkOrderIngredients = async (
     // Fetch current stock for every needed item in parallel
     const results: IngredientCheckResult[] = [];
     await Promise.all(
-        Array.from(required.entries()).map(async ([invId, info]) => {
-            const invSnap = await getDoc(doc(firestore, 'inventory', invId));
-            const available = invSnap.exists() ? (invSnap.data().currentStock || 0) : 0;
-            const invUnit = invSnap.exists() ? (invSnap.data().unit || info.unit) : info.unit;
+        Array.from(required.entries()).map(async ([key, info]) => {
+            const invSnap = await getDoc(doc(firestore, 'inventory', info.invId));
+
+            let available = 0;
+            if (invSnap.exists()) {
+                const data = invSnap.data() as InventoryItem;
+                available = getLocationStock(data, info.location);
+            }
+
+            const invUnit = invSnap.exists() ? ((invSnap.data() as InventoryItem).unit || info.unit) : info.unit;
+
+            // Format location name for UI
+            let locName = info.location.replace('_', ' ');
+            if (info.location === CANONICAL_LOCATIONS.KITCHEN) locName = 'Kitchen';
+            if (info.location === CANONICAL_LOCATIONS.BAR) locName = 'Bar';
+            if (info.location === CANONICAL_LOCATIONS.MAIN_STORE) locName = 'Main Store';
+
             results.push({
-                ingredientName: invSnap.exists() ? invSnap.data().name : info.name,
-                inventoryItemId: invId,
+                ingredientName: invSnap.exists() ? `${(invSnap.data() as InventoryItem).name} (${locName})` : `${info.name} (${locName})`,
+                inventoryItemId: info.invId,
                 required: parseFloat(info.qty.toFixed(4)),
                 available: parseFloat(available.toFixed(4)),
                 unit: invUnit,
@@ -625,7 +764,43 @@ export const checkOrderIngredients = async (
 
 // ==================== STOCK DEDUCTION (THE MAGIC) ====================
 
-// Call this when a Food Order is "Confirmed" or "Completed"
+// ==================== STOCK DEDUCTION (THE MAGIC) ====================
+
+/**
+ * Standardized status transition handler for inventory.
+ * Rules:
+ * - Deduct ONLY when transitioning to 'confirmed'
+ * - Rollback ONLY when transitioning to 'cancelled' (if previously deducted)
+ */
+export const handleInventoryByStatusChange = async (
+    prevStatus: string,
+    newStatus: string,
+    order: any, // Should be FoodOrder
+    performedBy: string = "System"
+) => {
+    const orderId = order.id;
+    const inventoryDeducted = order.inventoryDeducted || false;
+    const menuType = order.menuType || "food";
+
+    console.log("Inventory Action", {
+        orderId,
+        prevStatus,
+        newStatus,
+        inventoryDeducted
+    });
+
+    // 1. DEDUCT: If transitioning to CONFIRMED and NOT already deducted
+    if (prevStatus !== "confirmed" && newStatus === "confirmed") {
+        await processOrderInventoryDeduction(orderId, performedBy, menuType);
+    }
+
+    // 2. ROLLBACK: If transitioning to CANCELLED and IS already deducted
+    if (inventoryDeducted && newStatus === "cancelled") {
+        await reverseOrderInventoryDeduction(orderId, performedBy, menuType);
+    }
+};
+
+// Call this when a Food Order is "Confirmed"
 export const processOrderInventoryDeduction = async (orderId: string, performedBy: string, menuType: "food" | "bar" = "food") => {
     if (!db) throw new Error("Firestore not initialized");
     const firestore = db;
@@ -634,11 +809,6 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
     const orderRef = doc(firestore, collectionName, orderId);
 
     // --- Pre-fetch all recipes BEFORE entering the transaction ---
-    // Firestore transactions require ALL reads before ANY writes.
-    // getDocs() is a non-transactional read and cannot be used inside runTransaction.
-    // We fetch recipes (which are read-only reference data) outside the transaction.
-
-    // First, get the order outside the transaction to know which menu items to look up.
     const preOrderSnap = await getDoc(orderRef);
     if (!preOrderSnap.exists()) throw new Error("Order not found");
     const preOrder = preOrderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
@@ -648,7 +818,7 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
         return;
     }
 
-    // Fetch all recipes for the order items in parallel before the transaction.
+    // Fetch all recipes in parallel
     const recipesByMenuItemId = new Map<string, Recipe | null>();
     await Promise.all(
         preOrder.items.map(async (item) => {
@@ -667,7 +837,6 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
         })
     );
 
-    // Build the full list of inventory item IDs we need to read inside the transaction.
     const inventoryItemIds = new Set<string>();
     for (const item of preOrder.items) {
         const recipe = recipesByMenuItemId.get(item.menuItemId);
@@ -678,54 +847,39 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
         }
     }
 
-    // --- Run the transaction with reads first, then writes ---
+    // --- Transaction with reads first, then writes ---
     await runTransaction(firestore, async (transaction) => {
-        // READS PHASE: Read the order and all inventory items first.
         const orderSnap = await transaction.get(orderRef);
         if (!orderSnap.exists()) throw new Error("Order not found");
         const order = orderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
 
-        // Double-check idempotency inside the transaction for safety.
         if (order.inventoryDeducted) {
             console.warn(`Inventory already deducted for Order ${orderId}`);
             return;
         }
 
-        // Read all inventory documents up front (all reads before any writes).
-        const invSnapMap = new Map<string, ReturnType<typeof orderSnap.data> & { id: string }>();
-        await Promise.all(
-            Array.from(inventoryItemIds).map(async (invItemId) => {
-                const invRef = doc(firestore, 'inventory', invItemId);
-                const invSnap = await transaction.get(invRef);
-                if (invSnap.exists()) {
-                    invSnapMap.set(invItemId, { id: invItemId, ...invSnap.data() } as any);
-                }
-            })
-        );
+        const invSnapMap = new Map<string, InventoryItem & { id: string }>();
+        for (const invItemId of Array.from(inventoryItemIds)) {
+            const invRef = doc(firestore, 'inventory', invItemId);
+            const invSnap = await transaction.get(invRef);
+            if (invSnap.exists()) {
+                invSnapMap.set(invItemId, { id: invItemId, ...invSnap.data() } as any);
+            }
+        }
 
-        // WRITES PHASE: Now perform all updates and sets.
         for (const item of order.items) {
             const recipe = recipesByMenuItemId.get(item.menuItemId);
             if (!recipe) continue;
 
             for (const ingredient of recipe.ingredients) {
-                const currentInv = invSnapMap.get(ingredient.inventoryItemId) as InventoryItem | undefined;
+                const currentInv = invSnapMap.get(ingredient.inventoryItemId);
                 if (!currentInv) continue;
 
                 const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
 
-                // Determine DEDUCTION LOCATION based on Menu Item Station
-                let targetLocation = 'main_store';
-                const station = item.station || 'kitchen';
-                if (station === 'bar' || item.category === 'beverages' || item.category === 'liquors') {
-                    targetLocation = 'bar';
-                } else {
-                    targetLocation = 'kitchen';
-                }
+                const targetLocation = resolveLocationSlug(item, menuType);
 
-                const currentLocationStock = (currentInv.stockByLocation && currentInv.stockByLocation[targetLocation])
-                    ? currentInv.stockByLocation[targetLocation]
-                    : 0;
+                const currentLocationStock = getLocationStock(currentInv, targetLocation);
 
                 const deductionAmount = ingredient.quantity * item.quantity;
                 const newLocationStock = currentLocationStock - deductionAmount;
@@ -751,7 +905,7 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
                     previousStock: currentLocationStock,
                     newStock: newLocationStock,
                     locationId: targetLocation,
-                    reason: `Order ${order.orderNumber} - ${item.name} (${targetLocation})`,
+                    reason: `Order ${order.orderNumber} - ${item.name}`,
                     referenceId: orderId,
                     performedBy: performedBy,
                     createdAt: serverTimestamp()
@@ -759,48 +913,146 @@ export const processOrderInventoryDeduction = async (orderId: string, performedB
             }
         }
 
-        // Mark order as deducted (write — after all reads).
         transaction.update(orderRef, {
             inventoryDeducted: true,
             updatedAt: serverTimestamp()
         });
     });
 
-    // 3. Check Auto-Reorder (Side Effect - run after transaction)
+    // Check Auto-Reorder
     try {
-        // We need to check stock for all items involved.
-        // Re-fetching order logic is expensive, so maybe we optimize later.
-        // For now, let's just do it.
-        const orderSnap = await getDoc(orderRef); // Re-fetch to be sure? No, just use cached data from logic if possible?
-        // Actually, we can't easily pass state out of runTransaction. 
-        // We will just query the order items again or pass them.
-        // To be safe and simple:
-        // We know which items were in the order.
-        const freshOrderSnap = await getDoc(orderRef);
-        if (freshOrderSnap.exists()) {
-            const orderData = freshOrderSnap.data() as FoodOrder;
-            // We need to resolve recipes again to know which inventory items were touched.
-            // This is double work but safe. 
-            for (const item of orderData.items) {
-                const recipesQuery = query(collection(db, 'recipes'), where('menuItemId', '==', item.menuItemId), limit(1));
-                const recipeSnap = await getDocs(recipesQuery);
-                if (!recipeSnap.empty) {
-                    const recipe = recipeSnap.docs[0].data() as Recipe;
-                    for (const ingredient of recipe.ingredients) {
-                        // Check this item
-                        const invRef = doc(db, 'inventory', ingredient.inventoryItemId);
-                        const invSnap = await getDoc(invRef);
-                        if (invSnap.exists()) {
-                            await checkAndCreateAutoReorder(ingredient.inventoryItemId, invSnap.data().currentStock);
-                        }
-                    }
-                }
+        for (const itemId of Array.from(inventoryItemIds)) {
+            const invRef = doc(firestore, 'inventory', itemId);
+            const invSnap = await getDoc(invRef);
+            if (invSnap.exists()) {
+                await checkAndCreateAutoReorder(itemId, invSnap.data().currentStock);
             }
         }
     } catch (e) {
         console.error("Auto-reorder check failed", e);
     }
 };
+
+/**
+ * Reverse inventory deduction when an order is CANCELLED.
+ */
+export const reverseOrderInventoryDeduction = async (orderId: string, performedBy: string, menuType: "food" | "bar" = "food") => {
+    if (!db) throw new Error("Firestore not initialized");
+    const firestore = db;
+
+    const collectionName = menuType === "bar" ? "barOrders" : "foodOrders";
+    const orderRef = doc(firestore, collectionName, orderId);
+
+    const preOrderSnap = await getDoc(orderRef);
+    if (!preOrderSnap.exists()) throw new Error("Order not found");
+    const preOrder = preOrderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
+
+    if (!preOrder.inventoryDeducted) {
+        console.warn(`No inventory deduction found for Order ${orderId}. Rollback skipped.`);
+        return;
+    }
+
+    // Fetch all recipes in parallel
+    const recipesByMenuItemId = new Map<string, Recipe | null>();
+    await Promise.all(
+        preOrder.items.map(async (item) => {
+            if (!recipesByMenuItemId.has(item.menuItemId)) {
+                const recipesQuery = query(
+                    collection(firestore, 'recipes'),
+                    where('menuItemId', '==', item.menuItemId),
+                    limit(1)
+                );
+                const recipeSnap = await getDocs(recipesQuery);
+                recipesByMenuItemId.set(
+                    item.menuItemId,
+                    recipeSnap.empty ? null : (recipeSnap.docs[0].data() as Recipe)
+                );
+            }
+        })
+    );
+
+    const inventoryItemIds = new Set<string>();
+    for (const item of preOrder.items) {
+        const recipe = recipesByMenuItemId.get(item.menuItemId);
+        if (recipe) {
+            for (const ingredient of recipe.ingredients) {
+                inventoryItemIds.add(ingredient.inventoryItemId);
+            }
+        }
+    }
+
+    await runTransaction(firestore, async (transaction) => {
+        const orderSnap = await transaction.get(orderRef);
+        if (!orderSnap.exists()) throw new Error("Order not found");
+        const order = orderSnap.data() as FoodOrder & { inventoryDeducted?: boolean };
+
+        if (!order.inventoryDeducted) {
+            console.warn(`Inventory not deducted for Order ${orderId}. Rollback skipped inside transaction.`);
+            return;
+        }
+
+        const invSnapMap = new Map<string, InventoryItem & { id: string }>();
+        for (const invItemId of Array.from(inventoryItemIds)) {
+            const invRef = doc(firestore, 'inventory', invItemId);
+            const invSnap = await transaction.get(invRef);
+            if (invSnap.exists()) {
+                invSnapMap.set(invItemId, { id: invItemId, ...invSnap.data() } as any);
+            }
+        }
+
+        for (const item of order.items) {
+            const recipe = recipesByMenuItemId.get(item.menuItemId);
+            if (!recipe) continue;
+
+            for (const ingredient of recipe.ingredients) {
+                const currentInv = invSnapMap.get(ingredient.inventoryItemId);
+                if (!currentInv) continue;
+
+                const invRef = doc(firestore, 'inventory', ingredient.inventoryItemId);
+
+                const targetLocation = resolveLocationSlug(item, menuType);
+
+                const currentLocationStock = getLocationStock(currentInv, targetLocation);
+
+                const restoreAmount = ingredient.quantity * item.quantity;
+                const newLocationStock = currentLocationStock + restoreAmount;
+                const newGlobalStock = (currentInv.currentStock || 0) + restoreAmount;
+
+                const updatedStockByLocation = { ...(currentInv.stockByLocation || {}) };
+                updatedStockByLocation[targetLocation] = newLocationStock;
+
+                transaction.update(invRef, {
+                    currentStock: newGlobalStock,
+                    stockByLocation: updatedStockByLocation,
+                    updatedAt: serverTimestamp()
+                });
+
+                const transRef = doc(collection(firestore, 'inventoryTransactions'));
+                transaction.set(transRef, {
+                    inventoryItemId: ingredient.inventoryItemId,
+                    itemName: currentInv.name,
+                    transactionType: 'sales_reversal', // Specific type for rollback
+                    quantity: restoreAmount, // Positive quantity for restoration
+                    unitCost: currentInv.unitCost || 0,
+                    totalCost: (currentInv.unitCost || 0) * restoreAmount,
+                    previousStock: currentLocationStock,
+                    newStock: newLocationStock,
+                    locationId: targetLocation,
+                    reason: `Order Cancelled - Rollback: ${order.orderNumber}`,
+                    referenceId: orderId,
+                    performedBy: performedBy,
+                    createdAt: serverTimestamp()
+                });
+            }
+        }
+
+        transaction.update(orderRef, {
+            inventoryDeducted: false,
+            updatedAt: serverTimestamp()
+        });
+    });
+};
+
 
 // ==================== BASIC INVENTORY CRUD ====================
 
@@ -1015,16 +1267,155 @@ export const transferStock = async (
     });
 };
 
+// ==================== BULK TRANSFER STOCK ====================
+
+export interface BulkTransferItem {
+    itemId: string;
+    fromLocationId: string;
+    toLocationId: string;
+    quantity: number;
+}
+
+export const transferStockBulk = async (
+    items: BulkTransferItem[],
+    performedBy: string,
+    notes?: string
+): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    if (items.length === 0) throw new Error("No items to transfer");
+
+    const firestore = db;
+    const batchId = `bulk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    // Fetch departments to map slugs to names
+    const departments = await getInventoryDepartments();
+    const deptMap = new Map<string, string>();
+    departments.forEach(d => deptMap.set(d.slug, d.name));
+
+    await runTransaction(firestore, async (transaction) => {
+        // === READS PHASE: Read all inventory docs first ===
+        const itemRefs = items.map(i => doc(firestore, 'inventory', i.itemId));
+        const itemSnaps = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
+
+        // Build a map for easy lookup
+        const invDataMap = new Map<string, InventoryItem>();
+        for (let i = 0; i < items.length; i++) {
+            const snap = itemSnaps[i];
+            if (!snap.exists()) {
+                throw new Error(`Item not found: ${items[i].itemId}`);
+            }
+            invDataMap.set(items[i].itemId, snap.data() as InventoryItem);
+        }
+
+        // === VALIDATION: Check each item's source stock ===
+        for (const transfer of items) {
+            const inv = invDataMap.get(transfer.itemId)!;
+            const stockMap = inv.stockByLocation || {};
+            const sourceStock = stockMap[transfer.fromLocationId] || 0;
+            if (sourceStock < transfer.quantity) {
+                throw new Error(
+                    `Insufficient stock for "${inv.name}". Available at source: ${sourceStock}, requested: ${transfer.quantity}`
+                );
+            }
+        }
+
+        // === WRITES PHASE: Update stock maps and log transactions ===
+        for (let i = 0; i < items.length; i++) {
+            const transfer = items[i];
+            const inv = invDataMap.get(transfer.itemId)!;
+            const itemRef = itemRefs[i];
+
+            const stockMap = { ...(inv.stockByLocation || {}) };
+            const sourceStock = stockMap[transfer.fromLocationId] || 0;
+            const destStock = stockMap[transfer.toLocationId] || 0;
+
+            stockMap[transfer.fromLocationId] = sourceStock - transfer.quantity;
+            stockMap[transfer.toLocationId] = destStock + transfer.quantity;
+
+            transaction.update(itemRef, {
+                stockByLocation: stockMap,
+                updatedAt: serverTimestamp()
+            });
+
+            // Log transfer_out
+            const transRefOut = doc(collection(firestore, 'inventoryTransactions'));
+            transaction.set(transRefOut, {
+                inventoryItemId: transfer.itemId,
+                itemName: inv.name,
+                transactionType: 'transfer_out',
+                quantity: -transfer.quantity,
+                unit: inv.unit || '',
+                unitCost: inv.unitCost || 0,
+                totalCost: (inv.unitCost || 0) * transfer.quantity,
+                previousStock: sourceStock,
+                newStock: stockMap[transfer.fromLocationId],
+                locationId: transfer.fromLocationId,
+                batchId,
+                reason: notes
+                    ? `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId} — ${notes}`
+                    : `[${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}] Transfer to ${deptMap.get(transfer.toLocationId) || transfer.toLocationId}`,
+                performedBy,
+                createdAt: serverTimestamp()
+            });
+
+            // Log transfer_in
+            const transRefIn = doc(collection(firestore, 'inventoryTransactions'));
+            transaction.set(transRefIn, {
+                inventoryItemId: transfer.itemId,
+                itemName: inv.name,
+                transactionType: 'transfer_in',
+                quantity: transfer.quantity,
+                unit: inv.unit || '',
+                unitCost: inv.unitCost || 0,
+                totalCost: (inv.unitCost || 0) * transfer.quantity,
+                previousStock: destStock,
+                newStock: stockMap[transfer.toLocationId],
+                locationId: transfer.toLocationId,
+                batchId,
+                reason: notes
+                    ? `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId} — ${notes}`
+                    : `[${deptMap.get(transfer.toLocationId) || transfer.toLocationId}] Transfer from ${deptMap.get(transfer.fromLocationId) || transfer.fromLocationId}`,
+                performedBy,
+                createdAt: serverTimestamp()
+            });
+        }
+    });
+};
+
 export const getInventoryTransactions = async (): Promise<InventoryTransaction[]> => {
     if (!db) return [];
     try {
         const q = query(collection(db, 'inventoryTransactions'), orderBy('createdAt', 'desc'), limit(100));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({
+        const txData = snap.docs.map(d => ({
             id: d.id,
             ...d.data(),
             createdAt: d.data().createdAt?.toDate() || new Date()
         } as InventoryTransaction));
+
+        // Refined sort to handle identical timestamps (bulk operations)
+        return txData.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+
+            // 1. Primary: Time (Descending)
+            if (timeB !== timeA) return timeB - timeA;
+
+            // 2. Secondary: Batch & Item Grouping
+            if (a.batchId && b.batchId && a.batchId !== b.batchId) {
+                return a.batchId.localeCompare(b.batchId);
+            }
+            if (a.inventoryItemId !== b.inventoryItemId) {
+                return a.inventoryItemId.localeCompare(b.inventoryItemId);
+            }
+
+            // 3. Tertiary: In descending list, Addition (In) stays on top of Deduction (Out)
+            // so the visual flow (bottom-up) is Out -> In.
+            if (a.transactionType === 'transfer_in' && b.transactionType === 'transfer_out') return -1;
+            if (a.transactionType === 'transfer_out' && b.transactionType === 'transfer_in') return 1;
+
+            return 0;
+        });
     } catch (e) {
         console.error(e);
         return [];
@@ -1156,3 +1547,55 @@ export const checkAndCreateAutoReorder = async (inventoryItemId: string, newStoc
         console.error("[AutoReorder] Failed:", error);
     }
 };
+
+// ==================== MIGRATION TOOLS ====================
+
+/**
+ * ONE-TIME MIGRATION: Moves stock from legacy slugs to canonical ones.
+ * Run this from the Admin panel to consolidate inventory data.
+ */
+export const migrateLegacyInventoryData = async (performedBy: string = "Admin Migration"): Promise<{ success: boolean; message: string }> => {
+    if (!db) return { success: false, message: "No DB" };
+    const firestore = db;
+
+    try {
+        const items = await getInventoryItems();
+        let migratedCount = 0;
+
+        await Promise.all(items.map(async (item) => {
+            if (!item.stockByLocation) return;
+
+            let changed = false;
+            const newStockByLocation = { ...item.stockByLocation };
+
+            for (const [legacy, canonical] of Object.entries(LEGACY_LOCATION_MAP)) {
+                if (newStockByLocation[legacy] !== undefined) {
+                    const legacyStock = newStockByLocation[legacy];
+                    const currentCanonicalStock = newStockByLocation[canonical] || 0;
+
+                    // Move stock to canonical slug
+                    newStockByLocation[canonical] = currentCanonicalStock + legacyStock;
+
+                    // Remove legacy slug
+                    delete newStockByLocation[legacy];
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                const itemRef = doc(firestore, 'inventory', item.id);
+                await updateDoc(itemRef, {
+                    stockByLocation: newStockByLocation,
+                    updatedAt: serverTimestamp()
+                });
+                migratedCount++;
+            }
+        }));
+
+        return { success: true, message: `Successfully migrated ${migratedCount} items.` };
+    } catch (e) {
+        console.error("Migration failed:", e);
+        return { success: false, message: (e as Error).message };
+    }
+};
+

@@ -26,6 +26,7 @@ interface OrderDetailsModalProps {
   isReadOnly: boolean;
   onReprint?: (orderId: string) => void;
   onKitchenPrint?: (orderId: string) => void;
+  onBarPrint?: (orderId: string) => void;
 }
 
 export default function OrderDetailsModal({
@@ -35,11 +36,13 @@ export default function OrderDetailsModal({
   isReadOnly,
   onReprint,
   onKitchenPrint,
+  onBarPrint,
 }: OrderDetailsModalProps) {
   const [liveOrder, setLiveOrder] = useState<FoodOrder>(order);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [reprintSent, setReprintSent] = useState(false);
   const [kitchenPrintSent, setKitchenPrintSent] = useState(false);
+  const [barPrintSent, setBarPrintSent] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [ingredientCheckResults, setIngredientCheckResults] = useState<IngredientCheckResult[] | null>(null);
   const [ingredientCheckLoading, setIngredientCheckLoading] = useState(false);
@@ -89,6 +92,14 @@ export default function OrderDetailsModal({
       onKitchenPrint(liveOrder.id);
       setKitchenPrintSent(true);
       setTimeout(() => setKitchenPrintSent(false), 2000);
+    }
+  };
+
+  const handleBarPrint = () => {
+    if (onBarPrint && !barPrintSent) {
+      onBarPrint(liveOrder.id);
+      setBarPrintSent(true);
+      setTimeout(() => setBarPrintSent(false), 2000);
     }
   };
 
@@ -267,9 +278,9 @@ export default function OrderDetailsModal({
               {/* Edit — hidden after confirmation (Phase 9C) */}
               {!isReadOnly &&
                 !isFinalized &&
-                liveOrder.status !== "confirmed" && (
+                (liveOrder.status === "pending" || ((liveOrder as any).dueAmount || 0) > 0) && (
                   <Link
-                    href={`/admin/food-orders/create?menuType=food&editOrderId=${liveOrder.id}`}
+                    href={`/admin/food-orders/create?menuType=${(liveOrder as any).menuType || 'food'}&editOrderId=${liveOrder.id}&returnUrl=${typeof window !== 'undefined' ? window.location.pathname : ''}`}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20 font-bold text-xs transition-colors"
                   >
                     <PencilSquareIcon className="h-4 w-4" />
@@ -282,8 +293,8 @@ export default function OrderDetailsModal({
                   onClick={handleReprint}
                   disabled={reprintSent}
                   className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-colors ${reprintSent
-                      ? "bg-green-100 text-green-600"
-                      : "bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20"
+                    ? "bg-green-100 text-green-600"
+                    : "bg-[#FF6A00]/10 text-[#FF6A00] hover:bg-[#FF6A00]/20"
                     }`}
                 >
                   <PrinterIcon className="h-4 w-4" />
@@ -558,8 +569,8 @@ export default function OrderDetailsModal({
                             req: {r.required}{r.unit}
                           </span>
                           <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${r.sufficient
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-red-100 text-red-700'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-red-100 text-red-700'
                             }`}>
                             {r.available}{r.unit} STOCK
                           </span>
@@ -678,19 +689,35 @@ export default function OrderDetailsModal({
                         status="preparing"
                         color="bg-orange-600 hover:bg-orange-700"
                       />
-                      {onKitchenPrint && (
+                      {onKitchenPrint && (liveOrder as any).menuType !== "bar" && (
                         <button
                           onClick={handleKitchenPrint}
                           disabled={kitchenPrintSent || !!loadingAction}
                           className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${kitchenPrintSent
-                              ? "bg-green-100 text-green-700 border border-green-200"
-                              : "bg-[#FF6A00] hover:bg-[#E55A00] text-white"
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-[#FF6A00] hover:bg-[#E55A00] text-white"
                             }`}
                         >
                           <PrinterIcon className="h-4 w-4" />
                           {kitchenPrintSent
                             ? "Sent to Kitchen!"
                             : "Print in Kitchen"}
+                        </button>
+                      )}
+
+                      {onBarPrint && (liveOrder as any).menuType === "bar" && (
+                        <button
+                          onClick={handleBarPrint}
+                          disabled={barPrintSent || !!loadingAction}
+                          className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${barPrintSent
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-[#FF6A00] hover:bg-[#E55A00] text-white"
+                            }`}
+                        >
+                          <PrinterIcon className="h-4 w-4" />
+                          {barPrintSent
+                            ? "Sent to Bar!"
+                            : "Print in Bar"}
                         </button>
                       )}
                     </>

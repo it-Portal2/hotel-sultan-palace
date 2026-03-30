@@ -3,9 +3,7 @@
  * Printer module for BOT (Bar Order Ticket) printing.
  *
  * Printers:
- *   "beach_bar" → Beach Bar Printer (config.beachBarPrinter)
- *
- * (Main Bar printing moved to KOT service — Phase 9E)
+ *   "bar" → Bar Printer (config.barPrinter)
  */
 
 const {
@@ -24,14 +22,14 @@ const printerTypeMap = {
 // ─── Named printer instances ───
 const printerInstances = {};
 
-// Printer configs — beach_bar only (main_bar moved to KOT service)
+// Printer configs — Handles both Main Bar and Beach Bar
 const PRINTER_CONFIGS = {
-  beach_bar: config.beachBarPrinter,
+  bar: config.barPrinter,
 };
 
 /**
  * Get or create a printer instance by name.
- * @param {"beach_bar"} name
+ * @param {"bar"} name
  */
 function getPrinter(name) {
   const cfg = PRINTER_CONFIGS[name];
@@ -55,7 +53,7 @@ function getPrinter(name) {
 
 /**
  * Check if a named printer is connected and ready.
- * @param {"beach_bar"} name
+ * @param {"bar"} name
  */
 async function isPrinterReady(name) {
   try {
@@ -70,10 +68,10 @@ async function isPrinterReady(name) {
  * Print a receipt for the given order on the specified printer.
  * @param {object} order - Firestore order document data
  * @param {string} [label] - Optional label (e.g. "REPRINT")
- * @param {"beach_bar"} [printerName="beach_bar"] - Target printer
+ * @param {"bar"} [printerName="bar"] - Target printer
  * @returns {Promise<boolean>} - true if printed successfully
  */
-async function printReceipt(order, label, printerName = "beach_bar") {
+async function printReceipt(order, label, printerName = "bar") {
   const p = getPrinter(printerName);
 
   try {

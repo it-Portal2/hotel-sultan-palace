@@ -797,6 +797,7 @@ export interface Department {
   id: string;
   name: string; // The display name, e.g. "Kitchen"
   slug: string; // The functional ID, e.g. "kitchen"
+  isDeleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -843,7 +844,9 @@ export interface InventoryItem {
   // New: Stock by Location ID
   stockByLocation?: Record<string, number>; // e.g. { 'main_store': 100, 'bar_1': 20 }
 
-  expiryDate?: Date; // For perishable items
+  // Perishable tracking (derived from purchase receives — do NOT set directly)
+  expiryDate?: Date; // Earliest known expiry date across all receives
+  manufacturingDate?: Date; // Manufacturing date from latest receive
 
   isActive: boolean;
   createdAt: Date;
@@ -884,7 +887,8 @@ export interface PurchaseOrder {
       receivedQty: number; // Good stock
       rejectedQty: number; // Broken/Expired
       missingQty: number; // Ordered - (Received + Rejected)
-      expiryDate?: string; // For perishable items
+      manufacturingDate?: string; // ISO YYYY-MM-DD — source of truth for MFD
+      expiryDate?: string; // ISO YYYY-MM-DD — source of truth for EXP
       actualUnitCost?: number; // If price changed
       rejectionReason?: string;
     }>;
@@ -965,14 +969,17 @@ export interface InventoryTransaction {
   | "sales_deduction";
 
   quantity: number; // Positive for add, Negative for reduce
+  unit?: string;
   unitCost: number;
   totalCost: number;
 
   previousStock: number;
   newStock: number;
+  locationId?: string;
 
   reason?: string;
   referenceId?: string; // Link to PO, Order, or Adjustment ID
+  batchId?: string;     // Group bulk transactions (e.g., Bulk Transfer)
 
   performedBy: string; // Staff member
   createdAt: Date;

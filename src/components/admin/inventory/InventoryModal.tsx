@@ -9,6 +9,7 @@ interface InventoryModalProps {
     onSave: (data: Partial<InventoryItem>) => void;
     categories: InventoryCategory[];
     departments: Department[];
+    allItems: InventoryItem[];
     defaultCategory?: string;
 }
 
@@ -32,6 +33,7 @@ export default function InventoryModal({
     onSave,
     categories,
     departments,
+    allItems,
     defaultCategory = ''
 }: InventoryModalProps) {
     const defaultDept = departments.length > 0 ? departments[0].name : 'Kitchen';
@@ -51,6 +53,8 @@ export default function InventoryModal({
         preferredSupplierId: '',
         purchaseUnit: '',
         conversionFactor: '',
+        manufacturingDate: '',
+        expiryDate: '',
         isActive: true,
     });
 
@@ -74,6 +78,8 @@ export default function InventoryModal({
                 preferredSupplierId: item.preferredSupplierId || '',
                 purchaseUnit: item.purchaseUnit || '',
                 conversionFactor: item.conversionFactor ? item.conversionFactor.toString() : '',
+                manufacturingDate: item.manufacturingDate ? (item.manufacturingDate instanceof Date ? item.manufacturingDate.toISOString().split('T')[0] : (item.manufacturingDate as any).toDate ? (item.manufacturingDate as any).toDate().toISOString().split('T')[0] : '') : '',
+                expiryDate: item.expiryDate ? (item.expiryDate instanceof Date ? item.expiryDate.toISOString().split('T')[0] : (item.expiryDate as any).toDate ? (item.expiryDate as any).toDate().toISOString().split('T')[0] : '') : '',
                 isActive: item.isActive,
             });
         } else {
@@ -93,6 +99,8 @@ export default function InventoryModal({
                 preferredSupplierId: '',
                 purchaseUnit: '',
                 conversionFactor: '',
+                manufacturingDate: '',
+                expiryDate: '',
                 isActive: true,
             });
         }
@@ -103,7 +111,26 @@ export default function InventoryModal({
         // Try to match department name to a slug key in our suggestions, or use empty
         const deptSlug = departments.find(d => d.name === formData.department)?.slug || formData.department.toLowerCase();
         setLocationSuggestions(LOCATION_SUGGESTIONS[deptSlug] || []);
-    }, [formData.department, departments]);
+
+        // Auto-generate SKU for NEW items if department/category changes
+        if (!item && (formData.department || formData.category)) {
+            handleGenerateSKU();
+        }
+    }, [formData.department, formData.category, departments, item]);
+
+    const handleGenerateSKU = () => {
+        const cleanStr = (str: string) => (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        
+        const deptPrefix = cleanStr(formData.department).substring(0, 3) || 'GEN';
+        const catPrefix = cleanStr(formData.category).substring(0, 3) || 'MISC';
+        
+        // Pattern: DEPT-CAT-RANDOM
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const newSku = `${deptPrefix}-${catPrefix}-${random}`;
+        
+        setFormData(prev => ({ ...prev, sku: newSku }));
+        if (errors.sku) setErrors(prev => ({ ...prev, sku: '' }));
+    };
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -111,7 +138,18 @@ export default function InventoryModal({
         const newErrors: Record<string, string> = {};
 
         if (!formData.name.trim()) newErrors.name = "Item Name is required";
-        if (!formData.sku.trim()) newErrors.sku = "SKU is required";
+        if (!formData.sku.trim()) {
+            newErrors.sku = "SKU is required";
+        } else {
+            // Check for uniqueness
+            const isDuplicate = allItems.some(existingItem => 
+                existingItem.sku?.toUpperCase() === formData.sku.toUpperCase() && 
+                existingItem.id !== item?.id
+            );
+            if (isDuplicate) {
+                newErrors.sku = "SKU already exists";
+            }
+        }
 
         if (formData.currentStock === '' || parseFloat(formData.currentStock) < 0) {
             newErrors.currentStock = "Valid stock required";
@@ -127,6 +165,10 @@ export default function InventoryModal({
 
         if (formData.conversionFactor && parseFloat(formData.conversionFactor) < 1) {
             newErrors.conversionFactor = "Must be >= 1";
+        }
+
+        if (formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate) {
+            newErrors.expiryDate = "Expiry must be after manufacturing date";
         }
 
         setErrors(newErrors);
@@ -150,6 +192,8 @@ export default function InventoryModal({
             conversionFactor: parseFloat(formData.conversionFactor) || undefined,
             location: formData.location.trim() || undefined,
             preferredSupplierId: formData.preferredSupplierId.trim() || undefined,
+            manufacturingDate: formData.manufacturingDate ? new Date(formData.manufacturingDate) : undefined,
+            expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined,
         });
     };
 
@@ -215,19 +259,44 @@ export default function InventoryModal({
                             </div>
 
                             <div className="col-span-1">
-                                <label className="block text-sm font-semibold text-gray-900 mb-1.5">SKU / Code</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.sku}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, sku: e.target.value });
-                                        if (errors.sku) setErrors({ ...errors, sku: '' });
-                                    }}
-                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all uppercase placeholder:normal-case font-mono text-sm ${errors.sku ? 'border-red-500' : 'border-gray-200'}`}
-                                    placeholder="e.g. BEV-001"
-                                />
-                                {errors.sku && <p className="text-xs text-red-500 mt-1">{errors.sku}</p>}
+                                <label className="text-sm font-semibold text-gray-900 mb-1.5 flex justify-between items-center">
+                                    <span>SKU / Code</span>
+                                    {!item && (
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSKU}
+                                            className="text-[10px] text-[#FF6A00] hover:underline font-bold uppercase"
+                                        >
+                                            Generate
+                                        </button>
+                                    )}
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.sku}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, sku: e.target.value.toUpperCase() });
+                                            if (errors.sku) setErrors({ ...errors, sku: '' });
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none transition-all uppercase placeholder:normal-case font-mono text-sm ${errors.sku ? 'border-red-500' : 'border-gray-200'}`}
+                                        placeholder="e.g. BEV-001"
+                                    />
+                                    {item && (
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSKU}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 hover:text-[#FF6A00] p-1"
+                                            title="Regenerate SKU"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                                {errors.sku && <p className="text-xs text-red-500 mt-1 font-medium">{errors.sku}</p>}
                             </div>
                         </div>
 
@@ -311,6 +380,31 @@ export default function InventoryModal({
                                 {errors.unitCost && <span className="absolute -bottom-5 left-0 text-xs text-red-500">{errors.unitCost}</span>}
                             </div>
                         </div>
+
+                        {/* Manufacturing & Expiry Dates */}
+                        <div className="col-span-2 grid grid-cols-2 gap-4 mt-2">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-900 mb-1.5">Manufacturing Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.manufacturingDate}
+                                    onChange={(e) => setFormData({ ...formData, manufacturingDate: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-900 mb-1.5">Expiry Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.expiryDate}
+                                    onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] outline-none ${formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                />
+                                {formData.manufacturingDate && formData.expiryDate && formData.expiryDate <= formData.manufacturingDate && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-1">Expiry must be after manufacturing date</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -320,7 +414,7 @@ export default function InventoryModal({
                     <div className="space-y-4">
                         {/* Location */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5 flex justify-between">
+                            <label className="text-sm font-medium text-gray-700 mb-1.5 flex justify-between">
                                 <span>Storage Location</span>
                                 {formData.department && <span className="text-[10px] uppercase font-bold text-[#FF6A00] bg-orange-50 px-2 py-0.5 rounded-full">{formData.department} Zone</span>}
                             </label>

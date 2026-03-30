@@ -299,20 +299,108 @@ export const createFoodOrder = async (
 
 export const updateFoodOrder = async (
   id: string,
-  data: Partial<FoodOrder>,
+  data: Partial<FoodOrder> & { newPaymentEntry?: { amount: number; method: string; recordedBy?: string } },
+  menuType?: "food" | "bar" 
 ): Promise<boolean> => {
   if (!db) return false;
   try {
+    // 1. DETERMINE COLLECTION (Moved inside or optimized with hint)
+    const assumedCol = menuType ? (menuType === "bar" ? "barOrders" : "foodOrders") : "foodOrders";
+    let orderRef = doc(db, assumedCol, id);
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CONCURRENCY SAFETY: Everything inside the transaction (Phase 11-Atomic)
+    // ─────────────────────────────────────────────────────────────────────────────
+    if (data.newPaymentEntry) {
+      const { amount, method, recordedBy } = data.newPaymentEntry;
+
+      await runTransaction(db, async (transaction) => {
+        let orderDoc = await transaction.get(orderRef);
+
+        // Fallback check if menuType was wrong or hint was missing
+        if (!orderDoc.exists() && !menuType) {
+          orderRef = doc(db as any, "barOrders", id);
+          orderDoc = await transaction.get(orderRef);
+        }
+
+        if (!orderDoc.exists()) throw new Error("Order not found in any collection");
+        const order = orderDoc.data() as FoodOrder;
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // EDIT RULES (Apply here since we have current state inside transaction)
+        // ─────────────────────────────────────────────────────────────────────────────
+        const isOrderDetailsEdit = data.items !== undefined || data.subtotal !== undefined || data.guestName !== undefined;
+        if (order.status !== "pending" && isOrderDetailsEdit) {
+           throw new Error("Cannot edit order details for confirmed orders. Only payments or status can be updated.");
+        }
+
+        const currentDue = order.dueAmount || 0;
+        if (currentDue <= 0) {
+          throw new Error("Order is already fully paid.");
+        }
+
+        const roundedAmount = Math.round(amount * 100) / 100;
+        const roundedDue = Math.round(currentDue * 100) / 100;
+
+        if (roundedAmount <= 0 || roundedAmount > roundedDue) {
+          throw new Error(`Invalid payment amount. Due is ${roundedDue}`);
+        }
+
+        const paymentHistory = order.paymentHistory || [];
+        paymentHistory.push({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          amount,
+          method,
+          date: new Date(),
+          recordedBy: recordedBy || "System"
+        });
+
+        const paidAmount = Math.round(((order.paidAmount || 0) + amount) * 100) / 100;
+        const dueAmount = Math.round((order.totalAmount - paidAmount) * 100) / 100;
+        
+        let paymentStatus: "paid" | "due" | "partial" = "partial";
+        if (dueAmount <= 0) paymentStatus = "paid";
+        if (paidAmount === 0) paymentStatus = "due";
+
+        transaction.update(orderRef, {
+          paymentHistory,
+          paidAmount,
+          dueAmount,
+          paymentStatus,
+          paymentMethod: method,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      // After transaction completes successfully, check if it became FULLY PAID, if so, record revenue.
+      const finalDoc = await getDoc(orderRef);
+      const updatedOrder = { id, ...finalDoc.data() } as FoodOrder;
+      
+      if (updatedOrder && updatedOrder.paymentStatus === "paid" && !updatedOrder.revenueRecorded) {
+        await updateDailyFBRevenue(new Date(), updatedOrder);
+        await updateDoc(orderRef, { revenueRecorded: true });
+        console.log("Revenue Recorded for Order after partial payment completion:", id);
+      }
+      return true;
+    }
+
+    // 2. NON-PAYMENT UPDATES
+    if (!orderRef) {
+      const lookup = await getFoodOrder(id);
+      if (!lookup) return false;
+      orderRef = doc(db, getCollectionName(lookup.menuType), id);
+    }
+
     // Check if we need to record revenue (status changed to delivered/paid)
     if (data.status === "delivered" || data.paymentStatus === "paid") {
-      const currentOrder = await getFoodOrder(id);
-      if (currentOrder && !currentOrder.revenueRecorded) {
-        await updateDailyFBRevenue(new Date(), {
-          ...currentOrder,
-          ...data,
-        } as FoodOrder);
-        data.revenueRecorded = true;
-        console.log("Revenue Recorded for Order:", id);
+      const snap = await getDoc(orderRef);
+      if (snap.exists()) {
+        const order = snap.data() as FoodOrder;
+        if (!order.revenueRecorded) {
+          await updateDailyFBRevenue(new Date(), { ...order, ...data } as FoodOrder);
+          data.revenueRecorded = true;
+          console.log("Revenue Recorded for Order:", id);
+        }
       }
     }
 
@@ -325,19 +413,7 @@ export const updateFoodOrder = async (
       }
     });
 
-    // Determine collection by trying to find valid doc
-    // Optimization: if we start passing menuType to updateFoodOrder, we can skip this check.
-    // For now, check existence.
-    let colName = FOOD_ORDERS;
-    let r = doc(db, FOOD_ORDERS, id);
-    let s = await getDoc(r);
-
-    if (!s.exists()) {
-      colName = BAR_ORDERS;
-      r = doc(db, BAR_ORDERS, id);
-    }
-
-    await updateDoc(r, { ...cleanData, updatedAt: serverTimestamp() });
+    await updateDoc(orderRef, { ...cleanData, updatedAt: serverTimestamp() });
     return true;
   } catch (e) {
     console.error("Error updating food order:", e);

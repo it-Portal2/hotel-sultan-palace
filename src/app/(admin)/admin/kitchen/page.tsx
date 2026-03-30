@@ -88,11 +88,20 @@ export default function KitchenDashboardPage() {
     status: FoodOrder["status"],
   ): Promise<void> => {
     try {
-      // Inventory Deduction Hook
-      if (status === "preparing") {
-        const { processOrderInventoryDeduction } =
-          await import("@/lib/inventoryService");
-        await processOrderInventoryDeduction(orderId, "Kitchen Staff", "food");
+      const currentOrder = orders.find((o) => o.id === orderId);
+      const prevStatus = currentOrder?.status || "confirmed";
+
+      // 🔄 Centralized Inventory Logic (Sales Deduction / Rollback)
+      const { handleInventoryByStatusChange } = await import(
+        "@/lib/inventoryService"
+      );
+      if (currentOrder) {
+        await handleInventoryByStatusChange(
+          prevStatus,
+          status,
+          currentOrder,
+          "Kitchen Staff"
+        );
       }
 
       const updateData: any = { status };
@@ -100,7 +109,7 @@ export default function KitchenDashboardPage() {
       if (status === "preparing") updateData.kitchenStatus = "cooking";
       if (status === "ready") updateData.kitchenStatus = "ready";
 
-      await updateFoodOrder(orderId, updateData);
+      await updateFoodOrder(orderId, updateData, currentOrder?.menuType);
       showToast(`Order marked as ${status.replace("_", " ")}`, "success");
     } catch (error) {
       console.error("Error updating order status:", error);

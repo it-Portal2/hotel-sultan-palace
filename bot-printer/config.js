@@ -13,10 +13,9 @@ module.exports = {
     ),
   },
 
-  // ─── Beach Bar Printer ───
-  // Main Bar printing moved to KOT service (Phase 9E — shares Ramson printer)
-  // This service now handles ONLY beach_bar orders
-  beachBarPrinter: {
+  // ─── Bar Printer (BOT) ───
+  // Handles all bar orders (Main Bar & Beach Bar)
+  barPrinter: {
     type: process.env.BEACH_BAR_PRINTER_TYPE || "epson",
     interface:
       process.env.BEACH_BAR_PRINTER_INTERFACE || "tcp://192.168.1.103:9100",

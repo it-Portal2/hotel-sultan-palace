@@ -2,12 +2,11 @@
  * listener.js
  * Production-grade Firestore real-time listeners for BOT (Bar Order Ticket) printing.
  *
- * TWO LISTENERS (BEACH BAR ONLY):
+ * THREE LISTENERS (ALL BAR LOCATIONS):
  * ─────────────────
- * 1. NEW BEACH BAR ORDERS   → barPrinted == false, barLocation == beach_bar → print
- * 2. BEACH BAR REPRINTS     → reprintRequested == true, barLocation == beach_bar → print
- *
- * Main Bar printing is handled by KOT service (Phase 9E — shares Ramson printer).
+ * 1. NEW BAR ORDERS      → barPrinted == false → print
+ * 2. BAR REPRINTS        → reprintRequested == true → print
+ * 3. MANUAL BAR PRINTS   → barPrintRequested == true → print
  *
  * Same design principles as KOT listener (atomic ops, no in-memory state,
  * self-healing queries, concurrency locks, audit trail).
@@ -53,8 +52,7 @@ function logOrder(tag, color, order, printerName) {
 function listenForNewBarOrders() {
   const ref = db
     .collection("barOrders")
-    .where("barPrinted", "==", false)
-    .where("barLocation", "==", "beach_bar");
+    .where("barPrinted", "==", false);
 
   ref.onSnapshot(
     async (snapshot) => {
@@ -67,8 +65,8 @@ function listenForNewBarOrders() {
         const lockKey = `new-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        const printerName = "beach_bar";
-        logOrder("BEACH BAR ORDER", "green", order, printerName);
+        const printerName = "bar";
+        logOrder("BAR ORDER", "green", order, printerName);
 
         try {
           let printed = true;
@@ -125,7 +123,7 @@ function listenForNewBarOrders() {
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for beach bar orders (barPrinted == false, barLocation == beach_bar)",
+    "Watching for bar orders (barPrinted == false) → Bar Printer",
   );
 }
 
@@ -139,8 +137,7 @@ function listenForNewBarOrders() {
 function listenForBarReprintRequests() {
   const ref = db
     .collection("barOrders")
-    .where("reprintRequested", "==", true)
-    .where("barLocation", "==", "beach_bar");
+    .where("reprintRequested", "==", true);
 
   ref.onSnapshot(
     async (snapshot) => {
@@ -153,8 +150,8 @@ function listenForBarReprintRequests() {
         const lockKey = `reprint-${docId}`;
         if (!acquireLock(lockKey)) continue;
 
-        const printerName = "beach_bar";
-        logOrder("BEACH BAR REPRINT", "yellow", order, printerName);
+        const printerName = "bar";
+        logOrder("BAR REPRINT", "yellow", order, printerName);
 
         try {
           let printed = true;
@@ -212,8 +209,98 @@ function listenForBarReprintRequests() {
 
   console.log(
     chalk.cyan("[Listener]"),
-    "Watching for beach bar reprints (reprintRequested == true, barLocation == beach_bar)",
+    "Watching for bar reprints (reprintRequested == true) → Bar Printer",
   );
 }
 
-module.exports = { listenForNewBarOrders, listenForBarReprintRequests };
+// ═══════════════════════════════════════════════════════════════
+//  LISTENER 3: MANUAL BAR PRINT REQUESTS
+//  Collection: barOrders
+//  Query: barPrintRequested == true
+//  Trigger: added + modified
+//  Action: print with BOT label to bar printer → reset flag
+// ═══════════════════════════════════════════════════════════════
+function listenForBarPrintRequests() {
+  const ref = db
+    .collection("barOrders")
+    .where("barPrintRequested", "==", true);
+
+  ref.onSnapshot(
+    async (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type !== "added" && change.type !== "modified") continue;
+
+        const docId = change.doc.id;
+        const order = { id: docId, ...change.doc.data() };
+
+        const lockKey = `manual-${docId}`;
+        if (!acquireLock(lockKey)) continue;
+
+        const printerName = "bar";
+        logOrder("BAR PRINT", "magenta", order, printerName);
+
+        try {
+          let printed = true;
+          if (config.isProduction) {
+            printed = await printReceipt(order, "BOT", printerName);
+          } else {
+            console.log(
+              chalk.dim(`  ⏭ Skipping manual print (NODE_ENV=${config.env})`),
+            );
+          }
+
+          if (!printed) {
+            console.error(
+              chalk.red(`  ✗ Manual print failed`),
+              chalk.dim("— will retry on next snapshot"),
+            );
+            continue;
+          }
+
+          const docRef = db.collection("barOrders").doc(docId);
+          await db.runTransaction(async (tx) => {
+            const freshDoc = await tx.get(docRef);
+            if (!freshDoc.exists) return;
+
+            const data = freshDoc.data();
+            if (data.barPrintRequested !== true) {
+              console.log(
+                chalk.yellow(`  ⚠ Already handled by another instance`),
+              );
+              return;
+            }
+
+            tx.update(docRef, {
+              barPrintRequested: false,
+              barPrinted: true,
+              barPrintedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+
+          console.log(
+            chalk.green(`  ✓ Manual print marked`),
+            chalk.dim(order.orderNumber),
+          );
+        } catch (err) {
+          console.error(chalk.red(`  ✗ Error:`), err.message);
+        } finally {
+          releaseLock(lockKey);
+        }
+      }
+    },
+    (err) => {
+      console.error(chalk.red("[Listener] Manual print error:"), err.message);
+    },
+  );
+
+  console.log(
+    chalk.cyan("[Listener]"),
+    "Watching for manual bar prints (barPrintRequested == true) → Bar Printer",
+  );
+}
+
+module.exports = {
+  listenForNewBarOrders,
+  listenForBarReprintRequests,
+  listenForBarPrintRequests,
+};

@@ -24,8 +24,6 @@ const {
   listenForNewOrders,
   listenForReprintRequests,
   listenForKitchenPrintRequests,
-  listenForMainBarOrders,
-  listenForMainBarReprints,
 } = require("./listener");
 
 async function main() {
@@ -87,8 +85,6 @@ async function main() {
   listenForNewOrders();
   listenForReprintRequests();
   listenForKitchenPrintRequests();
-  listenForMainBarOrders();
-  listenForMainBarReprints();
 
   console.log("");
   console.log(chalk.green.bold("  ● System is live — waiting for orders..."));

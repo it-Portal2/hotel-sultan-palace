@@ -32,9 +32,7 @@ export default function RegistrationCardModal({ booking, onClose, position }: Re
 
     const nights = Math.ceil((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / (1000 * 60 * 60 * 24));
 
-    // Calculate financials
-    const roomPrice = booking.rooms[0]?.price || 0;
-    const totalRoomCharge = roomPrice * nights;
+
 
     // Direct Print Mode: We don't show the modal UI at all, just the hidden content for the printer
     // We position it off-screen but keep it in DOM for react-to-print to find it.
@@ -116,7 +114,7 @@ export default function RegistrationCardModal({ booking, onClose, position }: Re
                         {/* Arrival / Departure Section */}
                         <div className="mt-4">
                             <h3 className="text-xs font-bold uppercase border-b border-gray-300 mb-2 pb-1">Stay Details</h3>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <div className="border border-gray-300 p-2 text-center">
                                     <span className="block text-[9px] text-gray-500 uppercase">Arrival Date</span>
                                     <span className="block font-bold text-sm font-sans">{new Date(booking.checkIn).toLocaleDateString()}</span>
@@ -129,10 +127,7 @@ export default function RegistrationCardModal({ booking, onClose, position }: Re
                                     <span className="block text-[9px] text-gray-500 uppercase">Room Type</span>
                                     <span className="block font-bold text-sm font-sans">{booking.rooms[0]?.suiteType}</span>
                                 </div>
-                                <div className="border border-gray-300 p-2 text-center">
-                                    <span className="block text-[9px] text-gray-500 uppercase">Room Rate</span>
-                                    <span className="block font-bold text-sm font-sans">${booking.rooms[0]?.price.toFixed(2)}</span>
-                                </div>
+
                                 <div className="border border-gray-300 p-2 text-center">
                                     <span className="block text-[9px] text-gray-500 uppercase">No. of Guests</span>
                                     <span className="block font-bold text-sm font-sans">{booking.guests.adults} Adults / {booking.guests.children} Child</span>
@@ -141,12 +136,7 @@ export default function RegistrationCardModal({ booking, onClose, position }: Re
                                     <span className="block text-[9px] text-gray-500 uppercase">Booking Source</span>
                                     <span className="block font-bold text-sm font-sans">{(booking.source || 'Direct').toUpperCase()}</span>
                                 </div>
-                                <div className="border border-gray-300 p-2 text-center col-span-2 bg-gray-50">
-                                    <span className="block text-[9px] text-gray-500 uppercase">Payment Status</span>
-                                    <span className="block font-bold text-sm font-sans">
-                                        PAID: ${booking.paidAmount?.toFixed(2) || '0.00'} | DUE: ${((booking.totalAmount || 0) - (booking.paidAmount || 0)).toFixed(2)}
-                                    </span>
-                                </div>
+
                             </div>
                         </div>
 

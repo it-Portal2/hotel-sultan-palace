@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSuppliers, deleteSupplier } from '@/lib/inventoryService';
 import type { Supplier } from '@/lib/firestoreService';
-import { PlusIcon, PhoneIcon, EnvelopeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PhoneIcon, EnvelopeIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import SupplierDrawer from './SupplierDrawer';
 import { useToast } from '@/context/ToastContext';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -13,6 +13,9 @@ export default function SuppliersTab() {
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const { showToast } = useToast();
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     const loadData = async () => {
         setLoading(true);
@@ -58,6 +61,9 @@ export default function SuppliersTab() {
 
     if (loading) return <div className="text-center py-12 text-gray-500">Loading suppliers...</div>;
 
+    const paginatedSuppliers = suppliers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(suppliers.length / ITEMS_PER_PAGE) || 1;
+
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
             {/* Top Bar */}
@@ -85,7 +91,7 @@ export default function SuppliersTab() {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
-                            {suppliers.map(supplier => (
+                            {paginatedSuppliers.map(supplier => (
                                 <tr key={supplier.id} className="hover:bg-gray-50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div>
@@ -146,6 +152,35 @@ export default function SuppliersTab() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Footer */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50 mt-auto">
+                        <p className="text-sm text-gray-500">
+                            Showing <span className="font-medium">{currentPage * ITEMS_PER_PAGE - ITEMS_PER_PAGE + 1}</span> to{' '}
+                            <span className="font-medium">
+                                {Math.min(currentPage * ITEMS_PER_PAGE, suppliers.length)}
+                            </span>{' '}
+                            of <span className="font-medium">{suppliers.length}</span> results
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                <ChevronLeftIcon className="w-4 h-4 mr-1" /> Prev
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                            >
+                                Next <ChevronRightIcon className="w-4 h-4 ml-1" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <SupplierDrawer
