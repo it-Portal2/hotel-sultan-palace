@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { getFoodOrdersByDateRange } from '@/lib/services/fbOrderService';
 import { FoodOrder } from '@/lib/types/foodMenu';
 import { XMarkIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import FBDashboardSkeleton from '@/components/admin/inventory/FBDashboardSkeleton';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -404,7 +405,6 @@ export default function FBDashboardPage() {
     a.click();
   }, [activeAggRow, activeLocation, activeOrderType, startDate, endDate, stats]);
 
-  if (loading && rawOrders.length === 0) return <div className="p-12 text-center text-gray-400 animate-pulse">Loading F&amp;B Report…</div>;
 
   return (
     <div className="space-y-6">
@@ -419,9 +419,20 @@ export default function FBDashboardPage() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold focus:ring-2 focus:ring-blue-100 outline-none" />
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold focus:ring-2 focus:ring-blue-100 outline-none" />
 
-          <button onClick={handleExport} className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 shadow-sm transition-all focus:ring-2 focus:ring-green-100">Export Excel</button>
+          <button 
+            onClick={handleExport} 
+            disabled={loading}
+            className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 shadow-sm transition-all focus:ring-2 focus:ring-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Processing...' : 'Export Excel'}
+          </button>
         </div>
       </div>
+
+      {loading ? (
+        <FBDashboardSkeleton />
+      ) : (
+        <>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -622,6 +633,9 @@ export default function FBDashboardPage() {
           )}
         </div>
       </div>
+
+        </>
+      )}
 
       {selectedModal && <OrderDetailModal order={selectedModal} onClose={() => setSelectedModal(null)} />}
     </div>
