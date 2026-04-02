@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig & {
-  eslint?: { ignoreDuringBuilds?: boolean };
-} = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: NextConfig = {
   images: {
     unoptimized: false,
     formats: ["image/avif", "image/webp"],
