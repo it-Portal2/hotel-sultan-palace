@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowPathIcon, ChartBarIcon, CubeIcon, FireIcon, TrophyIcon, ExclamationTriangleIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/solid';
-import PremiumLoader from '@/components/ui/PremiumLoader';
+import DashboardSkeleton from '@/components/admin/inventory/DashboardSkeleton';
 import type { ProfitLossStatement, BalanceSheet } from '@/lib/financeAnalytics';
 import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
@@ -164,9 +164,7 @@ export default function InsightsDashboardPage() {
 
             {/* ── Loading / Error ── */}
             {loading && (
-                <div className="flex justify-center py-24">
-                    <PremiumLoader />
-                </div>
+                <DashboardSkeleton />
             )}
 
             {error && !loading && (
