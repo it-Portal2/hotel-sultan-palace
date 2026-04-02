@@ -294,6 +294,7 @@ export default function FBDashboardPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setSelectedModal(null);
       const start = new Date(startDate);
       const end = new Date(endDate); end.setHours(23, 59, 59, 999);
       const [food, bar] = await Promise.all([
@@ -634,10 +635,9 @@ export default function FBDashboardPage() {
         </div>
       </div>
 
+        {selectedModal && <OrderDetailModal order={selectedModal} onClose={() => setSelectedModal(null)} />}
         </>
       )}
-
-      {selectedModal && <OrderDetailModal order={selectedModal} onClose={() => setSelectedModal(null)} />}
     </div>
   );
 }
